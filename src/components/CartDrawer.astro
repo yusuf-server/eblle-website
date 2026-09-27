@@ -1,0 +1,822 @@
+---
+// CartDrawer 组件
+---
+
+<!-- Cart Overlay -->
+<div class="cart-overlay" id="cartOverlay"></div>
+
+<!-- Cart Drawer -->
+<aside class="cart-drawer" id="cartDrawer">
+  <!-- Header -->
+  <div class="cart-header">
+    <h2>Shopping Cart <span class="cart-count">(0)</span></h2>
+    <button class="close-btn" id="closeCart" aria-label="Close cart">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- Scrollable Content -->
+  <div class="cart-content">
+    <!-- Free Shipping Progress -->
+    <div class="shipping-progress">
+      <div class="progress-info">
+        <p class="progress-text">You're <span class="highlight">$50.00</span> away from <strong>FREE SHIPPING!</strong></p>
+        <p class="progress-percent">0%</p>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 0%;"></div>
+      </div>
+      <div class="progress-footer">
+        <p class="progress-current">CURRENT: $0.00</p>
+        <p class="progress-goal">GOAL: $50.00</p>
+      </div>
+    </div>
+
+    <!-- Cart Items Container (动态渲染区) -->
+    <div class="cart-items" id="cartItems"></div>
+  </div>
+
+  <!-- Footer / Checkout -->
+  <div class="cart-footer">
+    <div class="cart-summary">
+      <div class="summary-row small">
+        <span class="summary-label">Estimated Tax</span>
+        <span class="summary-note">Calculated at checkout</span>
+      </div>
+      <div class="summary-row small">
+        <span class="summary-label">Shipping</span>
+        <span class="summary-note">Calculated next step</span>
+      </div>
+      <div class="summary-row main">
+        <span class="summary-label-main">Subtotal</span>
+        <span class="summary-value" id="cartSubtotal">$0.00</span>
+      </div>
+    </div>
+    <div class="cart-actions">
+      <button class="btn-checkout" id="btnCheckout">
+        CHECKOUT
+        <i class="fa-solid fa-arrow-right"></i>
+      </button>
+      <a href="/cart" class="btn-view-cart">VIEW CART</a>
+    </div>
+    <div class="trust-badge">
+      <i class="fa-solid fa-lock"></i>
+      <span>SECURE CHECKOUT GUARANTEED</span>
+    </div>
+  </div>
+</aside>
+
+<style>
+  /* 全局/外层安全锁 */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  /* Cart Overlay */
+  .cart-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .cart-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Cart Drawer 抽屉主体 */
+  .cart-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 100%;
+    max-width: 380px;
+    background: #fbf9f6;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .cart-drawer.active {
+    transform: translateX(0);
+  }
+
+  /* Cart Header */
+  .cart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid #eee8df;
+    background: #fbf9f6;
+  }
+  .cart-header h2 {
+    font-size: 22px;
+    font-weight: 500;
+    font-family: 'Bodoni Moda', 'Didot', Georgia, serif;
+    color: #111;
+    margin: 0;
+  }
+  .cart-count {
+    font-size: 15px;
+    font-weight: 400;
+    color: #777;
+    margin-left: 4px;
+  }
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: #222;
+    padding: 0;
+    transition: color 0.2s;
+  }
+  .close-btn:hover {
+    color: #a82424;
+  }
+
+  /* Cart Content */
+  .cart-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Shipping Progress */
+  .shipping-progress {
+    background: #ffffff;
+    border: 1px solid #ebd9c0;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .progress-text {
+    font-size: 11.5px;
+    color: #222;
+    margin: 0;
+  }
+  .highlight {
+    color: #8a6218;
+    font-weight: 700;
+  }
+  .progress-percent {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8a6218;
+    background: #fbf6ec;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin: 0;
+  }
+  .progress-bar {
+    width: 100%;
+    height: 5px;
+    background: #eee8df;
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #111111;
+    border-radius: 99px;
+    transition: width 0.3s ease;
+  }
+  .progress-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-weight: 600;
+    color: #777;
+    letter-spacing: 0.03em;
+  }
+  .progress-current,
+  .progress-goal {
+    margin: 0;
+  }
+
+  /* =========================================================
+     动态渲染穿透样式（使用 :global 解决 innerHTML 样式丢失）
+     ========================================================= */
+  .cart-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  :global(.cart-item) {
+    background: #ffffff !important;
+    border: 1px solid #e8e2d8 !important;
+    border-radius: 6px !important;
+    padding: 14px !important;
+    display: flex !important;
+    gap: 14px !important;
+    position: relative !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02) !important;
+  }
+
+  :global(.cart-item .item-image) {
+    width: 76px !important;
+    height: 76px !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+    background: #fbf9f6 !important;
+    border: 1px solid #eee8df !important;
+  }
+
+  :global(.cart-item .item-image img) {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+
+  :global(.cart-item .item-details) {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    min-width: 0 !important;
+  }
+
+  :global(.cart-item .item-header) {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    position: relative !important;
+  }
+
+  :global(.cart-item .item-info) {
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  :global(.cart-item .item-info h3) {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #111 !important;
+    margin: 0 0 3px 0 !important;
+    line-height: 1.35 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  :global(.cart-item .item-meta) {
+    font-size: 11px !important;
+    color: #777 !important;
+    margin: 0 0 4px 0 !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  :global(.cart-item .item-price) {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #8a6218 !important;
+    margin: 0 !important;
+  }
+
+  :global(.cart-item .delete-btn) {
+    width: 22px !important;
+    height: 22px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+    color: #999 !important;
+    font-size: 13px !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+    transition: color 0.2s !important;
+  }
+
+  :global(.cart-item .delete-btn:hover) {
+    color: #c52424 !important;
+  }
+
+  :global(.cart-item .item-footer) {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-top: 10px !important;
+  }
+
+  :global(.cart-item .item-quantity) {
+    display: inline-flex !important;
+    align-items: center !important;
+    border: 1px solid #ddd8ce !important;
+    border-radius: 3px !important;
+    background: #fcfbf8 !important;
+    height: 28px !important;
+    padding: 0 4px !important;
+  }
+
+  :global(.cart-item .qty-btn) {
+    background: transparent !important;
+    border: none !important;
+    font-size: 12px !important;
+    color: #333 !important;
+    cursor: pointer !important;
+    width: 22px !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  :global(.cart-item .qty-value) {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #111 !important;
+    min-width: 18px !important;
+    text-align: center !important;
+  }
+
+  :global(.cart-item .item-total) {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    color: #111 !important;
+    margin: 0 !important;
+  }
+
+  /* Cart Footer */
+  .cart-footer {
+    border-top: 1px solid #eee8df;
+    padding: 16px 20px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    background: #fbf9f6;
+  }
+  .cart-summary {
+    margin-bottom: 14px;
+  }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .summary-row.small {
+    font-size: 11.5px;
+    color: #777;
+  }
+  .summary-row.main {
+    padding-top: 10px;
+    border-top: 1px dashed #e2ded5;
+    margin-top: 8px;
+    margin-bottom: 0;
+  }
+  .summary-label {
+    color: #777;
+  }
+  .summary-note {
+    color: #8a6218;
+    font-style: italic;
+    font-size: 10.5px;
+  }
+  .summary-label-main {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+  }
+  .summary-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111;
+  }
+  .cart-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .btn-checkout {
+    width: 100%;
+    background: #111111;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 13px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s;
+  }
+  .btn-checkout:hover {
+    background: #2b2b2b;
+  }
+  .btn-checkout i {
+    font-size: 11px;
+  }
+  .btn-view-cart {
+    width: 100%;
+    background: transparent;
+    color: #111111;
+    border: 1px solid #111111;
+    border-radius: 3px;
+    padding: 11px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: block;
+    text-align: center;
+    text-decoration: none;
+  }
+  .btn-view-cart:hover {
+    background: #f2ece1;
+  }
+  .trust-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #777;
+    letter-spacing: 0.5px;
+  }
+  .trust-badge i {
+    font-size: 11px;
+    color: #555;
+  }
+
+  @media (max-width: 480px) {
+    .cart-drawer {
+      max-width: 100%;
+    }
+  }
+</style>
+
+<script is:inline>
+  // 获取购物车数据
+  function getCart() {
+    try {
+      const cart = localStorage.getItem('ebbelle_cart');
+      return cart ? JSON.parse(cart) : [];
+    } catch (e) {
+      console.error('Failed to get cart:', e);
+      return [];
+    }
+  }
+
+  // 保存购物车数据
+  function saveCart(cart) {
+    try {
+      localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
+      window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+    } catch (e) {
+      console.error('Failed to save cart:', e);
+    }
+  }
+
+  // 渲染购物车商品
+  function renderCartItems() {
+    const cart = getCart();
+    const cartItemsContainer = document.getElementById('cartItems');
+    const cartCountSpan = document.querySelector('.cart-count');
+    const cartSubtotal = document.getElementById('cartSubtotal');
+    const progressFill = document.querySelector('.progress-fill');
+    const progressText = document.querySelector('.progress-text');
+    const progressPercent = document.querySelector('.progress-percent');
+    const progressCurrent = document.querySelector('.progress-current');
+
+    if (!cartItemsContainer) return;
+
+    // 更新总件数
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    if (cartCountSpan) {
+      cartCountSpan.textContent = `(${totalItems})`;
+    }
+
+    // 计算总金额
+    const subtotal = cart.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      return sum + (price * item.quantity);
+    }, 0);
+
+    if (cartSubtotal) {
+      cartSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+    }
+
+    // 免邮门槛计算 ($50.00)
+    const freeShippingThreshold = 50;
+    const remaining = Math.max(0, freeShippingThreshold - subtotal);
+    const progress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+
+    if (progressFill) {
+      progressFill.style.width = `${progress}%`;
+    }
+    if (progressPercent) {
+      progressPercent.textContent = `${Math.round(progress)}%`;
+    }
+    if (progressCurrent) {
+      progressCurrent.textContent = `CURRENT: $${subtotal.toFixed(2)}`;
+    }
+    if (progressText) {
+      if (remaining > 0) {
+        progressText.innerHTML = `You're <span class="highlight">$${remaining.toFixed(2)}</span> away from <strong>FREE SHIPPING!</strong>`;
+      } else {
+        progressText.innerHTML = `<strong>Congratulations! You've unlocked FREE SHIPPING!</strong>`;
+      }
+    }
+
+    // 空购物车状态
+    if (cart.length === 0) {
+      cartItemsContainer.innerHTML = `
+        <div style="text-align: center; padding: 48px 20px; color: #999;">
+          <i class="fa-solid fa-cart-shopping" style="font-size: 40px; margin-bottom: 14px; opacity: 0.3;"></i>
+          <p style="font-size: 14px; color: #666; margin: 0 0 16px 0;">Your cart is currently empty</p>
+          <a href="/shop" style="display: inline-block; padding: 9px 20px; background: #111; color: #fff; text-decoration: none; border-radius: 2px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.5px;">CONTINUE SHOPPING</a>
+        </div>
+      `;
+      return;
+    }
+
+    // 渲染每项商品（结构完全复刻设计图 1）
+    cartItemsContainer.innerHTML = cart.map(item => {
+      const itemTotal = (parseFloat(item.price) * item.quantity).toFixed(2);
+
+      // 清理和规范化 cartItemId，移除换行符、多余空格
+      const cleanCartItemId = String(item.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_');
+
+      // 提取变体信息
+      let variantsText = '';
+      if (item.selectedVariants) {
+        variantsText = Object.entries(item.selectedVariants)
+          .filter(([_, value]) => value)
+          .map(([key, value]) => `${key.charAt(0).toUpperCase() + key.slice(1)}: ${String(value).trim()}`)
+          .join(' / ');
+      }
+
+      return `
+        <div class="cart-item" data-cart-item-id="${cleanCartItemId}">
+          <div class="item-image">
+            <img src="${item.image}" alt="${item.name}">
+          </div>
+          <div class="item-details">
+            <div class="item-header">
+              <div class="item-info">
+                <h3>${item.name}</h3>
+                ${variantsText ? `<p class="item-meta">${variantsText}</p>` : ''}
+                <p class="item-price">$${parseFloat(item.price).toFixed(2)}</p>
+              </div>
+              <button type="button" class="delete-btn" data-action="delete" title="Remove item">
+                <i class="fa-regular fa-trash-can"></i>
+              </button>
+            </div>
+            <div class="item-footer">
+              <div class="item-quantity">
+                <button type="button" class="qty-btn" data-action="decrease">-</button>
+                <span class="qty-value">${item.quantity}</span>
+                <button type="button" class="qty-btn" data-action="increase">+</button>
+              </div>
+              <p class="item-total">$${itemTotal}</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 绑定事件委托（数量加减与删除）
+  document.getElementById('cartItems')?.addEventListener('click', (e) => {
+    const button = e.target.closest('button');
+    if (!button) return;
+
+    const cartItem = button.closest('.cart-item');
+    if (!cartItem) return;
+
+    const cartItemId = cartItem.dataset.cartItemId;
+    const action = button.dataset.action;
+    const currentQty = parseInt(cartItem.querySelector('.qty-value')?.textContent || 1, 10);
+
+    if (action === 'delete') {
+      removeCartItem(cartItemId);
+    } else if (action === 'increase') {
+      updateCartQuantity(cartItemId, currentQty + 1);
+    } else if (action === 'decrease') {
+      if (currentQty > 1) {
+        updateCartQuantity(cartItemId, currentQty - 1);
+      } else {
+        removeCartItem(cartItemId);
+      }
+    }
+  });
+
+  // 更新商品数量
+  function updateCartQuantity(cartItemId, newQuantity) {
+    if (newQuantity < 1) return;
+    const cart = getCart();
+
+    // 清理传入的 cartItemId
+    const cleanInputId = String(cartItemId).trim().replace(/[\s\n\r]+/g, '_');
+
+    // 在查找时也清理 cartItemId 进行比较
+    const item = cart.find(i => {
+      const cleanItemId = String(i.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_');
+      return cleanItemId === cleanInputId;
+    });
+
+    if (item) {
+      item.quantity = newQuantity;
+      saveCart(cart);
+      // 不重新渲染整个列表，只更新这一项
+      const cartItem = document.querySelector(`[data-cart-item-id="${cleanInputId}"]`);
+      if (cartItem) {
+        const qtyValue = cartItem.querySelector('.qty-value');
+        const itemTotal = cartItem.querySelector('.item-total');
+        if (qtyValue) qtyValue.textContent = newQuantity;
+        if (itemTotal) {
+          const price = parseFloat(item.price) || 0;
+          itemTotal.textContent = `$${(price * newQuantity).toFixed(2)}`;
+        }
+      }
+      // 更新总价和进度条
+      updateCartSummary();
+    }
+  }
+
+  // 更新购物车总览（不重新渲染商品列表）
+  function updateCartSummary() {
+    const cart = getCart();
+
+    // 更新购物车数量
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const cartCountSpan = document.querySelector('.cart-count');
+    if (cartCountSpan) {
+      cartCountSpan.textContent = `(${totalItems})`;
+    }
+
+    // 计算总价
+    const subtotal = cart.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      return sum + (price * item.quantity);
+    }, 0);
+
+    // 更新总价显示
+    const cartTotal = document.getElementById('cartSubtotal');
+    if (cartTotal) {
+      cartTotal.textContent = `$${subtotal.toFixed(2)}`;
+    }
+
+    // 更新免邮进度条
+    const freeShippingThreshold = 50;
+    const remaining = Math.max(0, freeShippingThreshold - subtotal);
+    const progress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+
+    const progressFill = document.querySelector('.progress-fill');
+    const progressPercent = document.querySelector('.progress-percent');
+    const progressCurrent = document.querySelector('.progress-current');
+    const progressText = document.querySelector('.progress-text');
+
+    if (progressFill) {
+      progressFill.style.width = `${progress}%`;
+    }
+    if (progressPercent) {
+      progressPercent.textContent = `${Math.round(progress)}%`;
+    }
+    if (progressCurrent) {
+      progressCurrent.textContent = `CURRENT: $${subtotal.toFixed(2)}`;
+    }
+    if (progressText) {
+      if (remaining > 0) {
+        progressText.innerHTML = `You're <span class="highlight">$${remaining.toFixed(2)}</span> away from <strong>FREE SHIPPING!</strong>`;
+      } else {
+        progressText.innerHTML = `<strong>Congratulations! You've unlocked FREE SHIPPING!</strong>`;
+      }
+    }
+  }
+
+  // 删除商品（带动画）
+  function removeCartItem(cartItemId) {
+    // 清理传入的 cartItemId
+    const cleanInputId = String(cartItemId).trim().replace(/[\s\n\r]+/g, '_');
+    const cartItem = document.querySelector(`[data-cart-item-id="${cleanInputId}"]`);
+
+    if (cartItem) {
+      // 先从数据中删除
+      let cart = getCart();
+      // 在过滤时也清理 cartItemId 进行比较
+      cart = cart.filter(i => {
+        const cleanItemId = String(i.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_');
+        return cleanItemId !== cleanInputId;
+      });
+      saveCart(cart);
+
+      // 添加删除动画
+      cartItem.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+      cartItem.style.transform = 'translateX(-100%)';
+      cartItem.style.opacity = '0';
+
+      // 动画结束后移除DOM元素
+      setTimeout(() => {
+        cartItem.remove();
+        // 检查是否为空购物车
+        const remainingCart = getCart();
+        if (remainingCart.length === 0) {
+          renderCartItems(); // 显示空购物车提示
+        } else {
+          updateCartSummary();
+        }
+      }, 300);
+    } else {
+      // 如果找不到元素，直接删除数据并重新渲染
+      let cart = getCart();
+      cart = cart.filter(i => {
+        const cleanItemId = String(i.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_');
+        return cleanItemId !== cleanInputId;
+      });
+      saveCart(cart);
+      renderCartItems();
+    }
+  }
+
+  // 抽屉展开与关闭
+  function toggleCart(isOpen) {
+    const overlay = document.getElementById('cartOverlay');
+    const drawer = document.getElementById('cartDrawer');
+
+    if (isOpen) {
+      overlay?.classList.add('active');
+      drawer?.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      renderCartItems();
+    } else {
+      overlay?.classList.remove('active');
+      drawer?.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  document.getElementById('cartOverlay')?.addEventListener('click', () => toggleCart(false));
+  document.getElementById('closeCart')?.addEventListener('click', () => toggleCart(false));
+
+  // 事件委托：处理购物车商品的按钮点击
+  document.getElementById('cartItems')?.addEventListener('click', (e) => {
+    const button = e.target.closest('button');
+    if (!button) return;
+
+    const cartItem = button.closest('.cart-item');
+    if (!cartItem) return;
+
+    const cartItemId = cartItem.dataset.cartItemId;
+    const action = button.dataset.action;
+
+    if (action === 'delete') {
+      removeCartItem(cartItemId);
+    } else if (action === 'increase') {
+      const qtyValue = cartItem.querySelector('.qty-value');
+      const currentQty = parseInt(qtyValue?.textContent || 0);
+      updateCartQuantity(cartItemId, currentQty + 1);
+    } else if (action === 'decrease') {
+      const qtyValue = cartItem.querySelector('.qty-value');
+      const currentQty = parseInt(qtyValue?.textContent || 0);
+      if (currentQty > 1) {
+        updateCartQuantity(cartItemId, currentQty - 1);
+      }
+    }
+  });
+
+  window.addEventListener('cartUpdated', renderCartItems);
+  document.addEventListener('DOMContentLoaded', renderCartItems);
+
+  // 全局暴露方法
+  window.toggleCart = toggleCart;
+  window.updateCartQuantity = updateCartQuantity;
+  window.removeCartItem = removeCartItem;
+</script>

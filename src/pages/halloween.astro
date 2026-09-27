@@ -1,0 +1,1053 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { getProduct } from '../lib/woocommerce';
+
+// ========================================
+// ACF 数据获取逻辑
+// ========================================
+
+// 从 WordPress ACF API 获取页面字段
+async function getACFFields() {
+  try {
+    const WC_STORE_URL = import.meta.env.WC_STORE_URL || '';
+    const response = await fetch(`${WC_STORE_URL}/wp-json/wp/v2/pages?slug=halloween`);
+    const pages = await response.json();
+
+    if (!pages || pages.length === 0) {
+      console.warn('未找到页面 "活动专区"，使用默认数据');
+      return null;
+    }
+
+    const page = pages[0];
+    return page.acf || null;
+  } catch (error) {
+    console.error('获取 ACF 数据失败:', error);
+    return null;
+  }
+}
+
+// 从产品 ID 获取 WooCommerce 产品数据
+async function getProductData(productId: number | null) {
+  if (!productId) return null;
+  try {
+    const product = await getProduct(productId);
+    return product;
+  } catch (error) {
+    console.error(`获取产品 ${productId} 失败:`, error);
+    return null;
+  }
+}
+
+// 获取 ACF 数据
+const acfData = await getACFFields();
+
+// ========================================
+// 数据层配置（ACF 数据 + Fallback 默认值）
+// ========================================
+
+const announcementData = {
+  text: acfData?.announcement_text || 'HALLOWEEN MAGIC IS HERE • VELVET POUCH ON $300+ • CODE: NOCTURNE15',
+  code: acfData?.announcement_code || 'NOCTURNE15'
+};
+
+const heroData = {
+  badge: acfData?.hero_badge || 'Nocturne Édition • October 2026',
+  title: acfData?.hero_title_main || 'Halloween',
+  titleItalic: acfData?.hero_title_italic || 'Jewelry',
+  titleEnd: acfData?.hero_title_end || 'Edit',
+  description: acfData?.hero_desc || 'A little dark. A little daring. Made to shine. Discover fine heirloom gold, deep obsidian serpent motifs, and diamond starburst talismans crafted for nocturnal glamour.',
+  primaryButton: {
+    text: acfData?.hero_btn_primary_text || 'Shop The Collection',
+    link: acfData?.hero_btn_primary_url || '#vault-favorites'
+  },
+  secondaryButton: {
+    text: acfData?.hero_btn_secondary_text || 'Explore Editorial',
+    link: acfData?.hero_btn_secondary_url || '#atelier-manifesto'
+  },
+  valuePillars: acfData?.hero_pillars || [
+    { title: '18K Gold', subtitle: 'Recycled Solid Gold' },
+    { title: 'REACH CERTIFIED', subtitle: 'Conflict-Free Pavé' },
+    { title: '48 HRS', subtitle: 'Vault Reserve' }
+  ],
+  heroImage: acfData?.hero_image || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBOIISihhg43B-qyenK6ep4LY75g_sJHlsWYufPQcSO_PgFudufFmhRDp2NnPe0nmdZ6r_x8KwEYgocFjWrh0NzWrBtNL9masvHFYgFUro99nt-oyatcFc69315_0naNwLRfs7yb9oq9V_Qu_ZE9dg5TeS0Jq7H6PfIHf-iDMe8cA6UNklRHjBQtlKqpkvgkGdCvjARXqhVe5BzQfORzdAcoKb8hPSEKqD36m9oYHXDOyeV266RM48S0Q',
+  productPin: {
+    top: acfData?.hero_product_pin?.top || '36%',
+    right: acfData?.hero_product_pin?.right || '32%',
+    category: acfData?.hero_product_pin?.category || 'Ear Architecture',
+    name: acfData?.hero_product_pin?.custom_name || 'Starburst Drop Earrings',
+    price: acfData?.hero_product_pin?.custom_price_text || '$245 • Diamond Pavé'
+  },
+  featuredCard: {
+    title: acfData?.hero_featured_pill?.title || 'Featured Muse: Nocturne Talisman Suite',
+    subtitle: acfData?.hero_featured_pill?.subtitle || 'Limited allocation of 80 bespoke Paris-crafted sets',
+    link: acfData?.hero_featured_pill?.link || '#vault-favorites'
+  }
+};
+
+// Mood Categories Section
+const moodData = {
+  kicker: acfData?.mood_section_kicker || 'Curated Expressions',
+  title: acfData?.mood_section_title || 'Find Your Halloween Mood',
+  description: acfData?.mood_section_desc || 'Whether you invoke candlelit mystery, ethereal witchcraft, playful serpent wit, or pure diamond radiance.',
+  cards: acfData?.mood_cards || [
+    {
+      badge: 'Mood 01',
+      badge_color: 'secondary',
+      title: 'Dark & Mysterious',
+      desc: 'Obsidian talismans for late-night allure',
+      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA-iU76-and114rbnt_POz4_sDjWTAYInZzLj5ICzFD9Rcm0BPswbPmMURI2zqVTm4EdceVZt8pXDRQboY4YlFAH5s9-x6sI8ScYouSb7BS97_uG_LruFIpwlNnycieHpiRD09J-ABL5B2lTiZWgsH_wnVkVQIxtWHUVasBGNGlqvXrPIOHxKW4BhnbMGhMJxKbgvAK-7B9FiF0mMsz6qFQk_FWqOdkVpskMyEQYztnJE1YPAlN1mY79g',
+      link: '#vault-favorites'
+    },
+    {
+      badge: 'Mood 02',
+      badge_color: 'tertiary',
+      title: 'Ethereal Witchcraft',
+      desc: 'Moon crescents and selenite shimmer',
+      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC_Ow_t2rtWN8EX0kHSngC9bRx2HYP7C9F3wH1Q7ViV_JDKn16LXDJOQrSLp8r1-dqEzwqLT3p5HqXrCz7MmpYx9q4bYK_Q1zHdZWLxjxeaKbdUbG42vBJXh04BIdDj0pG9R_7qmOE6v25_I1TUjp4ULT1z7eLF1Gj-I0UUqX7hGBp-CzZ2ym3eWV6aKSk0KhGk6Tgi6q-cSSmL4K_1jtjRqcFXuSW5yYwMlG4aV52LcvR7JBg_4w',
+      link: '#vault-favorites'
+    },
+    {
+      badge: 'Mood 03',
+      badge_color: 'primary',
+      title: 'Playful Serpent',
+      desc: 'Bold gold coils with winking ruby eyes',
+      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDkNaLxlG0JY3PK0N8Yby5S5oD5rW92nBT7gcrjPiC7f6ZK7VqGH3uFP8hBuiGnqLPXnIQlzT3F7yd4Zj5i7K0HqXm5LxPdT8QNqZ1xV8XqVhZqNnBKL1rM3pO7cLT2F5gxGhBqO8pT9qXhVdLx5T0NqPgLzQhBxT7gNdR5pXnOqL9TfHqX3dLgZ1VhT8pNqLxKfGhBqZ5Td',
+      link: '#vault-favorites'
+    },
+    {
+      badge: 'Mood 04',
+      badge_color: 'primary',
+      title: 'Diamond Radiance',
+      desc: 'Celestial brilliance meets midnight sky',
+      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBZqK3LxT8pNhV5gGhBdO7rW92nBT7gcrjPiC7f6ZK7VqGH3uFP8hBuiGnqLPXnIQlzT3F7yd4Zj5i7K0HqXm5LxPdT8QNqZ1xV8XqVhZqNnBKL1rM3pO7cLT2F5gxGhBqO8pT9qXhVdLx5T0NqPgLzQhBxT7gNdR5pXnOqL9TfHqX3dLgZ1VhT8pNqLxKfGhBqZ5TdLxGhVn',
+      link: '#vault-favorites'
+    }
+  ]
+};
+
+// Favorites/Products Section - 需要处理 WooCommerce 产品
+const favoritesData = {
+  kicker: acfData?.favorites_kicker || 'Heirloom Talismans',
+  title: acfData?.favorites_title || 'Halloween Favorites',
+  description: acfData?.favorites_desc || 'Fine pieces made for every secret bit of magic. Individually numbered and hallmarked in our Parisian atelier.',
+  products: [] as any[] // 将在下方异步填充
+};
+
+// 异步获取 Favorites 产品数据
+if (acfData?.favorite_products && Array.isArray(acfData.favorite_products)) {
+  for (const item of acfData.favorite_products) {
+    if (item.product) {
+      const product = await getProductData(item.product);
+      if (product) {
+        favoritesData.products.push({
+          id: product.id,
+          name: product.name,
+          image: product.images?.[0]?.src || '',
+          price: product.price,
+          regular_price: product.regular_price,
+          on_sale: product.on_sale,
+          category: product.categories?.[0]?.name || '',
+          badge_text: item.badge_text || '',
+          badge_style: item.badge_style || 'primary',
+          subtitle: item.subtitle_override || product.short_description || ''
+        });
+      }
+    }
+  }
+}
+
+// Manifesto Section
+const manifestoData = {
+  kicker: acfData?.manifesto_kicker || 'Autumn Atelier Manifesto',
+  title: acfData?.manifesto_title || 'Dress a Little Darker.',
+  description: acfData?.manifesto_desc || 'Your everyday fine jewelry, infused with an alluring Halloween twist. Transition effortlessly from twilight gatherings to everyday heirloom luxury with tactile obsidian accents and radiant gold silhouettes.',
+  buttonText: acfData?.manifesto_btn_text || 'Shop The Editorial →',
+  buttonLink: acfData?.manifesto_btn_link || '#vault-favorites',
+  image: acfData?.manifesto_image || 'https://lh3.googleusercontent.com/aida-public/placeholder-manifesto.jpg',
+  imageTag: acfData?.manifesto_image_tag || 'Place Vendôme Workshop'
+};
+
+// Oracle Section - 需要处理 WooCommerce 产品
+const oracleData = {
+  kicker: acfData?.oracle_kicker || 'Talisman Oracle',
+  title: acfData?.oracle_title || 'Pick Your Halloween Energy',
+  description: acfData?.oracle_desc || 'Select your nocturnal vibe to reveal your bespoke talisman recommendation attuned to your spirit.',
+  items: [] as any[]
+};
+
+// 异步获取 Oracle 产品数据
+if (acfData?.oracle_items && Array.isArray(acfData.oracle_items)) {
+  for (const item of acfData.oracle_items) {
+    if (item.product) {
+      const product = await getProductData(item.product);
+      if (product) {
+        oracleData.items.push({
+          vibe_key: item.vibe_key,
+          chip_label: item.chip_label,
+          tag: item.alignment_text,
+          quote: item.quote,
+          title: product.name,
+          desc: item.custom_desc || product.short_description || '',
+          price: `$${product.price}`,
+          img: product.images?.[0]?.src || ''
+        });
+      }
+    }
+  }
+}
+
+// 如果没有 ACF 数据，使用默认 Oracle 数据
+if (oracleData.items.length === 0) {
+  oracleData.items = [
+    {
+      vibe_key: 'serpent',
+      chip_label: 'Serpent',
+      tag: 'ALIGNMENT: REBIRTH & INTUITION',
+      quote: 'Seductive, commanding, and sovereign as midnight shadow. You shed old skins and rise into power.',
+      title: 'The Ouroboros Serpent Band',
+      desc: 'Hand-poured Italian Black Enamel & Pavé Brilliants',
+      price: '$320',
+      img: 'https://lh3.googleusercontent.com/aida-public/placeholder-serpent.jpg'
+    },
+    {
+      vibe_key: 'lunar',
+      chip_label: 'Lunar',
+      tag: 'ALIGNMENT: GUARDIAN & MYSTERY',
+      quote: 'Soft, watchful, and eternally luminous. You guard secrets beneath silver light.',
+      title: 'The Crescent Moon Pendant',
+      desc: '18K White Gold & Mother of Pearl Inlay',
+      price: '$285',
+      img: 'https://lh3.googleusercontent.com/aida-public/placeholder-lunar.jpg'
+    },
+    {
+      vibe_key: 'astral',
+      chip_label: 'Astral',
+      tag: 'ALIGNMENT: BRILLIANCE & AMBITION',
+      quote: 'Bold, radiant, and impossibly bright. You claim the spotlight as your birthright.',
+      title: 'The Starburst Diamond Ring',
+      desc: 'Pavé Diamond Halo & Solid 18K Gold',
+      price: '$410',
+      img: 'https://lh3.googleusercontent.com/aida-public/placeholder-astral.jpg'
+    }
+  ];
+}
+
+// Privilege Section
+const privilegeData = {
+  label: acfData?.privilege_label || 'Seasonal Privilege',
+  badge: acfData?.privilege_badge || 'ENDS MIDNIGHT OCT 31',
+  title: acfData?.privilege_title || 'A Little Halloween Magic',
+  description: acfData?.privilege_desc || 'Receive a complimentary hand-stitched Nocturne velvet jewelry pouch and 15% off orders above $300 with code: NOCTURNE15',
+  code: acfData?.privilege_code || 'NOCTURNE15',
+  buttonText: acfData?.privilege_btn_text || 'Claim Offer & Shop'
+};
+
+// Bottom CTA Section
+const ctaData = {
+  kicker: acfData?.cta_kicker || 'Embrace The Nocturne',
+  title: acfData?.cta_title || 'Ready to Add a Little Magic?',
+  description: acfData?.cta_desc || 'Discover fine jewelry made for every mood, every night, and every celebration. Sealed with heirloom precision and certified Parisian hallmarking.',
+  buttonText: acfData?.cta_btn_text || 'Shop The Collection',
+  buttonLink: acfData?.cta_btn_url || '#vault-favorites'
+};
+---
+
+<Layout title="Halloween Jewelry Edit - E.B.Belle">
+  <!-- 引入品牌专属字体与稳定的 FontAwesome 图标库 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" slot="head" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin slot="head" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,600&family=Syne:wght@500;600;700&display=swap" rel="stylesheet" slot="head" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" slot="head" />
+
+  <!-- 加载 Tailwind 引擎与专属 Nocturne 调色盘 -->
+  <script is:inline src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script is:inline>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#f2ca50",
+            "primary-fixed": "#ffe088",
+            "secondary": "#ffb59a",
+            "secondary-container": "#c04402",
+            "on-secondary-container": "#ffece6",
+            "tertiary": "#f0bef5",
+            "surface": "#131314",
+            "surface-container": "#201f20",
+            "surface-container-low": "#1c1b1c",
+            "surface-container-high": "#2a2a2b",
+            "surface-container-highest": "#353436",
+            "surface-container-lowest": "#0e0e0f",
+            "outline": "#99907c",
+            "outline-variant": "#4d4635",
+            "on-surface": "#e5e2e3",
+            "on-surface-variant": "#d0c5af",
+            "on-primary": "#3c2f00"
+          },
+          fontFamily: {
+            "headline-lg": ["Playfair Display", "serif"],
+            "headline-sm": ["Playfair Display", "serif"],
+            "editorial-italic": ["Playfair Display", "serif"],
+            "label-caps": ["Syne", "sans-serif"],
+            "label-numeric": ["Syne", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"],
+            "body-md": ["Inter", "sans-serif"],
+            "body-sm": ["Inter", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- 引入站内自带的暗色 Header -->
+  <Header isDark={true} />
+
+  <main class="halloween-campaign-page w-full flex flex-col bg-surface font-body-md text-on-surface pb-16 lg:pb-24">
+    <!-- 1. 活动公告悬浮顶条 -->
+    <div class="w-full bg-secondary-container text-on-secondary-container px-4 py-2.5 flex items-center justify-center gap-2 text-center shadow-md">
+      <i class="fa-solid fa-wand-magic-sparkles text-[14px] animate-pulse"></i>
+      <p class="font-label-caps text-[10px] lg:text-[11px] tracking-widest uppercase font-semibold leading-tight">
+        {announcementData.text}
+      </p>
+    </div>
+
+    <!-- 2. HERO SECTION -->
+    <section class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16 pt-8 pb-12 lg:py-16 w-full">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <!-- Hero Left Info -->
+        <div class="lg:col-span-5 flex flex-col justify-center">
+          <div class="inline-flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full w-fit mb-3 lg:mb-4">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+            <span class="font-label-caps text-[10px] lg:text-[11px] text-primary tracking-[0.2em] uppercase">{heroData.badge}</span>
+          </div>
+
+          <h1 class="font-headline-lg text-3xl sm:text-4xl lg:text-6xl text-on-surface tracking-tight leading-[1.12] mb-3 lg:mb-4">
+            {heroData.title} <br class="hidden sm:inline" />
+            <span class="font-editorial-italic italic font-normal text-primary">{heroData.titleItalic}</span> {heroData.titleEnd}
+          </h1>
+
+          <p class="font-body-md lg:font-body-lg text-sm lg:text-base text-on-surface-variant font-light max-w-md mb-6 leading-relaxed">
+            {heroData.description}
+          </p>
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:gap-4 mb-6 lg:mb-8">
+            <a href={heroData.primaryButton.link} class="px-8 py-3.5 bg-primary text-on-primary font-label-caps text-xs uppercase tracking-widest text-center shadow-[0_0_24px_rgba(242,202,80,0.25)] hover:bg-primary-fixed transition-all duration-300 font-semibold flex items-center justify-center gap-2.5">
+              <i class="fa-solid fa-bag-shopping text-[15px]"></i>
+              <span>{heroData.primaryButton.text}</span>
+            </a>
+            <a href={heroData.secondaryButton.link} class="px-7 py-3.5 bg-surface-container-low text-on-surface font-label-caps text-xs uppercase tracking-widest text-center hover:bg-surface-container-high transition-all flex items-center justify-center gap-2.5 group">
+              <span>{heroData.secondaryButton.text}</span>
+              <i class="fa-solid fa-arrow-right text-[13px] text-primary group-hover:translate-x-1 transition-transform"></i>
+            </a>
+          </div>
+
+          <!-- Value Pillars -->
+          <div class="grid grid-cols-3 gap-2 p-3 bg-surface-container-low rounded-lg border border-white/5 text-center">
+            {heroData.valuePillars.map((pillar) => (
+              <div>
+                <span class="font-label-numeric text-primary text-[11px] lg:text-sm font-semibold block">{pillar.title}</span>
+                <span class="text-[9.5px] lg:text-xs text-outline leading-tight block mt-0.5">{pillar.subtitle}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- Hero Right Visual Card -->
+        <div class="lg:col-span-7 relative w-full">
+          <div class="relative rounded-2xl overflow-hidden bg-surface-container-lowest shadow-2xl group border border-white/5 aspect-[4/5] sm:aspect-[4/3] lg:aspect-auto lg:h-[560px]">
+            <img class="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]" src={heroData.heroImage} alt="Nocturne Muse" />
+            <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/30 lg:via-transparent to-transparent pointer-events-none"></div>
+
+            <!-- 桌面端微交互光点 (Muse Pin) -->
+            <div class="hidden lg:block absolute top-[36%] right-[32%] group/pin cursor-pointer z-20">
+              <span class="relative flex h-5 w-5 items-center justify-center">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-primary shadow-[0_0_12px_#d4af37]"></span>
+              </span>
+              <div class="opacity-0 group-hover/pin:opacity-100 pointer-events-none group-hover/pin:pointer-events-auto absolute -top-12 right-6 transition-all duration-300 w-56 p-3 bg-surface-container-high/95 backdrop-blur-md rounded shadow-xl">
+                <span class="font-label-caps text-[10px] text-primary block uppercase tracking-wider">{heroData.productPin.category}</span>
+                <span class="font-headline-sm text-sm text-on-surface font-semibold block">{heroData.productPin.name}</span>
+                <span class="font-label-numeric text-xs text-on-surface-variant block mt-0.5">{heroData.productPin.price}</span>
+              </div>
+            </div>
+
+            <!-- 底部悬浮卡片 -->
+            <div class="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 p-3.5 sm:p-4 bg-surface-container-lowest/85 backdrop-blur-md rounded-xl flex items-center justify-between border border-white/10">
+              <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-star text-primary text-[16px]"></i>
+                <div>
+                  <span class="font-label-caps text-[10px] sm:text-xs uppercase text-on-surface tracking-wider block">{heroData.featuredCard.title}</span>
+                  <span class="text-[10px] sm:text-xs text-outline leading-tight">{heroData.featuredCard.subtitle}</span>
+                </div>
+              </div>
+              <a href={heroData.featuredCard.link} class="font-label-caps text-[10px] sm:text-xs uppercase text-primary hover:text-on-surface transition-colors flex items-center gap-1 font-semibold whitespace-nowrap pl-2">View Look →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. FIND YOUR HALLOWEEN MOOD (4 氛围专区) -->
+    <section class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16 py-10 lg:py-14 w-full">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-6 lg:mb-8">
+        <div>
+          <span class="font-label-caps text-xs uppercase text-primary tracking-[0.25em] block mb-1 font-semibold">{moodData.kicker}</span>
+          <h2 class="font-headline-lg text-2xl sm:text-3xl lg:text-4xl text-on-surface">{moodData.title}</h2>
+        </div>
+        <p class="font-body-md text-xs sm:text-sm text-on-surface-variant max-w-md mt-2 md:mt-0 leading-relaxed">
+          {moodData.description}
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        {moodData.cards.map((card: any, index: number) => {
+          const badgeColorClass = card.badge_color === 'secondary' ? 'text-secondary' :
+                                   card.badge_color === 'tertiary' ? 'text-tertiary' :
+                                   'text-primary';
+          return (
+            <div class="group relative rounded-xl overflow-hidden bg-surface-container-low flex flex-col justify-between p-3.5 sm:p-5 border border-white/5 hover:border-amber-400/30 transition-all duration-300">
+              <div class="h-28 sm:h-44 w-full overflow-hidden relative rounded-lg mb-3">
+                <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src={card.image} alt={card.title} />
+                <div class="absolute inset-0 bg-gradient-to-t from-surface-container-low via-transparent to-transparent"></div>
+                <span class={`absolute top-2 left-2 bg-surface-container-lowest/80 backdrop-blur px-2 py-0.5 rounded ${badgeColorClass} font-label-caps text-[9px] uppercase font-semibold`}>{card.badge}</span>
+              </div>
+              <div class="flex flex-col flex-1 justify-between">
+                <div>
+                  <h3 class="font-headline-sm text-sm sm:text-lg text-on-surface mb-1 font-semibold leading-snug">{card.title}</h3>
+                  <p class="text-[11px] sm:text-xs text-on-surface-variant leading-relaxed line-clamp-2">{card.desc}</p>
+                </div>
+                <a href={card.link} class="mt-3 inline-flex items-center gap-1 font-label-caps text-[10px] sm:text-xs uppercase text-primary tracking-wider group-hover:gap-2 transition-all font-semibold">
+                  <span>Explore Edit</span>
+                  <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+
+    <!-- 4. HALLOWEEN FAVORITES (Product Grid) -->
+    <section class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16 py-10 lg:py-14 w-full" id="vault-favorites">
+      <div class="text-center max-w-xl mx-auto mb-8 lg:mb-12">
+        <span class="font-label-caps text-xs uppercase text-primary tracking-[0.25em] block mb-1 font-semibold">{favoritesData.kicker}</span>
+        <h2 class="font-headline-lg text-2xl sm:text-3xl lg:text-4xl text-on-surface mb-2">{favoritesData.title}</h2>
+        <p class="font-body-md text-xs sm:text-sm text-on-surface-variant">{favoritesData.description}</p>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        {favoritesData.products.length > 0 ? (
+          favoritesData.products.map((product: any) => {
+            const badgeStyleClass = product.badge_style === 'primary' ? 'bg-primary text-on-primary' :
+                                     product.badge_style === 'highest' ? 'bg-surface-container-highest text-primary' :
+                                     product.badge_style === 'secondary-container' ? 'bg-secondary-container text-on-secondary-container' :
+                                     'bg-primary text-on-primary';
+            const hasDiscount = product.on_sale && product.regular_price && parseFloat(product.regular_price) > parseFloat(product.price);
+
+            return (
+              <div class="product-item group flex flex-col bg-surface-container-low rounded-xl p-2.5 sm:p-3 relative border border-white/5 transition-all duration-300 hover:border-amber-400/40">
+                <div class="relative w-full aspect-square sm:h-72 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+                  <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src={product.image} alt={product.name} />
+                  {product.badge_text && (
+                    <span class={`absolute top-2 left-2 px-1.5 py-0.5 ${badgeStyleClass} font-label-caps text-[8px] sm:text-[9px] uppercase tracking-wider font-bold rounded`}>
+                      {product.badge_text}
+                    </span>
+                  )}
+                  <button class="absolute top-2 right-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-high/80 backdrop-blur-md text-on-surface hover:text-primary flex items-center justify-center transition-transform hover:scale-110">
+                    <i class="fa-regular fa-heart text-[14px]"></i>
+                  </button>
+                </div>
+                <div class="pt-3 pb-1 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between text-outline text-[10px] sm:text-xs mb-1">
+                      <span class="line-clamp-1">{product.subtitle || product.category}</span>
+                      <span class="text-primary font-bold">★ 4.9</span>
+                    </div>
+                    <h4 class="font-headline-sm text-xs sm:text-base text-on-surface font-semibold mb-1 line-clamp-1">{product.name}</h4>
+                  </div>
+                  <div class="flex items-center justify-between mt-2 pt-2 border-t border-surface-container-high">
+                    {hasDiscount ? (
+                      <div class="flex items-baseline gap-1">
+                        <span class="font-label-numeric text-xs sm:text-base text-primary font-bold">${product.price}</span>
+                        <span class="text-[9px] sm:text-xs text-outline line-through">${product.regular_price}</span>
+                      </div>
+                    ) : (
+                      <span class="font-label-numeric text-xs sm:text-base text-primary font-bold">${product.price}</span>
+                    )}
+                    <button class="hw-add-btn px-2.5 sm:px-4 py-1.5 bg-surface-container-highest text-on-surface text-[9px] sm:text-[11px] font-label-caps uppercase rounded transition-all hover:bg-primary hover:text-on-primary font-semibold active:scale-95" data-product-id={product.id} data-product-name={product.name} data-product-price={product.price} data-product-image={product.image}>
+                      Add to Bag
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          /* Fallback: 如果没有 ACF 数据，显示默认产品 */
+          <>
+            <div class="product-item group flex flex-col bg-surface-container-low rounded-xl p-2.5 sm:p-3 relative border border-white/5 transition-all duration-300 hover:border-amber-400/40">
+              <div class="relative w-full aspect-square sm:h-72 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+                <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida/AEtjO1ULIEUes57StLIALE2ZP5CC5r-Qq5lbsN9Fxr73W5kXWJdtwNsp9uuS4hTdnmlutCOy5AUqQX_6bGIITfHd-UyZIxiHC58POFNd89tdyP00LPBBU7eN4dqHKA_e7i-MZTBfYC_YP2vb6BGieZECBNOrQbxkyDj4ORrPSiqWXdH9bmkSAHwn3utAcr3K25rzGkVBTAPxQdirQXWoZmZ8HdXcudPVu7SXpC9fG4QtPDEVLtYMRMOEfUSFces4" alt="The Ouroboros Serpent Ring" />
+                <span class="absolute top-2 left-2 px-1.5 py-0.5 bg-primary text-on-primary font-label-caps text-[8px] sm:text-[9px] uppercase tracking-wider font-bold rounded">Bestseller</span>
+                <button class="absolute top-2 right-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-high/80 backdrop-blur-md text-on-surface hover:text-primary flex items-center justify-center transition-transform hover:scale-110">
+                  <i class="fa-regular fa-heart text-[14px]"></i>
+                </button>
+              </div>
+              <div class="pt-3 pb-1 flex-1 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between text-outline text-[10px] sm:text-xs mb-1">
+                    <span class="line-clamp-1">18K Gold • Onyx</span>
+                    <span class="text-primary font-bold">★ 4.9</span>
+                  </div>
+                  <h4 class="font-headline-sm text-xs sm:text-base text-on-surface font-semibold mb-1 line-clamp-1">The Ouroboros Serpent</h4>
+                </div>
+                <div class="flex items-center justify-between mt-2 pt-2 border-t border-surface-container-high">
+                  <span class="font-label-numeric text-xs sm:text-base text-primary font-bold">$320</span>
+                  <button class="hw-add-btn px-2.5 sm:px-4 py-1.5 bg-surface-container-highest text-on-surface text-[9px] sm:text-[11px] font-label-caps uppercase rounded transition-all hover:bg-primary hover:text-on-primary font-semibold active:scale-95" data-product-id="fallback-1" data-product-name="The Ouroboros Serpent Ring" data-product-price="320" data-product-image="https://lh3.googleusercontent.com/aida/AEtjO1ULIEUes57StLIALE2ZP5CC5r-Qq5lbsN9Fxr73W5kXWJdtwNsp9uuS4hTdnmlutCOy5AUqQX_6bGIITfHd-UyZIxiHC58POFNd89tdyP00LPBBU7eN4dqHKA_e7i-MZTBfYC_YP2vb6BGieZECBNOrQbxkyDj4ORrPSiqWXdH9bmkSAHwn3utAcr3K25rzGkVBTAPxQdirQXWoZmZ8HdXcudPVu7SXpC9fG4QtPDEVLtYMRMOEfUSFces4">
+                    Add to Bag
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+
+    <!-- 5. AUTUMN ATELIER MANIFESTO (专题横幅) -->
+    <section class="w-full py-12 lg:py-16 my-4 lg:my-8 bg-gradient-to-r from-[#1c0f1e] via-surface-container-lowest to-[#1f1510] border-y border-white/5" id="atelier-manifesto">
+      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
+        <div class="max-w-2xl">
+          <span class="font-label-caps text-[11px] uppercase text-primary tracking-[0.25em] block mb-2 font-semibold">{manifestoData.kicker}</span>
+          <h2 class="font-headline-lg text-3xl sm:text-4xl lg:text-5xl text-on-surface leading-tight mb-3">{manifestoData.title}</h2>
+          <p class="font-editorial-italic italic text-base sm:text-lg lg:text-xl text-on-surface-variant font-light leading-relaxed mb-6">
+            {manifestoData.description}
+          </p>
+          <a href={manifestoData.buttonLink} class="inline-block px-8 py-3.5 bg-surface text-primary font-label-caps text-xs uppercase tracking-widest hover:bg-primary hover:text-on-primary transition-all font-semibold rounded">
+            {manifestoData.buttonText}
+          </a>
+        </div>
+        <div class="relative w-full lg:w-[420px] h-52 sm:h-72 rounded-2xl overflow-hidden shadow-2xl border border-white/5">
+          <img class="w-full h-full object-cover" src={manifestoData.image} alt="Atelier Workshop" />
+          <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/80 via-transparent to-transparent"></div>
+          <span class="absolute bottom-3 left-3 font-label-caps text-[9px] text-primary tracking-widest uppercase bg-surface-container-highest/90 px-2 py-1 rounded">{manifestoData.imageTag}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. INTERACTIVE ORACLE (占卜互动区：移动端 Chips + 桌面端完整联动) -->
+    <section class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16 py-10 lg:py-14 w-full">
+      <div class="bg-surface-container-low rounded-2xl lg:rounded-3xl p-5 sm:p-8 lg:p-12 relative overflow-hidden border border-white/5">
+        <div class="text-center lg:text-left mb-6 lg:mb-8">
+          <div class="inline-flex items-center gap-2 text-primary mb-1">
+            <i class="fa-solid fa-wand-sparkles text-[15px]"></i>
+            <span class="font-label-caps text-xs uppercase tracking-[0.25em] font-semibold">{oracleData.kicker}</span>
+          </div>
+          <h2 class="font-headline-lg text-2xl sm:text-3xl text-on-surface mb-2">{oracleData.title}</h2>
+          <p class="text-xs sm:text-sm text-on-surface-variant max-w-lg mx-auto lg:mx-0">
+            {oracleData.description}
+          </p>
+        </div>
+
+        <!-- Energy Selector Chips -->
+        <div class="flex items-center gap-2 mb-6 hw-chips-scroll overflow-x-auto pb-1" id="oracle-chips-bar">
+          {oracleData.items.map((item: any, index: number) => (
+            <button type="button" class={`oracle-chip-btn ${index === 0 ? 'active-chip bg-primary text-on-primary font-bold shadow-md' : 'bg-surface-container-high text-on-surface font-medium'} px-4 py-2 rounded text-center font-label-caps text-[10px] tracking-wider uppercase transition-all whitespace-nowrap`} data-vibe={item.vibe_key}>
+              {item.chip_label}
+            </button>
+          ))}
+        </div>
+
+        <!-- 占卜内容展示网格 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
+          <div class="lg:col-span-6 flex flex-col">
+            <div class="p-4 sm:p-5 bg-surface-container-lowest rounded-xl mb-4 sm:mb-6 border-l-2 border-primary">
+              <p class="font-editorial-italic italic text-sm sm:text-base text-on-surface mb-2 leading-relaxed" id="oracle-quote-text">
+                {oracleData.items[0]?.quote || 'Select your energy to reveal your talisman'}
+              </p>
+              <span class="text-[11px] text-outline block uppercase tracking-wider font-label-caps" id="oracle-alignment-tag">
+                {oracleData.items[0]?.tag || 'ALIGNMENT'}
+              </span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <button type="button" class="hw-add-btn px-8 py-3.5 bg-primary text-on-primary font-label-caps text-xs uppercase tracking-widest hover:bg-primary-fixed transition-colors font-semibold active:scale-95 text-center shadow-lg" id="oracle-action-btn" data-name={oracleData.items[0]?.title || 'Talisman'} data-price={(oracleData.items[0]?.price || '$0').replace('$', '')}>
+                Reserve Energy Talisman
+              </button>
+              <span class="font-label-numeric text-primary text-sm font-semibold text-center sm:text-left" id="oracle-meta-price">
+                {oracleData.items[0]?.price || '$0'} • Selected Talisman
+              </span>
+            </div>
+          </div>
+
+          <!-- 右侧卡片预览 -->
+          <div class="lg:col-span-6 flex justify-center w-full">
+            <div class="w-full max-w-md bg-surface-container-lowest p-4 sm:p-5 rounded-2xl border border-white/5 shadow-xl">
+              <div class="h-52 sm:h-64 rounded-xl overflow-hidden relative mb-3 bg-surface">
+                <img id="oracle-display-img" class="w-full h-full object-cover transition-opacity duration-300" src={oracleData.items[0]?.img || ''} alt="Energy Talisman" />
+              </div>
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="font-headline-sm text-base sm:text-lg text-on-surface font-semibold" id="oracle-display-title">{oracleData.items[0]?.title || 'Talisman'}</h4>
+                  <span class="text-xs text-outline block mt-0.5" id="oracle-display-desc">{oracleData.items[0]?.desc || ''}</span>
+                </div>
+                <span class="font-label-numeric text-lg sm:text-xl text-primary font-bold pl-2" id="oracle-display-price">{oracleData.items[0]?.price || '$0'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. SEASONAL PRIVILEGE (专属特权与满减礼遇卡) -->
+    <section class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16 py-6 lg:py-8 w-full">
+      <div class="bg-gradient-to-br from-secondary-container via-surface-container-high to-surface-container rounded-2xl p-6 sm:p-8 relative overflow-hidden border border-white/10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 shadow-2xl">
+        <div class="space-y-1 sm:space-y-2">
+          <div class="flex items-center justify-between sm:justify-start gap-3">
+            <span class="font-label-caps text-[10px] text-primary uppercase tracking-widest font-semibold block">{privilegeData.label}</span>
+            <span class="font-label-caps text-[9px] bg-surface-container-lowest/60 text-primary px-2 py-0.5 rounded font-bold uppercase">{privilegeData.badge}</span>
+          </div>
+          <h2 class="font-headline-md text-2xl sm:text-3xl text-on-surface">{privilegeData.title}</h2>
+          <p class="text-xs sm:text-sm text-on-surface-variant max-w-xl leading-relaxed">
+            {privilegeData.description}
+          </p>
+        </div>
+        <button type="button" class="px-8 py-3.5 bg-primary text-on-primary font-label-caps text-xs uppercase tracking-widest hover:bg-primary-fixed transition-colors font-semibold whitespace-nowrap rounded shadow-lg flex items-center justify-center gap-2.5" onclick={`navigator.clipboard?.writeText('${privilegeData.code}'); alert('Coupon ${privilegeData.code} copied to clipboard!');`}>
+          <span>{privilegeData.buttonText}</span>
+          <i class="fa-solid fa-sparkles text-[15px]"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- 8. BOTTOM CELESTIAL CTA (尾部号召区) -->
+    <section class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-16 py-12 lg:py-16 text-center w-full">
+      <span class="font-label-caps text-xs uppercase text-primary tracking-[0.3em] block mb-2 font-semibold">{ctaData.kicker}</span>
+      <h2 class="font-headline-lg text-3xl sm:text-4xl lg:text-5xl text-on-surface mb-3">
+        {ctaData.title}
+      </h2>
+      <p class="text-xs sm:text-base text-on-surface-variant mb-6 max-w-lg mx-auto leading-relaxed">
+        {ctaData.description}
+      </p>
+      <a href={ctaData.buttonLink} class="inline-flex items-center justify-center gap-2.5 px-10 py-4 bg-primary text-on-primary font-label-caps text-xs uppercase tracking-widest hover:bg-primary-fixed transition-all font-semibold shadow-[0_0_25px_rgba(242,202,80,0.3)] rounded">
+        <i class="fa-solid fa-wand-magic-sparkles text-[15px]"></i>
+        <span>{ctaData.buttonText}</span>
+      </a>
+    </section>
+  </main>
+
+  <!-- 引入站内自带的暗色 Footer -->
+  <Footer isDark={true} />
+
+  <!-- 交互脚本：占卜切换与加购联动 -->
+  <script is:inline define:vars={{ oracleItems: oracleData.items }}>
+    // 从服务器端传入的 Oracle 数据构建数据库
+    const oracleDatabase = {};
+    oracleItems.forEach(item => {
+      oracleDatabase[item.vibe_key] = {
+        tag: item.tag,
+        quote: item.quote,
+        title: item.title,
+        desc: item.desc,
+        price: item.price,
+        img: item.img
+      };
+    });
+
+    const chips = document.querySelectorAll('.oracle-chip-btn');
+    const quoteText = document.getElementById('oracle-quote-text');
+    const alignmentTag = document.getElementById('oracle-alignment-tag');
+    const displayTitle = document.getElementById('oracle-display-title');
+    const displayDesc = document.getElementById('oracle-display-desc');
+    const displayPrice = document.getElementById('oracle-display-price');
+    const displayImg = document.getElementById('oracle-display-img');
+    const metaPrice = document.getElementById('oracle-meta-price');
+    const actionBtn = document.getElementById('oracle-action-btn');
+
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => {
+          c.classList.remove('bg-primary', 'text-on-primary', 'font-bold', 'shadow-md');
+          c.classList.add('bg-surface-container-high', 'text-on-surface');
+        });
+        chip.classList.add('bg-primary', 'text-on-primary', 'font-bold', 'shadow-md');
+        chip.classList.remove('bg-surface-container-high', 'text-on-surface');
+
+        const vibeKey = chip.getAttribute('data-vibe');
+        const data = oracleDatabase[vibeKey];
+        if (data && displayImg) {
+          displayImg.style.opacity = '0';
+          setTimeout(() => {
+            if (alignmentTag) alignmentTag.textContent = data.tag;
+            if (quoteText) quoteText.textContent = data.quote;
+            if (displayTitle) displayTitle.textContent = data.title;
+            if (displayDesc) displayDesc.textContent = data.desc;
+            if (displayPrice) displayPrice.textContent = data.price;
+            if (metaPrice) metaPrice.textContent = `${data.price} • Selected Talisman`;
+            displayImg.src = data.img;
+            displayImg.style.opacity = '1';
+            if (actionBtn) {
+              actionBtn.setAttribute('data-name', data.title);
+              actionBtn.setAttribute('data-price', data.price.replace('$', ''));
+            }
+          }, 180);
+        }
+      });
+    });
+
+    // ========================================
+    // Quick Order 功能集成（调用全局 shop.astro 的函数）
+    // ========================================
+
+    // 从 WooCommerce API 获取完整产品数据
+    async function fetchFullProductData(productId) {
+      try {
+        const response = await fetch(`/api/product-detail?id=${productId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch product');
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('获取产品详情失败:', error);
+        return null;
+      }
+    }
+
+    // 绑定所有 Add to Bag 按钮
+    document.querySelectorAll('.hw-add-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        const productId = btn.getAttribute('data-product-id');
+        const productName = btn.getAttribute('data-product-name');
+        const productPrice = btn.getAttribute('data-product-price');
+        const productImage = btn.getAttribute('data-product-image');
+
+        console.log('Add to Bag clicked:', { productId, productName, productPrice });
+
+        // 检查是否存在全局的 openQuickOrderWithData 函数（来自 shop.astro）
+        if (typeof window.openQuickOrderWithData === 'function') {
+          // 如果产品 ID 存在且不是 fallback，获取完整产品数据
+          if (productId && !productId.startsWith('fallback') && !isNaN(parseInt(productId))) {
+            btn.textContent = 'Loading...';
+            btn.disabled = true;
+
+            const fullProduct = await fetchFullProductData(productId);
+
+            btn.textContent = 'Add to Bag';
+            btn.disabled = false;
+
+            if (fullProduct) {
+              // 调用全局的 Quick Order 函数
+              console.log('Opening Quick Order with full product data');
+              window.openQuickOrderWithData(fullProduct);
+            } else {
+              // 如果获取失败，使用基本信息创建简单产品对象
+              console.warn('Failed to fetch full product, using basic info');
+              const simpleProduct = {
+                id: productId,
+                name: productName,
+                price: productPrice,
+                regular_price: productPrice,
+                images: [{ src: productImage }],
+                image: productImage,
+                type: 'simple',
+                stock_status: 'instock',
+                short_description: ''
+              };
+              window.openQuickOrderWithData(simpleProduct);
+            }
+          } else {
+            // Fallback 产品或无效 ID：创建简单的产品对象
+            const simpleProduct = {
+              id: productId || 'temp-' + Date.now(),
+              name: productName,
+              price: productPrice,
+              regular_price: productPrice,
+              images: [{ src: productImage }],
+              image: productImage,
+              type: 'simple',
+              stock_status: 'instock',
+              short_description: ''
+            };
+            console.log('Using fallback product data');
+            window.openQuickOrderWithData(simpleProduct);
+          }
+        } else {
+          // 如果没有全局函数，直接添加到购物车（fallback 行为）
+          console.warn('openQuickOrderWithData 不存在，使用 fallback 行为');
+
+          try {
+            const currentCart = JSON.parse(localStorage.getItem('ebbelle_cart') || '[]');
+            currentCart.push({
+              cartItemId: Date.now().toString(),
+              productId: productId,
+              name: productName,
+              price: parseFloat(productPrice).toFixed(2),
+              quantity: 1,
+              image: productImage,
+              selectedVariants: {}
+            });
+            localStorage.setItem('ebbelle_cart', JSON.stringify(currentCart));
+            window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart: currentCart } }));
+
+            // 打开购物车
+            if (typeof window.toggleCart === 'function') {
+              window.toggleCart(true);
+            }
+
+            // 按钮反馈
+            const originalText = btn.textContent;
+            btn.textContent = 'ADDED ✓';
+            btn.classList.add('bg-primary', 'text-on-primary');
+            setTimeout(() => {
+              btn.textContent = originalText;
+              btn.classList.remove('bg-primary', 'text-on-primary');
+            }, 1200);
+          } catch(err) {
+            console.error('添加到购物车失败:', err);
+          }
+        }
+      });
+    });
+  </script>
+</Layout>
+
+<style is:global>
+  /* 解决特定平台滚动外溢 */
+  html, body {
+    background-color: #131314 !important;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .hw-chips-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ================================
+     Halloween Page - Header Dark Theme Override
+     ================================ */
+
+  /* Announcement Bar */
+  .announcement-bar {
+    background: #131314 !important;
+    color: #f2ca50 !important;
+    border-bottom: 1px solid #2a2a2b;
+  }
+
+  /* Main Header */
+  .main-header {
+    background: #131314 !important;
+    border-bottom: 1px solid #2a2a2b !important;
+  }
+
+  /* Brand Logo */
+  .header-brand h1 {
+    color: #e5e2e3 !important;
+  }
+
+  /* Search Box */
+  .search-box {
+    background: #1c1b1c !important;
+    border-color: #4d4635 !important;
+  }
+  .search-box input {
+    background: #1c1b1c !important;
+    color: #e5e2e3 !important;
+  }
+  .search-box input::placeholder {
+    color: #99907c !important;
+  }
+  .search-submit {
+    background: #f2ca50 !important;
+    color: #3c2f00 !important;
+  }
+  .search-submit:hover {
+    background: #ffe088 !important;
+  }
+
+  /* Mobile Search Box */
+  .mobile-search-box {
+    background: #1c1b1c !important;
+    border-color: #4d4635 !important;
+  }
+  .mobile-search-box input {
+    background: #1c1b1c !important;
+    color: #e5e2e3 !important;
+  }
+  .mobile-search-box button {
+    background: #f2ca50 !important;
+    color: #3c2f00 !important;
+  }
+
+  /* Action Items - Default State (Inactive/White) */
+  .action-item {
+    color: #e5e2e3 !important;
+  }
+  .action-item:hover {
+    color: #f2ca50 !important;
+  }
+  .action-item i {
+    color: #e5e2e3 !important;
+  }
+  .action-item:hover i {
+    color: #f2ca50 !important;
+  }
+  .arrow-down {
+    color: #99907c !important;
+  }
+
+  /* User Menu Dropdown */
+  .user-menu-dropdown {
+    background: #1c1b1c !important;
+    border-color: #4d4635 !important;
+  }
+  .user-menu-item {
+    color: #e5e2e3 !important;
+  }
+  .user-menu-item:hover {
+    background: #2a2a2b !important;
+    color: #f2ca50 !important;
+  }
+  .user-menu-item i {
+    color: #e5e2e3 !important;
+  }
+  .user-menu-item:hover i {
+    color: #f2ca50 !important;
+  }
+
+  /* Mobile Menu Toggle */
+  .mobile-menu-toggle {
+    color: #e5e2e3 !important;
+  }
+
+  /* Header Nav Bar (Desktop Bottom Nav) */
+  .header-nav-bar {
+    background: #1c1b1c !important;
+    border-top: 1px solid #2a2a2b !important;
+    border-bottom: 1px solid #2a2a2b !important;
+  }
+  .categories-btn {
+    color: #e5e2e3 !important;
+  }
+  .categories-btn:hover {
+    color: #f2ca50 !important;
+  }
+  .main-nav a {
+    color: #e5e2e3 !important;
+  }
+  .main-nav a:hover {
+    color: #f2ca50 !important;
+  }
+  .tracking-link {
+    color: #d0c5af !important;
+  }
+  .tracking-link:hover {
+    color: #f2ca50 !important;
+  }
+
+  /* Mobile Drawer */
+  .mobile-drawer {
+    background: #131314 !important;
+  }
+  .drawer-header {
+    border-bottom: 1px solid #2a2a2b !important;
+  }
+  .drawer-title {
+    color: #e5e2e3 !important;
+  }
+  .drawer-close {
+    color: #99907c !important;
+  }
+  .drawer-section-title {
+    color: #99907c !important;
+  }
+  .drawer-links a {
+    color: #e5e2e3 !important;
+    border-bottom: 1px solid #2a2a2b !important;
+  }
+  .drawer-links a:hover {
+    color: #f2ca50 !important;
+  }
+  .drawer-highlight-link {
+    color: #e5e2e3 !important;
+  }
+  .drawer-highlight-link i {
+    color: #99907c !important;
+  }
+  .drawer-footer {
+    border-top: 1px solid #2a2a2b !important;
+    background: #1c1b1c !important;
+  }
+  .drawer-currency-btn {
+    background: #131314 !important;
+    border-color: #4d4635 !important;
+    color: #e5e2e3 !important;
+  }
+
+  /* ================================
+     Halloween Page - Footer Dark Theme Override
+     ================================ */
+
+  .footer-new {
+    background: #131314 !important;
+    border-top: 1px solid #2a2a2b !important;
+  }
+  .footer-logo {
+    color: #e5e2e3 !important;
+  }
+  .footer-desc {
+    color: #99907c !important;
+  }
+  .social-btn {
+    border-color: #4d4635 !important;
+    color: #99907c !important;
+  }
+  .social-btn:hover {
+    border-color: #f2ca50 !important;
+    color: #f2ca50 !important;
+  }
+  .footer-links h5 {
+    color: #e5e2e3 !important;
+  }
+  .footer-links a {
+    color: #99907c !important;
+  }
+  .footer-links a:hover {
+    color: #f2ca50 !important;
+  }
+  .footer-bottom {
+    border-top: 1px solid #2a2a2b !important;
+    color: #99907c !important;
+  }
+  .footer-bottom-links a {
+    color: #99907c !important;
+  }
+  .footer-bottom-links a:hover {
+    color: #e5e2e3 !important;
+  }
+
+  /* ================================
+     Halloween Page - Mobile Bottom Menu Dark Theme Override
+     ================================ */
+
+  .mobile-bottom-menu {
+    background: #131314 !important;
+    border-top: 1px solid #2a2a2b !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5) !important;
+  }
+  .bottom-menu-item {
+    color: #e5e2e3 !important;
+  }
+  .bottom-menu-item i {
+    color: #e5e2e3 !important;
+  }
+  .bottom-menu-item.active {
+    color: #f2ca50 !important;
+  }
+  .bottom-menu-item.active i {
+    color: #f2ca50 !important;
+  }
+</style>

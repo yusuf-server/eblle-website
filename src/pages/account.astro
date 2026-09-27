@@ -1,0 +1,1515 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CartDrawer from '../components/CartDrawer.astro';
+
+// 服务器端检查认证状态
+const userId = Astro.cookies.get('user_id')?.value;
+const userEmail = Astro.cookies.get('user_email')?.value;
+
+// 如果未登录，重定向到首页
+if (!userId || !userEmail) {
+  return Astro.redirect('/');
+}
+---
+
+<Layout title="My Account - E.B.Belle">
+  <Header />
+
+  <!-- Breadcrumb -->
+  <div class="acc-breadcrumb">
+    <div class="acc-wrapper">
+      <div class="acc-crumbs">
+        <a href="/">Home</a>
+        <span>/</span>
+        <strong>My Account</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Page Main Scope -->
+  <div class="acc-root-scope">
+    <div class="acc-wrapper">
+      
+      <div class="acc-header-area">
+        <h1 class="acc-heading">My Account</h1>
+        <p class="acc-subheading">Manage your orders, profile details and shipping addresses</p>
+      </div>
+
+      <div class="acc-main-grid">
+        <!-- Sidebar Navigation -->
+        <aside class="acc-sidebar-panel">
+          <div class="acc-user-card">
+            <div class="acc-avatar">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="acc-user-meta">
+              <span class="acc-u-name" id="sidebarUserName">Loading...</span>
+              <span class="acc-u-email" id="sidebarUserEmail">Loading...</span>
+            </div>
+          </div>
+
+          <!-- 横向滑动专属隔离仓：彻底切断宽度外溢 -->
+          <div class="acc-nav-scroller">
+            <nav class="acc-nav-list" aria-label="Account navigation">
+              <button type="button" class="acc-nav-pill active" data-tab="dashboard">
+                <i class="fa-solid fa-gauge"></i>
+                <span>Dashboard</span>
+              </button>
+              <button type="button" class="acc-nav-pill" data-tab="orders">
+                <i class="fa-solid fa-box"></i>
+                <span>Orders</span>
+                <span class="acc-count-badge" id="sidebarOrderCount" style="display: none;"></span>
+              </button>
+              <button type="button" class="acc-nav-pill" data-tab="wishlist">
+                <i class="fa-solid fa-heart"></i>
+                <span>Wishlist</span>
+                <span class="acc-count-badge" id="sidebarWishlistCount" style="display: none;"></span>
+              </button>
+              <button type="button" class="acc-nav-pill" data-tab="addresses">
+                <i class="fa-solid fa-location-dot"></i>
+                <span>Addresses</span>
+              </button>
+              <button type="button" class="acc-nav-pill" data-tab="account-details">
+                <i class="fa-solid fa-user-pen"></i>
+                <span>Account Details</span>
+              </button>
+              <a href="/logout" class="acc-nav-pill acc-logout-pill">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Logout</span>
+              </a>
+            </nav>
+          </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="acc-content-panel">
+          
+          <!-- Tab 1: Dashboard -->
+          <div class="acc-tab-pane active" id="dashboard">
+            <div class="acc-welcome-box">
+              <h2>Welcome back, <strong id="welcomeUserName">Loading...</strong></h2>
+              <p>From your dashboard you can easily review recent orders, update shipping addresses, and manage your account credentials.</p>
+            </div>
+
+            <div class="acc-metric-grid">
+              <div class="acc-metric-card">
+                <div class="acc-icon-bubble"><i class="fa-solid fa-box"></i></div>
+                <h3>Orders</h3>
+                <p id="dashboardOrdersMetric"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</p>
+                <button type="button" class="acc-text-link" data-tab="orders">View all orders &rarr;</button>
+              </div>
+              <div class="acc-metric-card">
+                <div class="acc-icon-bubble"><i class="fa-solid fa-location-dot"></i></div>
+                <h3>Addresses</h3>
+                <p id="dashboardAddressesMetric"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</p>
+                <button type="button" class="acc-text-link" data-tab="addresses">Manage addresses &rarr;</button>
+              </div>
+              <div class="acc-metric-card">
+                <div class="acc-icon-bubble"><i class="fa-solid fa-user-gear"></i></div>
+                <h3>Security</h3>
+                <p>Password & Profile</p>
+                <button type="button" class="acc-text-link" data-tab="account-details">Edit details &rarr;</button>
+              </div>
+            </div>
+
+            <div class="acc-recent-block">
+              <div class="acc-block-bar">
+                <h3>Recent Orders</h3>
+                <button type="button" class="acc-mini-link" data-tab="orders">View All</button>
+              </div>
+
+              <!-- Loading state -->
+              <div id="recentOrdersLoading" class="acc-order-list" style="text-align: center; padding: 40px; color: #999;">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <p>Loading recent orders...</p>
+              </div>
+
+              <!-- Orders list -->
+              <div class="acc-order-list" id="recentOrdersList" style="display: none;"></div>
+
+              <!-- Empty state -->
+              <div id="noRecentOrders" style="display: none; text-align: center; padding: 40px; color: #999;">
+                <i class="fa-solid fa-box-open" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                <p>No orders yet</p>
+                <a href="/shop" class="acc-btn-detail" style="margin-top: 16px; display: inline-block;">Start Shopping</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Orders -->
+          <div class="acc-tab-pane" id="orders">
+            <div class="acc-pane-title-row">
+              <h2>Order History</h2>
+              <span id="orderCount">Loading...</span>
+            </div>
+
+            <!-- 加载状态 -->
+            <div id="ordersLoading" style="text-align: center; padding: 40px;">
+              <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #999;"></i>
+              <p style="margin-top: 12px; color: #666;">Loading your orders...</p>
+            </div>
+
+            <!-- 订单列表 -->
+            <div class="acc-order-list" id="ordersList" style="display: none;"></div>
+
+            <!-- 无订单状态 -->
+            <div id="noOrders" style="display: none; text-align: center; padding: 60px 20px;">
+              <i class="fa-solid fa-shopping-bag" style="font-size: 48px; color: #ddd; margin-bottom: 20px;"></i>
+              <h3 style="font-size: 18px; margin-bottom: 12px; color: #333;">No Orders Yet</h3>
+              <p style="color: #666; margin-bottom: 24px;">You haven't placed any orders yet.</p>
+              <a href="/shop" class="acc-btn-detail" style="display: inline-block; padding: 12px 28px; background: #111; color: #fff; text-decoration: none; font-size: 12px; font-weight: 700; text-transform: uppercase;">
+                Start Shopping
+              </a>
+            </div>
+          </div>
+
+          <!-- Tab 3: Wishlist -->
+          <div class="acc-tab-pane" id="wishlist">
+            <div class="acc-pane-title-row">
+              <h2>My Wishlist</h2>
+              <span id="wishlistCount">Loading...</span>
+            </div>
+
+            <!-- 加载状态 -->
+            <div id="wishlistLoading" style="text-align: center; padding: 40px;">
+              <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #999;"></i>
+              <p style="margin-top: 12px; color: #666;">Loading your wishlist...</p>
+            </div>
+
+            <!-- Wishlist网格 -->
+            <div id="wishlistGrid" style="display: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 24px;"></div>
+
+            <!-- 空状态 -->
+            <div id="noWishlist" style="display: none; text-align: center; padding: 60px 20px;">
+              <i class="fa-solid fa-heart" style="font-size: 48px; color: #ddd; margin-bottom: 20px;"></i>
+              <h3 style="font-size: 18px; margin-bottom: 12px; color: #333;">Your Wishlist is Empty</h3>
+              <p style="color: #666; margin-bottom: 24px;">Save your favorite items to view them here later.</p>
+              <a href="/shop" class="acc-btn-detail" style="display: inline-block; padding: 12px 28px; background: #111; color: #fff; text-decoration: none; font-size: 12px; font-weight: 700; text-transform: uppercase;">
+                Browse Products
+              </a>
+            </div>
+          </div>
+
+          <!-- Tab 4: Addresses -->
+          <div class="acc-tab-pane" id="addresses">
+            <div class="acc-pane-title-row">
+              <h2>Addresses</h2>
+              <span>Selected by default at checkout</span>
+            </div>
+
+            <div class="acc-address-grid">
+              <div class="acc-address-box">
+                <div class="acc-address-top">
+                  <div>
+                    <span class="acc-tag">DEFAULT</span>
+                    <h3>Billing Address</h3>
+                  </div>
+                  <button type="button" class="acc-edit-btn" id="openEditBillingBtn">
+                    <i class="fa-solid fa-pen"></i> Edit
+                  </button>
+                </div>
+                <div id="billingAddressDisplay">
+                  <p><i class="fa-solid fa-spinner fa-spin"></i> Loading...</p>
+                </div>
+              </div>
+
+              <div class="acc-address-box">
+                <div class="acc-address-top">
+                  <div>
+                    <span class="acc-tag">DEFAULT</span>
+                    <h3>Shipping Address</h3>
+                  </div>
+                  <button type="button" class="acc-edit-btn" id="openEditShippingBtn">
+                    <i class="fa-solid fa-pen"></i> Edit
+                  </button>
+                </div>
+                <div id="shippingAddressDisplay">
+                  <p><i class="fa-solid fa-spinner fa-spin"></i> Loading...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Billing Edit Form -->
+            <div class="acc-edit-form-panel" id="billingFormBlock" style="display: none;">
+              <div class="acc-form-header">
+                <h3>Edit Billing Address</h3>
+                <button type="button" id="closeBillingFormBtn"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <form id="billingAddressForm" class="acc-form-body">
+                <div class="acc-row-2">
+                  <div class="acc-input-group">
+                    <label>First Name *</label>
+                    <input id="billing_first_name" type="text" required />
+                  </div>
+                  <div class="acc-input-group">
+                    <label>Last Name *</label>
+                    <input id="billing_last_name" type="text" required />
+                  </div>
+                </div>
+                <div class="acc-input-group">
+                  <label>Company (Optional)</label>
+                  <input id="billing_company" type="text" />
+                </div>
+                <div class="acc-input-group">
+                  <label>Country *</label>
+                  <select id="billing_country" required>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="AU">Australia</option>
+                    <option value="CN">China</option>
+                  </select>
+                </div>
+                <div class="acc-input-group">
+                  <label>Address *</label>
+                  <input id="billing_address_1" type="text" required />
+                  <input id="billing_address_2" type="text" placeholder="Apartment, suite, etc. (optional)" style="margin-top: 6px;" />
+                </div>
+                <div class="acc-row-2">
+                  <div class="acc-input-group">
+                    <label>City *</label>
+                    <input id="billing_city" type="text" required />
+                  </div>
+                  <div class="acc-input-group">
+                    <label>ZIP Code *</label>
+                    <input id="billing_postcode" type="text" required />
+                  </div>
+                </div>
+                <div class="acc-row-2">
+                  <div class="acc-input-group">
+                    <label>Phone *</label>
+                    <input id="billing_phone" type="tel" required />
+                  </div>
+                  <div class="acc-input-group">
+                    <label>Email *</label>
+                    <input id="billing_email" type="email" required />
+                  </div>
+                </div>
+                <div id="billingAddressMessage" class="acc-message" style="display: none;"></div>
+                <div class="acc-form-btns">
+                  <button type="submit" id="saveBillingBtn" class="acc-submit-btn">Save Address</button>
+                  <button type="button" class="acc-cancel-btn" id="cancelBillingFormBtn">Cancel</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Shipping Edit Form -->
+            <div class="acc-edit-form-panel" id="shippingFormBlock" style="display: none;">
+              <div class="acc-form-header">
+                <h3>Edit Shipping Address</h3>
+                <button type="button" id="closeShippingFormBtn"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <form id="shippingAddressForm" class="acc-form-body">
+                <div class="acc-row-2">
+                  <div class="acc-input-group">
+                    <label>First Name *</label>
+                    <input id="shipping_first_name" type="text" required />
+                  </div>
+                  <div class="acc-input-group">
+                    <label>Last Name *</label>
+                    <input id="shipping_last_name" type="text" required />
+                  </div>
+                </div>
+                <div class="acc-input-group">
+                  <label>Company (Optional)</label>
+                  <input id="shipping_company" type="text" />
+                </div>
+                <div class="acc-input-group">
+                  <label>Country *</label>
+                  <select id="shipping_country" required>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="AU">Australia</option>
+                    <option value="CN">China</option>
+                  </select>
+                </div>
+                <div class="acc-input-group">
+                  <label>Address *</label>
+                  <input id="shipping_address_1" type="text" required />
+                  <input id="shipping_address_2" type="text" placeholder="Apartment, suite, etc. (optional)" style="margin-top: 6px;" />
+                </div>
+                <div class="acc-row-2">
+                  <div class="acc-input-group">
+                    <label>City *</label>
+                    <input id="shipping_city" type="text" required />
+                  </div>
+                  <div class="acc-input-group">
+                    <label>ZIP Code *</label>
+                    <input id="shipping_postcode" type="text" required />
+                  </div>
+                </div>
+                <div id="shippingAddressMessage" class="acc-message" style="display: none;"></div>
+                <div class="acc-form-btns">
+                  <button type="submit" id="saveShippingBtn" class="acc-submit-btn">Save Address</button>
+                  <button type="button" class="acc-cancel-btn" id="cancelShippingFormBtn">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Tab 5: Account Details -->
+          <div class="acc-tab-pane" id="account-details">
+            <div class="acc-pane-title-row">
+              <h2>Account Details</h2>
+              <span>Update your personal profile</span>
+            </div>
+
+            <form class="acc-form-body" style="max-width: 620px;">
+              <div class="acc-row-2">
+                <div class="acc-input-group">
+                  <label>First Name *</label>
+                  <input id="account_first_name" type="text" required />
+                </div>
+                <div class="acc-input-group">
+                  <label>Last Name *</label>
+                  <input id="account_last_name" type="text" required />
+                </div>
+              </div>
+              <div class="acc-input-group">
+                <label>Display Name</label>
+                <input id="account_display_name" type="text" readonly style="background-color: #f5f5f5; cursor: not-allowed;" />
+                <small style="font-size: 10px; color: #999; margin-top: 4px; display: block;">Display name cannot be changed</small>
+              </div>
+              <div class="acc-input-group">
+                <label>Email *</label>
+                <input id="account_email" type="email" required />
+              </div>
+
+              <!-- 保存个人信息按钮 -->
+              <div class="acc-form-btns" style="margin-bottom: 24px;">
+                <button type="button" id="saveAccountDetailsBtn" class="acc-submit-btn" onclick="saveAccountDetails()">
+                  Save Changes
+                </button>
+              </div>
+              <div id="accountDetailsMessage" class="acc-message" style="display: none; margin-top: -12px; margin-bottom: 24px;"></div>
+
+              <div class="acc-password-box">
+                <h4>Password Change</h4>
+                <div class="acc-input-group">
+                  <label>Current Password</label>
+                  <input type="password" id="currentPassword" placeholder="••••••••" />
+                </div>
+                <div class="acc-input-group">
+                  <label>New Password</label>
+                  <input type="password" id="newPassword" placeholder="••••••••" minlength="8" />
+                </div>
+                <div class="acc-input-group">
+                  <label>Confirm New Password</label>
+                  <input type="password" id="confirmPassword" placeholder="••••••••" minlength="8" />
+                </div>
+                <p class="acc-pwd-hint">Password must be at least 8 characters long.</p>
+                <div id="passwordMessage" class="acc-message" style="display: none;"></div>
+              </div>
+
+              <div class="acc-form-btns">
+                <button type="button" id="savePasswordBtn" class="acc-submit-btn" onclick="handlePasswordChange()">Save Changes</button>
+              </div>
+            </form>
+          </div>
+
+        </main>
+      </div>
+
+    </div>
+  </div>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  /* 全局最高优先级隔离与防超宽设置 */
+  .acc-root-scope {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    background-color: #f7f5f0;
+    padding: 36px 0 70px;
+    box-sizing: border-box !important;
+  }
+
+  .acc-wrapper {
+    width: 100% !important;
+    max-width: 1200px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+    box-sizing: border-box !important;
+  }
+
+  .acc-breadcrumb {
+    background: #fbf9f6;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee8df;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  .acc-crumbs {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #777;
+  }
+  .acc-crumbs a { color: #555; text-decoration: none; }
+  .acc-crumbs strong { color: #111; font-weight: 600; }
+
+  /* 标题区域 */
+  .acc-header-area { margin-bottom: 24px; }
+  .acc-heading {
+    font-family: 'Bodoni Moda', 'Didot', Georgia, serif;
+    font-size: 32px;
+    font-weight: 500;
+    margin: 0 0 4px;
+    color: #111;
+  }
+  .acc-subheading { margin: 0; font-size: 13.5px; color: #777; }
+
+  /* 栅格双列 */
+  .acc-main-grid {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 28px;
+    align-items: flex-start;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* 侧边栏 */
+  .acc-sidebar-panel {
+    background: #ffffff;
+    border: 1px solid #e6ded3;
+    border-radius: 4px;
+    padding: 18px;
+    position: sticky;
+    top: 20px;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .acc-user-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #f0eae1;
+    min-width: 0;
+  }
+  .acc-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #f4efe8;
+    color: #8c8273;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .acc-user-meta { min-width: 0; flex: 1; }
+  .acc-u-name { display: block; font-size: 15px; font-weight: 600; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acc-u-email { display: block; font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .acc-nav-list { display: flex; flex-direction: column; gap: 3px; width: 100%; }
+  .acc-nav-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 2px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .acc-nav-pill i { width: 16px; color: #999; }
+  .acc-nav-pill:hover { background: #faf8f5; color: #111; }
+  .acc-nav-pill.active { background: #111; color: #fff; }
+  .acc-nav-pill.active i { color: #fff; }
+  .acc-count-badge { margin-left: auto; font-size: 11px; background: #eae5dc; color: #333; padding: 2px 6px; border-radius: 10px; }
+  .acc-nav-pill.active .acc-count-badge { background: #333; color: #fff; }
+  .acc-logout-pill { margin-top: 10px; border-top: 1px solid #f0eae1; padding-top: 12px; color: #c52424; }
+
+  /* 主面板内容 */
+  .acc-content-panel {
+    background: #ffffff;
+    border: 1px solid #e6ded3;
+    border-radius: 4px;
+    padding: 28px;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .acc-tab-pane { display: none; width: 100%; min-width: 0; }
+  .acc-tab-pane.active { display: block; }
+  .acc-pane-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee8df;
+  }
+  .acc-pane-title-row h2 { font-size: 20px; margin: 0; color: #111; }
+  .acc-pane-title-row span { font-size: 12.5px; color: #888; }
+
+  /* Dashboard Welcome */
+  .acc-welcome-box {
+    background: #fbf9f6;
+    border-left: 3px solid #a3824c;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  .acc-welcome-box h2 { font-size: 16px; margin: 0 0 4px; }
+  .acc-welcome-box p { margin: 0; font-size: 13px; color: #666; line-height: 1.5; }
+
+  .acc-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .acc-metric-card {
+    background: #fbf9f6;
+    border: 1px solid #ebe5dc;
+    border-radius: 3px;
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .acc-icon-bubble {
+    width: 36px;
+    height: 36px;
+    background: #ede7de;
+    color: #a3824c;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  .acc-metric-card h3 { font-size: 14px; margin: 0 0 2px; }
+  .acc-metric-card p { font-size: 12px; color: #888; margin: 0 0 10px; }
+  .acc-text-link {
+    background: none; border: none; padding: 0; font-size: 11.5px;
+    font-weight: 600; color: #a3824c; text-align: left; cursor: pointer;
+  }
+
+  /* 订单列表（响应式流，绝不溢出） */
+  .acc-recent-block { margin-top: 10px; }
+  .acc-block-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .acc-block-bar h3 { font-size: 15px; margin: 0; }
+  .acc-mini-link { background: none; border: none; font-size: 12px; color: #a3824c; cursor: pointer; }
+
+  .acc-order-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .acc-order-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1.2fr 1fr auto;
+    align-items: center;
+    gap: 12px;
+    background: #fbf9f6;
+    border: 1px solid #eee8df;
+    padding: 14px 16px;
+    border-radius: 2px;
+    font-size: 13px;
+  }
+  .acc-order-cell { display: flex; flex-direction: column; min-width: 0; }
+  .acc-order-cell .label { display: none; font-size: 10.5px; color: #999; text-transform: uppercase; margin-bottom: 2px; }
+  .val-mono { font-family: monospace; font-weight: 600; color: #111; }
+  .val-price { font-weight: 700; color: #111; }
+  .acc-pill-status {
+    display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10.5px;
+    font-weight: 600; text-transform: uppercase; width: fit-content;
+  }
+  .acc-pill-status.delivered { background: #eef7ee; color: #2e7d32; }
+  .acc-pill-status.processing { background: #fef8ec; color: #b7791f; }
+  .acc-pill-status.cancelled { background: #fdf2f2; color: #c53030; }
+  .acc-btn-detail {
+    padding: 5px 12px; background: #111; color: #fff; text-decoration: none;
+    border-radius: 2px; font-size: 11.5px; font-weight: 600;
+  }
+
+  /* 地址网格 */
+  .acc-address-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .acc-address-box { background: #fbf9f6; border: 1px solid #ebe5dc; padding: 16px; border-radius: 2px; }
+  .acc-address-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+  .acc-tag { font-size: 9px; font-weight: 700; color: #a3824c; display: block; margin-bottom: 2px; }
+  .acc-address-top h3 { margin: 0; font-size: 14px; }
+  .acc-edit-btn { background: #fff; border: 1px solid #ddd; padding: 3px 8px; font-size: 11px; cursor: pointer; border-radius: 2px; }
+  .acc-address-box p { margin: 0 0 3px; font-size: 12.5px; color: #555; }
+
+  /* 表单与输入框 */
+  .acc-form-body { width: 100%; min-width: 0; box-sizing: border-box; }
+  .acc-row-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .acc-input-group { margin-bottom: 12px; min-width: 0; width: 100%; }
+  .acc-input-group label { display: block; font-size: 11.5px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .acc-input-group input, .acc-input-group select {
+    width: 100% !important; max-width: 100% !important; height: 38px;
+    padding: 0 10px; border: 1px solid #ddd; border-radius: 2px; font-size: 13px;
+    box-sizing: border-box !important; outline: none; background: #fff;
+  }
+  .acc-password-box { background: #fbf9f6; border: 1px solid #eee; padding: 14px; margin: 16px 0; }
+  .acc-password-box h4 { margin: 0 0 10px; font-size: 12.5px; text-transform: uppercase; }
+  .acc-pwd-hint { font-size: 11px; color: #666; margin-top: 8px; margin-bottom: 0; }
+
+  /* 密码修改消息 */
+  .acc-message {
+    padding: 12px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-top: 12px;
+    animation: slideDown 0.3s ease;
+  }
+  .acc-message.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  .acc-message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .acc-form-btns { display: flex; gap: 10px; margin-top: 14px; }
+  .acc-submit-btn { height: 38px; padding: 0 20px; background: #111; color: #fff; border: none; font-size: 11.5px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+  .acc-cancel-btn { height: 38px; padding: 0 16px; background: transparent; border: 1px solid #ccc; font-size: 11.5px; cursor: pointer; }
+
+  /* =========================================================
+     移动端断点：彻底保证在 402px 及以下屏幕完美贴合无横移
+     ========================================================= */
+  @media (max-width: 820px) {
+    /* 强制防止所有横向溢出 */
+    html, body {
+      overflow-x: hidden !important;
+      width: 100% !important;
+    }
+
+    * {
+      max-width: 100%;
+    }
+
+    :root {
+      --container-w: 100%;
+    }
+    .acc-root-scope {
+      padding: 16px 0 40px !important;
+      overflow-x: hidden !important;
+    }
+    .acc-wrapper {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+      overflow-x: hidden !important;
+    }
+
+    .acc-main-grid {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 16px !important;
+      width: 100% !important;
+    }
+
+    .acc-sidebar-panel,
+    .acc-content-panel {
+      width: 100% !important;
+      padding: 14px !important;
+      box-sizing: border-box !important;
+    }
+
+    /* 药丸横滑隔离层：只在自身内部横向平移，绝不触碰全屏 */
+    .acc-nav-scroller {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+      box-sizing: border-box !important;
+    }
+    .acc-nav-scroller::-webkit-scrollbar { display: none; }
+
+    .acc-nav-list {
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      width: 100% !important;
+      gap: 6px !important;
+      padding-bottom: 8px !important;
+    }
+    .acc-nav-list::-webkit-scrollbar {
+      height: 4px;
+    }
+    .acc-nav-list::-webkit-scrollbar-thumb {
+      background: #ddd;
+      border-radius: 2px;
+    }
+    .acc-nav-pill {
+      width: auto !important;
+      flex-shrink: 0 !important;
+      padding: 7px 12px !important;
+      white-space: nowrap !important;
+      border: 1px solid #ded7cb !important;
+      background: #faf8f5 !important;
+    }
+    .acc-nav-pill.active {
+      background: #111 !important;
+      color: #fff !important;
+      border-color: #111 !important;
+    }
+    .acc-logout-pill {
+      margin-top: 0 !important;
+      border-top: 1px solid #ded7cb !important;
+      padding-top: 7px !important;
+    }
+
+    .acc-metric-grid,
+    .acc-address-grid,
+    .acc-row-2 {
+      grid-template-columns: minmax(0, 1fr) !important;
+      gap: 10px !important;
+    }
+
+    /* 移动端订单卡片化：上下折行，彻底消除右边遮挡 */
+    .acc-order-row {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 6px !important;
+      padding: 12px !important;
+    }
+    .acc-order-cell {
+      display: flex !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      width: 100% !important;
+      border-bottom: 1px dashed #eee;
+      padding-bottom: 4px;
+    }
+    .acc-order-cell.col-action {
+      border-bottom: none !important;
+      padding-top: 6px;
+    }
+    .acc-order-cell .label { display: inline-block !important; }
+    .acc-btn-detail { width: 100% !important; text-align: center !important; }
+  }
+</style>
+
+<script is:inline>
+  // Tab 切换逻辑
+  const navPills = document.querySelectorAll('.acc-nav-pill[data-tab]');
+  const tabPanes = document.querySelectorAll('.acc-tab-pane');
+
+  function changeTab(tabId) {
+    if (!tabId) return;
+    navPills.forEach(pill => {
+      if (pill.getAttribute('data-tab') === tabId) {
+        pill.classList.add('active');
+      } else {
+        pill.classList.remove('active');
+      }
+    });
+    tabPanes.forEach(pane => {
+      if (pane.id === tabId) {
+        pane.classList.add('active');
+      } else {
+        pane.classList.remove('active');
+      }
+    });
+  }
+
+  navPills.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = btn.getAttribute('data-tab');
+      changeTab(target);
+    });
+  });
+
+  document.querySelectorAll('.acc-text-link[data-tab], .acc-mini-link[data-tab]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = btn.getAttribute('data-tab');
+      changeTab(target);
+    });
+  });
+
+  // 地址编辑表单展开/收起
+  // Address编辑按钮事件
+  const billingFormBlock = document.getElementById('billingFormBlock');
+  const shippingFormBlock = document.getElementById('shippingFormBlock');
+
+  document.getElementById('openEditBillingBtn')?.addEventListener('click', () => {
+    if (billingFormBlock) billingFormBlock.style.display = 'block';
+  });
+  document.getElementById('closeBillingFormBtn')?.addEventListener('click', () => {
+    if (billingFormBlock) billingFormBlock.style.display = 'none';
+  });
+  document.getElementById('cancelBillingFormBtn')?.addEventListener('click', () => {
+    if (billingFormBlock) billingFormBlock.style.display = 'none';
+  });
+
+  document.getElementById('openEditShippingBtn')?.addEventListener('click', () => {
+    if (shippingFormBlock) shippingFormBlock.style.display = 'block';
+  });
+  document.getElementById('closeShippingFormBtn')?.addEventListener('click', () => {
+    if (shippingFormBlock) shippingFormBlock.style.display = 'none';
+  });
+  document.getElementById('cancelShippingFormBtn')?.addEventListener('click', () => {
+    if (shippingFormBlock) shippingFormBlock.style.display = 'none';
+  });
+
+  // 页面加载时获取用户信息
+  let currentUserId = null; // 存储用户ID
+
+  async function loadUserInfo() {
+    try {
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+
+      if (data.authenticated && data.user) {
+        const user = data.user;
+        currentUserId = user.id; // 保存用户ID
+
+        // 更新侧边栏用户信息
+        document.getElementById('sidebarUserName').textContent = `${user.firstName} ${user.lastName}`;
+        document.getElementById('sidebarUserEmail').textContent = user.email;
+
+        // 更新Welcome信息
+        document.getElementById('welcomeUserName').textContent = user.firstName;
+
+        // 填充Account Details表单
+        document.getElementById('account_first_name').value = user.firstName || '';
+        document.getElementById('account_last_name').value = user.lastName || '';
+        document.getElementById('account_display_name').value = `${user.firstName} ${user.lastName}`;
+        document.getElementById('account_email').value = user.email || '';
+
+        // 加载并显示地址
+        if (user.billing) {
+          displayAddress('billing', user.billing);
+          populateAddressForm('billing', user.billing);
+        }
+        if (user.shipping) {
+          displayAddress('shipping', user.shipping);
+          populateAddressForm('shipping', user.shipping);
+        }
+
+        // 更新Dashboard地址统计
+        updateAddressMetric(user.billing, user.shipping);
+      } else {
+        // 未登录，重定向到首页
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Load user info error:', error);
+      window.location.href = '/';
+    }
+  }
+
+  // 处理密码修改
+  async function handlePasswordChange() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const messageEl = document.getElementById('passwordMessage');
+
+    // 清除之前的消息
+    messageEl.style.display = 'none';
+    messageEl.className = 'acc-message';
+
+    // 验证
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      showMessage('Please fill in all password fields', 'error');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      showMessage('New password must be at least 8 characters', 'error');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      showMessage('New passwords do not match', 'error');
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      showMessage('New password must be different from current password', 'error');
+      return;
+    }
+
+    // 显示加载状态
+    const submitBtn = document.getElementById('savePasswordBtn');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    submitBtn.style.opacity = '0.7';
+
+    try {
+      // 首先验证当前密码
+      const userEmail = document.getElementById('sidebarUserEmail').textContent;
+
+      const validateResponse = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          password: currentPassword,
+          rememberMe: false
+        }),
+      });
+
+      if (!validateResponse.ok) {
+        showMessage('Current password is incorrect', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        submitBtn.style.opacity = '1';
+        return;
+      }
+
+      // 当前密码正确，调用修改密码API
+      if (!currentUserId) {
+        showMessage('Session expired. Please log in again.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        submitBtn.style.opacity = '1';
+        return;
+      }
+
+      const changeResponse = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: currentUserId,
+          new_password: newPassword,
+        }),
+      });
+
+      const data = await changeResponse.json();
+
+      if (data.success) {
+        showMessage('Password updated successfully! Please use your new password next time you log in.', 'success');
+
+        // 清空表单
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+      } else {
+        showMessage(data.message || 'Failed to update password', 'error');
+      }
+    } catch (error) {
+      console.error('Change password error:', error);
+      showMessage('An unexpected error occurred', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
+      submitBtn.style.opacity = '1';
+    }
+  }
+
+  // 显示消息
+  function showMessage(message, type) {
+    const messageEl = document.getElementById('passwordMessage');
+    messageEl.textContent = message;
+    messageEl.className = `acc-message ${type}`;
+    messageEl.style.display = 'block';
+
+    // 5秒后自动隐藏成功消息
+    if (type === 'success') {
+      setTimeout(() => {
+        messageEl.style.display = 'none';
+      }, 5000);
+    }
+  }
+
+  // 页面加载时执行
+  loadUserInfo();
+  loadOrders(); // 加载订单
+  loadRecentOrders(); // 加载Dashboard的最近订单
+  loadWishlist(); // 加载Wishlist
+
+  // 处理URL参数，自动切换到指定Tab
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab');
+
+  if (tabParam) {
+    // 查找对应的tab按钮并触发点击
+    const tabButton = document.querySelector(`[data-tab="${tabParam}"]`);
+    if (tabButton) {
+      tabButton.click();
+    }
+  }
+
+  // 暴露到全局
+  window.handlePasswordChange = handlePasswordChange;
+  window.saveAccountDetails = saveAccountDetails;
+
+  // 显示地址信息
+  function displayAddress(type, address) {
+    const displayEl = document.getElementById(`${type}AddressDisplay`);
+    if (!displayEl) return;
+
+    if (!address || !address.address_1) {
+      displayEl.innerHTML = '<p style="color: #999;">No address saved</p>';
+      return;
+    }
+
+    const fullName = `${address.first_name || ''} ${address.last_name || ''}`.trim();
+    const addressLine1 = address.address_1 || '';
+    const addressLine2 = address.address_2 ? `, ${address.address_2}` : '';
+    const cityStateZip = `${address.city || ''}, ${address.state || ''} ${address.postcode || ''}`.trim();
+    const country = address.country || '';
+    const phone = address.phone || '';
+    const email = address.email || '';
+
+    let html = '';
+    if (fullName) html += `<p><strong>${fullName}</strong></p>`;
+    if (addressLine1) html += `<p>${addressLine1}${addressLine2}</p>`;
+    if (cityStateZip && country) html += `<p>${cityStateZip}, ${country}</p>`;
+    if (phone) html += `<p class="acc-phone">${phone}</p>`;
+    if (type === 'billing' && email) html += `<p class="acc-phone">${email}</p>`;
+
+    displayEl.innerHTML = html || '<p style="color: #999;">No address saved</p>';
+  }
+
+  // 填充地址表单
+  function populateAddressForm(type, address) {
+    if (!address) return;
+
+    document.getElementById(`${type}_first_name`).value = address.first_name || '';
+    document.getElementById(`${type}_last_name`).value = address.last_name || '';
+    document.getElementById(`${type}_company`).value = address.company || '';
+    document.getElementById(`${type}_country`).value = address.country || 'US';
+    document.getElementById(`${type}_address_1`).value = address.address_1 || '';
+    document.getElementById(`${type}_address_2`).value = address.address_2 || '';
+    document.getElementById(`${type}_city`).value = address.city || '';
+    document.getElementById(`${type}_postcode`).value = address.postcode || '';
+
+    if (type === 'billing') {
+      document.getElementById(`${type}_phone`).value = address.phone || '';
+      document.getElementById(`${type}_email`).value = address.email || '';
+    }
+  }
+
+  // 保存Billing地址
+  document.getElementById('billingAddressForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveAddress('billing');
+  });
+
+  // 保存Shipping地址
+  document.getElementById('shippingAddressForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveAddress('shipping');
+  });
+
+  // 保存地址函数
+  async function saveAddress(type) {
+    const address = {
+      firstName: document.getElementById(`${type}_first_name`).value.trim(),
+      lastName: document.getElementById(`${type}_last_name`).value.trim(),
+      company: document.getElementById(`${type}_company`).value.trim(),
+      country: document.getElementById(`${type}_country`).value,
+      address1: document.getElementById(`${type}_address_1`).value.trim(),
+      address2: document.getElementById(`${type}_address_2`).value.trim(),
+      city: document.getElementById(`${type}_city`).value.trim(),
+      postcode: document.getElementById(`${type}_postcode`).value.trim(),
+    };
+
+    // Billing额外字段
+    if (type === 'billing') {
+      address.phone = document.getElementById(`${type}_phone`).value.trim();
+      address.email = document.getElementById(`${type}_email`).value.trim();
+    }
+
+    // 验证必填字段
+    if (!address.firstName || !address.lastName || !address.address1 || !address.city || !address.postcode) {
+      showAddressMessage(type, 'Please fill in all required fields', 'error');
+      return;
+    }
+
+    const btn = document.getElementById(`save${type.charAt(0).toUpperCase() + type.slice(1)}Btn`);
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    btn.style.opacity = '0.7';
+
+    try {
+      const response = await fetch('/api/user/update-address', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type, address }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showAddressMessage(type, 'Address updated successfully!', 'success');
+
+        // 更新显示
+        displayAddress(type, data.address);
+
+        // 2秒后关闭表单
+        setTimeout(() => {
+          document.getElementById(`${type}FormBlock`).style.display = 'none';
+        }, 2000);
+      } else {
+        showAddressMessage(type, data.message || 'Failed to update address', 'error');
+      }
+    } catch (error) {
+      console.error('Update address error:', error);
+      showAddressMessage(type, 'An unexpected error occurred', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      btn.style.opacity = '1';
+    }
+  }
+
+  // 显示地址消息
+  function showAddressMessage(type, message, messageType) {
+    const messageEl = document.getElementById(`${type}AddressMessage`);
+    messageEl.textContent = message;
+    messageEl.className = `acc-message ${messageType}`;
+    messageEl.style.display = 'block';
+
+    // 5秒后自动隐藏成功消息
+    if (messageType === 'success') {
+      setTimeout(() => {
+        messageEl.style.display = 'none';
+      }, 5000);
+    }
+  }
+
+  // 保存Account Details
+  async function saveAccountDetails() {
+    const firstName = document.getElementById('account_first_name').value.trim();
+    const lastName = document.getElementById('account_last_name').value.trim();
+    const email = document.getElementById('account_email').value.trim();
+
+    // 验证
+    if (!firstName || !lastName || !email) {
+      showAccountMessage('Please fill in all required fields', 'error');
+      return;
+    }
+
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showAccountMessage('Please enter a valid email address', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('saveAccountDetailsBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    btn.style.opacity = '0.7';
+
+    try {
+      const response = await fetch('/api/user/update-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showAccountMessage('Profile updated successfully!', 'success');
+        // 重新加载用户信息以更新所有显示
+        await loadUserInfo();
+      } else {
+        showAccountMessage(data.message || 'Failed to update profile', 'error');
+      }
+    } catch (error) {
+      console.error('Update profile error:', error);
+      showAccountMessage('An unexpected error occurred', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      btn.style.opacity = '1';
+    }
+  }
+
+  // 显示Account Details消息
+  function showAccountMessage(message, type) {
+    const messageEl = document.getElementById('accountDetailsMessage');
+    messageEl.textContent = message;
+    messageEl.className = `acc-message ${type}`;
+    messageEl.style.display = 'block';
+
+    // 5秒后自动隐藏成功消息
+    if (type === 'success') {
+      setTimeout(() => {
+        messageEl.style.display = 'none';
+      }, 5000);
+    }
+  }
+
+  // 加载订单列表
+  async function loadOrders() {
+    try {
+      const response = await fetch('/api/user/orders');
+      const data = await response.json();
+
+      const ordersLoading = document.getElementById('ordersLoading');
+      const ordersList = document.getElementById('ordersList');
+      const noOrders = document.getElementById('noOrders');
+      const orderCount = document.getElementById('orderCount');
+
+      ordersLoading.style.display = 'none';
+
+      if (data.success && data.orders && data.orders.length > 0) {
+        // 显示订单列表
+        orderCount.textContent = `Showing ${data.orders.length} order${data.orders.length > 1 ? 's' : ''}`;
+        ordersList.style.display = 'block';
+
+        // 渲染订单
+        ordersList.innerHTML = data.orders.map(order => {
+          const orderDate = new Date(order.date_created).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+
+          // 状态映射
+          const statusMap = {
+            'pending': { text: 'Pending', class: 'processing' },
+            'processing': { text: 'Processing', class: 'processing' },
+            'on-hold': { text: 'On Hold', class: 'processing' },
+            'completed': { text: 'Completed', class: 'delivered' },
+            'cancelled': { text: 'Cancelled', class: 'cancelled' },
+            'refunded': { text: 'Refunded', class: 'cancelled' },
+            'failed': { text: 'Failed', class: 'cancelled' }
+          };
+
+          const status = statusMap[order.status] || { text: order.status, class: 'processing' };
+
+          return `
+            <div class="acc-order-row">
+              <div class="acc-order-cell col-id">
+                <span class="label">Order</span>
+                <strong class="val-mono">#${order.number}</strong>
+              </div>
+              <div class="acc-order-cell col-date">
+                <span class="label">Date</span>
+                <span class="val">${orderDate}</span>
+              </div>
+              <div class="acc-order-cell col-status">
+                <span class="label">Status</span>
+                <span class="acc-pill-status ${status.class}">${status.text}</span>
+              </div>
+              <div class="acc-order-cell col-total">
+                <span class="label">Total</span>
+                <strong class="val-price">$${parseFloat(order.total).toFixed(2)}</strong>
+              </div>
+              <div class="acc-order-cell col-action">
+                <a href="/order/${order.id}" class="acc-btn-detail">View</a>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // 更新侧边栏订单数量徽章
+        const sidebarBadge = document.getElementById('sidebarOrderCount');
+        if (sidebarBadge) {
+          sidebarBadge.textContent = data.orders.length;
+          sidebarBadge.style.display = 'inline-block';
+        }
+
+        // 更新Dashboard订单统计
+        const dashboardMetric = document.getElementById('dashboardOrdersMetric');
+        if (dashboardMetric) {
+          dashboardMetric.textContent = `${data.orders.length} Total Order${data.orders.length > 1 ? 's' : ''}`;
+        }
+      } else {
+        // 显示无订单状态
+        orderCount.textContent = 'No orders';
+        noOrders.style.display = 'block';
+
+        // 隐藏侧边栏徽章
+        const sidebarBadge = document.getElementById('sidebarOrderCount');
+        if (sidebarBadge) {
+          sidebarBadge.style.display = 'none';
+        }
+
+        // 更新Dashboard订单统计
+        const dashboardMetric = document.getElementById('dashboardOrdersMetric');
+        if (dashboardMetric) {
+          dashboardMetric.textContent = '0 Total Orders';
+        }
+      }
+    } catch (error) {
+      console.error('Load orders error:', error);
+      document.getElementById('ordersLoading').innerHTML = '<p style="color: #999;">Failed to load orders</p>';
+    }
+  }
+
+  // 加载Dashboard的最近订单（最多显示3个）
+  async function loadRecentOrders() {
+    try {
+      const response = await fetch('/api/user/orders');
+      const data = await response.json();
+
+      const recentOrdersLoading = document.getElementById('recentOrdersLoading');
+      const recentOrdersList = document.getElementById('recentOrdersList');
+      const noRecentOrders = document.getElementById('noRecentOrders');
+
+      recentOrdersLoading.style.display = 'none';
+
+      if (data.success && data.orders && data.orders.length > 0) {
+        // 只显示最近3个订单
+        const recentOrders = data.orders.slice(0, 3);
+        recentOrdersList.style.display = 'block';
+
+        // 状态映射
+        const statusMap = {
+          'pending': { text: 'Pending', class: 'processing' },
+          'processing': { text: 'Processing', class: 'processing' },
+          'on-hold': { text: 'On Hold', class: 'processing' },
+          'completed': { text: 'Completed', class: 'delivered' },
+          'cancelled': { text: 'Cancelled', class: 'cancelled' },
+          'refunded': { text: 'Refunded', class: 'cancelled' },
+          'failed': { text: 'Failed', class: 'cancelled' }
+        };
+
+        // 渲染最近订单
+        recentOrdersList.innerHTML = recentOrders.map(order => {
+          const orderDate = new Date(order.date_created).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+
+          const status = statusMap[order.status] || { text: order.status, class: 'processing' };
+
+          return `
+            <div class="acc-order-row">
+              <div class="acc-order-cell col-id">
+                <span class="label">Order</span>
+                <strong class="val-mono">#${order.number}</strong>
+              </div>
+              <div class="acc-order-cell col-date">
+                <span class="label">Date</span>
+                <span class="val">${orderDate}</span>
+              </div>
+              <div class="acc-order-cell col-status">
+                <span class="label">Status</span>
+                <span class="acc-pill-status ${status.class}">${status.text}</span>
+              </div>
+              <div class="acc-order-cell col-total">
+                <span class="label">Total</span>
+                <strong class="val-price">$${parseFloat(order.total).toFixed(2)}</strong>
+              </div>
+              <div class="acc-order-cell col-action">
+                <a href="/order/${order.id}" class="acc-btn-detail">View</a>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        // 显示无订单状态
+        noRecentOrders.style.display = 'block';
+      }
+    } catch (error) {
+      console.error('Load recent orders error:', error);
+      document.getElementById('recentOrdersLoading').innerHTML = '<p style="color: #999;">Failed to load orders</p>';
+    }
+  }
+
+  // 更新Dashboard地址统计
+  function updateAddressMetric(billing, shipping) {
+    const dashboardMetric = document.getElementById('dashboardAddressesMetric');
+    if (!dashboardMetric) return;
+
+    let addressCount = 0;
+    if (billing && billing.address_1) addressCount++;
+    if (shipping && shipping.address_1) addressCount++;
+
+    dashboardMetric.textContent = `${addressCount} Saved Address${addressCount !== 1 ? 'es' : ''}`;
+  }
+
+  // 加载Wishlist（占位函数，等待后端API对接）
+  async function loadWishlist() {
+    const wishlistLoading = document.getElementById('wishlistLoading');
+    const wishlistGrid = document.getElementById('wishlistGrid');
+    const noWishlist = document.getElementById('noWishlist');
+    const wishlistCount = document.getElementById('wishlistCount');
+    const sidebarWishlistBadge = document.getElementById('sidebarWishlistCount');
+
+    // 模拟加载
+    setTimeout(() => {
+      wishlistLoading.style.display = 'none';
+
+      // TODO: 替换为真实API调用
+      // const response = await fetch('/api/user/wishlist');
+      // const data = await response.json();
+
+      // 暂时显示空状态
+      const mockWishlistItems = []; // 后端对接后改为 data.items
+
+      if (mockWishlistItems.length > 0) {
+        wishlistCount.textContent = `${mockWishlistItems.length} item${mockWishlistItems.length > 1 ? 's' : ''}`;
+        wishlistGrid.style.display = 'grid';
+
+        // 显示侧边栏徽章
+        if (sidebarWishlistBadge) {
+          sidebarWishlistBadge.textContent = mockWishlistItems.length;
+          sidebarWishlistBadge.style.display = 'inline-block';
+        }
+
+        // TODO: 渲染wishlist items
+        // wishlistGrid.innerHTML = mockWishlistItems.map(item => `...`).join('');
+      } else {
+        wishlistCount.textContent = 'No items';
+        noWishlist.style.display = 'block';
+
+        // 隐藏侧边栏徽章
+        if (sidebarWishlistBadge) {
+          sidebarWishlistBadge.style.display = 'none';
+        }
+      }
+    }, 500);
+  }
+
+
+</script>

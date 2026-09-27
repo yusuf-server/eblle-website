@@ -1,0 +1,822 @@
+---
+// AuthModal.astro - 登录注册弹窗组件
+---
+
+<!-- Auth Modal Overlay -->
+<div class="auth-overlay" id="authOverlay" onclick="handleAuthOverlayClick(event)">
+  <div class="auth-modal">
+
+    <!-- 关闭按钮 -->
+    <button type="button" class="auth-close-btn" onclick="closeAuthModal()" aria-label="Close">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <!-- 左侧：品牌氛围与专属权益 -->
+    <div class="auth-modal-left">
+      <img
+        src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&q=80"
+        alt="E.B.Belle Jewelry"
+        class="auth-bg-img"
+      />
+      <div class="auth-left-content">
+        <h2 class="auth-brand-tag">E.B.Belle</h2>
+        <p class="auth-brand-desc">Fine Jewelry & Timeless Elegance</p>
+
+        <ul class="perks-list">
+          <li class="perks-item">
+            <i class="fa-solid fa-gift"></i>
+            <span>Exclusive member rewards and early access</span>
+          </li>
+          <li class="perks-item">
+            <i class="fa-solid fa-heart"></i>
+            <span>Save favorites and build your wishlist</span>
+          </li>
+          <li class="perks-item">
+            <i class="fa-solid fa-truck-fast"></i>
+            <span>Track orders and view purchase history</span>
+          </li>
+          <li class="perks-item">
+            <i class="fa-solid fa-tags"></i>
+            <span>Special promotions and birthday discounts</span>
+          </li>
+          <li class="perks-item">
+            <i class="fa-solid fa-lock"></i>
+            <span>Multiple secure encrypted payment gateways</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 右侧：登录与注册表单 -->
+    <div class="auth-modal-right">
+
+      <!-- Tab 切换 -->
+      <div class="auth-tabs">
+        <button type="button" class="tab-btn active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+        <button type="button" class="tab-btn" id="tabRegister" onclick="switchAuthTab('register')">Create Account</button>
+      </div>
+
+      <!-- Google OAuth 授权登录 -->
+      <button type="button" class="btn-google-auth" onclick="handleGoogleAuth()">
+        <svg class="google-icon" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        <span id="googleBtnText">Continue with Google</span>
+      </button>
+
+      <div class="auth-divider">
+        <span>or continue with email</span>
+      </div>
+
+      <!-- 登录表单 -->
+      <form class="auth-form active" id="formLogin" onsubmit="handleLoginSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Email Address</label>
+          <div class="input-wrap">
+            <input type="email" id="loginEmail" class="form-input" placeholder="name@example.com" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="loginPwd">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="loginPwd" class="form-input" placeholder="••••••••" required />
+            <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('loginPwd', this)">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-options">
+          <label class="custom-checkbox-wrap">
+            <input type="checkbox" class="custom-checkbox" checked />
+            <span>Remember me</span>
+          </label>
+          <a href="/forgot-password" class="forgot-link">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn-submit-auth">
+          <span>SIGN IN</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <!-- 注册表单 -->
+      <form class="auth-form" id="formRegister" onsubmit="handleRegisterSubmit(event)">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label" for="regFirstName">First Name</label>
+            <div class="input-wrap">
+              <input type="text" id="regFirstName" class="form-input" placeholder="John" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="regLastName">Last Name</label>
+            <div class="input-wrap">
+              <input type="text" id="regLastName" class="form-input" placeholder="Doe" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regEmail">Email Address</label>
+          <div class="input-wrap">
+            <input type="email" id="regEmail" class="form-input" placeholder="name@example.com" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regPwd">Create Password</label>
+          <div class="input-wrap">
+            <input type="password" id="regPwd" class="form-input" placeholder="Min. 8 characters" minlength="8" required />
+            <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('regPwd', this)">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <p class="auth-terms">
+          By creating an account, you agree to our <a href="/terms">Terms</a> & <a href="/privacy">Privacy Policy</a>.
+        </p>
+
+        <button type="submit" class="btn-submit-auth">
+          <span>JOIN E.B.BELLE</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+    </div>
+
+  </div>
+</div>
+
+<style is:global>
+  /* =========================================================
+     Auth Modal 弹窗样式
+     ========================================================= */
+  .auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(14, 15, 15, 0.65);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  .auth-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .auth-modal {
+    width: 100%;
+    max-width: 860px;
+    min-height: 560px;
+    background: #FFFFFF;
+    border-radius: 6px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    transform: scale(0.96) translateY(10px);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .auth-overlay.active .auth-modal {
+    transform: scale(1) translateY(0);
+  }
+
+  /* 关闭按钮 */
+  .auth-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #FAF8F5;
+    border: 1px solid #EAE6DE;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
+  }
+  .auth-close-btn:hover {
+    background: #1A1917;
+    color: #FFF;
+    border-color: #1A1917;
+  }
+
+  /* ---------------- 左侧：品牌氛围与专属权益 ---------------- */
+  .auth-modal-left {
+    flex: 1.1;
+    position: relative;
+    background: #1A1917;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 36px 32px;
+  }
+  .auth-bg-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.55;
+    filter: brightness(0.9);
+  }
+  .auth-left-content {
+    position: relative;
+    z-index: 2;
+    color: #FFFFFF;
+  }
+  .auth-brand-tag {
+    font-family: 'Bodoni Moda', serif;
+    font-size: 26px;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+    color: #FFFFFF;
+  }
+  .auth-brand-desc {
+    font-size: 11px;
+    color: #D4CEBE;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .perks-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .perks-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12.5px;
+    color: #E8E5DF;
+  }
+  .perks-item i {
+    color: #D1A85F;
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+  }
+
+  /* ---------------- 右侧：登录/注册交互表单 ---------------- */
+  .auth-modal-right {
+    flex: 1.2;
+    padding: 36px 36px 32px;
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow-y: auto;
+    max-height: 90vh;
+  }
+
+  /* 顶部切换 Tabs */
+  .auth-tabs {
+    display: flex;
+    border-bottom: 1px solid #EAE6DE;
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #8C867D;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+  }
+  .tab-btn.active {
+    color: #1A1917;
+  }
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #1A1917;
+  }
+
+  /* Google 授权一键登录按钮 */
+  .btn-google-auth {
+    width: 100%;
+    height: 44px;
+    background: #FFFFFF;
+    border: 1px solid #DED7CB;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #1A1917;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+  .btn-google-auth:hover {
+    background: #FAF8F5;
+    border-color: #1A1917;
+  }
+  .google-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* 分割线 */
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .auth-divider::before,
+  .auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #EAE6DE;
+  }
+  .auth-divider span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #9C958A;
+    white-space: nowrap;
+  }
+
+  /* 表单内容 */
+  .auth-form {
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .auth-form.active {
+    display: flex;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .form-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #6B6660;
+  }
+  .input-wrap {
+    position: relative;
+  }
+  .form-input {
+    width: 100%;
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid #D9D4CB;
+    border-radius: 2px;
+    font-size: 13px;
+    color: #1A1917;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus {
+    outline: none;
+    border-color: #1A1917;
+  }
+  .form-input::placeholder {
+    color: #B3ADA3;
+  }
+
+  .toggle-pwd-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #9C958A;
+    cursor: pointer;
+    padding: 6px;
+    transition: color 0.2s;
+  }
+  .toggle-pwd-btn:hover {
+    color: #1A1917;
+  }
+
+  .form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: -4px;
+  }
+
+  .custom-checkbox-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #6B6660;
+    cursor: pointer;
+  }
+  .custom-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  .forgot-link {
+    font-size: 11px;
+    color: #6B6660;
+    text-decoration: underline;
+    transition: color 0.2s;
+  }
+  .forgot-link:hover {
+    color: #1A1917;
+  }
+
+  .auth-terms {
+    font-size: 10px;
+    color: #8C867D;
+    line-height: 1.5;
+    margin-top: -6px;
+  }
+  .auth-terms a {
+    color: #1A1917;
+    text-decoration: underline;
+  }
+  .auth-terms a:hover {
+    color: #A3824C;
+  }
+
+  .btn-submit-auth {
+    width: 100%;
+    height: 44px;
+    background: #1A1917;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 6px;
+  }
+  .btn-submit-auth:hover {
+    background: #A3824C;
+  }
+  .btn-submit-auth:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  /* 消息提示 */
+  .auth-message {
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    animation: slideDown 0.3s ease;
+  }
+  .auth-message-success {
+    background: #D4EDDA;
+    color: #155724;
+    border: 1px solid #C3E6CB;
+  }
+  .auth-message-error {
+    background: #F8D7DA;
+    color: #721C24;
+    border: 1px solid #F5C6CB;
+  }
+  .auth-message-info {
+    background: #D1ECF1;
+    color: #0C5460;
+    border: 1px solid #BEE5EB;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* 移动端响应式 */
+  @media (max-width: 768px) {
+    .auth-modal {
+      max-width: 100%;
+      min-height: auto;
+      max-height: 90vh;
+      flex-direction: column;
+    }
+
+    .auth-modal-left {
+      display: none; /* 移动端隐藏左侧 */
+    }
+
+    .auth-modal-right {
+      padding: 28px 20px;
+      max-height: 90vh;
+    }
+
+    .form-row-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script is:inline>
+  // 打开弹窗
+  function openAuthModal(defaultTab = 'login') {
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) {
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      switchAuthTab(defaultTab);
+    }
+  }
+
+  // 关闭弹窗
+  function closeAuthModal() {
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) {
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  // 点击遮罩空白处关闭
+  function handleAuthOverlayClick(e) {
+    if (e.target.id === 'authOverlay') {
+      closeAuthModal();
+    }
+  }
+
+  // 支持 ESC 键关闭
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const overlay = document.getElementById('authOverlay');
+      if (overlay && overlay.classList.contains('active')) {
+        closeAuthModal();
+      }
+    }
+  });
+
+  // 登录 / 注册 Tab 切换
+  function switchAuthTab(type) {
+    const tabLogin = document.getElementById('tabLogin');
+    const tabRegister = document.getElementById('tabRegister');
+    const formLogin = document.getElementById('formLogin');
+    const formRegister = document.getElementById('formRegister');
+    const googleBtnText = document.getElementById('googleBtnText');
+
+    if (type === 'login') {
+      tabLogin?.classList.add('active');
+      tabRegister?.classList.remove('active');
+      formLogin?.classList.add('active');
+      formRegister?.classList.remove('active');
+      if (googleBtnText) googleBtnText.textContent = 'Continue with Google';
+    } else {
+      tabRegister?.classList.add('active');
+      tabLogin?.classList.remove('active');
+      formRegister?.classList.add('active');
+      formLogin?.classList.remove('active');
+      if (googleBtnText) googleBtnText.textContent = 'Sign up with Google';
+    }
+  }
+
+  // 密码显隐切换
+  function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input && icon) {
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
+    }
+  }
+
+  // Google 认证触发入口
+  function handleGoogleAuth() {
+    console.log('Initiating Google OAuth Flow...');
+    // TODO: 对接后端认证路由
+    alert('Google OAuth integration coming soon');
+  }
+
+  // 处理登录提交
+  async function handleLoginSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail')?.value;
+    const password = document.getElementById('loginPwd')?.value;
+    const rememberMe = document.querySelector('input[type="checkbox"]')?.checked;
+    const submitBtn = e.target.querySelector('.btn-submit-auth');
+
+    if (!email || !password) {
+      showAuthMessage('Please fill in all fields', 'error');
+      return;
+    }
+
+    // 禁用按钮，显示加载状态
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>SIGNING IN...</span>';
+    }
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, rememberMe }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showAuthMessage('Login successful! Redirecting...', 'success');
+
+        // 保存用户信息到localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        // 触发自定义事件，通知其他组件用户已登录
+        window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: data.user }));
+
+        // 延迟关闭弹窗并刷新页面
+        setTimeout(() => {
+          closeAuthModal();
+          window.location.reload();
+        }, 1000);
+      } else {
+        showAuthMessage(data.message || 'Login failed', 'error');
+        // 恢复按钮
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>SIGN IN</span><i class="fa-solid fa-arrow-right"></i>';
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      showAuthMessage('An unexpected error occurred', 'error');
+      // 恢复按钮
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>SIGN IN</span><i class="fa-solid fa-arrow-right"></i>';
+      }
+    }
+  }
+
+  // 处理注册提交
+  async function handleRegisterSubmit(e) {
+    e.preventDefault();
+    const firstName = document.getElementById('regFirstName')?.value;
+    const lastName = document.getElementById('regLastName')?.value;
+    const email = document.getElementById('regEmail')?.value;
+    const password = document.getElementById('regPwd')?.value;
+    const submitBtn = e.target.querySelector('.btn-submit-auth');
+
+    if (!firstName || !lastName || !email || !password) {
+      showAuthMessage('Please fill in all fields', 'error');
+      return;
+    }
+
+    if (password.length < 8) {
+      showAuthMessage('Password must be at least 8 characters', 'error');
+      return;
+    }
+
+    // 禁用按钮，显示加载状态
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>CREATING ACCOUNT...</span>';
+    }
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ firstName, lastName, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showAuthMessage('Registration successful! Please sign in.', 'success');
+
+        // 延迟切换到登录表单
+        setTimeout(() => {
+          switchAuthTab('login');
+          // 预填充邮箱
+          const loginEmailInput = document.getElementById('loginEmail');
+          if (loginEmailInput) {
+            loginEmailInput.value = email;
+          }
+          // 聚焦密码输入框
+          document.getElementById('loginPwd')?.focus();
+        }, 1500);
+      } else {
+        showAuthMessage(data.message || 'Registration failed', 'error');
+        // 恢复按钮
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>JOIN E.B.BELLE</span><i class="fa-solid fa-arrow-right"></i>';
+        }
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      showAuthMessage('An unexpected error occurred', 'error');
+      // 恢复按钮
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>JOIN E.B.BELLE</span><i class="fa-solid fa-arrow-right"></i>';
+      }
+    }
+  }
+
+  // 显示消息提示
+  function showAuthMessage(message, type = 'info') {
+    // 移除旧消息
+    const oldMessage = document.querySelector('.auth-message');
+    if (oldMessage) {
+      oldMessage.remove();
+    }
+
+    // 创建新消息
+    const messageEl = document.createElement('div');
+    messageEl.className = `auth-message auth-message-${type}`;
+    messageEl.textContent = message;
+
+    // 插入到表单上方
+    const activeForm = document.querySelector('.auth-form.active');
+    if (activeForm) {
+      activeForm.parentNode.insertBefore(messageEl, activeForm);
+
+      // 3秒后自动移除
+      setTimeout(() => {
+        messageEl.remove();
+      }, 5000);
+    }
+  }
+
+  // 将函数暴露到全局作用域
+  window.openAuthModal = openAuthModal;
+  window.closeAuthModal = closeAuthModal;
+  window.handleAuthOverlayClick = handleAuthOverlayClick;
+  window.switchAuthTab = switchAuthTab;
+  window.togglePasswordVisibility = togglePasswordVisibility;
+  window.handleGoogleAuth = handleGoogleAuth;
+  window.handleLoginSubmit = handleLoginSubmit;
+  window.handleRegisterSubmit = handleRegisterSubmit;
+</script>

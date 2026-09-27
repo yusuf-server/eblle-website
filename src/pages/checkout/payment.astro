@@ -1,0 +1,1418 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// 获取 PayPal Client ID
+const PAYPAL_CLIENT_ID = import.meta.env.PUBLIC_PAYPAL_CLIENT_ID || '';
+const PAYPAL_MODE = import.meta.env.PAYPAL_MODE || 'sandbox';
+---
+
+<Layout title="Checkout: Payment & Review - E.B.Belle">
+  <!-- PayPal SDK -->
+  <script is:inline src={`https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`} data-sdk-integration-source="button-factory"></script>
+  <!-- Simplified Checkout Header -->
+  <header class="checkout-header">
+    <div class="header-container">
+      <a href="/" class="header-logo">
+        <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+          <path clip-rule="evenodd" d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
+        </svg>
+        <span>E.B.Belle</span>
+      </a>
+      <a href="/checkout/shipping" class="back-btn">
+        <i class="fa-solid fa-arrow-left"></i>
+        Back to Shipping
+      </a>
+    </div>
+  </header>
+
+  <main class="checkout-page">
+    <div class="checkout-container">
+      <!-- Left: Form (7 columns) -->
+      <div class="checkout-left">
+        <!-- Progress -->
+        <nav class="progress-nav">
+          <span class="progress-step completed">✓ SHIPPING</span>
+          <i class="fa-solid fa-chevron-right"></i>
+          <span class="progress-step active">PAYMENT</span>
+          <i class="fa-solid fa-chevron-right"></i>
+          <span class="progress-step">REVIEW</span>
+        </nav>
+
+        <!-- Mobile Order Summary (appears after progress on mobile) -->
+        <aside class="checkout-right mobile-order-summary">
+          <div class="order-summary">
+            <!-- Collapsible Header -->
+            <button type="button" class="summary-toggle" id="summaryToggle">
+              <div class="summary-header-left">
+                <i class="fa-solid fa-shopping-bag"></i>
+                <h2>Order summary (2 items)</h2>
+                <i class="fa-solid fa-chevron-down toggle-icon"></i>
+              </div>
+              <span class="summary-total">$1,782.00</span>
+            </button>
+
+            <!-- Collapsible Content -->
+            <div class="summary-content" id="summaryContent">
+              <div class="summary-items" id="mobileCartItems">
+                <!-- 商品将动态加载 -->
+              </div>
+
+              <!-- Discount Code -->
+              <div class="discount-code-section">
+                <input type="text" class="discount-input" placeholder="Discount code or gift card">
+                <button type="button" class="apply-btn">Apply</button>
+              </div>
+
+              <div class="summary-totals">
+                <div class="total-line">
+                  <span>Subtotal</span>
+                  <span>$1,650.00</span>
+                </div>
+                <div class="total-line">
+                  <span>Shipping</span>
+                  <span class="calculated-text">Calculated at next step</span>
+                </div>
+                <div class="total-line">
+                  <span>Estimated Taxes</span>
+                  <span>$132.00</span>
+                </div>
+                <div class="total-line grand">
+                  <span>Total</span>
+                  <span class="total-amount">
+                    <span class="currency">USD</span> $1,782.00
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Shipping Review -->
+        <section class="info-review">
+          <div class="review-header">
+            <h3>Shipping Information</h3>
+            <a href="/checkout/shipping">Edit</a>
+          </div>
+          <div class="review-content" id="shippingReview">
+            <p class="name">John Doe</p>
+            <p>123 Main Street, Apt 4B</p>
+            <p>New York, NY 10001, United States</p>
+            <p class="contact">john.doe@email.com | +1 (555) 123-4567</p>
+          </div>
+        </section>
+
+        <form id="paymentForm" class="payment-form">
+          <!-- Payment Method -->
+          <section class="form-section">
+            <h2>Payment Method</h2>
+            <div class="payment-methods">
+              <label class="payment-option active">
+                <input type="radio" name="payment" value="card" checked>
+                <div class="payment-content">
+                  <i class="fa-regular fa-credit-card"></i>
+                  <span>Credit / Debit Card</span>
+                </div>
+              </label>
+              <label class="payment-option">
+                <input type="radio" name="payment" value="paypal">
+                <div class="payment-content">
+                  <i class="fa-brands fa-paypal"></i>
+                  <span>PayPal</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Card Form -->
+            <div class="card-form" id="cardForm">
+              <div class="field">
+                <label>CARD NUMBER</label>
+                <div class="input-icons">
+                  <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                  <div class="card-brands">
+                    <i class="fa-brands fa-cc-visa"></i>
+                    <i class="fa-brands fa-cc-mastercard"></i>
+                    <i class="fa-brands fa-cc-amex"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="field">
+                <label>CARDHOLDER NAME</label>
+                <input type="text" id="cardName" placeholder="John Doe" required>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label>EXPIRATION DATE</label>
+                  <input type="text" id="expiry" placeholder="MM / YY" maxlength="7" required>
+                </div>
+                <div class="field">
+                  <label>CVV</label>
+                  <div class="input-icons">
+                    <input type="text" id="cvv" placeholder="123" maxlength="4" required>
+                    <i class="fa-solid fa-circle-question help-icon" title="3-digit code on back"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PayPal Button Container -->
+            <div class="paypal-form" id="paypalForm" style="display: none;">
+              <div class="paypal-info">
+                <i class="fa-brands fa-paypal" style="font-size: 48px; color: #003087; margin-bottom: 16px;"></i>
+                <p style="text-align: center; color: #747878; font-size: 14px; margin-bottom: 24px;">
+                  You'll be redirected to PayPal to complete your purchase securely.
+                </p>
+              </div>
+              <div id="paypal-button-container"></div>
+            </div>
+          </section>
+
+          <!-- Billing Address -->
+          <section class="form-section">
+            <h2>Billing Address</h2>
+            <div class="billing-options">
+              <label class="radio-option">
+                <input type="radio" name="billing" value="same" checked>
+                <span>Same as shipping address</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="billing" value="different">
+                <span>Use a different billing address</span>
+              </label>
+            </div>
+          </section>
+
+          <!-- Actions -->
+          <div class="form-actions">
+            <button type="submit" class="btn-submit">Complete Order</button>
+            <a href="/checkout/shipping" class="link-return">Back to Shipping</a>
+          </div>
+        </form>
+
+        <!-- Trust & Security Section -->
+        <section class="trust-section">
+          <!-- Rewards Banner -->
+          <div class="trust-banner">
+            <i class="fa-solid fa-gift"></i>
+            <span>Earn 10 points on this order.</span>
+            <i class="fa-solid fa-circle-info"></i>
+          </div>
+
+          <!-- Delivery Guarantee -->
+          <div class="trust-item">
+            <div class="trust-icon delivery">
+              <i class="fa-solid fa-box"></i>
+            </div>
+            <div class="trust-content">
+              <h3>100% delivery, compensation for lost</h3>
+              <p>We guarantee 100% door-to-door delivery. We will help resolve any package-related issues, including customs problems and lost-package cases.</p>
+            </div>
+          </div>
+
+          <!-- Shopping Security -->
+          <div class="trust-item">
+            <div class="trust-icon security">
+              <i class="fa-solid fa-lock"></i>
+            </div>
+            <div class="trust-content">
+              <h3>Shopping security</h3>
+              <p>Each payment you make is secured with strict SSL encryption and PCI DSS data-protection protocols.</p>
+              <div class="payment-badges">
+                <span class="payment-badge visa">VISA</span>
+                <span class="payment-badge mastercard">Mastercard</span>
+                <span class="payment-badge amex">AMEX</span>
+                <span class="payment-badge paypal">PayPal</span>
+                <span class="payment-badge klarna">Klarna</span>
+                <span class="payment-badge apple">Apple Pay</span>
+                <span class="payment-badge google">Google Pay</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Security Certification -->
+          <div class="trust-item">
+            <div class="trust-icon certification">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="trust-content">
+              <h3>Security certification</h3>
+              <p>Each order you place with us is completely safe and secure.</p>
+              <div class="certification-badges">
+                <div class="cert-badge">
+                  <i class="fa-solid fa-check"></i> VeriSign SECURED
+                </div>
+                <div class="cert-badge">
+                  <i class="fa-solid fa-m"></i> McAfee SECURE
+                </div>
+                <div class="cert-badge dark">
+                  SSL CERTIFICADO
+                </div>
+                <div class="cert-badge">
+                  <i class="fa-solid fa-gem"></i> CERTIFIED JEWELRY
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right: Order Summary (5 columns) - Desktop Only -->
+      <aside class="checkout-right desktop-order-summary">
+        <div class="order-summary">
+          <h2>Order summary (2 items)</h2>
+
+          <div class="summary-items" id="desktopCartItems">
+            <!-- 商品将动态加载 -->
+          </div>
+
+          <!-- Discount Code -->
+          <div class="discount-code-section">
+            <input type="text" class="discount-input" placeholder="Discount code or gift card">
+            <button type="button" class="apply-btn">Apply</button>
+          </div>
+
+          <div class="summary-totals">
+            <div class="total-line">
+              <span>Subtotal</span>
+              <span>$1,650.00</span>
+            </div>
+            <div class="total-line">
+              <span>Shipping</span>
+              <span>$20.00</span>
+            </div>
+            <div class="total-line">
+              <span>Estimated Taxes</span>
+              <span>$132.00</span>
+            </div>
+            <div class="total-line grand">
+              <span>Total</span>
+              <span class="total-amount">
+                <span class="currency">USD</span> $1,802.00
+              </span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</Layout>
+
+<style is:global>
+  /* Header */
+  .checkout-header {
+    border-bottom: 1px solid #c4c7c7;
+    background: #fcf9f3;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 40px;
+    height: 72px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #0e0f0f;
+  }
+  .header-logo span {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #444748;
+    text-decoration: none;
+  }
+  .back-btn:hover {
+    color: #0e0f0f;
+  }
+
+  /* Main */
+  .checkout-page {
+    background: #fcf9f3;
+    min-height: calc(100vh - 72px);
+    padding: 48px 0;
+  }
+  .checkout-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 40px;
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: 80px;
+  }
+
+  /* Left */
+  .checkout-left {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+  .progress-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .progress-step {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #747878;
+  }
+  .progress-step.active {
+    color: #0e0f0f;
+  }
+  .progress-step.completed {
+    color: #16a34a;
+  }
+  .progress-nav i {
+    font-size: 10px;
+    color: #c4c7c7;
+  }
+
+  /* Info Review */
+  .info-review {
+    background: #f6f3ed;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    padding: 24px;
+  }
+  .review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .review-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #0e0f0f;
+  }
+  .review-header a {
+    font-size: 12px;
+    font-weight: 600;
+    color: #725b29;
+    text-decoration: underline;
+  }
+  .review-header a:hover {
+    color: #0e0f0f;
+  }
+  .review-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .review-content p {
+    font-size: 14px;
+    color: #747878;
+    line-height: 1.5;
+  }
+  .review-content .name {
+    font-weight: 600;
+    color: #1c1c18;
+  }
+  .review-content .contact {
+    margin-top: 4px;
+  }
+
+  /* Payment Form */
+  .payment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .form-section h2 {
+    font-family: 'Bodoni Moda', serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: #0e0f0f;
+  }
+
+  .payment-methods {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .payment-option {
+    cursor: pointer;
+  }
+  .payment-option input {
+    display: none;
+  }
+  .payment-content {
+    border: 2px solid #c4c7c7;
+    border-radius: 4px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    transition: all 0.2s;
+  }
+  .payment-option input:checked ~ .payment-content {
+    border-color: #0e0f0f;
+    background: #f0eee8;
+  }
+  .payment-content i {
+    font-size: 36px;
+    color: #747878;
+  }
+  .payment-content span {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1c1c18;
+  }
+
+  .card-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+  }
+  .field label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: #444748;
+    margin-bottom: 8px;
+  }
+  .field input {
+    padding: 16px 0;
+    border: none;
+    border-bottom: 1px solid #c4c7c7;
+    background: transparent;
+    font-size: 16px;
+    color: #1c1c18;
+    font-family: 'Hanken Grotesk', sans-serif;
+  }
+  .field input:focus {
+    outline: none;
+    border-bottom-color: #0e0f0f;
+  }
+  .field input::placeholder {
+    color: #747878;
+  }
+
+  .input-icons {
+    position: relative;
+  }
+  .card-brands {
+    position: absolute;
+    right: 0;
+    top: 16px;
+    display: flex;
+    gap: 8px;
+  }
+  .card-brands i {
+    font-size: 24px;
+    color: #c4c7c7;
+  }
+  .help-icon {
+    position: absolute;
+    right: 0;
+    top: 16px;
+    color: #747878;
+    cursor: help;
+    font-size: 18px;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .billing-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid #c4c7c7;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid #f6f3ed;
+    transition: background 0.2s;
+  }
+  .radio-option:last-child {
+    border-bottom: none;
+  }
+  .radio-option:hover {
+    background: #f6f3ed;
+  }
+  .radio-option input {
+    width: 20px;
+    height: 20px;
+    accent-color: #0e0f0f;
+  }
+  .radio-option span {
+    font-size: 14px;
+    color: #1c1c18;
+  }
+
+  .form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .btn-submit {
+    width: 100%;
+    padding: 18px;
+    background: #0e0f0f;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn-submit:hover {
+    background: #242424;
+  }
+  .link-return {
+    text-align: center;
+    font-size: 13px;
+    color: #747878;
+    text-decoration: underline;
+  }
+  .link-return:hover {
+    color: #0e0f0f;
+  }
+
+  /* Trust & Security Section */
+  .trust-section {
+    margin-top: 32px;
+    padding: 24px 0;
+    border-top: 1px solid #ddd8ce;
+  }
+
+  .trust-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: #fff8e1;
+    border: 1px solid #ffd54f;
+    border-radius: 6px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    color: #1c1c18;
+  }
+
+  .trust-banner i:first-child {
+    color: #f57c00;
+    font-size: 18px;
+  }
+
+  .trust-banner i:last-child {
+    color: #999;
+    margin-left: auto;
+    cursor: pointer;
+  }
+
+  .trust-item {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .trust-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .trust-icon {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 20px;
+  }
+
+  .trust-icon.delivery {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .trust-icon.security {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .trust-icon.certification {
+    background: #e3f2fd;
+    color: #1976d2;
+  }
+
+  .trust-content {
+    flex: 1;
+  }
+
+  .trust-content h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1c1c18;
+    margin-bottom: 8px;
+  }
+
+  .trust-content p {
+    font-size: 13px;
+    color: #747878;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .payment-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .payment-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #fff;
+  }
+
+  .payment-badge.visa {
+    color: #1434cb;
+  }
+
+  .payment-badge.mastercard {
+    color: #eb001b;
+  }
+
+  .payment-badge.amex {
+    color: #006fcf;
+  }
+
+  .payment-badge.paypal {
+    color: #003087;
+  }
+
+  .payment-badge.klarna {
+    color: #ffb3c7;
+  }
+
+  .payment-badge.apple {
+    color: #000;
+  }
+
+  .payment-badge.google {
+    color: #4285f4;
+  }
+
+  .certification-badges {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .cert-badge {
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1c1c18;
+    background: #fff;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .cert-badge.dark {
+    background: #1c1c18;
+    color: #fff;
+    border-color: #1c1c18;
+  }
+
+  .cert-badge i {
+    font-size: 12px;
+  }
+
+  /* PayPal Form */
+  .paypal-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 0;
+  }
+  .paypal-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  #paypal-button-container {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  /* Right */
+  .checkout-right {
+    position: relative;
+  }
+  .order-summary {
+    position: sticky;
+    top: 100px;
+    background: #f6f3ed;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    padding: 32px;
+  }
+  .order-summary h2 {
+    font-family: 'Bodoni Moda', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: #0e0f0f;
+    margin-bottom: 24px;
+  }
+
+  .summary-items {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #ddd8ce;
+  }
+  .item {
+    display: flex;
+    gap: 12px;
+  }
+  .item img {
+    width: 60px;
+    height: 60px;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    object-fit: cover;
+    background: #fff;
+  }
+  .item-details {
+    flex: 1;
+  }
+  .item-details h3 {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1c1c18;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .item-details p {
+    font-size: 12px;
+    color: #747878;
+  }
+  .item-price {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0e0f0f;
+  }
+
+  .summary-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .total-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #747878;
+  }
+  .total-line.grand {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0e0f0f;
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid #ddd8ce;
+  }
+
+  @media (max-width: 1024px) {
+    .checkout-container {
+      grid-template-columns: 1fr;
+      gap: 48px;
+    }
+    .order-summary {
+      position: static;
+    }
+    .payment-methods {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .field-row {
+      grid-template-columns: 1fr;
+    }
+    .checkout-container {
+      padding: 0 24px;
+    }
+  }
+
+  /* Mobile Order Summary - Hidden on desktop */
+  .mobile-order-summary {
+    display: none;
+  }
+
+  /* Desktop Order Summary - Visible on desktop */
+  .desktop-order-summary {
+    display: block;
+  }
+
+  /* Discount Code Section */
+  .discount-code-section {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #ddd8ce;
+  }
+  .discount-input {
+    flex: 1;
+    height: 44px;
+    padding: 0 16px;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #fff;
+  }
+  .discount-input:focus {
+    outline: none;
+    border-color: #B8860B;
+  }
+  .apply-btn {
+    height: 44px;
+    padding: 0 24px;
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .apply-btn:hover {
+    background: #000;
+  }
+
+  /* Summary Toggle (Mobile only) */
+  .summary-toggle {
+    width: 100%;
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+  }
+  .summary-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .summary-header-left i.fa-shopping-bag {
+    font-size: 18px;
+    color: #1a1a1a;
+  }
+  .summary-header-left h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+  }
+  .toggle-icon {
+    font-size: 12px;
+    color: #666;
+    transition: transform 0.3s;
+  }
+  .summary-toggle.active .toggle-icon {
+    transform: rotate(180deg);
+  }
+  .summary-total {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+  .summary-content {
+    display: none;
+    padding: 0 16px 16px;
+  }
+  .summary-content.active {
+    display: block;
+  }
+
+  /* Update total line styles */
+  .calculated-text {
+    font-size: 13px;
+    color: #8B6914;
+    font-style: italic;
+  }
+  .total-amount {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .currency {
+    font-size: 12px;
+    color: #666;
+    font-weight: 400;
+    margin-right: 4px;
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 968px) {
+    .checkout-container {
+      grid-template-columns: 1fr;
+    }
+
+    /* Hide desktop summary, show mobile summary */
+    .desktop-order-summary {
+      display: none;
+    }
+    .mobile-order-summary {
+      display: block;
+      
+    }
+
+    /* Mobile summary styling */
+    .mobile-order-summary .order-summary {
+      position: static;
+      padding: 0;
+      background: #f6f3ed;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .summary-toggle {
+      display: flex;
+    }
+
+    /* Adjust items in mobile */
+    .mobile-order-summary .summary-items {
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+    }
+    .mobile-order-summary .item img {
+      width: 50px;
+      height: 50px;
+    }
+    .mobile-order-summary .item-details h3 {
+      font-size: 13px;
+    }
+    .mobile-order-summary .item-details p {
+      font-size: 11px;
+    }
+    .mobile-order-summary .item-price {
+      font-size: 14px;
+    }
+    .mobile-order-summary .discount-code-section {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+    }
+  }
+</style>
+
+<script>
+  // 从localStorage读取购物车
+  function getCart() {
+    try {
+      const cart = localStorage.getItem('ebbelle_cart');
+      return cart ? JSON.parse(cart) : [];
+    } catch (e) {
+      console.error('Failed to get cart:', e);
+      return [];
+    }
+  }
+
+  // 计算购物车总计
+  function calculateCartTotals(cart) {
+    const subtotal = cart.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      return sum + (price * item.quantity);
+    }, 0);
+
+    const shipping = 20.00; // 固定运费
+    const tax = subtotal * 0.08; // 8% tax
+    const total = subtotal + tax + shipping;
+
+    return {
+      subtotal: subtotal.toFixed(2),
+      tax: tax.toFixed(2),
+      shipping: shipping.toFixed(2),
+      total: total.toFixed(2),
+      itemCount: cart.reduce((sum, item) => sum + item.quantity, 0)
+    };
+  }
+
+  // 渲染购物车项
+  function renderCartItems(cart, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`Container ${containerId} not found`);
+      return;
+    }
+
+    if (cart.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Your cart is empty</p>';
+      return;
+    }
+
+    let html = '';
+    cart.forEach(item => {
+      const itemTotal = (parseFloat(item.price) * item.quantity).toFixed(2);
+      const variants = item.selectedVariants ?
+        Object.values(item.selectedVariants).filter(v => v).join(' / ') : '';
+
+      html += '<div class="item">';
+      html += `<img src="${item.image || '/placeholder.jpg'}" alt="${item.name}" onerror="this.src='/placeholder.jpg'">`;
+      html += '<div class="item-details">';
+      html += `<h3>${item.name}</h3>`;
+      if (variants) {
+        html += `<p>${variants}</p>`;
+      }
+      if (item.quantity > 1) {
+        html += `<p>Qty: ${item.quantity}</p>`;
+      }
+      html += '</div>';
+      html += `<span class="item-price">$${itemTotal}</span>`;
+      html += '</div>';
+    });
+
+    container.innerHTML = html;
+  }
+
+  // 更新总计
+  function updateTotals(totals) {
+    // 更新移动端
+    const mobileItemCount = document.querySelector('.mobile-order-summary h2');
+    if (mobileItemCount) {
+      mobileItemCount.textContent = `Order summary (${totals.itemCount} items)`;
+    }
+    const mobileTotalAmount = document.querySelector('.mobile-order-summary .summary-total');
+    if (mobileTotalAmount) {
+      mobileTotalAmount.textContent = `$${totals.total}`;
+    }
+
+    // 更新桌面端
+    const desktopItemCount = document.querySelector('.desktop-order-summary h2');
+    if (desktopItemCount) {
+      desktopItemCount.textContent = `Order summary (${totals.itemCount} items)`;
+    }
+
+    // 更新金额显示
+    document.querySelectorAll('.summary-totals').forEach(container => {
+      const subtotalEl = container.querySelector('.total-line:nth-child(1) span:last-child');
+      const shippingEl = container.querySelector('.total-line:nth-child(2) span:last-child');
+      const taxEl = container.querySelector('.total-line:nth-child(3) span:last-child');
+      const totalEl = container.querySelector('.total-amount');
+
+      if (subtotalEl) subtotalEl.textContent = `$${totals.subtotal}`;
+      if (shippingEl) shippingEl.textContent = `$${totals.shipping}`;
+      if (taxEl) taxEl.textContent = `$${totals.tax}`;
+      if (totalEl) {
+        totalEl.innerHTML = `<span class="currency">USD</span> $${totals.total}`;
+      }
+    });
+  }
+
+  // 初始化购物车显示
+  function initializeCart() {
+    const cart = getCart();
+    const totals = calculateCartTotals(cart);
+
+    renderCartItems(cart, 'mobileCartItems');
+    renderCartItems(cart, 'desktopCartItems');
+    updateTotals(totals);
+
+    if (cart.length === 0) {
+      console.warn('Cart is empty');
+    }
+  }
+
+  // 页面加载时初始化
+  initializeCart();
+
+  // Mobile Order Summary Toggle
+  const summaryToggle = document.getElementById('summaryToggle');
+  const summaryContent = document.getElementById('summaryContent');
+
+  if (summaryToggle && summaryContent) {
+    summaryToggle.addEventListener('click', () => {
+      summaryToggle.classList.toggle('active');
+      summaryContent.classList.toggle('active');
+    });
+  }
+
+  // Load shipping info
+  const shippingInfo = sessionStorage.getItem('shippingInfo');
+  if (shippingInfo) {
+    const data = JSON.parse(shippingInfo);
+    const reviewDiv = document.getElementById('shippingReview');
+    if (reviewDiv) {
+      reviewDiv.innerHTML = `
+        <p class="name">${data.firstName} ${data.lastName}</p>
+        <p>${data.address}${data.apartment ? ', ' + data.apartment : ''}</p>
+        <p>${data.city}, ${data.state} ${data.zip}, ${data.country}</p>
+        <p class="contact">${data.email} | ${data.phone}</p>
+      `;
+    }
+  }
+
+  // Payment method selection
+  const cardForm = document.getElementById('cardForm');
+  const paypalForm = document.getElementById('paypalForm');
+
+  document.querySelectorAll('.payment-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.payment-option').forEach(o => {
+        o.classList.remove('active');
+        o.querySelector('input')!.checked = false;
+      });
+      opt.classList.add('active');
+      (opt.querySelector('input') as HTMLInputElement).checked = true;
+
+      // 切换支付表单
+      const paymentValue = (opt.querySelector('input') as HTMLInputElement).value;
+      if (paymentValue === 'paypal') {
+        cardForm!.style.display = 'none';
+        paypalForm!.style.display = 'block';
+        initPayPalButton();
+      } else {
+        cardForm!.style.display = 'block';
+        paypalForm!.style.display = 'none';
+      }
+    });
+  });
+
+  // 初始化 PayPal 按钮
+  let paypalButtonInitialized = false;
+
+  function initPayPalButton() {
+    if (paypalButtonInitialized) return;
+    paypalButtonInitialized = true;
+
+    // @ts-ignore - PayPal SDK
+    if (typeof paypal === 'undefined') {
+      console.error('PayPal SDK not loaded');
+      alert('PayPal is not available. Please try again later.');
+      return;
+    }
+
+    const cart = getCart();
+    if (cart.length === 0) {
+      alert('Your cart is empty');
+      return;
+    }
+
+    const shippingInfo = sessionStorage.getItem('shippingInfo');
+    if (!shippingInfo) {
+      alert('Please complete shipping information first');
+      window.location.href = '/checkout/shipping';
+      return;
+    }
+
+    const shipping = JSON.parse(shippingInfo);
+
+    // @ts-ignore
+    paypal.Buttons({
+      style: {
+        layout: 'vertical',
+        color: 'gold',
+        shape: 'rect',
+        label: 'paypal'
+      },
+
+      // 创建订单
+      createOrder: async function(data: any, actions: any) {
+        try {
+          console.log('Creating PayPal order...');
+
+          // 准备订单数据
+          const line_items = cart.map(item => ({
+            product_id: item.product_id || item.id,
+            variation_id: item.variation_id || undefined,
+            quantity: item.quantity
+          }));
+
+          const orderData = {
+            billing: {
+              first_name: shipping.firstName,
+              last_name: shipping.lastName,
+              address_1: shipping.address,
+              address_2: shipping.apartment || '',
+              city: shipping.city,
+              state: shipping.state,
+              postcode: shipping.zip,
+              country: shipping.country,
+              email: shipping.email,
+              phone: shipping.phone,
+            },
+            shipping: {
+              first_name: shipping.firstName,
+              last_name: shipping.lastName,
+              address_1: shipping.address,
+              address_2: shipping.apartment || '',
+              city: shipping.city,
+              state: shipping.state,
+              postcode: shipping.zip,
+              country: shipping.country,
+            },
+            line_items: line_items,
+            shippingMethod: 'standard'
+          };
+
+          // 调用后端创建订单
+          const response = await fetch('/api/paypal/create-order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderData),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to create order');
+          }
+
+          const result = await response.json();
+          console.log('PayPal order created:', result.paypalOrderId);
+
+          // 保存订单信息到 sessionStorage
+          sessionStorage.setItem('pendingOrderId', result.orderId.toString());
+          sessionStorage.setItem('pendingOrderKey', result.orderKey);
+
+          return result.paypalOrderId;
+        } catch (error) {
+          console.error('Error creating order:', error);
+          alert('Failed to create order. Please try again.');
+          throw error;
+        }
+      },
+
+      // 批准后的处理（可选）
+      onApprove: async function(data: any, actions: any) {
+        try {
+          console.log('PayPal order approved:', data.orderID);
+
+          // 捕获支付
+          const orderId = sessionStorage.getItem('pendingOrderId');
+          const response = await fetch('/api/paypal/capture-order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              paypalOrderId: data.orderID,
+              orderId: parseInt(orderId || '0'),
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to capture payment');
+          }
+
+          const result = await response.json();
+          console.log('Payment captured:', result.captureId);
+
+          // 清空购物车
+          localStorage.removeItem('ebbelle_cart');
+
+          // 跳转到成功页面
+          const orderKey = sessionStorage.getItem('pendingOrderKey');
+          window.location.href = `/order-confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal`;
+        } catch (error) {
+          console.error('Error capturing payment:', error);
+          alert('Payment was approved but failed to process. Please contact support.');
+        }
+      },
+
+      // 取消处理
+      onCancel: function(data: any) {
+        console.log('PayPal payment cancelled:', data);
+        alert('Payment cancelled. You can try again when ready.');
+      },
+
+      // 错误处理
+      onError: function(err: any) {
+        console.error('PayPal error:', err);
+        alert('An error occurred with PayPal. Please try again or use a different payment method.');
+      }
+    }).render('#paypal-button-container');
+
+    console.log('PayPal button rendered');
+  }
+
+  // Form submission
+  document.getElementById('paymentForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    window.location.href = '/checkout/confirmation';
+  });
+
+  // Format card number
+  document.getElementById('cardNumber')?.addEventListener('input', (e) => {
+    const input = e.target as HTMLInputElement;
+    let value = input.value.replace(/\s/g, '');
+    let formatted = value.match(/.{1,4}/g)?.join(' ') || value;
+    input.value = formatted;
+  });
+
+  // Format expiry
+  document.getElementById('expiry')?.addEventListener('input', (e) => {
+    const input = e.target as HTMLInputElement;
+    let value = input.value.replace(/\D/g, '');
+    if (value.length >= 2) {
+      value = value.slice(0, 2) + ' / ' + value.slice(2, 4);
+    }
+    input.value = value;
+  });
+</script>

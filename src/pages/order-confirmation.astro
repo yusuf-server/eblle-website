@@ -1,0 +1,764 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getProduct } from '../lib/woocommerce';
+
+export const prerender = false;
+
+// 从 URL 获取订单信息
+const orderId = Astro.url.searchParams.get('order_id');
+const orderKey = Astro.url.searchParams.get('order_key');
+const paymentMethod = Astro.url.searchParams.get('payment') || 'card';
+
+let order: any = null;
+let orderItems: any[] = [];
+let error = '';
+
+if (orderId) {
+  try {
+    // 获取订单详情
+    const WC_STORE_URL = import.meta.env.WC_STORE_URL;
+    const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
+    const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
+
+    const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
+
+    const response = await fetch(`${WC_STORE_URL}/wp-json/wc/v3/orders/${orderId}`, {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+      },
+    });
+
+    if (response.ok) {
+      order = await response.json();
+
+      // 验证 order_key
+      if (orderKey && order.order_key !== orderKey) {
+        error = 'Invalid order key';
+        order = null;
+      } else {
+        // 获取订单商品的完整信息（包括图片）
+        orderItems = await Promise.all(
+          order.line_items.map(async (item: any) => {
+            try {
+              const product = await getProduct(item.product_id);
+              return {
+                ...item,
+                image: product?.images?.[0]?.src || '',
+              };
+            } catch (e) {
+              return {
+                ...item,
+                image: '',
+              };
+            }
+          })
+        );
+      }
+    } else {
+      error = 'Order not found';
+    }
+  } catch (e: any) {
+    console.error('Failed to fetch order:', e);
+    error = 'Failed to load order details';
+  }
+}
+
+// 格式化日期
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+// 计算预计送达日期（7-10天）
+function getEstimatedDelivery() {
+  const start = new Date();
+  start.setDate(start.getDate() + 7);
+  const end = new Date();
+  end.setDate(end.getDate() + 10);
+
+  return `${start.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${end.toLocaleDateString('en-US', { day: 'numeric', year: 'numeric' })}`;
+}
+
+// 订单状态配置
+const statusConfig: any = {
+  'processing': {
+    icon: 'fa-circle-check',
+    color: '#16a34a',
+    title: 'Order Confirmed!',
+    subtitle: 'Your payment has been processed successfully'
+  },
+  'on-hold': {
+    icon: 'fa-clock',
+    color: '#eab308',
+    title: 'Order Received!',
+    subtitle: 'Your payment is being verified'
+  },
+  'pending': {
+    icon: 'fa-hourglass-half',
+    color: '#f59e0b',
+    title: 'Order Pending',
+    subtitle: 'Waiting for payment confirmation'
+  },
+  'failed': {
+    icon: 'fa-circle-xmark',
+    color: '#ef4444',
+    title: 'Payment Failed',
+    subtitle: 'There was an issue processing your payment'
+  },
+  'cancelled': {
+    icon: 'fa-ban',
+    color: '#6b7280',
+    title: 'Order Cancelled',
+    subtitle: 'This order has been cancelled'
+  }
+};
+
+const currentStatus = order ? statusConfig[order.status] || statusConfig['processing'] : statusConfig['processing'];
+---
+
+<Layout title="Order Confirmation - E.B.Belle">
+  <!-- Simplified Header -->
+  <header class="checkout-header">
+    <div class="header-container">
+      <a href="/" class="header-logo">
+        <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+          <path clip-rule="evenodd" d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
+        </svg>
+        <span>E.B.Belle</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="confirmation-page">
+    <div class="confirmation-container">
+      {error ? (
+        <div class="error-state">
+          <div class="error-circle">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <h1>Unable to Load Order</h1>
+          <p class="subtitle">{error}</p>
+          <a href="/" class="btn-primary">Return to Home</a>
+        </div>
+      ) : !order ? (
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading order details...</p>
+        </div>
+      ) : (
+        <>
+          <div class="success-circle" style={`background: ${currentStatus.color};`}>
+            <i class={`fa-solid ${currentStatus.icon}`}></i>
+          </div>
+
+          <!-- Main Content -->
+          <h1>{currentStatus.title}</h1>
+          <p class="subtitle">{currentStatus.subtitle}</p>
+
+          <div class="order-number">
+            <span class="label">Order Number:</span>
+            <span class="number">#{order.number}</span>
+          </div>
+
+          <p class="confirmation-email">
+            We've sent a confirmation email to <strong>{order.billing.email}</strong>
+          </p>
+
+          <!-- Order Details Card -->
+          <div class="order-card">
+            <h2>Order Details</h2>
+
+            <div class="order-items">
+              {orderItems.map((item: any) => (
+                <div class="order-item">
+                  <img
+                    src={item.image || 'https://via.placeholder.com/80?text=No+Image'}
+                    alt={item.name}
+                    onerror="this.src='https://via.placeholder.com/80?text=No+Image'"
+                  />
+                  <div class="item-info">
+                    <h3>{item.name}</h3>
+                    <p>Qty: {item.quantity} × ${parseFloat(item.price).toFixed(2)}</p>
+                    {item.meta_data && item.meta_data.length > 0 && (
+                      <p class="item-meta">
+                        {item.meta_data.map((meta: any) => `${meta.display_key}: ${meta.display_value}`).join(' / ')}
+                      </p>
+                    )}
+                  </div>
+                  <span class="price">${parseFloat(item.total).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div class="order-totals">
+              <div class="total-row">
+                <span>Subtotal</span>
+                <span>${parseFloat(order.total).toFixed(2)}</span>
+              </div>
+              {order.shipping_total && parseFloat(order.shipping_total) > 0 && (
+                <div class="total-row">
+                  <span>Shipping</span>
+                  <span>${parseFloat(order.shipping_total).toFixed(2)}</span>
+                </div>
+              )}
+              {order.total_tax && parseFloat(order.total_tax) > 0 && (
+                <div class="total-row">
+                  <span>Tax</span>
+                  <span>${parseFloat(order.total_tax).toFixed(2)}</span>
+                </div>
+              )}
+              <div class="total-row grand">
+                <span>Total Paid</span>
+                <span>${parseFloat(order.total).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info Grid -->
+          <div class="info-grid">
+            <div class="info-box">
+              <div class="info-header">
+                <i class="fa-solid fa-truck"></i>
+                <h3>Shipping Address</h3>
+              </div>
+              <div class="info-body">
+                <p>{order.shipping.first_name} {order.shipping.last_name}</p>
+                <p>{order.shipping.address_1}</p>
+                {order.shipping.address_2 && <p>{order.shipping.address_2}</p>}
+                <p>{order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</p>
+                <p>{order.shipping.country}</p>
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-header">
+                {paymentMethod === 'paypal' ? (
+                  <i class="fa-brands fa-paypal"></i>
+                ) : (
+                  <i class="fa-solid fa-credit-card"></i>
+                )}
+                <h3>Payment Method</h3>
+              </div>
+              <div class="info-body">
+                <p>{order.payment_method_title}</p>
+                {order.status === 'processing' || order.status === 'completed' ? (
+                  <p class="success-text">
+                    <i class="fa-solid fa-circle-check"></i>
+                    Payment Successful
+                  </p>
+                ) : order.status === 'on-hold' ? (
+                  <p class="pending-text">
+                    <i class="fa-solid fa-clock"></i>
+                    Payment Pending
+                  </p>
+                ) : order.status === 'failed' ? (
+                  <p class="error-text">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    Payment Failed
+                  </p>
+                ) : null}
+                {order.transaction_id && (
+                  <p class="transaction-id">Transaction ID: {order.transaction_id}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <!-- Delivery Info -->
+          {(order.status === 'processing' || order.status === 'completed') && (
+            <div class="delivery-box">
+              <div class="delivery-icon">
+                <i class="fa-solid fa-box"></i>
+              </div>
+              <div class="delivery-content">
+                <h3>Estimated Delivery</h3>
+                <p class="delivery-date">{getEstimatedDelivery()}</p>
+                <p class="delivery-note">You'll receive tracking information via email once your order ships.</p>
+              </div>
+            </div>
+          )}
+
+          <!-- Order Date -->
+          <div class="order-meta">
+            <p>Order placed on {formatDate(order.date_created)}</p>
+          </div>
+
+          <!-- Actions -->
+          <div class="action-buttons">
+            <a href="/" class="btn-primary">Continue Shopping</a>
+            <a href={`/account/orders/${order.id}`} class="btn-secondary">View Order Details</a>
+          </div>
+
+          <!-- Support -->
+          <p class="support-text">
+            Need help? Contact us at <a href="mailto:support@ebbelle.com">support@ebbelle.com</a> or call <a href="tel:+18005551234">+1 (800) 555-1234</a>
+          </p>
+        </>
+      )}
+    </div>
+  </main>
+</Layout>
+
+<style>
+  /* Header */
+  .checkout-header {
+    border-bottom: 1px solid #c4c7c7;
+    background: #fcf9f3;
+  }
+  .header-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 40px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #0e0f0f;
+  }
+  .header-logo span {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+
+  /* Main */
+  .confirmation-page {
+    background: #fcf9f3;
+    min-height: calc(100vh - 72px);
+    padding: 80px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirmation-container {
+    max-width: 720px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Success Icon */
+  .success-circle {
+    width: 80px;
+    height: 80px;
+    background: #16a34a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 24px rgba(22, 163, 74, 0.3);
+    animation: scaleIn 0.5s ease-out;
+  }
+  @keyframes scaleIn {
+    from {
+      transform: scale(0);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  .success-circle i {
+    font-size: 40px;
+    color: #fff;
+  }
+
+  /* Error State */
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .error-circle {
+    width: 80px;
+    height: 80px;
+    background: #ef4444;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+  .error-circle i {
+    font-size: 40px;
+    color: #fff;
+  }
+
+  /* Loading State */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #f3f4f6;
+    border-top-color: #725b29;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  h1 {
+    font-family: 'Bodoni Moda', serif;
+    font-size: 36px;
+    font-weight: 500;
+    color: #0e0f0f;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 18px;
+    color: #747878;
+    margin-bottom: 32px;
+  }
+
+  .order-number {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: #f6f3ed;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    margin-bottom: 24px;
+  }
+  .order-number .label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #747878;
+  }
+  .order-number .number {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0e0f0f;
+    font-family: 'Courier New', monospace;
+  }
+
+  .confirmation-email {
+    font-size: 15px;
+    color: #747878;
+    line-height: 1.6;
+    margin-bottom: 48px;
+  }
+  .confirmation-email strong {
+    color: #1c1c18;
+  }
+
+  /* Order Card */
+  .order-card {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    padding: 32px;
+    margin-bottom: 32px;
+    text-align: left;
+  }
+  .order-card h2 {
+    font-family: 'Bodoni Moda', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: #0e0f0f;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #ddd8ce;
+  }
+
+  .order-items {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #ddd8ce;
+  }
+  .order-item {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  .order-item img {
+    width: 64px;
+    height: 64px;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    object-fit: cover;
+  }
+  .item-info {
+    flex: 1;
+  }
+  .item-info h3 {
+    font-size: 15px;
+    font-weight: 500;
+    color: #1c1c18;
+    margin-bottom: 4px;
+  }
+  .item-info p {
+    font-size: 13px;
+    color: #747878;
+  }
+  .item-meta {
+    font-size: 12px !important;
+    color: #999 !important;
+    font-style: italic;
+  }
+  .order-item .price {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0e0f0f;
+  }
+
+  .order-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
+    color: #747878;
+  }
+  .total-row.grand {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0e0f0f;
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 2px solid #ddd8ce;
+  }
+
+  /* Info Grid */
+  .info-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  .info-box {
+    background: #fff;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    padding: 24px;
+    text-align: left;
+  }
+  .info-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f6f3ed;
+  }
+  .info-header i {
+    font-size: 20px;
+    color: #725b29;
+  }
+  .info-header h3 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #0e0f0f;
+  }
+  .info-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .info-body p {
+    font-size: 14px;
+    color: #747878;
+    line-height: 1.5;
+  }
+  .success-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #16a34a !important;
+    font-weight: 600 !important;
+    margin-top: 8px;
+  }
+  .pending-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #eab308 !important;
+    font-weight: 600 !important;
+    margin-top: 8px;
+  }
+  .error-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #ef4444 !important;
+    font-weight: 600 !important;
+    margin-top: 8px;
+  }
+  .success-text i,
+  .pending-text i,
+  .error-text i {
+    font-size: 16px;
+  }
+  .transaction-id {
+    font-size: 11px !important;
+    color: #999 !important;
+    font-family: 'Courier New', monospace;
+    margin-top: 4px !important;
+  }
+
+  /* Delivery Box */
+  .delivery-box {
+    width: 100%;
+    display: flex;
+    gap: 20px;
+    padding: 24px;
+    background: #f6f3ed;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    margin-bottom: 32px;
+    text-align: left;
+  }
+  .delivery-icon {
+    width: 48px;
+    height: 48px;
+    background: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .delivery-icon i {
+    font-size: 24px;
+    color: #725b29;
+  }
+  .delivery-content h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0e0f0f;
+    margin-bottom: 8px;
+  }
+  .delivery-date {
+    font-size: 18px;
+    font-weight: 600;
+    color: #725b29;
+    margin-bottom: 8px;
+  }
+  .delivery-note {
+    font-size: 13px;
+    color: #747878;
+    line-height: 1.5;
+  }
+
+  /* Order Meta */
+  .order-meta {
+    width: 100%;
+    padding: 16px;
+    background: #f6f3ed;
+    border-radius: 4px;
+    margin-bottom: 32px;
+  }
+  .order-meta p {
+    font-size: 13px;
+    color: #747878;
+    margin: 0;
+  }
+
+  /* Actions */
+  .action-buttons {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .btn-primary,
+  .btn-secondary {
+    padding: 16px 32px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: #0e0f0f;
+    color: #fff;
+    border: 1px solid #0e0f0f;
+  }
+  .btn-primary:hover {
+    background: #242424;
+  }
+  .btn-secondary {
+    background: transparent;
+    color: #0e0f0f;
+    border: 1px solid #0e0f0f;
+  }
+  .btn-secondary:hover {
+    background: #f6f3ed;
+  }
+
+  /* Support */
+  .support-text {
+    font-size: 13px;
+    color: #747878;
+    line-height: 1.6;
+  }
+  .support-text a {
+    color: #725b29;
+    font-weight: 600;
+    text-decoration: underline;
+  }
+  .support-text a:hover {
+    color: #0e0f0f;
+  }
+
+  @media (max-width: 768px) {
+    .info-grid,
+    .action-buttons {
+      grid-template-columns: 1fr;
+    }
+    h1 {
+      font-size: 28px;
+    }
+  }
+</style>
+
+<script>
+  // Clear cart after successful order
+  const urlParams = new URLSearchParams(window.location.search);
+  const orderId = urlParams.get('order_id');
+
+  if (orderId) {
+    // Clear cart from localStorage
+    localStorage.removeItem('ebbelle_cart');
+
+    // Clear session storage
+    sessionStorage.removeItem('pendingOrderId');
+    sessionStorage.removeItem('pendingOrderKey');
+  }
+</script>

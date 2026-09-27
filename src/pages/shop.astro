@@ -1,0 +1,4968 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CartDrawer from '../components/CartDrawer.astro';
+import ProductSkeleton from '../components/ProductSkeleton.astro';
+
+// 不再在服务端获取数据，改为客户端加载
+const perPage = 20;
+
+// 生成分页数组
+const generatePagination = (current: number, total: number) => {
+  const pages: (number | string)[] = [];
+
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) {
+      pages.push(i);
+    }
+  } else {
+    pages.push(1);
+    if (current > 3) {
+      pages.push('...');
+    }
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    if (current < total - 2) {
+      pages.push('...');
+    }
+    pages.push(total);
+  }
+
+  return pages;
+};
+
+// 添加缓存控制，确保页面不被缓存
+if (Astro.response) {
+  Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+}
+---
+
+<Layout title="Shop - E.B.Belle">
+  <Header />
+
+  <!-- Mobile Search Bar -->
+  <div class="mobile-search-container">
+    <div class="mobile-search-wrapper">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input
+        type="text"
+        class="mobile-search-input"
+        placeholder="Search 50,000+ wholesale necklaces..."
+      />
+      <button class="mobile-search-btn">SEARCH</button>
+    </div>
+  </div>
+
+  <!-- BREADCRUMB -->
+  <div class="breadcrumb-section">
+    <div class="container">
+      <div class="breadcrumb-content">
+        <div class="breadcrumb-wrapper">
+          <div class="breadcrumb">
+            <a href="/">Home</a>
+            <span>/</span>
+            <span>Shop</span>
+          </div>
+        </div>
+        <div class="mobile-results-count">(<span id="total-products">0</span>)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Filter Bar -->
+  <div class="mobile-filter-bar">
+    <button class="filter-main-btn" id="mobileFilterBtn">
+      <i class="fa-solid fa-sliders"></i>
+      <span>Filters</span>
+      <span class="filter-count" id="mobileFilterCount">0</span>
+    </button>
+    <button class="filter-tag-btn active">Best Match</button>
+    <button class="filter-tag-btn">316L Steel</button>
+    <button class="filter-tag-btn">$925 Silver</button>
+    <button class="filter-tag-btn">Waterproof</button>
+  </div>
+
+  <!-- Mobile Filter Drawer -->
+  <div class="mobile-filter-drawer-overlay" id="mobileFilterOverlay"></div>
+  <div class="mobile-filter-drawer" id="mobileFilterDrawer">
+    <div class="mobile-filter-header">
+      <h3>Filters</h3>
+      <button class="mobile-filter-close" id="mobileFilterClose">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+    <div class="mobile-filter-content" id="mobileFilterContent">
+      <!-- 筛选内容将动态插入这里 -->
+    </div>
+    <div class="mobile-filter-footer">
+      <button class="mobile-filter-reset" id="mobileFilterReset">
+        <i class="fa-solid fa-rotate-right"></i>
+        Reset
+      </button>
+      <button class="mobile-filter-apply" id="mobileFilterApply">
+        Apply Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick Order Modal (桌面端) -->
+  <div class="quick-order-overlay" id="quickOrderOverlay"></div>
+  <div class="quick-order-modal" id="quickOrderModal">
+    <button class="quick-order-close" id="quickOrderClose">
+      <i class="fa-solid fa-times"></i>
+    </button>
+    <div class="quick-order-content" id="quickOrderContent">
+      <!-- 产品详情将动态插入这里 -->
+    </div>
+  </div>
+
+  <!-- Quick Order Mobile Sheet (移动端) -->
+  <div class="quick-order-mobile-overlay" id="quickOrderMobileOverlay"></div>
+  <div class="quick-order-mobile-sheet" id="quickOrderMobileSheet">
+    <div class="mobile-sheet-header" id="mobileSheetHeader">
+      <button class="mobile-sheet-close" id="quickOrderMobileClose">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      <!-- 产品图片、标题、价格将动态插入这里 -->
+    </div>
+    <div class="mobile-sheet-content" id="quickOrderMobileContent">
+      <!-- 产品详情将动态插入这里 -->
+    </div>
+  </div>
+
+  <!-- Mobile Sort & Layout Control -->
+  <div class="mobile-control-bar">
+    <button class="sort-btn" id="mobileSortBtn">
+      <span>Sort</span>
+      <i class="fa-solid fa-chevron-down"></i>
+    </button>
+    <div class="layout-toggle">
+      <button class="layout-btn active" data-layout="grid">
+        <i class="fa-solid fa-grip"></i>
+      </button>
+      <button class="layout-btn" data-layout="list">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sort Dropdown -->
+  <div class="mobile-sort-dropdown" id="mobileSortDropdown">
+    <button class="sort-option active" data-sort="menu_order">Default sorting</button>
+    <button class="sort-option" data-sort="popularity">Sort by popularity</button>
+    <button class="sort-option" data-sort="rating">Sort by average rating</button>
+    <button class="sort-option" data-sort="date">Sort by latest</button>
+    <button class="sort-option" data-sort="price">Sort by price: low to high</button>
+    <button class="sort-option" data-sort="price-desc">Sort by price: high to low</button>
+  </div>
+
+  <!-- Mobile Products Grid -->
+  <div class="mobile-products-container">
+    <div class="mobile-products-grid" id="products-grid-mobile">
+      <!-- 骨架屏，JavaScript加载后会替换 -->
+      <ProductSkeleton count={20} />
+    </div>
+
+    <!-- Mobile Pagination -->
+    <div class="mobile-pagination" id="pagination-mobile">
+      <button
+        class="mobile-page-btn page-prev"
+        data-page="prev"
+        disabled
+      >
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <button class="mobile-page-btn active" data-page="1">1</button>
+
+      <button
+        class="mobile-page-btn page-next"
+        data-page="next"
+      >
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- SHOP MAIN CONTENT -->
+  <div class="shop-container">
+    <div class="container">
+      <div class="shop-layout">
+        <!-- Sidebar Filters -->
+        <aside class="shop-sidebar">
+          <!-- 筛选区域，JavaScript动态加载 -->
+          <div id="filters-container">
+            <!-- 加载中状态 -->
+            <div class="filters-loading">
+              <div class="loading-skeleton"></div>
+              <div class="loading-skeleton"></div>
+              <div class="loading-skeleton"></div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main Product Area -->
+        <main class="shop-main">
+          <!-- Sorting Bar -->
+          <div class="sorting-bar">
+            <div class="sort-left">
+              <span class="sort-label">Sort by:</span>
+              <button class="sort-btn active" data-sort="menu_order">Default sorting</button>
+              <button class="sort-btn" data-sort="popularity">Sort by popularity</button>
+              <button class="sort-btn" data-sort="rating">Sort by average rating</button>
+              <button class="sort-btn" data-sort="date">Sort by latest</button>
+              <button class="sort-btn" data-sort="price">Sort by price: low to high</button>
+              <button class="sort-btn" data-sort="price-desc">Sort by price: high to low</button>
+            </div>
+            <div class="sort-right">
+              <span class="products-count"><span id="products-count-desktop">0</span> Products Found</span>
+              <div class="view-toggle">
+                <button class="view-btn active"><i class="fa-solid fa-grip"></i></button>
+                <button class="view-btn"><i class="fa-solid fa-list"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Grid -->
+          <div class="products-grid" id="products-grid-desktop">
+            <!-- 骨架屏，JavaScript加载后会替换 -->
+            <ProductSkeleton count={20} />
+
+          </div>
+          <!-- Pagination -->
+          <div class="pagination" id="pagination-desktop">
+            <button
+              class="page-btn page-prev"
+              data-page="prev"
+              disabled
+            >
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <button class="page-btn active" data-page="1">1</button>
+
+            <button
+              class="page-btn page-next"
+              data-page="next"
+            >
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+
+<style is:global>
+  /* Prevent horizontal scroll on mobile */
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  @media (max-width: 820px) {
+    :root {
+      --container-w: 100%;
+    }
+    .container {
+      padding: 0 10px;
+    }
+    .breadcrumb-content {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .mobile-results-count {
+      display: block;
+    }
+    .breadcrumb-wrapper {
+      width: 65%;
+      max-width: 65%;
+    }
+    .mobile-results-count {
+      width: 30%;
+      max-width: 30%;
+    }
+  }
+  .mobile-search-container {
+    display: none;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #e5e5e5;
+  }
+  .mobile-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #F7F4EE;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .search-icon {
+    font-size: 16px;
+    color: #999;
+    margin-right: 10px;
+  }
+  .mobile-search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #333;
+    outline: none;
+  }
+  .mobile-search-input::placeholder {
+    color: #999;
+  }
+  .mobile-search-btn {
+    background: transparent;
+    border: none;
+    color: #B8860B;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 0 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .mobile-search-btn:active {
+    opacity: 0.7;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-search-container {
+      display: block;
+    }
+  }
+
+  /* Mobile Filter Bar */
+  .mobile-filter-bar {
+    display: none;
+    background: #f9f9f9;
+    padding: 6px 16px 10px;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .mobile-filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 移动端筛选Drawer */
+  .mobile-filter-drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 997;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+
+  .mobile-filter-drawer-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .mobile-filter-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 85%;
+    max-width: 400px;
+    height: 100%;
+    background: #fff;
+    z-index: 998;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-filter-drawer.active {
+    transform: translateX(0);
+  }
+
+  .mobile-filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .mobile-filter-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .mobile-filter-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-filter-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  /* 移动端drawer内的筛选区域优化 */
+  .mobile-filter-content .filter-section {
+    margin-bottom: 20px;
+  }
+
+  .mobile-filter-content .filter-header {
+    padding: 12px 0;
+    cursor: pointer;
+  }
+
+  .mobile-filter-content .filter-title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .mobile-filter-content .filter-content {
+    padding-top: 8px;
+  }
+
+  .mobile-filter-content .filter-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .mobile-filter-content .filter-list li {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .mobile-filter-content label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 6px 0;
+    width: 100%;
+    font-size: 16px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-filter-content input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    cursor: pointer;
+    accent-color: #B8860B;
+  }
+
+  .mobile-filter-content .category-parent {
+    width: 100%;
+  }
+
+  .mobile-filter-content .color-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 12px;
+    padding-top: 8px;
+  }
+
+  .mobile-filter-content .color-swatch-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mobile-filter-content .color-swatch {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-filter-content .color-swatch.selected {
+    border-color: #B8860B;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #B8860B;
+  }
+
+  .mobile-filter-content .color-label {
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+  }
+
+  .mobile-filter-footer {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid #e5e5e5;
+    background: #fff;
+  }
+
+  .mobile-filter-reset {
+    flex: 0 0 auto;
+    padding: 12px 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+
+  .mobile-filter-reset:active {
+    background: #f5f5f5;
+  }
+
+  .mobile-filter-apply {
+    flex: 1;
+    padding: 12px 20px;
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .mobile-filter-apply:active {
+    background: #000;
+  }
+
+  /* Quick Order Modal (桌面端) */
+  .quick-order-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+
+  .quick-order-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .quick-order-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    width: 90%;
+    max-width: 1200px;
+    max-height: 85vh;
+    background: #fff;
+    border-radius: 12px;
+    z-index: 1002;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  .quick-order-modal.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .quick-order-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #333;
+    z-index: 10;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .quick-order-close:hover {
+    background: #fff;
+    transform: rotate(90deg);
+  }
+
+  .quick-order-content {
+    display: grid;
+    grid-template-columns: 45% 55%;
+    height: 85vh;
+    overflow: hidden;
+  }
+
+  .quick-order-images {
+    background: #f9f9f9;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .quick-order-main-image {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .quick-order-main-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .quick-order-thumbnails {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+
+  .quick-order-thumb {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .quick-order-thumb:hover,
+  .quick-order-thumb.active {
+    border-color: #B8860B;
+  }
+
+  .quick-order-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .quick-order-details {
+    padding: 40px;
+    overflow-y: auto;
+  }
+
+  .quick-order-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #1a1a1a;
+  }
+
+  .quick-order-price {
+    font-size: 32px;
+    font-weight: 700;
+    color: #B8860B;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .quick-order-price-current {
+    font-size: 32px;
+    color: #B8860B;
+  }
+
+  .quick-order-price-regular {
+    font-size: 24px;
+    color: #999;
+    text-decoration: line-through;
+  }
+
+  .quick-order-stock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+
+  .quick-order-stock.in-stock {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .quick-order-stock.out-of-stock {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .quick-order-stock-placeholder {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    background: #f0f0f0;
+    color: #666;
+  }
+
+  .quick-order-section {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .quick-order-section:last-child {
+    border-bottom: none;
+  }
+
+  .quick-order-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 16px;
+  }
+
+  .quick-order-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .quick-order-option {
+    padding: 10px 20px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+  }
+
+  .quick-order-option:hover {
+    border-color: #B8860B;
+  }
+
+  .quick-order-option.selected {
+    border-color: #B8860B;
+    background: #B8860B;
+    color: #fff;
+  }
+
+  .quick-order-quantity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .quick-order-qty-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+  }
+
+  .quick-order-qty-btn:hover {
+    border-color: #B8860B;
+    color: #B8860B;
+  }
+
+  .quick-order-qty-input {
+    width: 60px;
+    height: 36px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+
+  .quick-order-add-btn {
+    width: 100%;
+    padding: 16px;
+    background: #B8860B;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .quick-order-add-btn:hover:not(.disabled) {
+    background: #8B6914;
+  }
+
+  .quick-order-add-btn.disabled {
+    background: #ccc;
+    color: #666;
+    cursor: not-allowed;
+  }
+
+  .quick-order-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f0f0f0;
+    border-top: 4px solid #B8860B;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .quick-order-loading p {
+    color: #666;
+    font-size: 14px;
+  }
+
+  /* Quick Order Mobile Sheet (移动端) */
+  .quick-order-mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+
+  .quick-order-mobile-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .quick-order-mobile-sheet {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 85vh;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    z-index: 1002;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .quick-order-mobile-sheet.active {
+    transform: translateY(0);
+  }
+
+  .mobile-sheet-header {
+    position: relative;
+    padding: 16px;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .mobile-sheet-product-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f5f5f5;
+    margin-top: 8px;
+  }
+
+  .mobile-sheet-product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .mobile-sheet-header-right {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    margin: 0 auto 8px;
+  }
+
+  .mobile-sheet-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+  }
+
+  .mobile-sheet-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: #B8860B;
+  }
+
+  .mobile-sheet-close {
+    position: absolute;
+    top: 8px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #333;
+    z-index: 1;
+  }
+
+  .mobile-sheet-content {
+    overflow-y: auto;
+    max-height: calc(85vh - 60px);
+    padding: 16px;
+  }
+
+  .mobile-quick-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #1a1a1a;
+  }
+
+  .mobile-quick-price-tiers {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 16px;
+  }
+
+  .mobile-tier-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .mobile-tier-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .mobile-tier-title i {
+    color: #B8860B;
+    font-size: 10px;
+  }
+
+  .mobile-tier-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    background: #FFF9E6;
+    color: #B8860B;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
+  .mobile-pricing-grid {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-pricing-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-price-tier {
+    flex-shrink: 0;
+    min-width: 70px;
+    padding: 6px 8px;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    text-align: center;
+    background: #fafafa;
+  }
+
+  .mobile-price-tier.best {
+    border-color: #B8860B;
+    background: #FFF9E6;
+  }
+
+  .mobile-tier-qty {
+    font-size: 9px;
+    color: #666;
+    margin-bottom: 3px;
+    white-space: nowrap;
+  }
+
+  .mobile-tier-price {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 2px;
+  }
+
+  .mobile-tier-save {
+    font-size: 8px;
+    color: #28a745;
+    font-weight: 600;
+  }
+
+  .mobile-tier-label {
+    font-size: 8px;
+    color: #999;
+  }
+
+  .mobile-tier-best-badge {
+    font-size: 8px;
+    color: #B8860B;
+    font-weight: 600;
+  }
+
+  .mobile-attribute-section {
+    margin-bottom: 16px;
+  }
+
+  .mobile-attribute-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+  }
+
+  .mobile-attribute-title-label {
+    flex-shrink: 0;
+  }
+
+  .mobile-attribute-title-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: #B8860B;
+    margin-left: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-attribute-options {
+    display: grid;
+    gap: 8px;
+  }
+
+  /* 3个选项：3列 */
+  .mobile-attribute-options[data-option-count="3"] {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* 4个选项：4列 */
+  .mobile-attribute-options[data-option-count="4"] {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* 5个或更多：5列，多行显示 */
+  .mobile-attribute-options[data-option-count="5"],
+  .mobile-attribute-options[data-option-count="6"],
+  .mobile-attribute-options[data-option-count="7"],
+  .mobile-attribute-options[data-option-count="8"],
+  .mobile-attribute-options[data-option-count="9"],
+  .mobile-attribute-options[data-option-count="10"],
+  .mobile-attribute-options[data-option-count="11"],
+  .mobile-attribute-options[data-option-count="12"],
+  .mobile-attribute-options[data-option-count="13"],
+  .mobile-attribute-options[data-option-count="14"],
+  .mobile-attribute-options[data-option-count="15"] {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  /* 1-2个选项：弹性布局 */
+  .mobile-attribute-options[data-option-count="1"],
+  .mobile-attribute-options[data-option-count="2"] {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .mobile-attribute-option {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 6px;
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 5列布局时缩小字体和padding */
+  .mobile-attribute-options[data-option-count="5"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="6"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="7"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="8"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="9"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="10"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="11"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="12"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="13"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="14"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="15"] .mobile-attribute-option {
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+
+  .mobile-attribute-option.selected {
+    border-color: #B8860B;
+    background: #FFF9E6;
+    color: #B8860B;
+    font-weight: 600;
+  }
+
+  .mobile-attribute-option:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .mobile-quantity-section {
+    margin-bottom: 120px;
+  }
+
+  .mobile-quantity-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+  }
+
+  .mobile-quantity-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mobile-qty-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .mobile-qty-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .mobile-qty-input {
+    width: 60px;
+    height: 36px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .mobile-stock-status {
+    margin-top: 8px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mobile-stock-status.in-stock {
+    color: #28a745;
+  }
+
+  .mobile-stock-status.out-of-stock {
+    color: #dc3545;
+  }
+
+  /* 移除旧的样式 */
+  .mobile-variant-list,
+  .mobile-variant-item,
+  .mobile-variant-image,
+  .mobile-variant-info,
+  .mobile-variant-name,
+  .mobile-variant-price,
+  .mobile-variant-stock,
+  .mobile-variant-qty {
+    /* 这些样式不再使用 */
+  }
+
+  .mobile-quick-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid #e5e5e5;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .mobile-quick-add-btn {
+    width: 100%;
+    padding: 14px;
+    background: #B8860B;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .mobile-quick-add-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+
+  /* 移动端显示/桌面端隐藏 */
+  @media (max-width: 768px) {
+    .quick-order-overlay,
+    .quick-order-modal {
+      display: none !important;
+    }
+
+    .quick-order-mobile-overlay,
+    .quick-order-mobile-sheet {
+      display: block;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .quick-order-mobile-overlay,
+    .quick-order-mobile-sheet {
+      display: none !important;
+    }
+  }
+
+  .filter-main-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #B8860B;
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .filter-main-btn i {
+    font-size: 11px;
+  }
+  .filter-count {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .filter-tag-btn {
+    background: white;
+    color: #666;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .filter-tag-btn.active {
+    background: #F7F4EE;
+    border-color: #B8860B;
+    color: #B8860B;
+    font-weight: 600;
+  }
+  .filter-tag-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Mobile Control Bar (Sort + Layout Toggle) */
+  .mobile-control-bar {
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .sort-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+  }
+  .sort-btn i {
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+  .sort-btn.active i {
+    transform: rotate(180deg);
+  }
+  .layout-toggle {
+    display: flex;
+    gap: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 4px;
+    background: white;
+  }
+  .layout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .layout-btn.active {
+    background: #B8860B;
+    color: white;
+  }
+  .layout-btn i {
+    font-size: 16px;
+  }
+
+  /* Mobile Sort Dropdown */
+  .mobile-sort-dropdown {
+    display: none;
+    flex-direction: column;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  .mobile-sort-dropdown.show {
+    display: flex;
+  }
+  .sort-option {
+    padding: 14px 16px;
+    background: white;
+    border: none;
+    border-bottom: 1px solid #f3f4f6;
+    text-align: left;
+    font-size: 15px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .sort-option:last-child {
+    border-bottom: none;
+  }
+  .sort-option.active {
+    color: #9333ea;
+    font-weight: 600;
+  }
+  .sort-option:active {
+    background: #f9fafb;
+  }
+
+  /* Mobile Products Container */
+  .mobile-products-container {
+    display: none;
+    background: #f9fafb;
+    padding: 16px;
+  }
+  .mobile-products-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .mobile-product-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .mobile-product-image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #f9f9f9;
+  }
+  .mobile-product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .mobile-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    z-index: 2;
+  }
+  .mobile-badge.new {
+    background: #B8860B;
+    color: white;
+  }
+  .mobile-badge.hot {
+    background: #B8860B;
+    color: white;
+  }
+  .mobile-badge.top {
+    background: #B8860B;
+    color: white;
+  }
+  .mobile-wishlist-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 32px;
+    height: 32px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .mobile-wishlist-btn i {
+    font-size: 14px;
+  }
+  .mobile-product-info {
+    padding: 10px;
+  }
+  .mobile-product-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a1a1a;
+    margin: 0 0 6px 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .mobile-product-price {
+    margin-bottom: 6px;
+  }
+  .mobile-price {
+    font-size: 14px;
+    font-weight: 700;
+    color: #B8860B;
+  }
+  .mobile-old-price {
+    font-size: 12px;
+    color: #999;
+    text-decoration: line-through;
+    margin-left: 4px;
+  }
+  .mobile-product-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 11px;
+  }
+  .mobile-moq {
+    color: #999;
+  }
+  .mobile-material {
+    background: #f5f5f5;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #666;
+  }
+  .mobile-add-btn {
+    width: 100%;
+    background: #fef3e2;
+    border: none;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    cursor: pointer;
+  }
+  .mobile-add-btn:active {
+    background: #B8860B;
+    color: white;
+  }
+
+  /* Mobile List Layout (横向布局) */
+  .mobile-products-grid.list-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .mobile-product-card-list {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .card-list-link {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .card-list-image {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #f9f9f9;
+  }
+
+  .card-list-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .mobile-badge-list {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    padding: 2px 6px;
+    background: #B8860B;
+    color: white;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    z-index: 2;
+  }
+
+  .card-list-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .card-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .card-list-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a1a1a;
+    margin: 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+  }
+
+  .mobile-wishlist-btn-list {
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .mobile-wishlist-btn-list i {
+    font-size: 12px;
+  }
+
+  .card-list-price {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .list-price-current {
+    font-size: 16px;
+    font-weight: 700;
+    color: #B8860B;
+  }
+
+  .list-price-old {
+    font-size: 12px;
+    color: #999;
+    text-decoration: line-through;
+  }
+
+  .list-discount-badge {
+    padding: 2px 6px;
+    background: #fef3e2;
+    color: #B8860B;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .card-list-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #666;
+  }
+
+  .list-divider {
+    color: #ddd;
+  }
+
+  .card-list-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: auto;
+  }
+
+  .list-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #666;
+  }
+
+  .list-rating .stars {
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  .list-rating .rating-num {
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .list-rating .sales-count {
+    color: #999;
+  }
+
+  .mobile-add-btn-list {
+    background: #fef3e2;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a1a1a;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .mobile-add-btn-list:active {
+    background: #B8860B;
+    color: white;
+  }
+
+  /* Mobile Pagination */
+  .mobile-pagination {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 16px;
+    background: white;
+  }
+  .mobile-page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .mobile-page-btn:not(.disabled):active {
+    background: #f5f5f5;
+  }
+  .mobile-page-btn.active {
+    background: #B8860B;
+    color: white;
+    border-color: #B8860B;
+  }
+  .mobile-page-btn.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .mobile-page-dots {
+    color: #999;
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-filter-bar {
+      display: flex;
+    }
+    .mobile-control-bar {
+      display: flex;
+    }
+    .mobile-products-container {
+      display: block;
+    }
+    .mobile-pagination {
+      display: flex;
+    }
+    .shop-container {
+      display: none;
+    }
+    .shop-sidebar {
+      display: none;
+    }
+    .shop-layout {
+      grid-template-columns: 1fr;
+    }
+    .sorting-bar {
+      display: none;
+    }
+    .products-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .product-card-shop {
+      border-radius: 8px;
+    }
+    .product-badge {
+      top: 6px;
+      left: 6px;
+      padding: 3px 8px;
+      font-size: 10px;
+    }
+    .wishlist-btn {
+      top: 6px;
+      right: 6px;
+      width: 32px;
+      height: 32px;
+    }
+    .wishlist-btn i {
+      font-size: 14px;
+    }
+    .product-details-shop {
+      padding: 10px;
+    }
+    .product-title-shop {
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .price-current {
+      font-size: 14px;
+    }
+    .product-meta {
+      font-size: 11px;
+      margin-bottom: 10px;
+    }
+    .add-to-cart-btn {
+      padding: 8px;
+      font-size: 13px;
+    }
+  }
+
+  /* Breadcrumb */
+  .breadcrumb-section {
+    background: #f9f9f9;
+    padding: 10px 0;
+  }
+  .breadcrumb-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  .breadcrumb-wrapper {
+    width: 70%;
+  }
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #666;
+    overflow: hidden;
+  }
+  .breadcrumb a,
+  .breadcrumb > span {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .breadcrumb a {
+    color: #666;
+    transition: color 0.2s;
+  }
+  .breadcrumb a:hover {
+    color: var(--primary);
+  }
+  .mobile-results-count {
+    display: none;
+    color: #999;
+    font-size: 12px;
+    font-weight: 500;
+    width: 25%;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 820px) {
+    .mobile-results-count {
+      display: block;
+    }
+    .breadcrumb-content {
+      width: 100%;
+      max-width: 100%;
+    }
+    .breadcrumb-wrapper {
+      width: 65%;
+      max-width: 65%;
+    }
+    .mobile-results-count {
+      width: 30%;
+      max-width: 30%;
+    }
+  }
+
+  /* Shop Container */
+  .shop-container {
+    width:100%;
+    padding: 40px 0;
+    background: #fff;
+  }
+  .shop-container .container {
+    max-width: 1400px;
+  }
+  .shop-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 32px;
+  }
+
+  /* Sidebar */
+  .shop-sidebar {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 24px;
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+  }
+  .filter-section {
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .filter-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+  .filter-title {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    color: #1a1a1a;
+  }
+  .filter-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .filter-list li {
+    margin-bottom: 12px;
+  }
+  .filter-list label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #444;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .filter-list label:hover {
+    color: #000;
+  }
+  .filter-list input[type="checkbox"] {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+  }
+  .filter-list span {
+    color: #999;
+    font-size: 12px;
+  }
+
+  /* Price Range */
+  .price-range {
+    padding-top: 8px;
+  }
+  .price-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .price-inputs input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .price-inputs span {
+    color: #999;
+  }
+  .range-slider {
+    position: relative;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+  }
+  .range-fill {
+    position: absolute;
+    height: 100%;
+    background: #000;
+    border-radius: 2px;
+    left: 20%;
+    right: 30%;
+  }
+
+  /* Shop Main */
+  .shop-main {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Sorting Bar */
+  .sorting-bar {
+    background: #fef1e9;
+    padding: 16px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+  .sort-left {
+    padding:0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .sort-label {
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+  .sort-btn {
+    background: none;
+    border: none;
+    color: #747878;
+    font-size: 12px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .sort-btn:hover,
+  .sort-btn.active {
+    color: #000;
+    font-weight: 700;
+  }
+  .sort-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .products-count {
+    color: #666;
+  }
+  .view-toggle {
+    display: flex;
+    gap: 4px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .view-btn {
+    padding: 6px 10px;
+    background: #fff;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #999;
+  }
+  .view-btn:hover,
+  .view-btn.active {
+    background: #000;
+    color: #fff;
+  }
+
+  /* Products Grid */
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+  }
+  .product-card-shop {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .product-card-shop:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+  .product-image-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #f9f9f9;
+  }
+  .product-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .product-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    z-index: 2;
+  }
+  .product-badge.new {
+    background: #B8860B;
+    color: white;
+  }
+  .product-badge.hot {
+    background: #B8860B;
+    color: white;
+  }
+  .product-badge.top {
+    background: #B8860B;
+    color: white;
+  }
+  .wishlist-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 2;
+  }
+  .wishlist-btn:hover {
+    background: #B8860B;
+    border-color: #B8860B;
+    color: white;
+  }
+  .wishlist-btn i {
+    font-size: 16px;
+  }
+  .product-details-shop {
+    padding: 12px;
+  }
+  .product-title-shop {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a1a;
+    margin: 0 0 8px 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .product-price-shop {
+    margin-bottom: 8px;
+  }
+  .price-current {
+    font-size: 16px;
+    font-weight: 700;
+    color: #B8860B;
+  }
+  .price-old {
+    font-size: 13px;
+    color: #999;
+    text-decoration: line-through;
+    margin-left: 6px;
+  }
+  .product-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: #666;
+  }
+  .moq {
+    color: #999;
+  }
+  .material {
+    background: #f5f5f5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #666;
+  }
+  .add-to-cart-btn {
+    width: 100%;
+    background: #fef3e2;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .add-to-cart-btn:hover {
+    background: #B8860B;
+    color: white;
+  }
+  .add-to-cart-btn i {
+    font-size: 16px;
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 40px;
+  }
+  .page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .page-btn:hover:not(.disabled) {
+    border-color: #000;
+  }
+  .page-btn.active {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+  }
+  .page-btn.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .page-dots {
+    color: #999;
+    padding: 0 8px;
+  }
+
+  /* New Footer */
+  .footer-new {
+    background: #fafafa;
+    border-top: 1px solid #e5e5e5;
+    padding: 80px 0 48px;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 80px;
+  }
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #000;
+  }
+  .logo-icon {
+    width: 24px;
+    height: 24px;
+  }
+  .footer-logo h2 {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'Cinzel', serif;
+  }
+  .footer-desc {
+    font-size: 14px;
+    color: #747878;
+    line-height: 1.6;
+    max-width: 400px;
+  }
+  .footer-social {
+    display: flex;
+    gap: 16px;
+  }
+  .social-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #c4c7c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #747878;
+    font-size: 12px;
+    font-weight: 700;
+    transition: all 0.3s;
+  }
+  .social-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  .footer-links h5 {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 24px;
+    color: #1a1a1a;
+  }
+  .footer-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .footer-links a {
+    font-size: 14px;
+    color: #747878;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover {
+    color: var(--primary);
+  }
+  .footer-bottom {
+    padding-top: 32px;
+    border-top: 1px solid #e5e5e5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #747878;
+  }
+  .footer-bottom-links {
+    display: flex;
+    gap: 32px;
+  }
+  .footer-bottom-links a {
+    color: #747878;
+    transition: color 0.2s;
+  }
+  .footer-bottom-links a:hover {
+    color: #1a1a1a;
+  }
+
+  @media (max-width: 1024px) {
+    .shop-layout {
+      grid-template-columns: 1fr;
+    }
+    .shop-sidebar {
+      position: relative;
+      top: 0;
+    }
+    .products-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .footer-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .container {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .shop-container {
+      display: none;
+    }
+    .products-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .sorting-bar {
+      flex-direction: column;
+      gap: 16px;
+    }
+    .footer-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  /* =========================================================
+     筛选区域样式
+     ========================================================= */
+  .filters-loading {
+    padding: 20px;
+  }
+
+  .loading-skeleton {
+    height: 120px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* 产品骨架屏 */
+  .product-skeleton {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e5e5e5;
+  }
+
+  .skeleton-image {
+    width: 100%;
+    padding-top: 100%; /* 1:1 比例 */
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  .skeleton-content {
+    padding: 12px;
+  }
+
+  .skeleton-line {
+    height: 12px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+
+  .skeleton-title {
+    width: 80%;
+    height: 14px;
+  }
+
+  .skeleton-price {
+    width: 50%;
+    height: 16px;
+  }
+
+  .skeleton-meta {
+    width: 60%;
+    height: 10px;
+  }
+
+  /* 筛选头部 */
+  .filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0 16px;
+    border-bottom: 1px solid #e5e5e5;
+    margin-bottom: 0;
+  }
+
+  .filters-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+    letter-spacing: 0.5px;
+  }
+
+  .filters-reset {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #666;
+    transition: color 0.2s;
+  }
+
+  .filters-reset:hover {
+    color: #1a1a1a;
+  }
+
+  .filters-reset i {
+    font-size: 16px;
+  }
+
+  /* 筛选区块 */
+  .filter-section {
+    border-bottom: 1px solid #e5e5e5;
+    padding: 0;
+    margin: 0;
+  }
+
+  .filter-section:last-child {
+    border-bottom: none;
+  }
+
+  /* 筛选标题（可折叠） */
+  .filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .filter-header:hover .filter-title {
+    color: #000;
+  }
+
+  .filter-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .filter-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    color: #1a1a1a;
+    font-size: 12px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .filter-toggle.collapsed {
+    transform: rotate(-180deg);
+  }
+
+  /* 筛选内容 */
+  .filter-content {
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+  }
+
+  .filter-content.collapsed {
+    max-height: 0;
+  }
+
+  .filter-list {
+    list-style: none;
+    padding: 0 0 16px 0;
+    margin: 0;
+    max-height: 260px; /* 约6-7个选项的高度 */
+    overflow-y: auto;
+  }
+
+  /* 自定义滚动条 - 默认隐藏 */
+  .filter-list::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .filter-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .filter-list::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+
+  /* hover筛选区块时显示滚动条 */
+  .filter-section:hover .filter-list::-webkit-scrollbar-thumb {
+    background: #d0d0d0;
+  }
+
+  .filter-section:hover .filter-list::-webkit-scrollbar-thumb:hover {
+    background: #b0b0b0;
+  }
+
+  .filter-list li {
+    margin-bottom: 0;
+    padding: 6px 0;
+  }
+
+  .filter-list li:last-child {
+    margin-bottom: 0;
+  }
+
+  .filter-list label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s;
+    line-height: 1.4;
+    text-align: left;
+    text-transform: none;
+    font-weight: normal;
+  }
+
+  .filter-list label:hover {
+    color: #1a1a1a;
+  }
+
+  .filter-list label span {
+    flex: 1;
+    text-align: left;
+  }
+
+  .filter-list input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: #1a1a1a;
+  }
+
+  .filter-label-text {
+    flex: 1;
+    text-align: left;
+  }
+
+  .filter-count {
+    color: #999;
+    font-size: 12px;
+    margin-left: auto;
+  }
+
+  /* 子分类 */
+  .category-parent {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 4px;
+  }
+
+  .category-parent label {
+    flex: 1;
+  }
+
+  .toggle-children {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #999;
+    font-size: 10px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .toggle-children:hover {
+    color: #666;
+  }
+
+  .toggle-children.expanded {
+    transform: rotate(180deg);
+  }
+
+  .filter-children {
+    padding-left: 26px;
+    margin-top: 4px;
+    display: none;
+  }
+
+  .filter-children.show {
+    display: block;
+  }
+
+  .filter-children li {
+    padding: 4px 0;
+  }
+
+  /* 颜色色卡 */
+  .color-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+
+  .color-swatch-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .color-swatch {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .color-swatch:hover {
+    border-color: #999;
+  }
+
+  .color-swatch.selected {
+    border-color: #1a1a1a;
+    border-width: 2px;
+  }
+
+  .color-swatch input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .color-label {
+    font-size: 11px;
+    color: #666;
+    text-align: center;
+  }
+</style>
+
+<script>
+  // 标记 shop.astro 的完整 Quick Order 实现已加载
+  window.shopQuickOrderInitialized = true;
+
+  // 初始化面包屑导航
+  function updateBreadcrumb() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQuery = urlParams.get('q');
+    const category = urlParams.get('category');
+    const breadcrumb = document.querySelector('.breadcrumb');
+
+    if (breadcrumb) {
+      if (searchQuery) {
+        // 显示搜索结果面包屑
+        breadcrumb.innerHTML = `
+          <a href="/">Home</a>
+          <span>/</span>
+          <a href="/shop">Shop</a>
+          <span>/</span>
+          <span>Search: "${searchQuery}"</span>
+        `;
+      } else if (category) {
+        // 显示分类面包屑
+        const categoryName = category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        breadcrumb.innerHTML = `
+          <a href="/">Home</a>
+          <span>/</span>
+          <a href="/shop">Shop</a>
+          <span>/</span>
+          <span>${categoryName}</span>
+        `;
+      } else {
+        // 默认面包屑
+        breadcrumb.innerHTML = `
+          <a href="/">Home</a>
+          <span>/</span>
+          <span>Shop</span>
+        `;
+      }
+    }
+  }
+
+  // 页面状态
+  let currentPage = 1;
+  let totalPages = 1;
+  let totalProducts = 0;
+  const perPage = 20;
+  let isLoading = false;
+  let currentFilters = null; // 保存当前筛选条件
+  let pageBeforeFilter = 1; // 保存筛选前的页码
+
+  // 全局函数：折叠/展开筛选区块
+  window.toggleFilterSection = function(header) {
+    const section = header.parentElement;
+    const content = section.querySelector('.filter-content');
+    const toggle = section.querySelector('.filter-toggle');
+
+    content.classList.toggle('collapsed');
+    toggle.classList.toggle('collapsed');
+  };
+
+  // 全局函数：折叠/展开子分类
+  window.toggleChildren = function(button, targetId) {
+    const target = document.getElementById(targetId);
+    if (target) {
+      target.classList.toggle('show');
+      button.classList.toggle('expanded');
+    }
+  };
+
+  // 全局函数：重置所有筛选
+  window.resetAllFilters = function() {
+    const allCheckboxes = document.querySelectorAll('#filters-container input[type="checkbox"]');
+    allCheckboxes.forEach(checkbox => {
+      checkbox.checked = false;
+    });
+
+    // 移除颜色选中样式
+    const colorSwatches = document.querySelectorAll('.color-swatch.selected');
+    colorSwatches.forEach(swatch => {
+      swatch.classList.remove('selected');
+    });
+
+    // 触发筛选变化
+    handleFilterChange();
+  };
+
+  // 生成分页按钮
+  function generatePagination(current, total) {
+    const pages = [];
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      if (current > 3) {
+        pages.push('...');
+      }
+      const start = Math.max(2, current - 1);
+      const end = Math.min(total - 1, current + 1);
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      if (current < total - 2) {
+        pages.push('...');
+      }
+      pages.push(total);
+    }
+    return pages;
+  }
+
+  // 渲染分页按钮
+  function renderPagination() {
+    const pages = generatePagination(currentPage, totalPages);
+
+    // 桌面端
+    const desktopPagination = document.getElementById('pagination-desktop');
+    const mobilePagination = document.getElementById('pagination-mobile');
+
+    [desktopPagination, mobilePagination].forEach(container => {
+      if (!container) return;
+
+      const isMobile = container.id.includes('mobile');
+      const btnClass = isMobile ? 'mobile-page-btn' : 'page-btn';
+      const dotsClass = isMobile ? 'mobile-page-dots' : 'page-dots';
+
+      let html = `
+        <button class="${btnClass}" data-page="prev" ${currentPage === 1 ? 'disabled' : ''}>
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+      `;
+
+      pages.forEach(page => {
+        if (page === '...') {
+          html += `<span class="${dotsClass}">...</span>`;
+        } else {
+          html += `<button class="${btnClass} ${currentPage === page ? 'active' : ''}" data-page="${page}">${page}</button>`;
+        }
+      });
+
+      html += `
+        <button class="${btnClass}" data-page="next" ${currentPage >= totalPages ? 'disabled' : ''}>
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      `;
+
+      container.innerHTML = html;
+    });
+
+    // 绑定点击事件
+    document.querySelectorAll('[data-page]').forEach(btn => {
+      btn.addEventListener('click', handlePageClick);
+    });
+  }
+
+  // 处理分页点击
+  async function handlePageClick(e) {
+    console.log('=== 分页按钮被点击 ===');
+    console.log('事件对象:', e);
+    console.log('目标元素:', e.currentTarget);
+
+    const pageValue = e.currentTarget.dataset.page;
+    console.log('页码值:', pageValue);
+
+    let newPage = currentPage;
+
+    if (pageValue === 'prev') {
+      newPage = Math.max(1, currentPage - 1);
+    } else if (pageValue === 'next') {
+      newPage = Math.min(totalPages, currentPage + 1);
+    } else {
+      newPage = parseInt(pageValue);
+    }
+
+    console.log('当前页:', currentPage, '新页码:', newPage);
+
+    if (newPage === currentPage) {
+      console.log('页码相同，不执行加载');
+      return;
+    }
+
+    // 1. 立即更新页码（视觉反馈）
+    currentPage = newPage;
+
+    // 2. 立即更新URL
+    const url = new URL(window.location);
+    url.searchParams.set('page', newPage);
+    window.history.pushState({}, '', url);
+
+    // 3. 立即更新分页按钮UI
+    renderPagination();
+
+    // 4. 立即滚动到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 5. 然后加载产品（会显示骨架屏）
+    await loadPage(newPage, currentFilters);
+  }
+
+  // 加载指定页的产品
+  async function loadPage(page, filters = null) {
+    try {
+      console.log('开始加载第', page, '页...', filters ? '带筛选条件' : '');
+
+      // 显示骨架屏
+      const desktopGrid = document.getElementById('products-grid-desktop');
+      const mobileGrid = document.getElementById('products-grid-mobile');
+
+      console.log('找到的网格容器:', { desktopGrid, mobileGrid });
+
+      // 生成骨架屏HTML
+      const skeletonHTML = Array.from({ length: 20 }, () => `
+        <div class="product-skeleton">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-content">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-price"></div>
+            <div class="skeleton-line skeleton-meta"></div>
+          </div>
+        </div>
+      `).join('');
+
+      if (desktopGrid) desktopGrid.innerHTML = skeletonHTML;
+      if (mobileGrid) mobileGrid.innerHTML = skeletonHTML;
+
+      // 准备请求参数
+      const requestBody = {
+        page: page,
+        per_page: perPage
+      };
+
+      // 添加搜索关键词
+      const urlParams = new URLSearchParams(window.location.search);
+      const searchQuery = urlParams.get('q');
+      if (searchQuery) {
+        requestBody.search = searchQuery;
+        console.log('添加搜索参数:', searchQuery);
+      }
+
+      // 添加 URL 分类参数
+      const categoryParam = urlParams.get('category');
+      if (categoryParam) {
+        requestBody.category = categoryParam;
+        console.log('添加分类参数:', categoryParam);
+      }
+
+      // 添加筛选条件（筛选条件优先级更高，会覆盖 URL 参数）
+      if (filters) {
+        if (filters.categories && filters.categories.length > 0) {
+          requestBody.category = filters.categories.join(',');
+          console.log('覆盖分类参数（来自筛选）:', requestBody.category);
+        }
+        if (filters.colors && filters.colors.length > 0) {
+          requestBody.color = filters.colors.join(',');
+        }
+        if (filters.materials && filters.materials.length > 0) {
+          requestBody.material = filters.materials.join(',');
+        }
+      }
+
+      console.log('最终请求参数:', requestBody);
+
+      console.log('准备请求API:', requestBody);
+
+      const response = await fetch(`/api/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('API响应状态:', response.status, response.statusText);
+
+      if (!response.ok) {
+        throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      console.log('API返回数据:', data);
+      console.log('产品数量:', data.products?.length);
+      console.log('第一个产品:', data.products?.[0]);
+
+      // 更新全局变量
+      totalProducts = data.total || 0;
+      totalPages = data.totalPages || 1;
+
+      console.log('更新后的totalProducts:', totalProducts, 'totalPages:', totalPages);
+
+      // 更新产品数量显示
+      const totalProductsSpan = document.getElementById('total-products');
+      const productsCountDesktop = document.getElementById('products-count-desktop');
+      if (totalProductsSpan) {
+        totalProductsSpan.textContent = totalProducts;
+      }
+      if (productsCountDesktop) {
+        productsCountDesktop.textContent = totalProducts;
+      }
+
+      // 检查是否有产品
+      if (!data.products || data.products.length === 0) {
+        console.log('没有找到产品');
+
+        const emptyHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 80px 20px; color: #666;">
+            <i class="fa-solid fa-box-open" style="font-size: 64px; margin-bottom: 20px; color: #ddd;"></i>
+            <p style="font-size: 18px; margin-bottom: 12px; font-weight: 600; color: #333;">No products found</p>
+            <p style="font-size: 14px; color: #999; margin-bottom: 20px;">Try adjusting your filters</p>
+          </div>
+        `;
+
+        if (desktopGrid) desktopGrid.innerHTML = emptyHTML;
+        if (mobileGrid) mobileGrid.innerHTML = emptyHTML;
+
+        // 隐藏分页
+        const paginationContainers = document.querySelectorAll('.pagination');
+        paginationContainers.forEach(container => {
+          if (container) container.innerHTML = '';
+        });
+
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        return;
+      }
+
+      // 保存产品数据
+      currentProducts = data.products;
+
+      // 更新产品列表
+      renderProducts(data.products);
+
+      // 更新当前页（如果是从handlePageClick调用的，这个已经更新过了，但为了兼容其他调用保留）
+      currentPage = page;
+
+      // 更新分页按钮（确保状态正确）
+      renderPagination();
+
+      console.log('页面加载完成');
+
+    } catch (error) {
+      console.error('加载产品失败:', error);
+      console.error('错误堆栈:', error.stack);
+
+      // 显示错误信息
+      const mobileGrid = document.getElementById('products-grid-mobile');
+      const desktopGrid = document.getElementById('products-grid-desktop');
+
+      const errorHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #d32f2f;">
+          <i class="fa-solid fa-exclamation-circle" style="font-size: 64px; margin-bottom: 20px;"></i>
+          <p style="font-size: 18px; margin-bottom: 12px; font-weight: 600;">加载产品失败</p>
+          <p style="font-size: 14px; color: #666; margin-bottom: 20px;">${error.message || '未知错误'}</p>
+          <button onclick="location.reload()" style="padding: 10px 20px; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            重新加载
+          </button>
+        </div>
+      `;
+
+      if (mobileGrid) mobileGrid.innerHTML = errorHTML;
+      if (desktopGrid) desktopGrid.innerHTML = errorHTML;
+    }
+  }
+
+  // 渲染产品列表
+  // HTML转义函数
+  const escapeHtml = (text) => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
+  // 渲染产品卡片函数（全局作用域）
+  function renderProductCard(product, isMobile, layout = 'grid') {
+    const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
+    const discountPercent = hasDiscount
+      ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
+      : 0;
+
+    const productName = escapeHtml(product.name);
+    const productSlug = encodeURIComponent(product.slug);
+    const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80';
+    const rating = parseFloat(product.average_rating) || 0;
+    const totalSales = parseInt(product.total_sales) || 0;
+
+    if (isMobile && layout === 'list') {
+      // 横向布局
+      return `
+        <div class="mobile-product-card-list">
+          <a href="/product/${productSlug}" class="card-list-link">
+            <div class="card-list-image">
+              ${hasDiscount ? `<span class="mobile-badge-list">-${discountPercent}%</span>` : ''}
+              <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
+            </div>
+            <div class="card-list-content">
+              <div class="card-list-header">
+                <h3 class="card-list-title">${productName}</h3>
+                <button class="mobile-wishlist-btn-list" onclick="event.preventDefault();">
+                  <i class="fa-regular fa-heart"></i>
+                </button>
+              </div>
+              <div class="card-list-price">
+                <span class="list-price-current">US$${product.price}</span>
+                ${hasDiscount ? `<span class="list-price-old">$${product.regular_price}</span>` : ''}
+                ${hasDiscount ? `<span class="list-discount-badge">-${discountPercent}%</span>` : ''}
+              </div>
+              <div class="card-list-meta">
+                <span class="list-moq">MOQ: 1 pc</span>
+                <span class="list-divider">|</span>
+                <span class="list-material">316L Steel</span>
+              </div>
+              <div class="card-list-footer">
+                <div class="list-rating">
+                  ${rating > 0 ? `<span class="stars">${"⭐".repeat(Math.round(rating))}</span>` : ''}
+                  ${rating > 0 ? `<span class="rating-num">${rating}</span>` : ''}
+                  ${totalSales > 0 ? `<span class="sales-count">${totalSales} orders</span>` : ''}
+                </div>
+                <button class="mobile-add-btn-list" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}'>
+                  <i class="fa-solid fa-cart-shopping"></i>
+                  <span>Add</span>
+                </button>
+              </div>
+            </div>
+          </a>
+        </div>
+      `;
+    } else if (isMobile) {
+      // 网格布局（原有的）
+      return `
+        <div class="mobile-product-card">
+          <a href="/product/${productSlug}">
+            <div class="mobile-product-image">
+              ${hasDiscount ? `<span class="mobile-badge new">-${discountPercent}%</span>` : ''}
+              <button class="mobile-wishlist-btn" onclick="event.preventDefault();">
+                <i class="fa-regular fa-heart"></i>
+              </button>
+              <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
+            </div>
+            <div class="mobile-product-info">
+              <h3 class="mobile-product-title">${productName}</h3>
+              <div class="mobile-product-price">
+                <span class="mobile-price">US$${product.price}</span>
+                ${hasDiscount ? `<span class="mobile-old-price">$${product.regular_price}</span>` : ''}
+              </div>
+              <div class="mobile-product-meta">
+                <span class="mobile-moq">MOQ: 1 pc</span>
+                <span class="mobile-material">316L Steel</span>
+              </div>
+              <button class="mobile-add-btn" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}'>
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Add</span>
+              </button>
+            </div>
+          </a>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="product-card-shop">
+          <a href="/product/${productSlug}">
+            <div class="product-image-wrapper">
+              ${hasDiscount ? `<span class="product-badge new">-${discountPercent}%</span>` : ''}
+              <button class="wishlist-btn" onclick="event.preventDefault();">
+                <i class="fa-regular fa-heart"></i>
+              </button>
+              <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
+            </div>
+            <div class="product-details-shop">
+              <h3 class="product-title-shop">${productName}</h3>
+              <div class="product-price-shop">
+                <span class="price-current">US$${product.price}</span>
+                ${hasDiscount ? `<span class="price-old">$${product.regular_price}</span>` : ''}
+              </div>
+              <div class="product-meta">
+                <span class="moq">MOQ: 1 pc</span>
+                <span class="material">316L Steel</span>
+              </div>
+              <button class="add-to-cart-btn" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}'>
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Add</span>
+              </button>
+            </div>
+          </a>
+        </div>
+      `;
+    }
+  }
+
+  function renderProducts(products) {
+    console.log('=== renderProducts 被调用 ===');
+    console.log('开始渲染', products?.length, '个产品');
+    console.log('产品数组:', products);
+
+    const desktopGrid = document.getElementById('products-grid-desktop');
+    const mobileGrid = document.getElementById('products-grid-mobile');
+
+    console.log('桌面网格元素:', desktopGrid);
+    console.log('移动网格元素:', mobileGrid);
+
+    if (!products || products.length === 0) {
+      console.error('没有产品可以渲染');
+      return;
+    }
+
+    if (desktopGrid) {
+      const html = products.map(p => renderProductCard(p, false)).join('');
+      console.log('准备更新桌面端产品列表');
+      console.log('新HTML的前100个字符:', html.substring(0, 100));
+
+      // 先清空
+      desktopGrid.innerHTML = '';
+      console.log('已清空桌面端');
+
+      // 强制重绘
+      desktopGrid.offsetHeight;
+
+      // 再设置新内容
+      desktopGrid.innerHTML = html;
+      console.log('桌面端产品已渲染，子元素数量:', desktopGrid.children.length);
+
+      // 验证第一个产品
+      const firstProduct = desktopGrid.querySelector('.product-title-shop');
+      console.log('第一个产品标题:', firstProduct?.textContent);
+    }
+    if (mobileGrid) {
+      mobileGrid.innerHTML = '';
+      mobileGrid.offsetHeight;
+      // 获取当前布局模式
+      const currentLayout = mobileGrid.classList.contains('list-layout') ? 'list' : 'grid';
+      mobileGrid.innerHTML = products.map(p => renderProductCard(p, true, currentLayout)).join('');
+      console.log('移动端产品已渲染，布局:', currentLayout);
+    }
+
+    // 绑定Add按钮点击事件（事件委托）
+    if (desktopGrid) {
+      desktopGrid.addEventListener('click', function(e) {
+        const addBtn = e.target.closest('.add-to-cart-btn');
+        if (addBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          try {
+            const productData = addBtn.dataset.product;
+            const product = JSON.parse(productData);
+            console.log('点击Add按钮，产品:', product.name);
+            openQuickOrderWithData(product);
+          } catch (error) {
+            console.error('解析产品数据失败:', error);
+          }
+        }
+      });
+    }
+
+    // 绑定移动端Add按钮点击事件（事件委托）
+    if (mobileGrid) {
+      mobileGrid.addEventListener('click', function(e) {
+        // 支持网格布局和列表布局的按钮
+        const addBtn = e.target.closest('.mobile-add-btn, .mobile-add-btn-list');
+        if (addBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          try {
+            const productData = addBtn.dataset.product;
+            const product = JSON.parse(productData);
+            console.log('移动端点击Add按钮，产品:', product.name);
+            openQuickOrderWithData(product);
+          } catch (error) {
+            console.error('解析产品数据失败:', error);
+          }
+        }
+      });
+    }
+  }
+
+  // 排序函数
+  function applySorting(sortType) {
+    console.log('应用排序:', sortType);
+
+    if (!currentProducts || currentProducts.length === 0) {
+      console.warn('没有产品可以排序');
+      return;
+    }
+
+    let sortedProducts = [...currentProducts];
+
+    switch (sortType) {
+      case 'menu_order':
+        // 默认排序（保持原始顺序）
+        break;
+
+      case 'popularity':
+        // 按销量排序（假设total_sales字段）
+        sortedProducts.sort((a, b) => {
+          const salesA = parseInt(a.total_sales) || 0;
+          const salesB = parseInt(b.total_sales) || 0;
+          return salesB - salesA;
+        });
+        break;
+
+      case 'rating':
+        // 按评分排序
+        sortedProducts.sort((a, b) => {
+          const ratingA = parseFloat(a.average_rating) || 0;
+          const ratingB = parseFloat(b.average_rating) || 0;
+          return ratingB - ratingA;
+        });
+        break;
+
+      case 'date':
+        // 按日期排序（最新的在前）
+        sortedProducts.sort((a, b) => {
+          const dateA = new Date(a.date_created || 0);
+          const dateB = new Date(b.date_created || 0);
+          return dateB - dateA;
+        });
+        break;
+
+      case 'price':
+        // 价格从低到高
+        sortedProducts.sort((a, b) => {
+          const priceA = parseFloat(a.price) || 0;
+          const priceB = parseFloat(b.price) || 0;
+          return priceA - priceB;
+        });
+        break;
+
+      case 'price-desc':
+        // 价格从高到低
+        sortedProducts.sort((a, b) => {
+          const priceA = parseFloat(a.price) || 0;
+          const priceB = parseFloat(b.price) || 0;
+          return priceB - priceA;
+        });
+        break;
+
+      default:
+        console.warn('未知的排序类型:', sortType);
+    }
+
+    console.log('排序后的产品数量:', sortedProducts.length);
+
+    // 重新渲染产品
+    renderProducts(sortedProducts);
+  }
+
+  // 页面加载时初始化
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('=== 页面初始化 ===');
+    console.log('DOMContentLoaded触发');
+
+    // 更新面包屑导航
+    updateBreadcrumb();
+
+    // 加载筛选数据
+    loadFilters();
+
+    // 从URL获取页码
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('page');
+    console.log('URL参数page:', pageParam);
+
+    if (pageParam) {
+      const page = parseInt(pageParam);
+      console.log('将加载第', page, '页');
+      loadPage(page);
+    } else {
+      // 没有页码参数，加载第1页
+      loadPage(1);
+    }
+  });
+
+  // 加载筛选数据
+  async function loadFilters() {
+    try {
+      console.log('开始加载筛选数据...');
+      const response = await fetch('/api/filters');
+
+      if (!response.ok) {
+        throw new Error('Failed to load filters');
+      }
+
+      const data = await response.json();
+      console.log('筛选数据加载成功:', data);
+
+      renderFilters(data);
+    } catch (error) {
+      console.error('加载筛选失败:', error);
+      const container = document.getElementById('filters-container');
+      if (container) {
+        container.innerHTML = '<p style="padding: 20px; color: #999;">Failed to load filters</p>';
+      }
+    }
+  }
+
+  // 渲染筛选区域
+  function renderFilters(data) {
+    const container = document.getElementById('filters-container');
+    const mobileContainer = document.getElementById('mobileFilterContent');
+
+    if (!container) return;
+
+    let html = '';
+
+    // Filters 标题（仅桌面端）
+    html += '<div class="filters-header">';
+    html += '<h2>Filters</h2>';
+    html += '<button class="filters-reset" onclick="resetAllFilters()" title="Reset all filters">';
+    html += '<i class="fa-solid fa-rotate-right"></i>';
+    html += '</button>';
+    html += '</div>';
+
+    // 1. NEW ARRIVALS (放在最前面，按图片顺序)
+    if (data.newArrivals && data.newArrivals.length > 0) {
+      html += '<div class="filter-section">';
+      html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
+      html += '<h3 class="filter-title">NEW ARRIVALS</h3>';
+      html += '<button class="filter-toggle">';
+      html += '<i class="fa-solid fa-chevron-up"></i>';
+      html += '</button>';
+      html += '</div>';
+      html += '<div class="filter-content">';
+      html += '<ul class="filter-list">';
+
+      data.newArrivals.forEach(cat => {
+        const hasChildren = cat.children && cat.children.length > 0;
+
+        // 只显示子分类，不显示父级
+        if (hasChildren) {
+          // 排序子分类：提取日期并降序排列（最新的在最上面）
+          const sortedChildren = [...cat.children].sort((a, b) => {
+            // 提取格式如 "2026.9.NEW" 的日期部分
+            const extractDate = (name) => {
+              const match = name.match(/(\d{4})\.(\d{1,2})/);
+              if (match) {
+                const year = parseInt(match[1]);
+                const month = parseInt(match[2]);
+                return year * 100 + month; // 转换为数字便于比较，如 202609
+              }
+              return 0;
+            };
+
+            return extractDate(b.name) - extractDate(a.name); // 降序
+          });
+
+          // 直接渲染子分类，不需要折叠按钮
+          sortedChildren.forEach(child => {
+            html += '<li>';
+            html += `<label>`;
+            html += `<input type="checkbox" name="category" value="${child.id}" data-slug="${child.slug}" data-filter="category">`;
+            html += `<span>${child.name}</span>`;
+            html += `</label>`;
+            html += '</li>';
+          });
+        }
+      });
+
+      html += '</ul>';
+      html += '</div>';
+      html += '</div>';
+    }
+
+    // 2. ALL JEWELRY
+    if (data.allJewelry && data.allJewelry.length > 0) {
+      html += '<div class="filter-section">';
+      html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
+      html += '<h3 class="filter-title">ALL JEWELRY</h3>';
+      html += '<button class="filter-toggle">';
+      html += '<i class="fa-solid fa-chevron-up"></i>';
+      html += '</button>';
+      html += '</div>';
+      html += '<div class="filter-content">';
+      html += '<ul class="filter-list">';
+
+      data.allJewelry.forEach(cat => {
+        const hasChildren = cat.children && cat.children.length > 0;
+
+        html += '<li>';
+        html += '<div class="category-parent">';
+        html += `<label>`;
+        html += `<input type="checkbox" name="category" value="${cat.id}" data-slug="${cat.slug}" data-filter="category">`;
+        html += `<span>${cat.name}</span>`;
+        html += `</label>`;
+
+        if (hasChildren) {
+          html += `<button class="toggle-children" onclick="event.stopPropagation(); toggleChildren(this, 'children-${cat.id}')">`;
+          html += '<i class="fa-solid fa-chevron-down"></i>';
+          html += '</button>';
+        }
+
+        html += '</div>';
+
+        // 子分类
+        if (hasChildren) {
+          html += `<ul class="filter-children" id="children-${cat.id}">`;
+          cat.children.forEach(child => {
+            html += '<li>';
+            html += `<label>`;
+            html += `<input type="checkbox" name="category" value="${child.id}" data-slug="${child.slug}" data-filter="category">`;
+            html += `<span>${child.name}</span>`;
+            html += `</label>`;
+            html += '</li>';
+          });
+          html += '</ul>';
+        }
+
+        html += '</li>';
+      });
+
+      html += '</ul>';
+      html += '</div>';
+      html += '</div>';
+    }
+
+    // 3. MATERIAL
+    if (data.materials && data.materials.length > 0) {
+      html += '<div class="filter-section">';
+      html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
+      html += '<h3 class="filter-title">MATERIAL</h3>';
+      html += '<button class="filter-toggle">';
+      html += '<i class="fa-solid fa-chevron-up"></i>';
+      html += '</button>';
+      html += '</div>';
+      html += '<div class="filter-content">';
+      html += '<ul class="filter-list">';
+
+      data.materials.forEach(material => {
+        html += '<li>';
+        html += `<label>`;
+        html += `<input type="checkbox" name="material" value="${material.id}" data-slug="${material.slug}" data-filter="material">`;
+        html += `<span>${material.name}</span>`;
+        html += `</label>`;
+        html += '</li>';
+      });
+
+      html += '</ul>';
+      html += '</div>';
+      html += '</div>';
+    }
+
+    // 4. COLOR
+    if (data.colors && data.colors.length > 0) {
+      html += '<div class="filter-section">';
+      html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
+      html += '<h3 class="filter-title">COLOR</h3>';
+      html += '<button class="filter-toggle">';
+      html += '<i class="fa-solid fa-chevron-up"></i>';
+      html += '</button>';
+      html += '</div>';
+      html += '<div class="filter-content">';
+      html += '<div class="color-swatches">';
+
+      data.colors.forEach(color => {
+        html += '<div class="color-swatch-wrapper">';
+        html += `<label class="color-swatch" style="background: ${color.hex};" title="${color.name}">`;
+        html += `<input type="checkbox" name="color" value="${color.id}" data-slug="${color.slug}" data-filter="color">`;
+        html += '</label>';
+        html += `<span class="color-label">${color.name}</span>`;
+        html += '</div>';
+      });
+
+      html += '</div>';
+      html += '</div>';
+      html += '</div>';
+    }
+
+    container.innerHTML = html;
+
+    // 移动端只渲染筛选内容，不包含filters-header
+    if (mobileContainer) {
+      // 移除filters-header部分
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const header = tempDiv.querySelector('.filters-header');
+      if (header) {
+        header.remove();
+      }
+      mobileContainer.innerHTML = tempDiv.innerHTML;
+    }
+
+    // 绑定筛选变化事件（桌面端）
+    const filterInputs = container.querySelectorAll('input[data-filter]');
+    filterInputs.forEach(input => {
+      input.addEventListener('change', handleFilterChange);
+    });
+
+    // 绑定颜色选择样式（桌面端）
+    const colorSwatches = container.querySelectorAll('.color-swatch input');
+    colorSwatches.forEach(input => {
+      input.addEventListener('change', function() {
+        const swatch = this.closest('.color-swatch');
+        if (this.checked) {
+          swatch.classList.add('selected');
+        } else {
+          swatch.classList.remove('selected');
+        }
+      });
+    });
+
+    // 绑定移动端事件（不立即应用筛选）
+    if (mobileContainer) {
+      const mobileFilterInputs = mobileContainer.querySelectorAll('input[data-filter]');
+      mobileFilterInputs.forEach(input => {
+        input.addEventListener('change', updateMobileFilterCount);
+      });
+
+      const mobileColorSwatches = mobileContainer.querySelectorAll('.color-swatch input');
+      mobileColorSwatches.forEach(input => {
+        input.addEventListener('change', function() {
+          const swatch = this.closest('.color-swatch');
+          if (this.checked) {
+            swatch.classList.add('selected');
+          } else {
+            swatch.classList.remove('selected');
+          }
+          updateMobileFilterCount();
+        });
+      });
+    }
+  }
+
+  // 处理筛选变化
+  function handleFilterChange() {
+    console.log('筛选条件变化');
+
+    // 收集所有选中的筛选条件
+    const selectedFilters = {
+      categories: [],
+      colors: [],
+      materials: []
+    };
+
+    // 收集分类
+    document.querySelectorAll('input[name="category"]:checked').forEach(input => {
+      selectedFilters.categories.push(input.value);
+    });
+
+    // 收集颜色
+    document.querySelectorAll('input[name="color"]:checked').forEach(input => {
+      selectedFilters.colors.push(input.value);
+    });
+
+    // 收集材质
+    document.querySelectorAll('input[name="material"]:checked').forEach(input => {
+      selectedFilters.materials.push(input.value);
+    });
+
+    console.log('当前筛选条件:', selectedFilters);
+
+    // 保存筛选条件到全局变量
+    currentFilters = selectedFilters;
+
+    // 重置到第1页并应用筛选
+    loadPage(1, selectedFilters);
+  }
+
+
+  // Mobile Sort Dropdown Toggle
+  const sortBtn = document.getElementById('mobileSortBtn');
+  const sortDropdown = document.getElementById('mobileSortDropdown');
+  const sortOptions = document.querySelectorAll('.sort-option');
+
+  // 当前排序方式
+  let currentSort = 'menu_order';
+  let currentProducts = [];
+
+  if (sortBtn && sortDropdown) {
+    sortBtn.addEventListener('click', () => {
+      sortDropdown.classList.toggle('show');
+      sortBtn.classList.toggle('active');
+    });
+
+    // Handle sort option selection
+    sortOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const sortType = option.dataset.sort;
+
+        // Remove active class from all options
+        sortOptions.forEach(opt => opt.classList.remove('active'));
+        // Add active class to clicked option
+        option.classList.add('active');
+        // Update sort button text
+        sortBtn.querySelector('span').textContent = option.textContent;
+        // Close dropdown
+        sortDropdown.classList.remove('show');
+        sortBtn.classList.remove('active');
+
+        // Apply sorting
+        currentSort = sortType;
+        applySorting(sortType);
+      });
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!sortBtn.contains(e.target) && !sortDropdown.contains(e.target)) {
+        sortDropdown.classList.remove('show');
+        sortBtn.classList.remove('active');
+      }
+    });
+  }
+
+  // Desktop Sort Buttons
+  const desktopSortBtns = document.querySelectorAll('.sort-left .sort-btn');
+
+  desktopSortBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sortType = btn.dataset.sort;
+
+      // Remove active class from all buttons
+      desktopSortBtns.forEach(b => b.classList.remove('active'));
+      // Add active class to clicked button
+      btn.classList.add('active');
+
+      // Apply sorting
+      currentSort = sortType;
+      applySorting(sortType);
+    });
+  });
+
+  // Layout Toggle (移动端)
+  const layoutBtns = document.querySelectorAll('.layout-btn');
+  const mobileProductsGrid = document.getElementById('products-grid-mobile');
+
+  layoutBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const layout = btn.dataset.layout;
+
+      // Remove active class from all buttons
+      layoutBtns.forEach(b => b.classList.remove('active'));
+      // Add active class to clicked button
+      btn.classList.add('active');
+
+      // Toggle grid/list layout for mobile
+      if (mobileProductsGrid) {
+        if (layout === 'list') {
+          mobileProductsGrid.classList.add('list-layout');
+        } else {
+          mobileProductsGrid.classList.remove('list-layout');
+        }
+
+        // 重新渲染产品以应用新布局
+        if (currentProducts && currentProducts.length > 0) {
+          const currentLayout = layout;
+          mobileProductsGrid.innerHTML = currentProducts.map(p => renderProductCard(p, true, currentLayout)).join('');
+          console.log('布局已切换为:', currentLayout);
+        }
+      }
+    });
+  });
+
+  // 移动端筛选Drawer控制
+  const mobileFilterBtn = document.getElementById('mobileFilterBtn');
+  const mobileFilterOverlay = document.getElementById('mobileFilterOverlay');
+  const mobileFilterDrawer = document.getElementById('mobileFilterDrawer');
+  const mobileFilterClose = document.getElementById('mobileFilterClose');
+  const mobileFilterApply = document.getElementById('mobileFilterApply');
+  const mobileFilterReset = document.getElementById('mobileFilterReset');
+
+  // 打开drawer
+  function openMobileFilterDrawer() {
+    mobileFilterOverlay.classList.add('active');
+    mobileFilterDrawer.classList.add('active');
+    document.body.style.overflow = 'hidden'; // 禁止背景滚动
+  }
+
+  // 关闭drawer
+  function closeMobileFilterDrawer() {
+    mobileFilterOverlay.classList.remove('active');
+    mobileFilterDrawer.classList.remove('active');
+    document.body.style.overflow = ''; // 恢复滚动
+  }
+
+  // 更新移动端筛选计数
+  function updateMobileFilterCount() {
+    const mobileContainer = document.getElementById('mobileFilterContent');
+    if (!mobileContainer) return;
+
+    const checkedInputs = mobileContainer.querySelectorAll('input[data-filter]:checked');
+    const count = checkedInputs.length;
+
+    const countBadge = document.getElementById('mobileFilterCount');
+    if (countBadge) {
+      countBadge.textContent = count;
+      countBadge.style.display = count > 0 ? 'block' : 'block'; // 始终显示
+    }
+  }
+
+  // 应用移动端筛选
+  function applyMobileFilters() {
+    const mobileContainer = document.getElementById('mobileFilterContent');
+    if (!mobileContainer) return;
+
+    // 保存筛选前的页码
+    pageBeforeFilter = currentPage;
+    console.log('应用筛选前保存页码:', pageBeforeFilter);
+
+    // 收集移动端选中的筛选条件
+    const selectedFilters = {
+      categories: [],
+      colors: [],
+      materials: []
+    };
+
+    mobileContainer.querySelectorAll('input[name="category"]:checked').forEach(input => {
+      selectedFilters.categories.push(input.value);
+    });
+
+    mobileContainer.querySelectorAll('input[name="color"]:checked').forEach(input => {
+      selectedFilters.colors.push(input.value);
+    });
+
+    mobileContainer.querySelectorAll('input[name="material"]:checked').forEach(input => {
+      selectedFilters.materials.push(input.value);
+    });
+
+    console.log('移动端应用筛选:', selectedFilters);
+
+    // 同步到桌面端
+    syncFiltersToDesktop(selectedFilters);
+
+    // 保存筛选条件
+    currentFilters = selectedFilters;
+
+    // 关闭drawer
+    closeMobileFilterDrawer();
+
+    // 应用筛选时重置到第1页（因为筛选结果的总页数可能不同）
+    loadPage(1, selectedFilters);
+  }
+
+  // 同步筛选到桌面端（保持UI一致）
+  function syncFiltersToDesktop(filters) {
+    const desktopContainer = document.getElementById('filters-container');
+    if (!desktopContainer) return;
+
+    // 清除所有桌面端选中状态
+    desktopContainer.querySelectorAll('input[data-filter]:checked').forEach(input => {
+      input.checked = false;
+    });
+
+    // 应用新的选中状态
+    filters.categories.forEach(id => {
+      const input = desktopContainer.querySelector(`input[name="category"][value="${id}"]`);
+      if (input) input.checked = true;
+    });
+
+    filters.colors.forEach(id => {
+      const input = desktopContainer.querySelector(`input[name="color"][value="${id}"]`);
+      if (input) {
+        input.checked = true;
+        const swatch = input.closest('.color-swatch');
+        if (swatch) swatch.classList.add('selected');
+      }
+    });
+
+    filters.materials.forEach(id => {
+      const input = desktopContainer.querySelector(`input[name="material"][value="${id}"]`);
+      if (input) input.checked = true;
+    });
+  }
+
+  // 重置移动端筛选
+  function resetMobileFilters() {
+    const mobileContainer = document.getElementById('mobileFilterContent');
+    if (!mobileContainer) return;
+
+    console.log('Reset前的当前页码:', currentPage);
+    console.log('筛选前保存的页码:', pageBeforeFilter);
+
+    // 使用筛选前保存的页码
+    const savedPage = pageBeforeFilter;
+
+    // 清除所有选中
+    mobileContainer.querySelectorAll('input[data-filter]:checked').forEach(input => {
+      input.checked = false;
+
+      // 移除颜色选中样式
+      const swatch = input.closest('.color-swatch');
+      if (swatch) swatch.classList.remove('selected');
+    });
+
+    // 同步清除桌面端
+    const desktopContainer = document.getElementById('filters-container');
+    if (desktopContainer) {
+      desktopContainer.querySelectorAll('input[data-filter]:checked').forEach(input => {
+        input.checked = false;
+
+        const swatch = input.closest('.color-swatch');
+        if (swatch) swatch.classList.remove('selected');
+      });
+    }
+
+    // 重置筛选条件
+    currentFilters = null;
+
+    // 更新计数
+    updateMobileFilterCount();
+
+    // 关闭drawer
+    closeMobileFilterDrawer();
+
+    console.log('准备加载页码:', savedPage);
+
+    // 重新加载筛选前的页码（无筛选）
+    loadPage(savedPage, null);
+  }
+
+  // 绑定事件
+  if (mobileFilterBtn) {
+    mobileFilterBtn.addEventListener('click', openMobileFilterDrawer);
+  }
+
+  if (mobileFilterClose) {
+    mobileFilterClose.addEventListener('click', closeMobileFilterDrawer);
+  }
+
+  if (mobileFilterOverlay) {
+    mobileFilterOverlay.addEventListener('click', closeMobileFilterDrawer);
+  }
+
+  if (mobileFilterApply) {
+    mobileFilterApply.addEventListener('click', applyMobileFilters);
+  }
+
+  if (mobileFilterReset) {
+    mobileFilterReset.addEventListener('click', resetMobileFilters);
+  }
+
+  // Quick Order Modal控制
+  const quickOrderOverlay = document.getElementById('quickOrderOverlay');
+  const quickOrderModal = document.getElementById('quickOrderModal');
+  const quickOrderClose = document.getElementById('quickOrderClose');
+  const quickOrderContent = document.getElementById('quickOrderContent');
+
+  // Quick Order Mobile控制
+  const quickOrderMobileOverlay = document.getElementById('quickOrderMobileOverlay');
+  const quickOrderMobileSheet = document.getElementById('quickOrderMobileSheet');
+  const quickOrderMobileClose = document.getElementById('quickOrderMobileClose');
+  const quickOrderMobileContent = document.getElementById('quickOrderMobileContent');
+  const mobileSheetHeader = document.getElementById('mobileSheetHeader');
+
+  // 检测是否为移动端
+  function isMobile() {
+    return window.innerWidth <= 768;
+  }
+
+  // 变体数据缓存
+  const variationsCache = new Map();
+
+  // 打开Quick Order Modal（直接使用产品数据）
+  window.openQuickOrderWithData = async function(product) {
+    console.log('打开Quick Order，产品:', product.name, '类型:', product.type);
+    console.log('产品ID:', product.id);
+
+    try {
+      // 判断移动端或桌面端
+      const mobile = isMobile();
+
+      // 立即显示Modal和加载状态
+      if (mobile) {
+        quickOrderMobileOverlay.classList.add('active');
+        quickOrderMobileSheet.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        renderQuickOrderMobileLoading(product);
+      } else {
+        quickOrderOverlay.classList.add('active');
+        quickOrderModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        renderQuickOrderLoading(product);
+      }
+
+      // 如果是变体产品，需要获取变体详情
+      if (product.type === 'variable' && product.variations && product.variations.length > 0) {
+        console.log('变体产品，获取变体详情...');
+
+        // 检查缓存
+        if (variationsCache.has(product.id)) {
+          console.log('使用缓存的变体数据');
+          product.variationsData = variationsCache.get(product.id);
+        } else {
+          console.log('从API获取变体数据');
+          const response = await fetch(`/api/product-variations/${product.id}`);
+          console.log('响应状态:', response.status);
+
+          if (response.ok) {
+            const variationsData = await response.json();
+            product.variationsData = variationsData;
+            // 缓存变体数据
+            variationsCache.set(product.id, variationsData);
+            console.log('变体详情已缓存:', variationsData.length, '个');
+          } else {
+            const errorText = await response.text();
+            console.warn('获取变体详情失败:', errorText);
+          }
+        }
+      }
+
+      // 渲染完整内容
+      if (mobile) {
+        renderQuickOrderMobileContent(product);
+      } else {
+        renderQuickOrderContent(product);
+      }
+
+    } catch (error) {
+      console.error('打开Quick Order失败:', error);
+      closeQuickOrder();
+      alert('打开Quick Order失败，请稍后重试');
+    }
+  };
+
+  // 关闭Quick Order Modal
+  function closeQuickOrder() {
+    quickOrderOverlay.classList.remove('active');
+    quickOrderModal.classList.remove('active');
+    quickOrderMobileOverlay.classList.remove('active');
+    quickOrderMobileSheet.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  // 渲染加载状态
+  function renderQuickOrderLoading(product) {
+    const images = product.images || [];
+    const mainImage = images[0]?.src || '';
+    const name = product.name || '';
+
+    let html = '';
+
+    // 左侧：图片（不需要加载状态）
+    html += '<div class="quick-order-images">';
+    html += '<div class="quick-order-main-image">';
+    html += `<img src="${mainImage}" alt="${name}">`;
+    html += '</div>';
+    html += '</div>';
+
+    // 右侧：加载骨架屏
+    html += '<div class="quick-order-details">';
+    html += `<h2 class="quick-order-title">${name}</h2>`;
+    html += '<div class="quick-order-loading">';
+    html += '<div class="loading-spinner"></div>';
+    html += '<p>Loading product details...</p>';
+    html += '</div>';
+    html += '</div>';
+
+    quickOrderContent.innerHTML = html;
+  }
+
+  // 渲染移动端加载状态
+  function renderQuickOrderMobileLoading(product) {
+    const name = product.name || '';
+    const images = product.images || [];
+    const mainImage = images[0]?.src || '';
+    const price = parseFloat(product.price) || 0;
+
+    // 渲染Header
+    let headerHTML = '';
+    headerHTML += `<button class="mobile-sheet-close" id="quickOrderMobileClose">
+      <i class="fa-solid fa-times"></i>
+    </button>`;
+    headerHTML += '<div class="mobile-sheet-product-image">';
+    headerHTML += `<img src="${mainImage}" alt="${name}">`;
+    headerHTML += '</div>';
+    headerHTML += '<div class="mobile-sheet-header-right">';
+    headerHTML += `<div class="mobile-sheet-title">${name}</div>`;
+    headerHTML += `<div class="mobile-sheet-price">$${price.toFixed(2)}</div>`;
+    headerHTML += '</div>';
+    mobileSheetHeader.innerHTML = headerHTML;
+
+    // 重新绑定关闭按钮
+    const newCloseBtn = document.getElementById('quickOrderMobileClose');
+    if (newCloseBtn) {
+      newCloseBtn.addEventListener('click', closeQuickOrder);
+    }
+
+    // Content显示加载动画
+    let html = '';
+    html += '<div class="quick-order-loading">';
+    html += '<div class="loading-spinner"></div>';
+    html += '<p>Loading product details...</p>';
+    html += '</div>';
+
+    quickOrderMobileContent.innerHTML = html;
+  }
+
+  // 渲染移动端Quick Order内容
+    function renderQuickOrderMobileContent(product) {
+      const images = product.images || [];
+      const mainImage = images[0]?.src || '';
+      const name = product.name || '';
+      const price = parseFloat(product.price) || 0;
+      const variationsData = product.variationsData || [];
+      const attributes = product.attributes || [];
+      const type = product.type;
+
+      console.log('渲染移动端Quick Order，变体数:', variationsData.length);
+
+      // 保存产品数据到全局
+      window.currentProductData = product;
+      window.currentProductVariationsData = variationsData;
+      window.currentProductType = type;
+      window.currentProductAttributes = attributes;
+
+      // 渲染Header（产品图片、标题、价格）
+      let headerHTML = '';
+      headerHTML += `<button class="mobile-sheet-close" id="quickOrderMobileClose">
+        <i class="fa-solid fa-times"></i>
+      </button>`;
+      headerHTML += '<div class="mobile-sheet-product-image">';
+      headerHTML += `<img src="${mainImage}" alt="${name}">`;
+      headerHTML += '</div>';
+      headerHTML += '<div class="mobile-sheet-header-right">';
+      headerHTML += `<div class="mobile-sheet-title">${name}</div>`;
+      headerHTML += `<div class="mobile-sheet-price">$${price.toFixed(2)}</div>`;
+      headerHTML += '</div>';
+      mobileSheetHeader.innerHTML = headerHTML;
+
+      // 重新绑定关闭按钮
+      const newCloseBtn = document.getElementById('quickOrderMobileClose');
+      if (newCloseBtn) {
+        newCloseBtn.addEventListener('click', closeQuickOrder);
+      }
+
+      // 渲染Content
+      let html = '';
+
+      // Wholesale价格表
+      html += '<div class="mobile-quick-price-tiers">';
+      html += '<div class="mobile-tier-header">';
+      html += '<div class="mobile-tier-title">';
+      html += '<i class="fa-solid fa-tag"></i>';
+      html += '<span>Wholesale Pricing</span>';
+      html += '</div>';
+      html += '<span class="mobile-tier-badge">Volume Discounts</span>';
+      html += '</div>';
+      html += '<div class="mobile-pricing-grid">';
+
+      html += '<div class="mobile-price-tier">';
+      html += '<div class="mobile-tier-qty">1 – 9 pcs</div>';
+      html += `<div class="mobile-tier-price">$${price.toFixed(2)}</div>`;
+      html += '<div class="mobile-tier-label">Retail</div>';
+      html += '</div>';
+
+      html += '<div class="mobile-price-tier">';
+      html += '<div class="mobile-tier-qty">10 – 49 pcs</div>';
+      html += `<div class="mobile-tier-price">$${(price * 0.85).toFixed(2)}</div>`;
+      html += '<div class="mobile-tier-save">Save 15%</div>';
+      html += '</div>';
+
+      html += '<div class="mobile-price-tier">';
+      html += '<div class="mobile-tier-qty">50 – 99 pcs</div>';
+      html += `<div class="mobile-tier-price">$${(price * 0.70).toFixed(2)}</div>`;
+      html += '<div class="mobile-tier-save">Save 30%</div>';
+      html += '</div>';
+
+      html += '<div class="mobile-price-tier best">';
+      html += '<div class="mobile-tier-qty">100+ pcs</div>';
+      html += `<div class="mobile-tier-price">$${(price * 0.55).toFixed(2)}</div>`;
+      html += '<div class="mobile-tier-best-badge">Best Value</div>';
+      html += '</div>';
+
+      html += '</div></div>';
+
+      // 属性选择
+      if (type === 'variable' && attributes.length > 0) {
+        attributes.forEach(attr => {
+          if (attr.variation && attr.options && attr.options.length > 0) {
+            const firstOption = attr.options[0];
+            html += '<div class="mobile-attribute-section">';
+            html += `<div class="mobile-attribute-title">`;
+            html += `<span class="mobile-attribute-title-label">${attr.name}:</span>`;
+            html += `<span class="mobile-attribute-title-value" id="mobileAttrValue_${attr.name.replace(/\s+/g, '_')}">${firstOption}</span>`;
+            html += `</div>`;
+            html += `<div class="mobile-attribute-options" data-attribute="${attr.name}" data-option-count="${attr.options.length}">`;
+            attr.options.forEach((option, index) => {
+              html += `<button class="mobile-attribute-option ${index === 0 ? 'selected' : ''}"
+                        data-value="${option}"
+                        onclick="selectMobileAttribute(this, '${attr.name}')">
+                        ${option}
+                      </button>`;
+            });
+            html += '</div></div>';
+          }
+        });
+      }
+
+      // 数量选择
+      html += '<div class="mobile-quantity-section">';
+      html += '<div class="mobile-quantity-title">Quantity</div>';
+      html += '<div class="mobile-quantity-selector">';
+      html += '<button class="mobile-qty-btn" onclick="changeMobileQuantity(-1)">-</button>';
+      html += '<input type="number" class="mobile-qty-input" id="mobileQtyInput" value="1" min="1" readonly>';
+      html += '<button class="mobile-qty-btn" onclick="changeMobileQuantity(1)">+</button>';
+      html += '</div>';
+
+      // 库存状态
+      html += '<div id="mobileStockStatus">';
+      if (type === 'simple') {
+        const stockStatus = product.stock_status;
+        if (stockStatus === 'outofstock') {
+          html += '<div class="mobile-stock-status out-of-stock">';
+          html += '<i class="fa-solid fa-circle-xmark"></i> Out of Stock';
+          html += '</div>';
+        } else {
+          html += '<div class="mobile-stock-status in-stock">';
+          html += '<i class="fa-solid fa-circle-check"></i> In Stock';
+          html += '</div>';
+        }
+      }
+      html += '</div></div>';
+
+      // 底部按钮
+      html += '<div class="mobile-quick-footer">';
+      const isOutOfStock = type === 'simple' && product.stock_status === 'outofstock';
+      html += `<button class="mobile-quick-add-btn" id="mobileQuickAddBtn"
+                onclick="addMobileQuickOrderToCart()" ${isOutOfStock ? 'disabled' : ''}>`;
+      html += '<i class="fa-solid fa-cart-shopping"></i> ';
+      html += isOutOfStock ? 'Out of Stock' : 'Add to Cart';
+      html += '</button></div>';
+
+      quickOrderMobileContent.innerHTML = html;
+
+      // 变体产品初始库存检查
+      if (type === 'variable') {
+        setTimeout(() => {
+          updateMobileVariationStock();
+        }, 100);
+      }
+    }
+   // 选择移动端属性
+  window.selectMobileAttribute = function(element, attrName) {
+    const container = element.closest('.mobile-attribute-options');
+    container.querySelectorAll('.mobile-attribute-option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+    element.classList.add('selected');
+
+    // 更新标题中的选中值
+    const selectedValue = element.dataset.value;
+    const valueDisplay = document.getElementById(`mobileAttrValue_${attrName.replace(/\s+/g, '_')}`);
+    if (valueDisplay) {
+      valueDisplay.textContent = selectedValue;
+    }
+
+    // 更新库存状态
+    if (window.currentProductType === 'variable') {
+      updateMobileVariationStock();
+    }
+  };
+
+  // 修改移动端数量
+  window.changeMobileQuantity = function(delta) {
+    const input = document.getElementById('mobileQtyInput');
+    if (!input) return;
+
+    const currentQty = parseInt(input.value) || 1;
+    const newQty = Math.max(1, currentQty + delta);
+    input.value = newQty;
+  };
+
+  // 更新移动端变体库存
+  function updateMobileVariationStock() {
+    const variationsData = window.currentProductVariationsData;
+    if (!variationsData || variationsData.length === 0) return;
+
+    // 收集选中的属性
+    const selectedAttributes = {};
+    document.querySelectorAll('.mobile-attribute-options').forEach(optionsGroup => {
+      const attrName = optionsGroup.dataset.attribute;
+      const selected = optionsGroup.querySelector('.mobile-attribute-option.selected');
+      if (attrName && selected) {
+        selectedAttributes[attrName] = selected.dataset.value;
+      }
+    });
+
+    // 查找匹配的变体
+    const matchedVariation = variationsData.find(variation => {
+      return variation.attributes.every(attr => {
+        return selectedAttributes[attr.name] === attr.option;
+      });
+    });
+
+    const stockContainer = document.getElementById('mobileStockStatus');
+    const addBtn = document.getElementById('mobileQuickAddBtn');
+
+    if (matchedVariation) {
+      const stockStatus = matchedVariation.stock_status;
+      const stockQuantity = matchedVariation.stock_quantity;
+
+      let stockHTML = '';
+      if (stockStatus === 'outofstock') {
+        stockHTML = '<div class="mobile-stock-status out-of-stock">';
+        stockHTML += '<i class="fa-solid fa-circle-xmark"></i> Out of Stock';
+        addBtn.disabled = true;
+        addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Out of Stock';
+      } else {
+        stockHTML = '<div class="mobile-stock-status in-stock">';
+        stockHTML += '<i class="fa-solid fa-circle-check"></i> In Stock';
+        if (stockQuantity) {
+          stockHTML += ` (${stockQuantity} available)`;
+        }
+        stockHTML += '</div>';
+        addBtn.disabled = false;
+        addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Add to Cart';
+      }
+      stockContainer.innerHTML = stockHTML;
+    }
+  }
+
+  // 渲染Quick Order内容
+  function renderQuickOrderContent(product) {
+    const images = product.images || [];
+    const mainImage = images[0]?.src || '';
+    const price = parseFloat(product.price) || 0;
+    const regularPrice = parseFloat(product.regular_price) || 0;
+    const name = product.name || '';
+    const attributes = product.attributes || [];
+    const variations = product.variations || [];
+    const variationsData = product.variationsData || [];
+    const type = product.type;
+    const stockStatus = product.stock_status;
+    const stockQuantity = product.stock_quantity;
+
+    console.log('产品类型:', type, '变体数据:', variationsData.length);
+
+    // 保存产品数据和变体数据到全局，供addToCart使用
+    window.currentProductData = product;
+    window.currentProductVariationsData = variationsData;
+    window.currentProductType = type;
+
+    let html = '';
+
+    // 左侧：图片
+    html += '<div class="quick-order-images">';
+    html += '<div class="quick-order-main-image">';
+    html += `<img src="${mainImage}" alt="${name}" id="quickOrderMainImg">`;
+    html += '</div>';
+
+    if (images.length > 1) {
+      html += '<div class="quick-order-thumbnails">';
+      images.slice(0, 5).forEach((img, index) => {
+        html += `<div class="quick-order-thumb ${index === 0 ? 'active' : ''}" onclick="changeQuickOrderImage('${img.src}', this)">`;
+        html += `<img src="${img.src}" alt="${name}">`;
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+
+    // 右侧：详情
+    html += '<div class="quick-order-details">';
+    html += `<h2 class="quick-order-title">${name}</h2>`;
+
+    // 价格显示
+    html += '<div id="quickOrderPriceContainer">';
+    if (regularPrice > price) {
+      html += '<div class="quick-order-price">';
+      html += `<span class="quick-order-price-current">$${price.toFixed(2)}</span>`;
+      html += `<span class="quick-order-price-regular">$${regularPrice.toFixed(2)}</span>`;
+      html += '</div>';
+    } else {
+      html += `<div class="quick-order-price">$${price.toFixed(2)}</div>`;
+    }
+    html += '</div>';
+
+    // 库存状态容器（变体产品会动态更新）
+    html += '<div id="quickOrderStockContainer">';
+    if (type === 'variable') {
+      // 变体产品，初始不显示库存，等用户选择后显示
+      html += '<div class="quick-order-stock-placeholder">Please select options</div>';
+    } else {
+      // 简单产品，直接显示库存
+      if (stockStatus === 'outofstock') {
+        html += '<div class="quick-order-stock out-of-stock">';
+        html += '<i class="fa-solid fa-circle-xmark"></i> Out of Stock';
+        html += '</div>';
+      } else {
+        html += '<div class="quick-order-stock in-stock">';
+        html += '<i class="fa-solid fa-circle-check"></i> In Stock';
+        if (stockQuantity) {
+          html += ` (${stockQuantity} available)`;
+        }
+        html += '</div>';
+      }
+    }
+    html += '</div>';
+
+    // 变体属性（variable产品）
+    if (type === 'variable' && attributes.length > 0) {
+      attributes.forEach(attr => {
+        if (attr.variation && attr.options && attr.options.length > 0) {
+          html += '<div class="quick-order-section">';
+          html += `<div class="quick-order-section-title">${attr.name}</div>`;
+          html += `<div class="quick-order-options" data-attribute="${attr.name}">`;
+          attr.options.forEach((option, index) => {
+            html += `<button class="quick-order-option ${index === 0 ? 'selected' : ''}"
+                      data-value="${option}"
+                      onclick="selectQuickOrderOption(this, '${attr.name}')">
+                      ${option}
+                    </button>`;
+          });
+          html += '</div>';
+          html += '</div>';
+        }
+      });
+    }
+
+    // 数量选择
+    html += '<div class="quick-order-section">';
+    html += '<div class="quick-order-section-title">Quantity</div>';
+    html += '<div class="quick-order-quantity">';
+    html += '<button class="quick-order-qty-btn" onclick="changeQuickOrderQty(-1)">-</button>';
+    html += '<input type="number" class="quick-order-qty-input" id="quickOrderQty" value="1" min="1">';
+    html += '<button class="quick-order-qty-btn" onclick="changeQuickOrderQty(1)">+</button>';
+    html += '</div>';
+    html += '</div>';
+
+    // Add to Cart按钮
+    const isOutOfStock = type === 'simple' && stockStatus === 'outofstock';
+    html += `<button class="quick-order-add-btn ${isOutOfStock ? 'disabled' : ''}"
+              id="quickOrderAddBtn"
+              onclick="addQuickOrderToCart(${product.id}, '${type}')"
+              ${isOutOfStock ? 'disabled' : ''}>`;
+    html += '<i class="fa-solid fa-cart-shopping"></i> ';
+    html += isOutOfStock ? 'Out of Stock' : 'Add to Cart';
+    html += '</button>';
+
+    html += '</div>';
+
+    quickOrderContent.innerHTML = html;
+
+    // 如果是变体产品，触发初始选择检查
+    if (type === 'variable') {
+      setTimeout(() => {
+        updateQuickOrderVariationStock();
+      }, 100);
+    }
+  }
+
+  // 切换图片
+  window.changeQuickOrderImage = function(src, element) {
+    document.getElementById('quickOrderMainImg').src = src;
+    document.querySelectorAll('.quick-order-thumb').forEach(thumb => {
+      thumb.classList.remove('active');
+    });
+    element.classList.add('active');
+  };
+
+  // 选择选项
+  window.selectQuickOrderOption = function(element, attrName) {
+    const container = element.closest('.quick-order-options');
+    container.querySelectorAll('.quick-order-option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+    element.classList.add('selected');
+
+    // 变体产品选择后，更新库存和价格
+    if (window.currentProductType === 'variable') {
+      updateQuickOrderVariationStock();
+    }
+  };
+
+  // 更新变体库存状态
+  function updateQuickOrderVariationStock() {
+    const variationsData = window.currentProductVariationsData;
+    if (!variationsData || variationsData.length === 0) {
+      console.log('没有变体数据');
+      return;
+    }
+
+    // 收集当前选中的所有属性
+    const selectedAttributes = {};
+    document.querySelectorAll('.quick-order-options').forEach(optionsGroup => {
+      const attrName = optionsGroup.dataset.attribute;
+      const selected = optionsGroup.querySelector('.quick-order-option.selected');
+      if (attrName && selected) {
+        selectedAttributes[attrName] = selected.dataset.value;
+      }
+    });
+
+    console.log('当前选中的属性:', selectedAttributes);
+
+    // 查找匹配的变体
+    const matchedVariation = variationsData.find(variation => {
+      return variation.attributes.every(attr => {
+        const attrName = attr.name;
+        const attrValue = attr.option;
+        return selectedAttributes[attrName] === attrValue;
+      });
+    });
+
+    console.log('匹配的变体:', matchedVariation);
+
+    const stockContainer = document.getElementById('quickOrderStockContainer');
+    const priceContainer = document.getElementById('quickOrderPriceContainer');
+    const addBtn = document.getElementById('quickOrderAddBtn');
+
+    if (matchedVariation) {
+      // 更新价格
+      const price = parseFloat(matchedVariation.price) || 0;
+      const regularPrice = parseFloat(matchedVariation.regular_price) || 0;
+
+      let priceHTML = '';
+      if (regularPrice > price) {
+        priceHTML = '<div class="quick-order-price">';
+        priceHTML += `<span class="quick-order-price-current">$${price.toFixed(2)}</span>`;
+        priceHTML += `<span class="quick-order-price-regular">$${regularPrice.toFixed(2)}</span>`;
+        priceHTML += '</div>';
+      } else {
+        priceHTML = `<div class="quick-order-price">$${price.toFixed(2)}</div>`;
+      }
+      priceContainer.innerHTML = priceHTML;
+
+      // 更新库存状态
+      const stockStatus = matchedVariation.stock_status;
+      const stockQuantity = matchedVariation.stock_quantity;
+
+      let stockHTML = '';
+      if (stockStatus === 'outofstock') {
+        stockHTML = '<div class="quick-order-stock out-of-stock">';
+        stockHTML += '<i class="fa-solid fa-circle-xmark"></i> Out of Stock';
+        stockHTML += '</div>';
+
+        // 禁用按钮
+        addBtn.classList.add('disabled');
+        addBtn.disabled = true;
+        addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Out of Stock';
+      } else {
+        stockHTML = '<div class="quick-order-stock in-stock">';
+        stockHTML += '<i class="fa-solid fa-circle-check"></i> In Stock';
+        if (stockQuantity) {
+          stockHTML += ` (${stockQuantity} available)`;
+        }
+        stockHTML += '</div>';
+
+        // 启用按钮
+        addBtn.classList.remove('disabled');
+        addBtn.disabled = false;
+        addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Add to Cart';
+      }
+      stockContainer.innerHTML = stockHTML;
+
+    } else {
+      // 未完全选择或没有匹配的变体
+      stockContainer.innerHTML = '<div class="quick-order-stock-placeholder">Please select all options</div>';
+      addBtn.classList.add('disabled');
+      addBtn.disabled = true;
+      addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Add to Cart';
+    }
+  }
+
+  // 修改数量
+  window.changeQuickOrderQty = function(change) {
+    const input = document.getElementById('quickOrderQty');
+    let qty = parseInt(input.value) || 1;
+    qty = Math.max(1, qty + change);
+    input.value = qty;
+  };
+
+  // 更改移动端变体数量
+  window.changeMobileVariantQty = function(variationId, delta) {
+    const input = document.getElementById(`mobileQty_${variationId}`);
+    if (!input) return;
+
+    const currentQty = parseInt(input.value) || 0;
+    const newQty = Math.max(0, currentQty + delta);
+
+    input.value = newQty;
+    window.mobileVariantQuantities[variationId] = newQty;
+
+    // 更新Add to Cart按钮状态
+    updateMobileAddButtonState();
+  };
+
+  // 更新移动端Add按钮状态
+  function updateMobileAddButtonState() {
+    const addBtn = document.getElementById('mobileQuickAddBtn');
+    if (!addBtn) return;
+
+    const hasItems = Object.values(window.mobileVariantQuantities || {}).some(qty => qty > 0);
+
+    if (hasItems) {
+      addBtn.disabled = false;
+      const totalQty = Object.values(window.mobileVariantQuantities).reduce((sum, qty) => sum + qty, 0);
+      addBtn.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Add ${totalQty} to Cart`;
+    } else {
+      addBtn.disabled = true;
+      addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Add to Cart';
+    }
+  }
+
+  // 移动端添加到购物车
+  // 移动端添加到购物车
+  window.addMobileQuickOrderToCart = function() {
+    console.log('移动端添加到购物车');
+
+    try {
+      const productData = window.currentProductData || {};
+      const variationsData = window.currentProductVariationsData || [];
+      const type = window.currentProductType || 'simple';
+      const qty = parseInt(document.getElementById('mobileQtyInput')?.value) || 1;
+
+      // 收集选中的属性
+      const selectedAttributes = {};
+      document.querySelectorAll('.mobile-attribute-options').forEach(optionsGroup => {
+        const attrName = optionsGroup.dataset.attribute;
+        const selected = optionsGroup.querySelector('.mobile-attribute-option.selected');
+        if (attrName && selected) {
+          selectedAttributes[attrName] = selected.dataset.value;
+        }
+      });
+
+      console.log('选中的属性:', selectedAttributes);
+      console.log('数量:', qty);
+
+      // 获取现有购物车
+      let cart = [];
+      try {
+        const cartData = localStorage.getItem('ebbelle_cart');
+        if (cartData) {
+          cart = JSON.parse(cartData);
+        }
+      } catch (e) {
+        console.error('读取购物车失败:', e);
+      }
+
+      let cartItem;
+      let cartItemId;
+
+      if (type === 'variable' && variationsData.length > 0) {
+        // 查找匹配的变体
+        const matchedVariation = variationsData.find(variation => {
+          return variation.attributes.every(attr => {
+            return selectedAttributes[attr.name] === attr.option;
+          });
+        });
+
+        if (!matchedVariation) {
+          console.error('未找到匹配的变体');
+          return;
+        }
+
+        const variantName = matchedVariation.attributes.map(attr => attr.option).join(', ');
+        const variationKey = Object.entries(selectedAttributes)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([k, v]) => `${k}:${String(v).trim().replace(/\s+/g, '_')}`)
+          .join('|');
+        cartItemId = `${productData.id}_${variationKey}`;
+
+        cartItem = {
+          cartItemId: cartItemId,
+          id: productData.id,
+          name: `${productData.name} - ${variantName}`,
+          price: matchedVariation.price,
+          quantity: qty,
+          image: matchedVariation.image?.src || productData.images?.[0]?.src || '',
+          selectedVariants: selectedAttributes,
+          variationId: matchedVariation.id
+        };
+      } else {
+        // 简单产品
+        cartItemId = `${productData.id}_simple`;
+        cartItem = {
+          cartItemId: cartItemId,
+          id: productData.id,
+          name: productData.name,
+          price: productData.price,
+          quantity: qty,
+          image: productData.images?.[0]?.src || '',
+          selectedVariants: {},
+          variationId: null
+        };
+      }
+
+      // 检查是否已存在
+      const existingIndex = cart.findIndex(item => item.cartItemId === cartItemId);
+
+      if (existingIndex > -1) {
+        cart[existingIndex].quantity += qty;
+      } else {
+        cart.push(cartItem);
+      }
+
+      // 保存到localStorage
+      localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
+
+      // 触发购物车更新事件
+      window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+
+      console.log('购物车已更新:', cart);
+
+      // 关闭Quick Order
+      closeQuickOrder();
+
+      // 打开购物车drawer
+      setTimeout(() => {
+        const cartDrawer = document.getElementById('cartDrawer');
+        const cartOverlay = document.getElementById('cartOverlay');
+        if (cartDrawer && cartOverlay) {
+          cartDrawer.classList.add('active');
+          cartOverlay.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        }
+      }, 300);
+
+    } catch (e) {
+      console.error('添加到购物车失败:', e);
+    }
+  };
+
+  // 添加到购物车
+  window.addQuickOrderToCart = async function(productId, productType) {
+    const qty = parseInt(document.getElementById('quickOrderQty').value) || 1;
+
+    // 收集选中的变体
+    const selectedVariations = {};
+    document.querySelectorAll('.quick-order-section').forEach(section => {
+      const title = section.querySelector('.quick-order-section-title')?.textContent;
+      const selected = section.querySelector('.quick-order-option.selected');
+      if (title && selected && title !== 'Quantity') {
+        selectedVariations[title] = selected.textContent;
+      }
+    });
+
+    console.log('添加到购物车:', {
+      productId,
+      productType,
+      quantity: qty,
+      variations: selectedVariations
+    });
+
+    try {
+      // 获取当前产品的完整信息
+      const productData = window.currentProductData || {};
+      const variationsData = window.currentProductVariationsData || [];
+
+      // 找到匹配的变体（如果是变体产品）
+      let selectedVariation = null;
+      let price = productData.price || '0';
+      let productName = productData.name || '';
+      let productImage = productData.images?.[0]?.src || '';
+
+      if (productType === 'variable' && variationsData.length > 0) {
+        selectedVariation = variationsData.find(variation => {
+          return variation.attributes.every(attr => {
+            const attrName = attr.name;
+            const attrValue = attr.option;
+            return selectedVariations[attrName] === attrValue;
+          });
+        });
+
+        if (selectedVariation) {
+          price = selectedVariation.price;
+          if (selectedVariation.image?.src) {
+            productImage = selectedVariation.image.src;
+          }
+        }
+      }
+
+      // 获取现有购物车
+      let cart = [];
+      try {
+        const cartData = localStorage.getItem('ebbelle_cart');
+        if (cartData) {
+          cart = JSON.parse(cartData);
+        }
+      } catch (e) {
+        console.error('读取购物车失败:', e);
+      }
+
+      // 生成唯一的cartItemId
+      const variationKey = Object.entries(selectedVariations)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k}:${v}`)
+        .join('|');
+      const cartItemId = `${productId}_${variationKey || 'simple'}`;
+
+      // 检查是否已存在相同产品和变体
+      const existingIndex = cart.findIndex(item => item.cartItemId === cartItemId);
+
+      if (existingIndex > -1) {
+        // 已存在，增加数量
+        cart[existingIndex].quantity += qty;
+      } else {
+        // 新增
+        const cartItem = {
+          cartItemId: cartItemId,
+          id: productId,
+          name: productName,
+          price: price,
+          quantity: qty,
+          image: productImage,
+          selectedVariants: selectedVariations,
+          variationId: selectedVariation?.id || null
+        };
+        cart.push(cartItem);
+      }
+
+      // 保存到localStorage
+      localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
+
+      // 触发购物车更新事件
+      window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+
+      console.log('购物车已更新:', cart);
+
+      // 关闭Quick Order Modal
+      closeQuickOrder();
+
+      // 打开购物车drawer
+      setTimeout(() => {
+        const cartDrawer = document.getElementById('cartDrawer');
+        const cartOverlay = document.getElementById('cartOverlay');
+        if (cartDrawer && cartOverlay) {
+          cartDrawer.classList.add('active');
+          cartOverlay.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        }
+      }, 300);
+
+    } catch (e) {
+      console.error('添加到购物车失败:', e);
+    }
+  };
+
+  // 绑定事件
+  if (quickOrderClose) {
+    quickOrderClose.addEventListener('click', closeQuickOrder);
+  }
+
+  if (quickOrderOverlay) {
+    quickOrderOverlay.addEventListener('click', closeQuickOrder);
+  }
+
+  if (quickOrderMobileClose) {
+    quickOrderMobileClose.addEventListener('click', closeQuickOrder);
+  }
+
+  if (quickOrderMobileOverlay) {
+    quickOrderMobileOverlay.addEventListener('click', closeQuickOrder);
+  }
+
+</script>

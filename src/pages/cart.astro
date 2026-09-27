@@ -1,0 +1,1011 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Shopping Cart - E.B.Belle">
+  <Header />
+
+  <!-- Breadcrumb -->
+  <section class="breadcrumb-section">
+    <div class="cart-container">
+      <div class="breadcrumb-links">
+        <a href="/">Home</a>
+        <span class="separator">/</span>
+        <span class="current">Shopping Cart</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cart Page -->
+  <section class="cart-page">
+    <div class="cart-container">
+      <div class="cart-page-header">
+        <h1 class="page-title">Shopping Cart</h1>
+        <span class="items-count-tag">0 items in your bag</span>
+      </div>
+
+      <div class="cart-layout">
+        <!-- Main Cart Column -->
+        <main class="cart-main">
+          <!-- Free Shipping Progress -->
+          <div class="shipping-progress-banner">
+            <div class="progress-header">
+              <p class="progress-message">
+                <i class="fa-solid fa-truck-fast"></i>
+                You're <span class="highlight">$50.00</span> away from <strong>FREE SHIPPING!</strong>
+              </p>
+              <span class="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-fill" style="width: 0%;"></div>
+            </div>
+            <div class="progress-labels">
+              <span>Current: <strong>$0.00</strong></span>
+              <span>Free threshold: <strong>$50.00</strong></span>
+            </div>
+          </div>
+
+          <!-- Cart Items List (动态渲染区) -->
+          <div class="cart-items-wrapper" id="cartItemsWrapper">
+            <!-- 骨架屏/头部将在JS内统一渲染 -->
+          </div>
+
+          <!-- Bottom Action Buttons -->
+          <div class="cart-bottom-actions">
+            <a href="/shop" class="btn-continue-shopping">
+              <i class="fa-solid fa-arrow-left"></i>
+              <span>Continue Shopping</span>
+            </a>
+            <button type="button" class="btn-clear-cart" id="btnClearAll">Clear All</button>
+          </div>
+        </main>
+
+        <!-- Sidebar Summary -->
+        <aside class="cart-sidebar">
+          <!-- Discount Code Block -->
+          <div class="sidebar-card">
+            <h3 class="sidebar-heading">Promo Code</h3>
+            <div class="coupon-form">
+              <input type="text" class="coupon-field" placeholder="Enter coupon code" />
+              <button type="button" class="coupon-apply-btn">Apply</button>
+            </div>
+          </div>
+
+          <!-- Summary Block -->
+          <div class="sidebar-card summary-card">
+            <h3 class="sidebar-heading">Order Summary</h3>
+
+            <div class="fee-row">
+              <span class="fee-name">Subtotal (0 items)</span>
+              <span class="fee-value" id="cartSubtotalVal">$0.00</span>
+            </div>
+
+            <div class="fee-row">
+              <span class="fee-name">Shipping</span>
+              <span class="fee-tag font-accent">Calculated next step</span>
+            </div>
+
+            <div class="fee-row">
+              <span class="fee-name">Estimated Tax</span>
+              <span class="fee-tag">Calculated at checkout</span>
+            </div>
+
+            <div class="fee-divider"></div>
+
+            <div class="fee-row total-highlight">
+              <span class="fee-total-name">Estimated Total</span>
+              <span class="fee-total-value" id="cartTotalVal">$0.00</span>
+            </div>
+
+            <a href="/checkout/shipping" class="checkout-submit-btn">
+              <span>PROCEED TO CHECKOUT</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+
+            <div class="trust-badge">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span>Guaranteed safe & secure checkout</span>
+            </div>
+
+            <!-- Accepted Payment Icons -->
+            <div class="payment-trust-footer">
+              <span class="payment-title">WE ACCEPT</span>
+              <div class="payment-icon-list">
+                <i class="fa-brands fa-cc-visa" title="Visa"></i>
+                <i class="fa-brands fa-cc-mastercard" title="Mastercard"></i>
+                <i class="fa-brands fa-cc-amex" title="Amex"></i>
+                <i class="fa-brands fa-cc-paypal" title="PayPal"></i>
+                <i class="fa-brands fa-cc-apple-pay" title="Apple Pay"></i>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+</Layout>
+
+<style>
+  /* 基础与防横向溢出安全锁 */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  .cart-container {
+    width: 100%;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+
+  /* Breadcrumb */
+  .breadcrumb-section {
+    background: #fbf9f6;
+    padding: 14px 0;
+    border-bottom: 1px solid #eee8df;
+  }
+  .breadcrumb-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .breadcrumb-links a {
+    color: #77726b;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .breadcrumb-links a:hover {
+    color: #1a1a1a;
+  }
+  .separator {
+    color: #ccc6bd;
+  }
+  .current {
+    color: #1a1a1a;
+    font-weight: 600;
+  }
+
+  /* Page Structure */
+  .cart-page {
+    background-color: #f7f5f0;
+    padding: 40px 0 80px;
+    min-height: 70vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  .cart-page-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 26px;
+    border-bottom: 1px solid #e5dfd5;
+    padding-bottom: 16px;
+  }
+  .page-title {
+    font-family: 'Bodoni Moda', 'Didot', Georgia, serif;
+    font-size: 34px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: #1a1917;
+    margin: 0;
+  }
+  .items-count-tag {
+    font-size: 13px;
+    color: #8c867d;
+    font-weight: 500;
+  }
+
+  /* Grid Layout */
+  .cart-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 32px;
+    align-items: flex-start;
+  }
+
+  /* Progress Banner */
+  .shipping-progress-banner {
+    background: #ffffff;
+    border: 1px solid #e6ded3;
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  }
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .progress-message {
+    margin: 0;
+    font-size: 13px;
+    color: #2b2824;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .progress-message i {
+    color: #a3824c;
+    font-size: 14px;
+  }
+  .highlight {
+    color: #a3824c;
+    font-weight: 700;
+  }
+  .progress-percent {
+    font-size: 13px;
+    font-weight: 700;
+    color: #a3824c;
+  }
+  .progress-bar-track {
+    width: 100%;
+    height: 6px;
+    background: #ece7de;
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #bfa16b 0%, #947137 100%);
+    border-radius: 99px;
+    transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #8c867d;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Cart Items Container */
+  .cart-items-wrapper {
+    background: #ffffff;
+    border: 1px solid #e6ded3;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    width: 100%;
+  }
+
+  /* 底部操作区 */
+  .cart-bottom-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    padding: 0 4px;
+  }
+  .btn-continue-shopping {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #666056;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    transition: color 0.2s ease;
+  }
+  .btn-continue-shopping:hover {
+    color: #a3824c;
+  }
+  .btn-clear-cart {
+    background: none;
+    border: none;
+    color: #9c958a;
+    font-size: 12.5px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.2s;
+  }
+  .btn-clear-cart:hover {
+    color: #a82424;
+  }
+
+  /* 侧边栏 */
+  .cart-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: sticky;
+    top: 24px;
+  }
+  .sidebar-card {
+    background: #ffffff;
+    border: 1px solid #e6ded3;
+    border-radius: 4px;
+    padding: 22px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  }
+  .sidebar-heading {
+    margin: 0 0 16px;
+    font-size: 13.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #1a1917;
+  }
+
+  /* 优惠券 */
+  .coupon-form {
+    display: flex;
+    gap: 8px;
+  }
+  .coupon-field {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #ded7cb;
+    border-radius: 2px;
+    font-size: 13px;
+    color: #1a1917;
+    background: #fbf9f6;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .coupon-field:focus {
+    border-color: #1a1917;
+    background: #fff;
+  }
+  .coupon-apply-btn {
+    height: 40px;
+    padding: 0 18px;
+    background: #24221f;
+    color: #ffffff;
+    border: none;
+    border-radius: 2px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+  }
+  .coupon-apply-btn:hover {
+    background: #a3824c;
+  }
+
+  /* 结算总览卡片 */
+  .fee-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+  .fee-name {
+    color: #706a62;
+  }
+  .fee-value {
+    font-weight: 600;
+    color: #1a1917;
+  }
+  .fee-tag {
+    font-size: 11.5px;
+    color: #8c867d;
+  }
+  .font-accent {
+    color: #a3824c;
+    font-weight: 500;
+  }
+  .fee-divider {
+    height: 1px;
+    background: #ede7de;
+    margin: 16px 0;
+  }
+  .total-highlight {
+    margin-bottom: 20px;
+  }
+  .fee-total-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1917;
+  }
+  .fee-total-value {
+    font-family: 'Bodoni Moda', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1917;
+  }
+
+  /* 结算按钮 */
+  .checkout-submit-btn {
+    width: 100%;
+    height: 48px;
+    background: #1a1917;
+    color: #ffffff;
+    border: none;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+  }
+  .checkout-submit-btn:hover {
+    background: #a3824c;
+  }
+
+  .trust-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 11.5px;
+    color: #8c867d;
+  }
+  .trust-badge i {
+    color: #3b7a57;
+  }
+  .payment-trust-footer {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #ede7de;
+    text-align: center;
+  }
+  .payment-title {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #9c958a;
+    margin-bottom: 8px;
+  }
+  .payment-icon-list {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    font-size: 22px;
+    color: #6d665c;
+  }
+
+  /* =========================================================
+     动态节点全局样式穿透 (全面修复桌面端与移动端排版)
+     ========================================================= */
+
+  /* 桌面端表头 */
+  :global(.cart-header-row) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 4fr) 1.2fr 1.6fr 1.2fr 0.6fr !important;
+    padding: 14px 20px !important;
+    background: #fbf9f6 !important;
+    border-bottom: 1px solid #eee8df !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    color: #77726b !important;
+  }
+  :global(.cart-header-row .col-total) {
+    text-align: right !important;
+  }
+  :global(.cart-header-row .col-action) {
+    text-align: right !important;
+  }
+
+  /* 商品卡片：桌面端 5 列标准排布 */
+  :global(.cart-item-card) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 4fr) 1.2fr 1.6fr 1.2fr 0.6fr !important;
+    align-items: center !important;
+    padding: 20px !important;
+    border-bottom: 1px solid #f1ece4 !important;
+    transition: background-color 0.2s ease !important;
+    background: #ffffff !important;
+  }
+  :global(.cart-item-card:last-child) {
+    border-bottom: none !important;
+  }
+  :global(.cart-item-card:hover) {
+    background-color: #faf8f5 !important;
+  }
+
+  /* 产品列与缩略图 */
+  :global(.cart-item-card .item-product-col) {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    min-width: 0 !important;
+  }
+  :global(.cart-item-card .item-thumb) {
+    width: 76px !important;
+    height: 76px !important;
+    border-radius: 3px !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+    background: #f4efe8 !important;
+    border: 1px solid #eee7dd !important;
+  }
+  :global(.cart-item-card .item-thumb img) {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+  :global(.cart-item-card .item-meta) {
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+  :global(.cart-item-card .item-title) {
+    margin: 0 0 4px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  :global(.cart-item-card .item-title a) {
+    color: #1a1917 !important;
+    text-decoration: none !important;
+  }
+  :global(.cart-item-card .item-title a:hover) {
+    color: #a3824c !important;
+  }
+  :global(.cart-item-card .item-variant) {
+    margin: 0 !important;
+    font-size: 11.5px !important;
+    color: #8c867d !important;
+    line-height: 1.3 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* 价格列 */
+  :global(.cart-item-card .item-price-col) {
+    display: flex !important;
+    align-items: center !important;
+  }
+  :global(.cart-item-card .unit-price) {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #4a453f !important;
+  }
+
+  /* 数量增减器 */
+  :global(.cart-item-card .quantity-stepper) {
+    display: inline-flex !important;
+    align-items: center !important;
+    height: 32px !important;
+    border: 1px solid #ded7cb !important;
+    border-radius: 2px !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+  }
+  :global(.cart-item-card .stepper-btn) {
+    width: 28px !important;
+    height: 100% !important;
+    border: none !important;
+    background: transparent !important;
+    color: #4a453f !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    transition: background 0.2s !important;
+  }
+  :global(.cart-item-card .stepper-btn:hover) {
+    background: #f4efe8 !important;
+  }
+  :global(.cart-item-card .stepper-input) {
+    width: 38px !important;
+    height: 100% !important;
+    border: none !important;
+    border-left: 1px solid #ded7cb !important;
+    border-right: 1px solid #ded7cb !important;
+    text-align: center !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #1a1917 !important;
+    background: #fff !important;
+    outline: none !important;
+    padding: 0 !important;
+  }
+
+  /* 小计与删除 */
+  :global(.cart-item-card .item-total-col) {
+    text-align: right !important;
+  }
+  :global(.cart-item-card .line-total) {
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #1a1917 !important;
+  }
+  :global(.cart-item-card .item-action-col) {
+    text-align: right !important;
+  }
+  :global(.cart-item-card .btn-remove) {
+    background: none !important;
+    border: none !important;
+    color: #aba499 !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    padding: 6px !important;
+    transition: color 0.2s !important;
+  }
+  :global(.cart-item-card .btn-remove:hover) {
+    color: #a82424 !important;
+  }
+
+  /* 默认隐藏移动端专属标签 */
+  :global(.cart-item-card .mobile-price-row) {
+    display: none !important;
+  }
+  :global(.cart-item-card .total-label) {
+    display: none !important;
+  }
+
+  /* =========================================================
+     移动端断点适配（卡片化上下分布，避免左右穿透）
+     ========================================================= */
+  @media (max-width: 768px) {
+    :root {
+      --container-w: 100%;
+    }
+    .cart-layout {
+      box-sizing: border-box;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+    }
+    .cart-sidebar {
+      position: static;
+    }
+
+    /* 移动端隐藏桌面端表头 */
+    :global(.cart-header-row) {
+      display: none !important;
+    }
+
+    /* 移动端卡片采用类似 Cart Drawer 的自适应布局 */
+    :global(.cart-item-card) {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) auto !important;
+      grid-template-areas:
+        "product action"
+        "quantity total" !important;
+      gap: 12px 10px !important;
+      padding: 16px 14px !important;
+      align-items: center !important;
+    }
+
+    :global(.cart-item-card .item-product-col) {
+      grid-area: product !important;
+      align-items: flex-start !important;
+      gap: 12px !important;
+    }
+    :global(.cart-item-card .item-thumb) {
+      width: 68px !important;
+      height: 68px !important;
+    }
+    :global(.cart-item-card .item-title) {
+      font-size: 13.5px !important;
+      white-space: normal !important; /* 允许折行 */
+      display: -webkit-box !important;
+      -webkit-line-clamp: 2 !important;
+      -webkit-box-orient: vertical !important;
+      overflow: hidden !important;
+    }
+    :global(.cart-item-card .mobile-price-row) {
+      display: block !important;
+      margin-top: 3px !important;
+    }
+    :global(.cart-item-card .mobile-price-row .unit-price) {
+      font-size: 13px !important;
+      color: #a3824c !important;
+      font-weight: 600 !important;
+    }
+
+    /* 隐藏桌面单价列 */
+    :global(.cart-item-card .item-price-col) {
+      display: none !important;
+    }
+
+    /* 删除按钮位于右上角 */
+    :global(.cart-item-card .item-action-col) {
+      grid-area: action !important;
+      align-self: flex-start !important;
+      text-align: right !important;
+    }
+
+    /* 数量调节器位于左下 */
+    :global(.cart-item-card .item-quantity-col) {
+      grid-area: quantity !important;
+      padding-top: 4px !important;
+    }
+    :global(.cart-item-card .quantity-stepper) {
+      height: 30px !important;
+    }
+
+    /* 小计金额位于右下 */
+    :global(.cart-item-card .item-total-col) {
+      grid-area: total !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-end !important;
+      gap: 4px !important;
+      padding-top: 4px !important;
+    }
+    :global(.cart-item-card .total-label) {
+      display: inline !important;
+      font-size: 11.5px !important;
+      color: #8c867d !important;
+    }
+    :global(.cart-item-card .line-total) {
+      font-size: 14.5px !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .cart-container {
+      padding: 0 14px;
+    }
+    .page-title {
+      font-size: 26px;
+    }
+    .shipping-progress-banner {
+      padding: 14px;
+    }
+  }
+</style>
+
+<script is:inline>
+  // 获取购物车数据
+  function getCart() {
+    try {
+      const cart = localStorage.getItem('ebbelle_cart');
+      return cart ? JSON.parse(cart) : [];
+    } catch (e) {
+      console.error('Failed to get cart:', e);
+      return [];
+    }
+  }
+
+  // 保存购物车数据
+  function saveCart(cart) {
+    try {
+      localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
+      window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+    } catch (e) {
+      console.error('Failed to save cart:', e);
+    }
+  }
+
+  // 渲染购物车页面
+  function renderCartPage() {
+    const cart = getCart();
+    const wrapper = document.getElementById('cartItemsWrapper');
+    const itemsCountTag = document.querySelector('.items-count-tag');
+
+    if (!wrapper) return;
+
+    // 更新商品件数标签
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    if (itemsCountTag) {
+      itemsCountTag.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''} in your bag`;
+    }
+
+    // 购物车为空时
+    if (cart.length === 0) {
+      wrapper.innerHTML = `
+        <div style="text-align: center; padding: 60px 20px; color: #999;">
+          <i class="fa-solid fa-cart-shopping" style="font-size: 48px; margin-bottom: 16px; opacity: 0.25;"></i>
+          <p style="font-size: 16px; color: #555; margin: 0 0 20px;">Your cart is currently empty</p>
+          <a href="/shop" class="btn-continue-shopping" style="display: inline-flex; border: 1px solid #1a1917; padding: 10px 22px; border-radius: 2px;">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Continue Shopping</span>
+          </a>
+        </div>
+      `;
+      updateCartSummary();
+      return;
+    }
+
+    // 渲染商品列表（结构直接绑定全局穿透类）
+    const itemsHTML = cart.map(item => {
+      const itemTotal = (parseFloat(item.price) * item.quantity).toFixed(2);
+
+      // 提取变体
+      let variantsText = '';
+      if (item.selectedVariants) {
+        variantsText = Object.entries(item.selectedVariants)
+          .filter(([_, value]) => value)
+          .map(([key, value]) => `${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`)
+          .join(' / ');
+      }
+
+      return `
+        <div class="cart-item-card" data-cart-item-id="${item.cartItemId}">
+          <div class="item-product-col">
+            <div class="item-thumb">
+              <img src="${item.image}" alt="${item.name}" />
+            </div>
+            <div class="item-meta">
+              <h3 class="item-title"><a href="/product/${item.slug || ''}">${item.name}</a></h3>
+              ${variantsText ? `<p class="item-variant">${variantsText}</p>` : ''}
+              <div class="mobile-price-row">
+                <span class="unit-price">$${parseFloat(item.price).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="item-price-col">
+            <span class="unit-price">$${parseFloat(item.price).toFixed(2)}</span>
+          </div>
+
+          <div class="item-quantity-col">
+            <div class="quantity-stepper">
+              <button type="button" class="stepper-btn" data-action="decrease" aria-label="Decrease quantity">-</button>
+              <input type="number" class="stepper-input" value="${item.quantity}" min="1" readonly />
+              <button type="button" class="stepper-btn" data-action="increase" aria-label="Increase quantity">+</button>
+            </div>
+          </div>
+
+          <div class="item-total-col">
+            <span class="total-label">Total:</span>
+            <span class="line-total">$${itemTotal}</span>
+          </div>
+
+          <div class="item-action-col">
+            <button type="button" class="btn-remove" data-action="delete" title="Remove item" aria-label="Remove item">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    wrapper.innerHTML = `
+      <div class="cart-header-row">
+        <span class="col-product">Product</span>
+        <span class="col-price">Price</span>
+        <span class="col-quantity">Quantity</span>
+        <span class="col-total">Subtotal</span>
+        <span class="col-action"></span>
+      </div>
+      ${itemsHTML}
+    `;
+
+    updateCartSummary();
+  }
+
+  // 更新总览价格与免邮条
+  function updateCartSummary() {
+    const cart = getCart();
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const subtotal = cart.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      return sum + (price * item.quantity);
+    }, 0);
+
+    const subtotalSpan = document.getElementById('cartSubtotalVal');
+    const subtotalName = document.querySelector('.summary-card .fee-row:first-child .fee-name');
+    const totalSpan = document.getElementById('cartTotalVal');
+
+    if (subtotalName) {
+      subtotalName.textContent = `Subtotal (${totalItems} item${totalItems !== 1 ? 's' : ''})`;
+    }
+    if (subtotalSpan) {
+      subtotalSpan.textContent = `$${subtotal.toFixed(2)}`;
+    }
+    if (totalSpan) {
+      totalSpan.textContent = `$${subtotal.toFixed(2)}`;
+    }
+
+    // 免邮进度 ($50 门槛)
+    const freeShippingThreshold = 50;
+    const remaining = Math.max(0, freeShippingThreshold - subtotal);
+    const progress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+
+    const progressFill = document.querySelector('.shipping-progress-banner .progress-fill');
+    const progressPercent = document.querySelector('.shipping-progress-banner .progress-percent');
+    const progressMessage = document.querySelector('.shipping-progress-banner .progress-message');
+    const progressLabels = document.querySelector('.shipping-progress-banner .progress-labels');
+
+    if (progressFill) progressFill.style.width = `${progress}%`;
+    if (progressPercent) progressPercent.textContent = `${Math.round(progress)}%`;
+    if (progressMessage) {
+      if (remaining > 0) {
+        progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> You're <span class="highlight">$${remaining.toFixed(2)}</span> away from <strong>FREE SHIPPING!</strong>`;
+      } else {
+        progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> <strong>Congratulations! You've unlocked FREE SHIPPING!</strong>`;
+      }
+    }
+    if (progressLabels) {
+      progressLabels.innerHTML = `
+        <span>Current: <strong>$${subtotal.toFixed(2)}</strong></span>
+        <span>Free threshold: <strong>$50.00</strong></span>
+      `;
+    }
+  }
+
+  // 更新商品数量
+  function updateCartQuantity(cartItemId, newQuantity) {
+    if (newQuantity < 1) return;
+    const cart = getCart();
+    const item = cart.find(i => String(i.cartItemId) === String(cartItemId));
+    if (item) {
+      item.quantity = newQuantity;
+      saveCart(cart);
+
+      const cartItem = document.querySelector(`[data-cart-item-id="${cartItemId}"]`);
+      if (cartItem) {
+        const stepperInput = cartItem.querySelector('.stepper-input');
+        const lineTotal = cartItem.querySelector('.line-total');
+        if (stepperInput) stepperInput.value = newQuantity;
+        if (lineTotal) {
+          const price = parseFloat(item.price) || 0;
+          lineTotal.textContent = `$${(price * newQuantity).toFixed(2)}`;
+        }
+      }
+      updateCartSummary();
+    }
+  }
+
+  // 删除商品
+  function removeCartItem(cartItemId) {
+    let cart = getCart();
+    cart = cart.filter(i => String(i.cartItemId) !== String(cartItemId));
+    saveCart(cart);
+    renderCartPage();
+  }
+
+  // 事件代理
+  document.getElementById('cartItemsWrapper')?.addEventListener('click', (e) => {
+    const button = e.target.closest('button');
+    if (!button) return;
+
+    const cartItem = button.closest('.cart-item-card');
+    if (!cartItem) return;
+
+    const cartItemId = cartItem.dataset.cartItemId;
+    const action = button.dataset.action;
+    const stepperInput = cartItem.querySelector('.stepper-input');
+    const currentQty = parseInt(stepperInput?.value || 1, 10);
+
+    if (action === 'delete') {
+      removeCartItem(cartItemId);
+    } else if (action === 'increase') {
+      updateCartQuantity(cartItemId, currentQty + 1);
+    } else if (action === 'decrease') {
+      if (currentQty > 1) {
+        updateCartQuantity(cartItemId, currentQty - 1);
+      } else {
+        removeCartItem(cartItemId);
+      }
+    }
+  });
+
+  // 清空购物车
+  document.getElementById('btnClearAll')?.addEventListener('click', () => {
+    saveCart([]);
+    renderCartPage();
+  });
+
+  window.addEventListener('cartUpdated', renderCartPage);
+  document.addEventListener('DOMContentLoaded', renderCartPage);
+</script>

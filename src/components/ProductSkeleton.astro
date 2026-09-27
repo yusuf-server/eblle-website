@@ -1,0 +1,148 @@
+---
+// 产品网格骨架屏组件
+interface Props {
+  count?: number; // 显示多少个骨架卡片
+}
+
+const { count = 6 } = Astro.props;
+---
+
+{[...Array(count)].map(() => (
+  <div class="product-skeleton-card">
+    <div class="skeleton-badge"></div>
+    <div class="skeleton-image"></div>
+    <div class="skeleton-info">
+      <div class="skeleton-title"></div>
+      <div class="skeleton-title-short"></div>
+      <div class="skeleton-price-row">
+        <div class="skeleton-price"></div>
+        <div class="skeleton-old-price"></div>
+      </div>
+    </div>
+  </div>
+))}
+
+<style>
+  .product-skeleton-card {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .skeleton-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 50px;
+    height: 24px;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 0%,
+      #e0e0e0 50%,
+      #f0f0f0 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+    border-radius: 4px;
+    z-index: 1;
+  }
+
+  .skeleton-image {
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(
+      90deg,
+      #f5f5f5 0%,
+      #e8e8e8 50%,
+      #f5f5f5 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+  }
+
+  .skeleton-info {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .skeleton-title {
+    width: 100%;
+    height: 14px;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 0%,
+      #e0e0e0 50%,
+      #f0f0f0 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+    border-radius: 4px;
+  }
+
+  .skeleton-title-short {
+    width: 70%;
+    height: 14px;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 0%,
+      #e0e0e0 50%,
+      #f0f0f0 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+    border-radius: 4px;
+  }
+
+  .skeleton-price-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 4px;
+  }
+
+  .skeleton-price {
+    width: 60px;
+    height: 18px;
+    background: linear-gradient(
+      90deg,
+      #d4a04d 0%,
+      #c89040 50%,
+      #d4a04d 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+    border-radius: 4px;
+  }
+
+  .skeleton-old-price {
+    width: 50px;
+    height: 14px;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 0%,
+      #e0e0e0 50%,
+      #f0f0f0 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+    border-radius: 4px;
+  }
+
+  @media (max-width: 640px) {
+    .skeleton-info {
+      padding: 12px;
+    }
+  }
+</style>

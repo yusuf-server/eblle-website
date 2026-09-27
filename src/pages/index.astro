@@ -1,0 +1,4478 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CartDrawer from '../components/CartDrawer.astro';
+import AuthModal from '../components/AuthModal.astro';
+import ProductSkeleton from '../components/ProductSkeleton.astro';
+import { getCategories } from '../lib/woocommerce';
+import { getProductsWithPrices } from '../lib/productCache';
+import { getHomepageData, parseACFLink, parseACFImage } from '../lib/wordpress';
+
+// 获取首页动态数据
+const heroData = await getHomepageData();
+
+// 解析 Hero Main Banner 数据（带默认值回退）
+// 注意：根据实际 API 返回的扁平结构进行调整
+const mainBanner = heroData ? {
+  image: parseACFImage(heroData.main_image),
+  title: heroData.main_title || 'Timeless Elegance',
+  description: heroData.main_description || 'Discover our handcrafted collection of 316L Stainless Steel & PVD Gold jewelry.',
+  buttonText: heroData.button_text || 'Shop Now',
+  buttonLink: parseACFLink(heroData.button_link),
+} : {
+  // 默认值
+  image: {
+    url: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&q=80',
+    alt: 'Main Jewelry Collection',
+  },
+  title: 'Timeless Elegance',
+  description: 'Discover our handcrafted collection of 316L Stainless Steel & PVD Gold jewelry.',
+  buttonText: 'Shop Now',
+  buttonLink: { url: '/shop', title: 'Shop Now', target: '' },
+};
+
+// 解析 Mid Card 1 数据
+const midCard1 = heroData ? {
+  image: parseACFImage(heroData.mid1_image),
+  label: heroData.mid1_label || 'Explore',
+  title: heroData.mid1_title || 'New Collections',
+  link: parseACFLink(heroData.mid1_link),
+} : {
+  // 默认值
+  image: {
+    url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&q=80',
+    alt: 'New Collections',
+  },
+  label: 'Explore',
+  title: 'New Collections',
+  link: { url: '/shop', title: '', target: '' },
+};
+
+// 解析 Mid Card 2 数据
+const midCard2 = heroData ? {
+  image: parseACFImage(heroData.mid2_image),
+  label: heroData.mid2_label || 'Trending',
+  title: heroData.mid2_title || 'Now Collections',
+  link: parseACFLink(heroData.mid2_link),
+} : {
+  // 默认值
+  image: {
+    url: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80',
+    alt: 'Trending',
+  },
+  label: 'Trending',
+  title: 'Now Collections',
+  link: { url: '/shop', title: '', target: '' },
+};
+
+// 解析移动端 Hero Banner 数据
+const mobileHeroBanner = heroData ? {
+  image: parseACFImage(heroData.mobile_hero_image),
+  subtitle: heroData.mobile_hero_subtitle || 'Collection 2026',
+  title: heroData.mobile_hero_title || 'Timeless Elegance',
+  description: heroData.mobile_hero_description || '316L Stainless Steel & PVD Gold.',
+  buttonText: heroData.mobile_hero_button_text || 'Shop Now',
+  buttonLink: parseACFLink(heroData.mobile_hero_button_link),
+} : {
+  // 默认值
+  image: {
+    url: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80',
+    alt: 'Hero',
+  },
+  subtitle: 'Collection 2026',
+  title: 'Timeless Elegance',
+  description: '316L Stainless Steel & PVD Gold.',
+  buttonText: 'Shop Now',
+  buttonLink: { url: '/shop', title: '', target: '' },
+};
+
+// 解析移动端 Sub Card 1
+const mobileSubCard1 = heroData ? {
+  image: parseACFImage(heroData.mobile_sub1_image),
+  tag: heroData.mobile_sub1_tag || 'Explore',
+  title: heroData.mobile_sub1_title || 'New Collections',
+  link: parseACFLink(heroData.mobile_sub1_link),
+} : {
+  // 默认值
+  image: {
+    url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&q=80',
+    alt: 'New Collections',
+  },
+  tag: 'Explore',
+  title: 'New Collections',
+  link: { url: '/shop', title: '', target: '' },
+};
+
+// 解析移动端 Sub Card 2
+const mobileSubCard2 = heroData ? {
+  image: parseACFImage(heroData.mobile_sub2_image),
+  tag: heroData.mobile_sub2_tag || 'Trending',
+  title: heroData.mobile_sub2_title || 'Now Collections',
+  link: parseACFLink(heroData.mobile_sub2_link),
+} : {
+  // 默认值
+  image: {
+    url: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80',
+    alt: 'Trending',
+  },
+  tag: 'Trending',
+  title: 'Now Collections',
+  link: { url: '/shop', title: '', target: '' },
+};
+
+// 解析 New Arrivals Section 数据
+const newArrivalsTitle = heroData?.new_arrivals_title || 'NEW ARRIVALS / WATERPROOF';
+const newArrivalsColumns = heroData?.new_arrivals_columns || [];
+const mobileArrivalsColumns = heroData?.mobile_arrivals_columns || [];
+
+// 解析 Campaign Section 数据
+const campaignTitle = heroData?.campaign_title || 'CAMPAIGN ZONE';
+const campaignCards = heroData?.campaign_cards || [];
+const useSameCampaignData = heroData?.mobile_campaign_cards !== false; // 默认为 true
+
+// 解析 Reviews Section 数据
+const reviewsTitle = heroData?.reviews_title || 'What Our Clients Say';
+const reviewImages = heroData?.review_images || [];
+const autoplayEnabled = heroData?.autoplay_enabled !== false; // 默认为 true
+const autoplayInterval = heroData?.autoplay_interval || 5;
+const mobileUseSameImages = heroData?.mobile_use_same_images !== false; // 默认为 true
+
+// 调试：查看 reviews 数据
+console.log('=== Reviews Debug ===');
+console.log('reviewImages length:', reviewImages.length);
+console.log('reviewImages:', JSON.stringify(reviewImages, null, 2));
+
+// 获取 Instagram 帖子
+const INSTAGRAM_ACCESS_TOKEN = 'IGAAHKoYxeZA3JBZAGI5eVltcy1zSzRPWEJfVXJMWnZAMU25DWkI5eEh0clViQjF0THJ6a20wSWdaM1hQRlp0ZAFVvSE9ScC1KT3VFUzU4T3ZAXbzZAGOFlYbkZAweFA4Ul90MVlBU3Jza3NZATjhDdldIOWYyUXVn';
+const INSTAGRAM_API_URL = `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink&access_token=${INSTAGRAM_ACCESS_TOKEN}&limit=4`;
+
+let instagramPosts = [];
+try {
+  const response = await fetch(INSTAGRAM_API_URL);
+  const data = await response.json();
+
+  if (data.data) {
+    instagramPosts = data.data.map((post) => ({
+      id: post.id,
+      caption: post.caption || '',
+      media_type: post.media_type, // IMAGE, VIDEO, CAROUSEL_ALBUM
+      media_url: post.media_url, // 图片或视频的 URL
+      thumbnail_url: post.thumbnail_url || post.media_url, // 视频缩略图
+      permalink: post.permalink,
+      is_video: post.media_type === 'VIDEO'
+    }));
+  }
+
+  console.log('=== Instagram Posts Debug ===');
+  console.log('Posts loaded:', instagramPosts.length);
+  console.log('First post:', instagramPosts[0]);
+} catch (error) {
+  console.error('Failed to fetch Instagram posts:', error);
+}
+
+// 解析 FAQ Gallery Section 数据
+const faqSectionTitle = heroData?.faq_section_title || 'E.B.Belle: 316L Stainless Steel & PVD Plating Excellence';
+const galleryImages = heroData?.gallery_images || [];
+const faqItems = heroData?.faq_items || [];
+const mobileFaqTitle = heroData?.mobile_faq_title || 'E.B.Belle: 316L Stainless Steel Excellence';
+const mobileUseSameFaqData = heroData?.mobile_use_same_data !== false; // 默认为 true
+
+// 调试：查看 FAQ 数据
+console.log('=== FAQ Gallery Debug ===');
+console.log('galleryImages length:', galleryImages.length);
+console.log('faqItems length:', faqItems.length);
+
+// 调试：查看 campaign 数据结构
+console.log('=== Campaign Cards Debug ===');
+console.log('campaignCards length:', campaignCards.length);
+if (campaignCards.length > 0) {
+  console.log('First card:', JSON.stringify(campaignCards[0], null, 2));
+}
+
+// 调试：查看 mobile arrivals 数据
+console.log('=== Mobile Arrivals Debug ===');
+console.log('mobileArrivalsColumns length:', mobileArrivalsColumns.length);
+if (mobileArrivalsColumns.length > 0) {
+  console.log('First mobile column:', JSON.stringify(mobileArrivalsColumns[0], null, 2));
+}
+
+// 获取产品数据 - 使用优化的缓存系统
+let flashSaleProducts = [];
+try {
+  console.log('正在获取 enamel-cuff-bangles 分类的产品...');
+  flashSaleProducts = await getProductsWithPrices({
+    per_page: 6,
+    category: 942, // enamel-cuff-bangles
+    orderby: 'date',
+    order: 'desc'
+  });
+  console.log(`✓ 成功获取 ${flashSaleProducts.length} 个产品`);
+} catch (error) {
+  console.error('获取Flash Sale产品失败:', error);
+}
+
+const categories = await getCategories({ per_page: 10 });
+
+// 静态产品数据（用于展示）
+const staticProducts = [
+  {
+    name: 'Gold Fam Gold Earrings & Pearl',
+    image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?w=300&q=80',
+    price: '11.50',
+    oldPrice: '29.90',
+    discount: 32
+  },
+  {
+    name: 'Gold Sam Bracelet Stainless...',
+    image: 'https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=300&q=80',
+    price: '15.50',
+    oldPrice: '28.00',
+    discount: 50
+  },
+  {
+    name: 'Gold Fam Bracelet Special...',
+    image: 'https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=300&q=80',
+    price: '11.00',
+    oldPrice: '16.00',
+    discount: 50
+  },
+  {
+    name: 'Gold Stud Earrings With Dr...',
+    image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=300&q=80',
+    price: '14.00',
+    oldPrice: '10.00',
+    discount: 50
+  },
+  {
+    name: 'Gold Stainless Gold Bot...',
+    image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=300&q=80',
+    price: '17.00',
+    oldPrice: '19.00',
+    discount: 50
+  },
+  {
+    name: 'Gold Bracelet Sound Set...',
+    image: 'https://images.unsplash.com/photo-1598560917505-59a3ad559071?w=300&q=80',
+    price: '21.00',
+    oldPrice: '11.00',
+    discount: 50
+  }
+];
+---
+
+<Layout title="E.B.Belle - Jewelry Store">
+  <!-- 预加载关键图片 -->
+  <link rel="preload" as="image" href={mainBanner.image.url} slot="head" />
+  {mobileHeroBanner.image.url && (
+    <link rel="preload" as="image" href={mobileHeroBanner.image.url} slot="head" media="(max-width: 768px)" />
+  )}
+
+  <Header />
+
+  <!-- 4. HERO SECTION -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-grid">
+        <!-- Main Large Banner -->
+        <div class="hero-main-card">
+          <img
+            src={mainBanner.image.url}
+            alt={mainBanner.image.alt}
+            loading="eager"
+            width={mainBanner.image.width || 1200}
+            height={mainBanner.image.height || 600}
+          >
+          <div class="hero-overlay">
+            <h2 class="serif-title">{mainBanner.title}</h2>
+            <p>{mainBanner.description}</p>
+            <a
+              href={mainBanner.buttonLink.url}
+              class="btn-shop-now"
+              target={mainBanner.buttonLink.target}
+            >
+              {mainBanner.buttonText}
+            </a>
+          </div>
+        </div>
+
+        <!-- Mid Sub Banners -->
+        <div class="hero-mid-card">
+          <a
+            href={midCard1.link.url}
+            class="mid-sub-card"
+            target={midCard1.link.target}
+          >
+            <img
+              src={midCard1.image.url}
+              alt={midCard1.image.alt}
+              loading="eager"
+              width={midCard1.image.width || 500}
+              height={midCard1.image.height || 500}
+            >
+            <div class="mid-card-overlay">
+              <span>{midCard1.label}</span>
+              <h3>{midCard1.title}</h3>
+            </div>
+          </a>
+          <a
+            href={midCard2.link.url}
+            class="mid-sub-card"
+            target={midCard2.link.target}
+          >
+            <img
+              src={midCard2.image.url}
+              alt={midCard2.image.alt}
+              loading="eager"
+              width={midCard2.image.width || 500}
+              height={midCard2.image.height || 500}
+            >
+            <div class="mid-card-overlay">
+              <span>{midCard2.label}</span>
+              <h3>{midCard2.title}</h3>
+            </div>
+          </a>
+        </div>
+
+        <!-- Right Side Login & Coupon -->
+        <div class="hero-right-card">
+          <!-- 未登录状态 -->
+          <div class="user-auth-box" id="authBoxGuest">
+            <div class="avatar-icon">
+              <i class="fa-regular fa-user"></i>
+            </div>
+            <p>Hello, Welcome to E.B.Belle</p>
+            <div class="auth-btns">
+              <button type="button" class="btn-login" onclick="openAuthModal('login')">Login</button>
+              <button type="button" class="btn-reg" onclick="openAuthModal('register')">Register</button>
+            </div>
+          </div>
+
+          <!-- 已登录状态 -->
+          <div class="user-auth-box user-auth-logged-in" id="authBoxLoggedIn" style="display: none;">
+            <div class="avatar-icon logged-in">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <p class="welcome-text" id="welcomeText">Hello <strong id="userName">User</strong>, welcome to E.B.Belle</p>
+            <div class="auth-btns-logged">
+              <button type="button" class="btn-account" onclick="window.location.href='/account'">
+                <i class="fa-solid fa-user-gear"></i>
+                <span>Account</span>
+              </button>
+              <button type="button" class="btn-logout" onclick="handleLogout()">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="coupon-box">
+            <div class="vip-badge">VIP</div>
+            <span class="badge">NEW USER BENEFITS</span>
+            <h3>$130 Value</h3>
+            <span class="coupon-subtitle">EXCLUSIVE COUPONS</span>
+            <a href="#" class="btn-coupon">New User Deal</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. FLASH SALES -->
+  <section class="flash-sales-section">
+    <div class="container">
+      <div class="section-header-row">
+        <div class="flash-title-area">
+          <h2 class="section-title">FLASH SALES</h2>
+          <div class="countdown-timer">
+            <span class="time-block">00</span>
+            <span class="time-separator">:</span>
+            <span class="time-block">07</span>
+            <span class="time-separator">:</span>
+            <span class="time-block">21</span>
+          </div>
+        </div>
+        <a href="#" class="view-more">View More <i class="fa-solid fa-chevron-right"></i></a>
+      </div>
+      <div class="product-grid-6">
+        {flashSaleProducts.length > 0 ? (
+          flashSaleProducts.map((product) => {
+            // 计算折扣百分比
+            const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
+            const discountPercent = hasDiscount
+              ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
+              : 0;
+
+            return (
+              <div class="product-card">
+                <a href={`/product/${product.slug}`}>
+                  <div class="product-img-wrap">
+                    {hasDiscount && (
+                      <span class="product-badge discount-badge">
+                        -{discountPercent}%
+                      </span>
+                    )}
+                    <img
+                      src={product.images[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80'}
+                      alt={product.name}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="product-info">
+                    <h3 class="product-name">{product.name}</h3>
+                    <div class="price-wrap">
+                      <span class="current-price">${product.price}</span>
+                      {hasDiscount && (
+                        <span class="old-price">${product.regular_price}</span>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              </div>
+            );
+          })
+        ) : (
+          <ProductSkeleton count={6} columns={6} />
+        )}
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. TRUST BADGES -->
+  <section class="trust-badges">
+    <div class="container">
+      <div class="trust-grid">
+        <div class="trust-item">
+          <i class="fa-solid fa-plane-departure"></i>
+          <h5>WORLDWIDE SHIPPING</h5>
+          <p>Fast delivery to your door</p>
+        </div>
+        <div class="trust-item">
+          <i class="fa-regular fa-gem"></i>
+          <h5>SKIN-FRIENDLY</h5>
+          <p>Hypoallergenic Waterproof Jewelry</p>
+        </div>
+        <div class="trust-item">
+          <i class="fa-solid fa-industry"></i>
+          <h5>FACTORY DIRECT SUPPLY</h5>
+          <p>Competitive pricing No MOQ</p>
+        </div>
+        <div class="trust-item">
+          <i class="fa-solid fa-headset"></i>
+          <h5>DEDICATED ACCOUNT</h5>
+          <p>Professional service manager</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. NEW ARRIVALS / WATERPROOF -->
+  <section class="new-arrivals-section">
+    <div class="container">
+      <h2 class="arrivals-title">{newArrivalsTitle}</h2>
+      <div class="arrivals-grid">
+        {newArrivalsColumns.length > 0 ? (
+          newArrivalsColumns.map((column) => (
+            <div class="arrivals-column">
+              <h3 class="column-title">{column.column_title}</h3>
+
+              {column.product_groups?.map((group) => {
+                const groupLink = parseACFLink(group.group_link);
+                const GroupWrapper = groupLink.url ? 'a' : 'div';
+
+                return (
+                  <GroupWrapper
+                    href={groupLink.url || undefined}
+                    target={groupLink.target || undefined}
+                    class="product-group"
+                  >
+                    <div class="group-images">
+                      <div class="images-row">
+                        <img src={group.large_image} alt={group.group_name} class="large-img" loading="lazy" />
+                        <div class="small-imgs">
+                          {group.small_images?.map((smallImg) => (
+                            <img src={smallImg.image} alt="" loading="lazy" />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <p class="group-name">{group.group_name}</p>
+                    <p class="group-count">{group.group_count}</p>
+                  </GroupWrapper>
+                );
+              })}
+
+              {column.quick_links && column.quick_links.length > 0 && (
+                <div class="quick-links">
+                  {column.quick_links.map((link) => {
+                    const linkUrl = parseACFLink(link.link_url);
+                    return (
+                      <a href={linkUrl.url} target={linkUrl.target}>
+                        {link.link_text}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+
+              {column.view_more_link?.text && (
+                <a
+                  href={parseACFLink(column.view_more_link.url).url}
+                  class="view-more-link"
+                  target={parseACFLink(column.view_more_link.url).target}
+                >
+                  {column.view_more_link.text} →
+                </a>
+              )}
+            </div>
+          ))
+        ) : (
+          // 默认内容（如果没有配置）
+          <>
+            <div class="arrivals-column">
+              <h3 class="column-title">8.1st - 8.7th</h3>
+              <div class="product-group">
+                <div class="group-images">
+                  <div class="images-row">
+                    <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80" alt="Halloween" class="large-img" loading="lazy">
+                    <div class="small-imgs">
+                      <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80" alt="" loading="lazy">
+                      <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80" alt="" loading="lazy">
+                      <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80" alt="" loading="lazy">
+                      <img src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80" alt="" loading="lazy">
+                    </div>
+                  </div>
+                </div>
+                <p class="group-name">Halloween</p>
+                <p class="group-count">10k+ Products</p>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. SHOP BY CATEGORY -->
+  <section class="shop-by-cat-section">
+    <div class="container">
+      <h3 class="serif-title">Shop by Category</h3>
+      <div class="cat-icon-row">
+        <div class="cat-icon-item">
+          <div class="cat-icon-circle"><i class="fa-regular fa-circle-dot"></i></div>
+          <span>Rings</span>
+        </div>
+        <div class="cat-icon-item">
+          <div class="cat-icon-circle"><i class="fa-solid fa-link"></i></div>
+          <span>Bracelets</span>
+        </div>
+        <div class="cat-icon-item">
+          <div class="cat-icon-circle"><i class="fa-regular fa-gem"></i></div>
+          <span>Necklaces</span>
+        </div>
+        <div class="cat-icon-item">
+          <div class="cat-icon-circle"><i class="fa-solid fa-ring"></i></div>
+          <span>Anklets</span>
+        </div>
+        <div class="cat-icon-item">
+          <div class="cat-icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
+          <span>Body Chains</span>
+        </div>
+        <div class="cat-icon-item">
+          <div class="cat-icon-circle"><i class="fa-regular fa-snowflake"></i></div>
+          <span>Earrings</span>
+        </div>
+        <div class="cat-icon-item">
+          <div class="cat-icon-circle"><i class="fa-solid fa-ellipsis"></i></div>
+          <span>More</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. CAMPAIGN ZONE -->
+  <section class="campaign-section">
+    <div class="container">
+      <div class="campaign-title-bar">
+        <span class="section-title">{campaignTitle}</span>
+      </div>
+      <div class="campaign-grid">
+        {campaignCards.length > 0 ? (
+          campaignCards.map((card) => {
+            const cardLink = parseACFLink(card.card_link);
+            const hasCardLink = !!cardLink.url;
+            const products = Array.isArray(card.products) ? card.products : [];
+
+            // 预处理产品数据
+            const productItems = products.slice(0, 2).map((product) => {
+              const productTitle = product.post_title || product.title?.rendered || 'Product';
+              const productSlug = product.post_name || product.slug || '';
+              const productImage = product.featured_image || 'https://via.placeholder.com/100?text=' + encodeURIComponent(productTitle.substring(0, 10));
+              const productPrice = product.price || product.regular_price || '0.00';
+
+              return { productTitle, productSlug, productImage, productPrice };
+            });
+
+            return (
+              <div class="campaign-banner-card">
+                {hasCardLink ? (
+                  <a href={cardLink.url} target={cardLink.target} class="campaign-left-poster">
+                    <img src={card.poster_image} alt={card.poster_title} loading="lazy" />
+                    <div class="poster-text">
+                      <span>{card.poster_tag}</span>
+                      <h4>{card.poster_title}</h4>
+                    </div>
+                  </a>
+                ) : (
+                  <div class="campaign-left-poster">
+                    <img src={card.poster_image} alt={card.poster_title} loading="lazy" />
+                    <div class="poster-text">
+                      <span>{card.poster_tag}</span>
+                      <h4>{card.poster_title}</h4>
+                    </div>
+                  </div>
+                )}
+                <div class="campaign-right-items">
+                  {productItems.map((item) => (
+                    <a href={`/product/${item.productSlug}`} class="camp-mini-item">
+                      <img src={item.productImage} alt={item.productTitle} loading="lazy" />
+                      <div class="camp-mini-info">
+                        <h6>{item.productTitle}</h6>
+                        <span>${item.productPrice}</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          // 默认内容
+          <div class="campaign-banner-card">
+            <div class="campaign-left-poster">
+              <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80" alt="" loading="lazy">
+              <div class="poster-text">
+                <span>HUGE SALE</span>
+                <h4>SALE</h4>
+              </div>
+            </div>
+            <div class="campaign-right-items">
+              <div class="camp-mini-item">
+                <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=100&q=80" alt="" loading="lazy">
+                <div class="camp-mini-info">
+                  <h6>E.B. Earrings...</h6>
+                  <span>$14.90</span>
+                </div>
+              </div>
+              <div class="camp-mini-item">
+                <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=100&q=80" alt="" loading="lazy">
+                <div class="camp-mini-info">
+                  <h6>E.B. Earrings...</h6>
+                  <span>$14.90</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. REVIEWS SECTION -->
+  <section class="reviews-section">
+    <div class="container">
+      <h2 class="center-title serif-title">{reviewsTitle}</h2>
+      {reviewImages.length > 0 ? (
+        <div class="reviews-slider">
+          <button class="slider-btn slider-prev" aria-label="Previous review">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <div class="reviews-track">
+            {reviewImages.map((review, index) => (
+              <div class={`review-slide ${index === 0 ? 'active' : ''}`}>
+                <img src={review.image} alt={review.alt || 'Customer Review'} loading="lazy" />
+              </div>
+            ))}
+          </div>
+          <button class="slider-btn slider-next" aria-label="Next review">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      ) : (
+        // 默认内容
+        <div class="review-grid">
+          <div class="review-card">
+            <div class="stars">★★★★★</div>
+            <div class="review-quote">Got this as a treat for myself and zero regrets</div>
+            <div class="review-body">Fits perfect and goes with everything. My friend already asked where I got it lol.</div>
+            <img class="review-user-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80" alt="Lily Rose">
+            <div class="reviewer-name">Lily Rose</div>
+            <div class="verified-tag">Verified Buyer - UK - March 2026</div>
+          </div>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- 11. SOCIAL INSTAGRAM FEED -->
+  <section class="social-feed-section">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="font-size: 11px; letter-spacing: 1px; color: #999; text-transform: uppercase;">EVERYTHING YOU NEED & MORE</span>
+        <div class="stars" style="margin-top: 4px; color: #f5a623; font-size: 10px;">★★★★☆</div>
+      </div>
+      <div class="feed-grid">
+        {instagramPosts.length > 0 ? (
+          instagramPosts.map((post) => (
+            <div class="feed-card">
+              <div class="feed-img-box">
+                {post.is_video ? (
+                  <>
+                    <video class="feed-video" poster={post.thumbnail_url} preload="metadata" data-video-url={post.media_url}>
+                      <source src={post.media_url} type="video/mp4" />
+                    </video>
+                    <div class="play-btn"><i class="fa-solid fa-play"></i></div>
+                  </>
+                ) : (
+                  <img src={post.media_url} alt={post.caption.substring(0, 50)} loading="lazy" />
+                )}
+                <a href={post.permalink} target="_blank" rel="noopener noreferrer" class="instagram-link-icon" aria-label="View on Instagram">
+                  <i class="fa-brands fa-instagram"></i>
+                </a>
+              </div>
+              <div class="feed-caption">
+                <strong>e.b.belle</strong> {post.caption.substring(0, 100)}{post.caption.length > 100 ? '...' : ''}
+              </div>
+            </div>
+          ))
+        ) : (
+          // 默认内容
+          <>
+            <div class="feed-card">
+              <div class="feed-img-box">
+                <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=400&q=80" alt="">
+                <div class="play-btn"><i class="fa-solid fa-play"></i></div>
+              </div>
+              <div class="feed-caption">
+                <strong>e.b.belle</strong> If you love it join me to make it happen - it will be a limited release piece for Q4! Festival ❤️ #waterproofjewelry #stainlesssteeljewelry
+              </div>
+            </div>
+            <div class="feed-card">
+              <div class="feed-img-box">
+                <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=400&q=80" alt="">
+              </div>
+              <div class="feed-caption">
+                <strong>e.b.belle</strong> Bright pops of color for your everyday look 🌈
+              </div>
+            </div>
+            <div class="feed-card">
+              <div class="feed-img-box">
+                <img src="https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&q=80" alt="">
+              </div>
+              <div class="feed-caption">
+                <strong>e.b.belle</strong> New waterproof collection available now! ✨
+              </div>
+            </div>
+            <div class="feed-card">
+              <div class="feed-img-box">
+                <img src="https://images.unsplash.com/photo-1610418827030-ee7c23c723e5?w=400&q=80" alt="">
+              </div>
+              <div class="feed-caption">
+                <strong>e.b.belle</strong> Stack them up! Mix and match your favorites 💫
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. BRAND FAQ & FACTORY GALLERY -->
+  <section class="faq-gallery-section">
+    <div class="container">
+      <div class="faq-grid-layout">
+        <div class="gallery-quad">
+          {galleryImages.length >= 4 ? (
+            galleryImages.slice(0, 4).map((img) => (
+              <img src={img.url || img} alt={img.alt || 'Factory'} loading="lazy" />
+            ))
+          ) : (
+            // 默认图片
+            <>
+              <img src="https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&q=80" alt="Workshop">
+              <img src="https://images.unsplash.com/photo-1504198458649-3128b932f49e?w=400&q=80" alt="Craft">
+              <img src="https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80" alt="Tools">
+              <img src="https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=400&q=80" alt="Factory">
+            </>
+          )}
+        </div>
+
+        <div class="faq-col">
+          <h3 class="serif-title">{faqSectionTitle}</h3>
+          <div class="accordion-list">
+            {faqItems.length > 0 ? (
+              faqItems.map((faq, index) => (
+                <div class="accordion-item">
+                  <div class="accordion-header">
+                    <span>{faq.question}</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </div>
+                  <div class="accordion-body">{faq.answer}</div>
+                </div>
+              ))
+            ) : (
+              // 默认 FAQ
+              <>
+                <div class="accordion-item">
+                  <div class="accordion-header">
+                    <span>What is the silver jewelry?</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </div>
+                  <div class="accordion-body">Our pieces utilize hypoallergenic stainless steel bases with PVD vacuum plating, avoiding tarnish under water.</div>
+                </div>
+                <div class="accordion-item">
+                  <div class="accordion-header">
+                    <span>What is monster production policy?</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </div>
+                  <div class="accordion-body">E.B.Belle handles everything from packaging to shipping. Our brand looks truly premium now.</div>
+                </div>
+                <div class="accordion-item">
+                  <div class="accordion-header">
+                    <span>How many up the trend?</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </div>
+                  <div class="accordion-body">We utilize PVD over 316L grade steel for optimal color endurance and anti-wear protection.</div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== MOBILE ONLY CONTENT ========== -->
+  <div class="mobile-only">
+    <!-- Mobile Hero Banner -->
+    <section class="mobile-hero">
+      <div class="mobile-hero-banner">
+        <img
+          src={mobileHeroBanner.image.url}
+          alt={mobileHeroBanner.image.alt}
+          loading="eager"
+        />
+        <div class="mobile-hero-overlay">
+          <div class="mobile-hero-text">
+            <span class="mobile-hero-subtitle">{mobileHeroBanner.subtitle}</span>
+            <h2 class="mobile-hero-title">{mobileHeroBanner.title}</h2>
+            <p class="mobile-hero-desc">{mobileHeroBanner.description}</p>
+          </div>
+          <a
+            href={mobileHeroBanner.buttonLink.url}
+            class="mobile-hero-btn"
+            target={mobileHeroBanner.buttonLink.target}
+          >
+            {mobileHeroBanner.buttonText}
+          </a>
+        </div>
+      </div>
+
+      <!-- Mobile Hero Sub Cards (5:5 layout) -->
+      <div class="mobile-hero-subcards">
+        <a
+          href={mobileSubCard1.link.url}
+          class="mobile-subcard"
+          target={mobileSubCard1.link.target}
+        >
+          <img
+            src={mobileSubCard1.image.url}
+            alt={mobileSubCard1.image.alt}
+            loading="eager"
+          />
+          <div class="mobile-subcard-overlay">
+            <span class="mobile-subcard-tag">{mobileSubCard1.tag}</span>
+            <h3 class="mobile-subcard-title">{mobileSubCard1.title}</h3>
+          </div>
+        </a>
+        <a
+          href={mobileSubCard2.link.url}
+          class="mobile-subcard"
+          target={mobileSubCard2.link.target}
+        >
+          <img
+            src={mobileSubCard2.image.url}
+            alt={mobileSubCard2.image.alt}
+            loading="eager"
+          />
+          <div class="mobile-subcard-overlay">
+            <span class="mobile-subcard-tag">{mobileSubCard2.tag}</span>
+            <h3 class="mobile-subcard-title">{mobileSubCard2.title}</h3>
+          </div>
+        </a>
+      </div>
+
+      <!-- New User Benefits Bar -->
+      <div class="mobile-benefits-bar-new">
+        <div class="benefits-left">
+          <span class="mobile-vip-badge">VIP</span>
+          <div class="benefits-text">
+            <span class="benefits-title">$130 New User Benefits</span>
+            <span class="benefits-desc">Exclusive discount packages automatically applied</span>
+          </div>
+        </div>
+        <a href="#" class="claim-btn">CLAIM</a>
+      </div>
+    </section>
+
+    <!-- Mobile Category Icons -->
+
+    <!-- Mobile Flash Sale -->
+    <section class="mobile-flash-sale">
+      <div class="mobile-flash-header">
+        <h2>⚡ Flash Sales</h2>
+        <div class="mobile-countdown">
+          <span>Ends in</span>
+          <div class="mobile-timer-box">23</div>
+          <span>:</span>
+          <div class="mobile-timer-box">59</div>
+          <span>:</span>
+          <div class="mobile-timer-box">45</div>
+        </div>
+      </div>
+
+      <!-- Horizontal Scroll Products -->
+      <div class="mobile-products-scroll">
+        {flashSaleProducts.length > 0 ? (
+          flashSaleProducts.map((product) => {
+            // 计算折扣百分比
+            const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
+            const discountPercent = hasDiscount
+              ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
+              : 0;
+
+            return (
+              <div class="mobile-product-card">
+                <a href={`/product/${product.slug}`}>
+                  <div class="mobile-product-image">
+                    {hasDiscount && (
+                      <span class="mobile-discount-badge">-{discountPercent}%</span>
+                    )}
+                    <img
+                      src={product.images[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80'}
+                      alt={product.name}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="mobile-product-info">
+                    <h3>{product.name}</h3>
+                    <div class="mobile-product-price">
+                      <span class="mobile-price">${product.price}</span>
+                      {hasDiscount && (
+                        <span class="mobile-old-price">${product.regular_price}</span>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              </div>
+            );
+          })
+        ) : (
+          <ProductSkeleton count={6} columns={6} />
+        )}
+      </div>
+    </section>
+
+    <!-- Mobile Trust Badges -->
+    <section class="mobile-trust-badges">
+      <div class="mobile-trust-grid">
+        <div class="mobile-trust-item">
+          <i class="fa-solid fa-plane-departure"></i>
+          <h5>Worldwide Shipping</h5>
+          <p>Fast delivery to your door</p>
+        </div>
+        <div class="mobile-trust-item">
+          <i class="fa-regular fa-gem"></i>
+          <h5>Skin-Friendly</h5>
+          <p>Hypoallergenic Waterproof</p>
+        </div>
+        <div class="mobile-trust-item border-top">
+          <i class="fa-solid fa-industry"></i>
+          <h5>Factory Direct</h5>
+          <p>Competitive pricing No MOQ</p>
+        </div>
+        <div class="mobile-trust-item border-top">
+          <i class="fa-solid fa-headset"></i>
+          <h5>Dedicated Account</h5>
+          <p>Professional manager</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mobile New Arrivals -->
+    <section class="mobile-arrivals">
+      <h2>{newArrivalsTitle}</h2>
+
+      <div class="mobile-arrivals-grid">
+        {mobileArrivalsColumns.length > 0 ? (
+          mobileArrivalsColumns.map((column) => (
+            <div class="mobile-arrival-card">
+              <div class="mobile-arrival-header">
+                <h3>{column.column_title}</h3>
+                <span>{column.product_groups?.[0]?.group_count || ''}</span>
+              </div>
+
+              {column.product_groups?.map((group) => {
+                const groupLink = parseACFLink(group.group_link);
+                const GroupWrapper = groupLink.url ? 'a' : 'div';
+
+                return (
+                  <GroupWrapper
+                    href={groupLink.url || undefined}
+                    target={groupLink.target || undefined}
+                    class="mobile-arrival-group"
+                  >
+                    <div class="mobile-arrival-images">
+                      <img src={group.large_image} alt={group.group_name} class="main-img" loading="lazy" />
+                      <div class="side-imgs">
+                        {group.small_images?.map((smallImg) => (
+                          <img src={smallImg.image} alt="" loading="lazy" />
+                        ))}
+                      </div>
+                    </div>
+                    <p class="mobile-arrival-name">{group.group_name}</p>
+                  </GroupWrapper>
+                );
+              })}
+
+              {column.quick_links && column.quick_links.length > 0 && (
+                <div class="mobile-quick-links">
+                  {column.quick_links.map((link) => {
+                    const linkUrl = parseACFLink(link.link_url);
+                    return (
+                      <a href={linkUrl.url} target={linkUrl.target}>
+                        {link.link_text}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+
+              {column.view_more_link?.text && (
+                <a
+                  href={parseACFLink(column.view_more_link.url).url}
+                  class="mobile-view-more-link"
+                  target={parseACFLink(column.view_more_link.url).target}
+                >
+                  {column.view_more_link.text} →
+                </a>
+              )}
+            </div>
+          ))
+        ) : (
+          // 默认内容
+          <div class="mobile-arrival-card">
+            <div class="mobile-arrival-header">
+              <h3>8.1st - 8.7th</h3>
+              <span>10k+ Products</span>
+            </div>
+            <div class="mobile-arrival-images">
+              <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80" alt="" class="main-img" loading="lazy" />
+              <div class="side-imgs">
+                <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80" alt="" loading="lazy" />
+                <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80" alt="" loading="lazy" />
+                <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80" alt="" loading="lazy" />
+                <img src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80" alt="" loading="lazy" />
+              </div>
+            </div>
+            <p class="mobile-arrival-name">Halloween</p>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- Mobile Shop by Category -->
+    <section class="mobile-categories-new">
+      <h2 class="category-title">SHOP BY CATEGORY</h2>
+      <div class="category-scroll">
+        <div class="category-item">
+          <div class="category-circle">
+            <i class="fa-regular fa-circle-dot"></i>
+          </div>
+          <span class="category-label">Rings</span>
+        </div>
+        <div class="category-item">
+          <div class="category-circle">
+            <i class="fa-solid fa-link"></i>
+          </div>
+          <span class="category-label">Bracelets</span>
+        </div>
+        <div class="category-item">
+          <div class="category-circle">
+            <i class="fa-regular fa-gem"></i>
+          </div>
+          <span class="category-label">Necklaces</span>
+        </div>
+        <div class="category-item">
+          <div class="category-circle">
+            <i class="fa-solid fa-ring"></i>
+          </div>
+          <span class="category-label">Anklets</span>
+        </div>
+        <div class="category-item">
+          <div class="category-circle">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <span class="category-label">Body Chains</span>
+        </div>
+        <div class="category-item">
+          <div class="category-circle">
+            <i class="fa-regular fa-snowflake"></i>
+          </div>
+          <span class="category-label">Earrings</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Decorative Divider -->
+    <div class="mobile-divider"></div>
+
+    <!-- Mobile Campaign Zone -->
+    <section class="mobile-campaign-zone">
+      <h3 class="campaign-zone-title">{campaignTitle}</h3>
+      <div class="campaign-cards">
+        {(useSameCampaignData ? campaignCards : []).length > 0 ? (
+          (useSameCampaignData ? campaignCards : []).map((card) => {
+            const cardLink = parseACFLink(card.card_link);
+            const hasCardLink = !!cardLink.url;
+            const products = Array.isArray(card.products) ? card.products : [];
+
+            // 预处理产品数据
+            const productItems = products.slice(0, 2).map((product) => {
+              const productTitle = product.post_title || product.title?.rendered || 'Product';
+              const productSlug = product.post_name || product.slug || '';
+              const productImage = product.featured_image || 'https://via.placeholder.com/100?text=' + encodeURIComponent(productTitle.substring(0, 10));
+              const productPrice = product.price || product.regular_price || '0.00';
+
+              return { productTitle, productSlug, productImage, productPrice };
+            });
+
+            return (
+              <div class="campaign-card">
+                {hasCardLink ? (
+                  <a href={cardLink.url} target={cardLink.target} class="campaign-left">
+                    <img src={card.poster_image} alt={card.poster_title} loading="lazy" />
+                    <div class="campaign-overlay">
+                      <span class="campaign-tag">{card.poster_tag}</span>
+                      <h4 class="campaign-title">{card.poster_title}</h4>
+                    </div>
+                  </a>
+                ) : (
+                  <div class="campaign-left">
+                    <img src={card.poster_image} alt={card.poster_title} loading="lazy" />
+                    <div class="campaign-overlay">
+                      <span class="campaign-tag">{card.poster_tag}</span>
+                      <h4 class="campaign-title">{card.poster_title}</h4>
+                    </div>
+                  </div>
+                )}
+                <div class="campaign-right">
+                  {productItems.map((item) => (
+                    <a href={`/product/${item.productSlug}`} class="campaign-product">
+                      <img src={item.productImage} alt={item.productTitle} loading="lazy" />
+                      <div class="campaign-product-info">
+                        <h6>{item.productTitle}</h6>
+                        <span class="campaign-price">${item.productPrice}</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          // 默认内容
+          <div class="campaign-card">
+            <div class="campaign-left">
+              <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80" alt="Huge Sale" loading="lazy">
+              <div class="campaign-overlay">
+                <span class="campaign-tag">HUGE SALE</span>
+                <h4 class="campaign-title">SALE</h4>
+              </div>
+            </div>
+            <div class="campaign-right">
+              <div class="campaign-product">
+                <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=100&q=80" alt="" loading="lazy">
+                <div class="campaign-product-info">
+                  <h6>E.B. Earrings...</h6>
+                  <span class="campaign-price">$14.90</span>
+                </div>
+              </div>
+              <div class="campaign-product">
+                <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=100&q=80" alt="" loading="lazy">
+                <div class="campaign-product-info">
+                  <h6>E.B. Earrings...</h6>
+                  <span class="campaign-price">$14.90</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- Decorative Divider -->
+    <div class="mobile-divider"></div>
+
+    <!-- Mobile Reviews Section -->
+    <!-- Mobile Reviews Section -->
+    <section class="mobile-reviews">
+      <div class="reviews-header">
+        <h2 class="reviews-title">{reviewsTitle}</h2>
+      </div>
+
+      {(mobileUseSameImages ? reviewImages : []).length > 0 ? (
+        <div class="mobile-reviews-slider">
+          <button class="mobile-slider-btn mobile-slider-prev" aria-label="Previous review">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <div class="mobile-reviews-track">
+            {(mobileUseSameImages ? reviewImages : []).map((review, index) => (
+              <div class={`mobile-review-slide ${index === 0 ? 'active' : ''}`}>
+                <img src={review.image} alt={review.alt || 'Customer Review'} loading="lazy" />
+              </div>
+            ))}
+          </div>
+          <button class="mobile-slider-btn mobile-slider-next" aria-label="Next review">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      ) : (
+        // 默认内容
+        <div class="reviews-scroll">
+          <div class="review-card">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80" class="review-avatar" alt="">
+            <div class="review-quote">"Zero regrets treat"</div>
+            <p class="review-text">Fits perfect and goes with everything. My friend already asked where I got it!</p>
+            <span class="review-name">Lily Rose</span>
+            <span class="review-meta">Verified Buyer · UK · March 2026</span>
+          </div>
+        </div>
+      )}
+    </section>
+
+    <!-- Decorative Divider -->
+    <div class="mobile-divider"></div>
+
+    <!-- Mobile Instagram Section -->
+    <section class="mobile-instagram">
+      <div class="instagram-header">
+        <span class="instagram-subtitle">EVERYTHING YOU NEED & MORE</span>
+        <h3 class="instagram-title">Follow @e.b.belle</h3>
+      </div>
+      <div class="instagram-grid">
+        {instagramPosts.length > 0 ? (
+          instagramPosts.slice(0, 4).map((post) => (
+            <div class="instagram-post">
+              <div class="instagram-image">
+                {post.is_video ? (
+                  <>
+                    <video class="instagram-video" poster={post.thumbnail_url} preload="metadata" data-video-url={post.media_url}>
+                      <source src={post.media_url} type="video/mp4" />
+                    </video>
+                    <span class="instagram-play-icon"><i class="fa-solid fa-play"></i></span>
+                  </>
+                ) : (
+                  <img src={post.media_url} alt={post.caption.substring(0, 50)} loading="lazy" />
+                )}
+                <a href={post.permalink} target="_blank" rel="noopener noreferrer" class="mobile-instagram-link-icon" aria-label="View on Instagram">
+                  <i class="fa-brands fa-instagram"></i>
+                </a>
+              </div>
+              <p class="instagram-caption">
+                <strong>e.b.belle</strong> {post.caption}
+              </p>
+            </div>
+          ))
+        ) : (
+          // 默认内容
+          <>
+            <div class="instagram-post">
+              <div class="instagram-image">
+                <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=400&q=80" alt="">
+                <span class="instagram-play-icon"><i class="fa-solid fa-play"></i></span>
+              </div>
+              <p class="instagram-caption"><strong>e.b.belle</strong> Limited release piece for Q4! Festival ❤️ #waterproofjewelry</p>
+            </div>
+            <div class="instagram-post">
+              <div class="instagram-image">
+                <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=400&q=80" alt="">
+              </div>
+              <p class="instagram-caption"><strong>e.b.belle</strong> Bright pops of color for your everyday look 🌈</p>
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+
+    <!-- Decorative Divider -->
+    <div class="mobile-divider"></div>
+
+    <!-- Mobile FAQ Section -->
+    <section class="mobile-faq">
+      <h3 class="faq-main-title">{mobileUseSameFaqData ? faqSectionTitle : mobileFaqTitle}</h3>
+
+      <div class="faq-gallery">
+        {(mobileUseSameFaqData ? galleryImages : []).length >= 4 ? (
+          (mobileUseSameFaqData ? galleryImages : []).slice(0, 4).map((img) => (
+            <img src={img.url || img} alt={img.alt || 'Factory'} loading="lazy" />
+          ))
+        ) : (
+          // 默认图片
+          <>
+            <img src="https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&q=80" alt="">
+            <img src="https://images.unsplash.com/photo-1504198458649-3128b932f49e?w=400&q=80" alt="">
+            <img src="https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80" alt="">
+            <img src="https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=400&q=80" alt="">
+          </>
+        )}
+      </div>
+
+      <div class="faq-list">
+        {(mobileUseSameFaqData ? faqItems : []).length > 0 ? (
+          (mobileUseSameFaqData ? faqItems : []).map((faq, index) => (
+            <div class="faq-item">
+              <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                <span>{faq.question}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+              <div class="faq-answer">{faq.answer}</div>
+            </div>
+          ))
+        ) : (
+          // 默认 FAQ
+          <>
+            <div class="faq-item">
+              <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                <span>What is the silver jewelry?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+              <div class="faq-answer">
+                Our pieces utilize hypoallergenic stainless steel bases with PVD vacuum plating, avoiding tarnish under water.
+              </div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                <span>What is monster production policy?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+              <div class="faq-answer">
+                E.B.Belle handles everything from packaging to shipping. Our brand looks truly premium now.
+              </div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                <span>How many up the trend?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+              <div class="faq-answer">
+                We utilize PVD over 316L grade steel for optimal color endurance and anti-wear protection.
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+  </div>
+
+  <Footer />
+  <CartDrawer />
+  <AuthModal />
+</Layout>
+
+<style>
+  /* Prevent horizontal scroll on mobile */
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  @media (max-width: 820px) {
+    :root {
+      --container-w: 100%;
+    }
+    .container {
+      padding: 0 10px;
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+    body, html {
+      max-width: 100vw;
+      overflow-x: hidden !important;
+    }
+
+    /* 限死所有横向滚动容器的边界 */
+    .mobile-products-scroll,
+    .mobile-arrivals-grid,
+    .category-scroll,
+    .reviews-scroll {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    /* 确保包裹它们的父级切断溢出 */
+    .mobile-flash-sale,
+    .mobile-arrivals,
+    .mobile-categories-new,
+    .mobile-reviews {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow: hidden !important;
+    }
+
+    .mobile-only {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      contain: paint;
+    }
+  }
+
+  /* 穿透修复Header组件中的ribbon-container */
+  :global(.ribbon-container) {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* TOP NOTIFICATION BAR */
+  .top-bar {
+    background-color: #c62828;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 7px 0;
+    letter-spacing: 0.5px;
+  }
+
+  /* HEADER MAIN */
+  .header-main {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .header-main .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Cinzel', serif;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .search-box {
+    display: flex;
+    width: 480px;
+    border: 1px solid #dcdcdc;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .search-box input {
+    flex: 1;
+    padding: 8px 14px;
+    border: none;
+    outline: none;
+    font-size: 12px;
+  }
+  .search-box button {
+    background-color: #1a1a1a;
+    color: #fff;
+    border: none;
+    width: 42px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    font-size: 12px;
+  }
+  .header-right .item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .cart-badge {
+    background: var(--red-accent);
+    color: #fff;
+    font-size: 10px;
+    border-radius: 50%;
+    padding: 1px 5px;
+    line-height: 1;
+  }
+
+  /* NAVIGATION */
+  .nav-bar {
+    border-bottom: 1px solid var(--border-color);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .nav-bar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .nav-left {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .all-cats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 0;
+    cursor: pointer;
+  }
+  .nav-links {
+    display: flex;
+    gap: 24px;
+  }
+  .nav-links a:hover { color: var(--primary); }
+  .order-tracking {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #555;
+    cursor: pointer;
+  }
+
+  /* HERO SECTION */
+  .hero-section {
+    padding: 24px 0;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 6fr 3fr 3fr;
+    gap: 16px;
+    height: 500px;
+  }
+  .hero-grid > * {
+    min-height: 0;
+    max-height: 500px;
+    overflow: hidden;
+  }
+  .hero-main-card {
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hero-main-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s ease;
+  }
+  .hero-main-card:hover img {
+    transform: scale(1.05);
+  }
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+    padding: 32px;
+  }
+  .hero-overlay h2 {
+    font-size: 48px;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .hero-overlay p {
+    font-size: 18px;
+    margin-bottom: 32px;
+    opacity: 0.9;
+    max-width: 500px;
+    line-height: 1.5;
+  }
+  .btn-shop-now {
+    background: #fff;
+    color: #111;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 40px;
+    display: inline-block;
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+  .btn-shop-now:hover {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  .hero-mid-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+  }
+  .mid-sub-card {
+    flex: 1;
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .mid-sub-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .mid-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: #fff;
+    z-index: 2;
+  }
+  .mid-card-overlay span {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: block;
+    margin-bottom: 4px;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  .mid-card-overlay h3 {
+    font-size: 20px;
+    font-family: 'Cinzel', serif;
+    font-weight: 500;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .hero-right-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+    max-height: 500px;
+  }
+  .user-auth-box {
+    background: #fff;
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+    padding: 24px;
+    text-align: center;
+    flex: 0 0 auto;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .avatar-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #f9f9f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    color: #999;
+    font-size: 24px;
+  }
+  .user-auth-box p {
+    font-size: 14px;
+    color: var(--gray-text);
+    margin-bottom: 16px;
+  }
+  .auth-btns {
+    display: flex;
+    gap: 8px;
+  }
+  .auth-btns a,
+  .auth-btns button {
+    flex: 1;
+    padding: 8px 0;
+    font-size: 12px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 700;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-login {
+    background: #1a1a1a;
+    color: #fff;
+  }
+  .btn-login:hover {
+    background: #000;
+  }
+  .btn-reg {
+    border: 1px solid #e0e0e0;
+    color: #333;
+    background: #fff;
+  }
+  .btn-reg:hover {
+    background: #f9f9f9;
+  }
+
+  /* 已登录状态样式 */
+  .user-auth-logged-in .avatar-icon.logged-in {
+    background: linear-gradient(135deg, #c9933f 0%, #d4a556 100%);
+    color: #fff;
+  }
+  .user-auth-logged-in .welcome-text {
+    font-size: 13px;
+    color: #333;
+    line-height: 1.5;
+  }
+  .user-auth-logged-in .welcome-text strong {
+    color: #c9933f;
+    font-weight: 700;
+  }
+  .auth-btns-logged {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-account,
+  .btn-logout {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 11px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-account {
+    background: #c9933f;
+    color: #fff;
+  }
+  .btn-account:hover {
+    background: #b8822e;
+  }
+  .btn-logout {
+    border: 1px solid #e0e0e0;
+    color: #666;
+    background: #fff;
+  }
+  .btn-logout:hover {
+    background: #f9f9f9;
+    border-color: #c9933f;
+    color: #c9933f;
+  }
+  .btn-account i,
+  .btn-logout i {
+    font-size: 12px;
+  }
+
+  .coupon-box {
+    flex: 1;
+    background: #f9f4ed;
+    border: 2px dashed rgba(201, 147, 63, 0.3);
+    border-radius: 4px;
+    padding: 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 0;
+    max-height: 300px;
+    position: relative;
+  }
+  .vip-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 32px;
+    height: 32px;
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .coupon-box .badge {
+    background: transparent;
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 0;
+    border-radius: 0;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+  .coupon-box h3 {
+    font-size: 36px;
+    color: #1a1a1a;
+    font-family: 'Cinzel', serif;
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+  .coupon-subtitle {
+    font-size: 10px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .btn-coupon {
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 0;
+    border-radius: 4px;
+    width: 100%;
+    box-shadow: 0 4px 12px rgba(201, 147, 63, 0.2);
+    transition: all 0.3s;
+  }
+  .btn-coupon:hover {
+    background: var(--primary-dark);
+    box-shadow: 0 6px 16px rgba(201, 147, 63, 0.3);
+  }
+
+  /* FLASH SALES */
+  .flash-sales-section {
+    padding: 64px 0;
+    position: relative;
+    z-index: 2;
+  }
+  .section-header-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .flash-title-area {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .section-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Cinzel', serif;
+  }
+  .countdown-timer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .time-block {
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+  }
+  .time-separator {
+    color: #1a1a1a;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .view-more {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: text-decoration 0.2s;
+  }
+  .view-more:hover {
+    text-decoration: underline;
+  }
+  .view-more i {
+    font-size: 14px;
+  }
+
+  .product-grid-6 {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+  }
+  .product-card {
+    cursor: pointer;
+  }
+  .product-card a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .product-img-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    background: #f5f5f5;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .product-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  .product-card:hover .product-img-wrap img {
+    transform: scale(1.1);
+  }
+  .product-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 2px;
+    z-index: 1;
+  }
+  .discount-badge {
+    background: #e53935;
+    color: #fff;
+  }
+  .product-info {
+    padding: 0;
+  }
+  .product-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+  }
+  .price-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .current-price {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+  }
+  .old-price {
+    font-size: 10px;
+    color: #999;
+    text-decoration: line-through;
+  }
+
+  @media (max-width: 1024px) {
+    .product-grid-6 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .product-grid-6 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* TRUST BADGES */
+  .trust-badges {
+    padding: 25px 0;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 25px;
+  }
+  .trust-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    text-align: center;
+    gap: 20px;
+  }
+  .trust-item i {
+    font-size: 20px;
+    color: #d4a04d;
+    margin-bottom: 8px;
+  }
+  .trust-item h5 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+  .trust-item p {
+    font-size: 10px;
+    color: var(--gray-text);
+  }
+
+  /* NEW ARRIVALS / WATERPROOF */
+  .new-arrivals-section {
+    padding: 40px 0;
+  }
+  .arrivals-title {
+    font-size: 24px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+  .arrivals-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+  .arrivals-column {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s;
+  }
+  .arrivals-column:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  .column-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 0;
+  }
+  .product-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .group-images {
+    margin-bottom: 8px;
+  }
+  .images-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .large-img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #f5f5f5;
+  }
+  .small-imgs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .small-imgs img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #f5f5f5;
+  }
+  .group-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 4px;
+  }
+  .group-count {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 16px;
+  }
+  .quick-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    font-size: 12px;
+  }
+  .quick-links a {
+    background: #f9f9f9;
+    border: 1px solid #f0f0f0;
+    padding: 8px;
+    text-align: center;
+    border-radius: 4px;
+    color: #666;
+    transition: all 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .quick-links a:hover {
+    background: #f0f0f0;
+  }
+  .view-more-link {
+    grid-column: span 2;
+    font-weight: 700;
+    color: var(--primary) !important;
+    background: transparent !important;
+    border: none !important;
+    margin-top: 8px;
+  }
+  .view-more-link:hover {
+    text-decoration: underline;
+    background: transparent !important;
+  }
+
+  @media (max-width: 1024px) {
+    .arrivals-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .arrivals-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* QUAD CATEGORY BLOCKS */
+  .section-title-bar {
+    margin-bottom: 16px;
+  }
+  .quad-category-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 35px;
+  }
+  .quad-block {
+    background: #fafafa;
+    border: 1px solid #ececec;
+    border-radius: 3px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .quad-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #222;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 6px;
+  }
+  .quad-sub-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .quad-item-card {
+    background: #fff;
+    border: 1px solid #f0f0f0;
+    border-radius: 2px;
+    padding: 6px;
+    text-align: center;
+  }
+  .quad-item-card img {
+    width: 100%;
+    height: 80px;
+    border-radius: 2px;
+    margin-bottom: 4px;
+  }
+  .quad-item-card h6 {
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .quad-item-card span {
+    font-size: 9px;
+    color: #999;
+  }
+
+  /* SHOP BY CATEGORY */
+  .shop-by-cat-section {
+    padding: 40px 0;
+  }
+  .shop-by-cat-section h3 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  .cat-icon-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 32px;
+    max-width: 100%;
+  }
+  .cat-icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .cat-icon-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #fafafa;
+    border: 1px solid #e8e8e8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+  }
+  .cat-icon-item:hover .cat-icon-circle {
+    border-color: var(--primary);
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(201, 147, 63, 0.15);
+  }
+  .cat-icon-circle i {
+    font-size: 28px;
+    color: #777;
+    transition: color 0.3s;
+  }
+  .cat-icon-item:hover .cat-icon-circle i {
+    color: var(--primary);
+  }
+  .cat-icon-item span {
+    font-size: 13px;
+    font-weight: 500;
+    color: #444;
+  }
+
+  /* CAMPAIGN ZONE */
+  .campaign-section {
+    padding-bottom: 35px;
+    position: relative;
+    z-index: 2;
+  }
+  .campaign-title-bar {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .campaign-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .campaign-banner-card {
+    display: flex;
+    background: #fafafa;
+    border: 1px solid #eaeaea;
+    border-radius: 3px;
+    overflow: hidden;
+    height: 130px;
+  }
+  .campaign-left-poster {
+    width: 45%;
+    position: relative;
+  }
+  .campaign-left-poster img {
+    width: 100%;
+    height: 100%;
+  }
+  .poster-text {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    text-align: center;
+  }
+  .poster-text span { font-size: 8px; letter-spacing: 1px; }
+  .poster-text h4 { font-size: 13px; font-weight: 700; }
+  .campaign-right-items {
+    width: 55%;
+    display: flex;
+    flex-direction: column;
+  }
+  .camp-mini-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    gap: 8px;
+    border-bottom: 1px solid #f0f0f0;
+    background: #fff;
+  }
+  .camp-mini-item:last-child { border-bottom: none; }
+  .camp-mini-item img {
+    width: 40px;
+    height: 40px;
+    border-radius: 2px;
+  }
+  .camp-mini-info h6 {
+    font-size: 10px;
+    color: #444;
+    font-weight: 500;
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+  .camp-mini-info span {
+    font-size: 11px;
+    font-weight: 700;
+    color: #111;
+  }
+
+  /* REVIEWS SECTION */
+  .reviews-section {
+    background: #fbfbfb;
+    padding: 35px 0;
+    margin-bottom: 35px;
+  }
+  .center-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  /* Reviews Slider */
+  .reviews-slider {
+    position: relative;
+    max-width: 1400px;
+    margin: 0 auto;
+    overflow: hidden;
+    padding: 0 60px;
+  }
+  .reviews-track {
+    display: flex;
+    gap: 16px;
+    transition: transform 0.5s ease-in-out;
+  }
+  .review-slide {
+    min-width: calc((100% - 32px) / 3);
+    flex-shrink: 0;
+  }
+  .review-slide img {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+  }
+  .slider-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #ddd;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    z-index: 10;
+  }
+  .slider-btn:hover {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .slider-prev {
+    left: 10px;
+  }
+  .slider-next {
+    right: 10px;
+  }
+
+  /* Old review grid (fallback) */
+  .review-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .review-card {
+    background: #fff;
+    border: 1px solid #eaeaea;
+    border-radius: 3px;
+    padding: 16px 14px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .stars {
+    color: #f5a623;
+    font-size: 10px;
+    margin-bottom: 8px;
+  }
+  .review-quote {
+    font-size: 11px;
+    font-weight: 600;
+    color: #111;
+    margin-bottom: 4px;
+  }
+  .review-body {
+    font-size: 10px;
+    color: #777;
+    margin-bottom: 12px;
+    min-height: 28px;
+  }
+  .review-user-img {
+    width: 110px;
+    height: 110px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+    object-fit: cover;
+  }
+  .reviewer-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 2px;
+  }
+  .verified-tag {
+    font-size: 9px;
+    color: #999;
+  }
+
+  /* SOCIAL INSTAGRAM FEED */
+  .social-feed-section {
+    padding-bottom: 35px;
+  }
+  .feed-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .feed-card {
+    background: #fff;
+    border: 1px solid #eaeaea;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .feed-img-box {
+    width: 100%;
+    height: 220px;
+    position: relative;
+  }
+  .feed-img-box img,
+  .feed-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .feed-video {
+    display: block;
+    background: #000;
+  }
+  .play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .play-btn:hover {
+    background: rgba(0,0,0,0.85);
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  .instagram-link-icon {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255,255,255,0.9);
+    color: #E4405F;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.3s;
+    z-index: 5;
+  }
+  .instagram-link-icon:hover {
+    background: #E4405F;
+    color: white;
+    transform: scale(1.1);
+  }
+  .feed-caption {
+    padding: 10px;
+    font-size: 10px;
+    color: #666;
+    line-height: 1.4;
+  }
+  .feed-caption strong { color: #111; }
+
+  /* BRAND FAQ & WORKSHOP */
+  .faq-gallery-section {
+    padding: 20px 0 50px;
+  }
+  .faq-grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .gallery-quad {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .gallery-quad img {
+    width: 100%;
+    height: 130px;
+    border-radius: 3px;
+  }
+  .faq-col {
+    display: flex;
+    flex-direction: column;
+  }
+  .faq-col h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    font-family: 'Cinzel', serif;
+  }
+  .accordion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .accordion-item {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+  .accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    padding: 8px 0;
+  }
+  .accordion-header:hover { color: var(--primary); }
+  .accordion-header i {
+    transition: transform 0.25s ease;
+    font-size: 10px;
+  }
+  .accordion-item.active .accordion-header i {
+    transform: rotate(180deg);
+  }
+  .accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+    font-size: 10px;
+    color: #666;
+    line-height: 1.6;
+  }
+  .accordion-item.active .accordion-body {
+    padding-top: 8px;
+  }
+
+  /* ===== MOBILE RESPONSIVE STYLES ===== */
+  @media (max-width: 768px) {
+    /* Container */
+    .container {
+      padding: 0 16px;
+      max-width: 100%;
+    }
+
+    /* Hero Section - Mobile Redesign */
+    .hero-section {
+      padding: 12px 16px;
+    }
+    .hero-grid {
+      display: block;
+    }
+
+    /* Hero Main - Full Width Single Banner */
+    .hero-main-banner {
+      width: 100%;
+      height: 240px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+    }
+    .hero-overlay {
+      padding: 16px;
+      background: linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .hero-overlay > div {
+      max-width: 65%;
+    }
+    .hero-overlay .hero-subtitle {
+      font-size: 8px;
+      letter-spacing: 0.2em;
+      margin-bottom: 4px;
+    }
+    .hero-overlay h2 {
+      font-size: 18px;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .hero-overlay .hero-description {
+      font-size: 10px;
+      margin-bottom: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hero-cta {
+      position: static;
+      padding: 8px 14px;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      white-space: nowrap;
+    }
+
+    /* Hide Mid Cards and Right Cards on Mobile */
+    .hero-mid-card,
+    .hero-right-card {
+      display: none;
+    }
+
+    /* New User Benefits Bar (Replace Hero Right Card) */
+    .hero-section::after {
+      content: '';
+      display: block;
+      background: rgba(238, 232, 221, 0.7);
+      border: 1px dashed rgba(212, 160, 77, 0.5);
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-top: 8px;
+    }
+
+    /* Categories Ribbon - Horizontal Scroll */
+    .categories-ribbon {
+      padding: 16px 0;
+      background: #fff;
+    }
+    .categories-ribbon h2 {
+      font-size: 14px;
+      padding: 0 16px;
+      margin-bottom: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .categories-grid {
+      display: flex;
+      gap: 16px;
+      padding: 0 16px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .categories-grid::-webkit-scrollbar {
+      display: none;
+    }
+    .category-item {
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+    }
+    .category-icon {
+      width: 72px;
+      height: 72px;
+    }
+    .category-item p {
+      font-size: 10px;
+      margin-top: 6px;
+    }
+
+    /* Flash Sale - Horizontal Scroll Cards */
+    .flash-sale-section {
+      padding: 16px 0;
+      background: #fff;
+      border-top: 1px solid #ddd8ce;
+      border-bottom: 1px solid #ddd8ce;
+    }
+    .flash-header {
+      padding: 0 16px;
+      margin-bottom: 12px;
+    }
+    .flash-header h2 {
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+    .countdown-timer {
+      font-size: 10px;
+      gap: 2px;
+    }
+    .timer-box {
+      min-width: 24px;
+      height: 24px;
+      font-size: 10px;
+      padding: 4px;
+    }
+    .view-all-link {
+      font-size: 12px;
+    }
+
+    /* Product Grid - Horizontal Scroll */
+    .product-grid-6 {
+      display: flex;
+      gap: 12px;
+      padding: 0 16px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      grid-template-columns: none;
+    }
+    .product-grid-6::-webkit-scrollbar {
+      display: none;
+    }
+    .product-card {
+      flex: 0 0 144px;
+      width: 144px;
+      scroll-snap-align: start;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .product-image {
+      border-radius: 4px 4px 0 0;
+    }
+    .discount-badge {
+      font-size: 9px;
+      padding: 2px 6px;
+      top: 6px;
+      left: 6px;
+    }
+    .product-info {
+      padding: 10px;
+    }
+    .product-name {
+      font-size: 11px;
+      line-height: 1.3;
+    }
+    .product-price {
+      font-size: 12px;
+    }
+    .product-old-price {
+      font-size: 10px;
+    }
+
+    /* Trust Badges - 2x2 Grid */
+    .trust-badges {
+      padding: 12px 16px;
+      background: #f7f4ee;
+      border: 1px solid #ddd8ce;
+      border-left: none;
+      border-right: none;
+      margin: 0;
+    }
+    .trust-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      text-align: center;
+    }
+    .trust-item {
+      padding: 8px 0;
+    }
+    .trust-item:nth-child(3),
+    .trust-item:nth-child(4) {
+      padding-top: 16px;
+      border-top: 1px solid rgba(221, 216, 206, 0.6);
+    }
+    .trust-item i {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .trust-item h5 {
+      font-size: 9.5px;
+      letter-spacing: 0.05em;
+    }
+    .trust-item p {
+      font-size: 8.5px;
+    }
+
+    /* New Arrivals Section - Mobile Cards */
+    .new-arrivals-section {
+      padding: 24px 16px;
+    }
+    .arrivals-title {
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ddd8ce;
+    }
+
+    /* Category Groups - Mobile Optimized */
+    .category-groups-section {
+      padding: 0 16px 24px;
+    }
+    .category-groups-section h2 {
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+    .category-groups-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .category-group-card {
+      background: #fff;
+      border: 1px solid #ddd8ce;
+      border-radius: 4px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .category-group-card .category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .category-group-card h3 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .category-group-card .product-count {
+      font-size: 10px;
+      font-weight: 600;
+      color: #d4a04d;
+    }
+
+    /* Category Images Grid - 3+4 Layout */
+    .category-images-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .category-images-grid .main-image {
+      grid-row: span 2;
+    }
+    .category-images-grid .side-images {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .category-images-grid img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .category-group-card .category-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-top: 8px;
+    }
+    .quick-links {
+      display: none; /* Hide quick links on mobile for cleaner look */
+    }
+
+    /* Section Spacing */
+    section {
+      margin-bottom: 0;
+    }
+
+    /* Hide desktop-only elements */
+    .desktop-only {
+      display: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    /* Extra Small Screens */
+    .hero-main-banner {
+      height: 200px;
+    }
+    .hero-overlay h2 {
+      font-size: 16px;
+    }
+    .category-icon {
+      width: 64px;
+      height: 64px;
+    }
+    .product-card {
+      flex: 0 0 130px;
+      width: 130px;
+    }
+
+    /* Hide desktop content on mobile */
+    body > .hero-section,
+    body > .categories-ribbon,
+    body > .flash-sale-section,
+    body > .trust-badges,
+    body > .new-arrivals-section,
+    body > .category-groups-section {
+      display: none !important;
+    }
+
+    /* Show mobile-only content */
+    .mobile-only {
+      display: block !important;
+    }
+
+    /* ========== MOBILE ONLY STYLES ========== */
+
+    /* Mobile Hero */
+    .mobile-hero {
+      padding: 12px 16px;
+    }
+    .mobile-hero-banner {
+      position: relative;
+      height: 240px;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .mobile-hero-banner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .mobile-hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+    }
+    .mobile-hero-text {
+      max-width: 65%;
+    }
+    .mobile-hero-subtitle {
+      display: block;
+      font-size: 8px;
+      font-weight: 700;
+      color: #fbbf24;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      margin-bottom: 4px;
+    }
+    .mobile-hero-title {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 18px;
+      font-weight: 400;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .mobile-hero-desc {
+      font-size: 10px;
+      color: rgba(255,255,255,0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mobile-hero-btn {
+      background: #fff;
+      color: #000;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      padding: 8px 14px;
+      border-radius: 4px;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+
+    /* Mobile Hero Sub Cards */
+    .mobile-hero-subcards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .mobile-subcard {
+      position: relative;
+      border-radius: 4px;
+      overflow: hidden;
+      aspect-ratio: 1;
+    }
+    .mobile-subcard img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .mobile-subcard-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 12px;
+    }
+    .mobile-subcard-tag {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.8);
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+    .mobile-subcard-title {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      margin: 0;
+      letter-spacing: 0.5px;
+    }
+
+    /* Benefits Bar */
+    .mobile-benefits-bar-new {
+      background: rgba(238, 232, 221, 0.7);
+      border: 1px dashed rgba(202, 138, 4, 0.5);
+      border-radius: 4px;
+      padding: 12px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .benefits-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .mobile-vip-badge {
+      background: #1A1A1A;
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 4px 8px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      display: inline-block;
+      line-height: 1;
+    }
+    .benefits-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .benefits-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #333;
+      letter-spacing: 0.3px;
+    }
+    .benefits-desc {
+      font-size: 9px;
+      color: #666;
+      line-height: 1.2;
+    }
+    .claim-btn {
+      background: #B8860B;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-decoration: none;
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+    .claim-btn:hover {
+      background: #9A7309;
+    }
+
+    .mobile-benefits-bar {
+      background: rgba(254, 243, 199, 0.7);
+      border: 1px dashed rgba(202, 138, 4, 0.5);
+      border-radius: 4px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .benefits-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .benefits-content i {
+      color: #ca8a04;
+      font-size: 14px;
+    }
+    .benefits-content span {
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .benefits-link {
+      font-size: 9px;
+      font-weight: 700;
+      color: #a16207;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      text-decoration: none;
+    }
+
+    /* Mobile Categories */
+    .mobile-categories {
+      padding: 16px 0;
+      background: #fff;
+      border-top: 1px solid #e5e7eb;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .mobile-categories h3 {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+      padding: 0 16px;
+    }
+    .mobile-category-scroll {
+      display: flex;
+      gap: 16px;
+      padding: 0 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .mobile-category-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .mobile-category-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .mobile-category-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    .mobile-category-icon i {
+      font-size: 16px;
+      color: #6b7280;
+    }
+    .mobile-category-item span {
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    /* Mobile Shop by Category - New Style */
+    .mobile-categories-new {
+      padding: 24px 0 20px;
+      background: white;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .category-title {
+      text-align: center;
+      font-family: 'Bodoni Moda', serif;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      margin-bottom: 18px;
+      color: #1a1a1a;
+      text-transform: uppercase;
+    }
+    .category-scroll {
+      display: flex;
+      gap: 20px;
+      padding: 0 20px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .category-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .category-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .category-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #f5f5f5;
+      border: 2px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    .category-circle:active {
+      background: #eeeeee;
+      transform: scale(0.95);
+    }
+    .category-circle i {
+      font-size: 28px;
+      color: #424242;
+    }
+    .category-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #333;
+      text-align: center;
+      max-width: 80px;
+    }
+
+    /* Mobile Decorative Divider */
+    .mobile-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #d4af37 20%, #d4af37 80%, transparent);
+      margin: 0 auto;
+      width: 60%;
+      opacity: 0.4;
+    }
+
+    /* Mobile Campaign Zone */
+    .mobile-campaign-zone {
+      padding: 20px 16px 24px;
+      background: white;
+    }
+    .campaign-zone-title {
+      font-family: 'Bodoni Moda', serif;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+      color: #1a1a1a;
+    }
+    .campaign-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .campaign-card {
+      display: flex;
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      overflow: hidden;
+      height: 112px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .campaign-left {
+      width: 41.666%;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .campaign-left img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .campaign-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4px;
+    }
+    .campaign-tag {
+      font-size: 8px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #D4AF37;
+      margin-bottom: 2px;
+    }
+    .campaign-title {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: white;
+      margin: 0;
+    }
+    .campaign-right {
+      width: 58.333%;
+      display: flex;
+      flex-direction: column;
+      padding: 4px 0;
+    }
+    .campaign-product {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-bottom: 1px solid rgba(229,229,229,0.5);
+    }
+    .campaign-product:last-child {
+      border-bottom: none;
+    }
+    .campaign-product img {
+      width: 36px;
+      height: 36px;
+      border-radius: 4px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .campaign-product-info {
+      min-width: 0;
+      flex: 1;
+    }
+    .campaign-product-info h6 {
+      font-size: 10.5px;
+      color: #1a1a1a;
+      font-weight: 500;
+      margin: 0 0 2px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .campaign-price {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    /* Mobile Reviews Section */
+    .mobile-reviews {
+      padding: 20px 0 24px;
+      background: transparent;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .reviews-header {
+      text-align: center;
+      margin-bottom: 16px;
+      padding: 0 16px;
+    }
+    .reviews-title {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #1a1a1a;
+      margin: 0 0 4px 0;
+    }
+
+    /* Mobile Reviews Slider */
+    .mobile-reviews-slider {
+      position: relative;
+      padding: 0 50px;
+      margin: 0 auto;
+      overflow: visible;
+    }
+    .mobile-reviews-track {
+      display: flex;
+      transition: transform 0.5s ease-in-out;
+      overflow: visible;
+    }
+    .mobile-review-slide {
+      min-width: 85%;
+      flex-shrink: 0;
+      padding: 0 10px;
+      box-sizing: border-box;
+    }
+    .mobile-review-slide img {
+      width: 100%;
+      height: 350px;
+      object-fit: cover;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .mobile-slider-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #ddd;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      font-size: 14px;
+    }
+    .mobile-slider-prev {
+      left: 8px;
+    }
+    .mobile-slider-next {
+      right: 8px;
+    }
+
+    /* Old reviews scroll (fallback) */
+    .reviews-stars {
+      color: #D4AF37;
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+    .reviews-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 0 16px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .reviews-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .review-card {
+      flex-shrink: 0;
+      width: 240px;
+      scroll-snap-align: center;
+      background: white;
+      border: 1px solid #e5e5e5;
+      padding: 12px;
+      border-radius: 4px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .review-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 8px;
+      border: 1px solid #e5e5e5;
+    }
+    .review-quote {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+    }
+    .review-text {
+      font-size: 10px;
+      color: #666;
+      line-height: 1.5;
+      margin: 0 0 8px 0;
+    }
+    .review-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .review-meta {
+      font-size: 8.5px;
+      color: #999;
+    }
+
+    /* Mobile Instagram Section */
+    .mobile-instagram {
+      padding: 20px 0 24px;
+      background: transparent;
+      overflow: hidden;
+    }
+    .instagram-header {
+      text-align: center;
+      margin-bottom: 12px;
+      padding: 0 16px;
+    }
+    .instagram-subtitle {
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: #999;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .instagram-title {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0;
+    }
+    .instagram-grid {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 0 16px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .instagram-grid::-webkit-scrollbar {
+      display: none;
+    }
+    .instagram-post {
+      flex-shrink: 0;
+      width: 260px;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      overflow: hidden;
+      background: white;
+      scroll-snap-align: start;
+    }
+    .instagram-image {
+      width: 100%;
+      height: 260px;
+      position: relative;
+      overflow: hidden;
+    }
+    .instagram-image img,
+    .instagram-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .instagram-video {
+      display: block;
+      background: #000;
+    }
+    .instagram-play-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .mobile-instagram-link-icon {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255,255,255,0.9);
+      color: #E4405F;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      z-index: 5;
+    }
+    .instagram-caption {
+      padding: 10px;
+      font-size: 10px;
+      color: #666;
+      line-height: 1.5;
+      margin: 0;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+    .instagram-caption strong {
+      color: #1a1a1a;
+    }
+
+    /* Mobile FAQ Section */
+    .mobile-faq {
+      padding: 20px 16px 24px;
+      background: white;
+    }
+    .faq-main-title {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1a1a;
+      margin: 0 0 12px 0;
+    }
+    .faq-gallery {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .faq-gallery img {
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 4px;
+      width: 100%;
+    }
+    .faq-list {
+      border-top: 1px solid #e5e5e5;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .faq-item {
+      border-bottom: 1px solid #e5e5e5;
+      padding: 10px 0;
+    }
+    .faq-item:last-child {
+      border-bottom: none;
+    }
+    .faq-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: #1a1a1a;
+      cursor: pointer;
+    }
+    .faq-question i {
+      font-size: 9px;
+      color: #666;
+      transition: transform 0.3s ease;
+    }
+    .faq-item.active .faq-question i {
+      transform: rotate(180deg);
+    }
+    .faq-answer {
+      font-size: 10.5px;
+      color: #666;
+      line-height: 1.6;
+      margin-top: 6px;
+      display: none;
+    }
+    .faq-item.active .faq-answer {
+      display: block;
+    }
+
+    /* Mobile Flash Sale */
+    .mobile-flash-sale {
+      padding: 16px 0;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .mobile-flash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      margin-bottom: 12px;
+    }
+    .mobile-flash-header h2 {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 16px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .mobile-countdown {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .mobile-timer-box {
+      background: #000;
+      color: #fff;
+      padding: 4px 6px;
+      border-radius: 2px;
+      min-width: 24px;
+      text-align: center;
+      font-size: 10px;
+    }
+
+    /* Mobile Products Scroll */
+    .mobile-products-scroll {
+      display: flex;
+      gap: 12px;
+      padding: 0 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .mobile-products-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .mobile-product-card {
+      flex-shrink: 0;
+      width: 144px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .mobile-product-image {
+      position: relative;
+      aspect-ratio: 1;
+      background: #f9fafb;
+    }
+    .mobile-product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .mobile-discount-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: #dc2626;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 2px;
+      z-index: 1;
+    }
+    .mobile-product-info {
+      padding: 10px;
+    }
+    .mobile-product-info h3 {
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.3;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .mobile-product-price {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .mobile-price {
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .mobile-old-price {
+      font-size: 10px;
+      color: #9ca3af;
+      text-decoration: line-through;
+    }
+
+    /* Mobile Trust Badges */
+    .mobile-trust-badges {
+      padding: 12px 16px;
+      background: #fef9f1;
+      border-top: 1px solid #e5e7eb;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .mobile-trust-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+    .mobile-trust-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 0;
+    }
+    .mobile-trust-item.border-top {
+      padding-top: 16px;
+      border-top: 1px solid rgba(229, 231, 235, 0.6);
+    }
+    .mobile-trust-item i {
+      font-size: 14px;
+      color: #ca8a04;
+      margin-bottom: 4px;
+    }
+    .mobile-trust-item h5 {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+    .mobile-trust-item p {
+      font-size: 8.5px;
+      color: #6b7280;
+    }
+
+    /* Mobile Arrivals */
+    .mobile-arrivals {
+      padding: 24px 0;
+      overflow: hidden;
+      width: 100%;
+      max-width: 100%;
+    }
+    .mobile-arrivals h2 {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 16px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+      padding: 0 16px 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .mobile-arrivals-grid {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 16px 8px;
+    }
+    .mobile-arrivals-grid::-webkit-scrollbar {
+      display: none;
+    }
+    .mobile-arrival-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      min-width: 320px;
+      max-width: 320px;
+      flex-shrink: 0;
+      scroll-snap-align: start;
+    }
+    .mobile-arrival-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .mobile-arrival-header h3 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .mobile-arrival-header span {
+      font-size: 10px;
+      font-weight: 600;
+      color: #ca8a04;
+    }
+    .mobile-arrival-images {
+      display: grid;
+      grid-template-columns: 150px auto;
+      gap: 6px;
+      margin-bottom: 8px;
+      height: 140px;
+    }
+    .mobile-arrival-images .main-img {
+      grid-row: span 2;
+      width: 150px;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .mobile-arrival-images .side-imgs {
+      display: grid;
+      grid-template-columns: repeat(2, 67px);
+      grid-template-rows: repeat(2, 67px);
+      gap: 6px;
+      height: 140px;
+    }
+    .mobile-arrival-images .side-imgs img {
+      width: 67px;
+      height: 67px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .mobile-arrival-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .mobile-quick-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .mobile-quick-links a {
+      text-align: center;
+      padding: 8px 4px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      font-size: 10px;
+      text-decoration: none;
+      color: #1f2937;
+    }
+    .mobile-quick-links .view-more {
+      grid-column: span 2;
+      color: #ca8a04;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 10.5px;
+    }
+    .mobile-view-more-link {
+      display: block;
+      text-align: center;
+      padding: 10px;
+      margin-top: 10px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      color: #ca8a04;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 10.5px;
+      text-decoration: none;
+    }
+    .mobile-arrival-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-top: 8px;
+    }
+    .mobile-arrival-group {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      margin-bottom: 12px;
+    }
+    .mobile-large-img {
+      grid-row: span 2;
+      width: 150px;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .mobile-small-imgs {
+      display: grid;
+      grid-template-columns: repeat(2, 67px);
+      gap: 6px;
+    }
+    .mobile-small-imgs img {
+      width: 67px;
+      height: 67px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .mobile-hero-banner {
+      height: 200px;
+    }
+    .mobile-hero-title {
+      font-size: 16px;
+    }
+    .mobile-category-icon {
+      width: 42px;
+      height: 42px;
+    }
+    .mobile-product-card {
+      width: 130px;
+    }
+  }
+
+  /* Desktop: Hide mobile content */
+  @media (min-width: 769px) {
+    .mobile-only {
+      display: none !important;
+    }
+  }
+
+  /* ========== 移动端隐藏桌面端sections ========== */
+  @media (max-width: 768px) {
+    .hero-section,
+    .flash-sales-section,
+    .trust-badges,
+    .new-arrivals-section,
+    .shop-by-cat-section,
+    .campaign-section,
+    .reviews-section,
+    .social-feed-section,
+    .faq-gallery-section {
+      display: none !important;
+    }
+  }
+</style>
+
+<script define:vars={{ autoplayEnabled, autoplayInterval }}>
+// Reviews Slider - 桌面端（显示3张，每次滑动1张）
+function initReviewsSlider() {
+  const slider = document.querySelector('.reviews-slider');
+  if (!slider) return;
+
+  const track = slider.querySelector('.reviews-track');
+  const slides = slider.querySelectorAll('.review-slide');
+  const prevBtn = slider.querySelector('.slider-prev');
+  const nextBtn = slider.querySelector('.slider-next');
+
+  if (slides.length <= 3) {
+    // 如果图片数量 <= 3，隐藏按钮，不需要滑动
+    prevBtn?.style.setProperty('display', 'none');
+    nextBtn?.style.setProperty('display', 'none');
+    return;
+  }
+
+  let currentIndex = 0;
+  let autoplayTimer = null;
+  const slidesToShow = 3;
+  const maxIndex = slides.length - slidesToShow;
+
+  function updateSlider() {
+    const slideWidth = slides[0].offsetWidth;
+    const gap = 16; // CSS gap
+    const offset = -(currentIndex * (slideWidth + gap));
+    track.style.transform = `translateX(${offset}px)`;
+
+    // 禁用按钮在边界
+    prevBtn.disabled = currentIndex === 0;
+    nextBtn.disabled = currentIndex >= maxIndex;
+
+    prevBtn.style.opacity = currentIndex === 0 ? '0.5' : '1';
+    nextBtn.style.opacity = currentIndex >= maxIndex ? '0.5' : '1';
+  }
+
+  function nextSlide() {
+    if (currentIndex < maxIndex) {
+      currentIndex++;
+      updateSlider();
+    } else {
+      // 循环到开头
+      currentIndex = 0;
+      updateSlider();
+    }
+  }
+
+  function prevSlide() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      updateSlider();
+    }
+  }
+
+  function startAutoplay() {
+    if (autoplayEnabled) {
+      autoplayTimer = setInterval(nextSlide, autoplayInterval * 1000);
+    }
+  }
+
+  function stopAutoplay() {
+    if (autoplayTimer) {
+      clearInterval(autoplayTimer);
+      autoplayTimer = null;
+    }
+  }
+
+  prevBtn?.addEventListener('click', () => {
+    stopAutoplay();
+    prevSlide();
+    startAutoplay();
+  });
+
+  nextBtn?.addEventListener('click', () => {
+    stopAutoplay();
+    nextSlide();
+    startAutoplay();
+  });
+
+  // 初始化
+  updateSlider();
+  startAutoplay();
+}
+
+// Reviews Slider - 移动端（无缝无限循环 + 手势支持）
+function initMobileReviewsSlider() {
+  const slider = document.querySelector('.mobile-reviews-slider');
+  if (!slider) return;
+
+  const track = slider.querySelector('.mobile-reviews-track');
+  const originalSlides = Array.from(slider.querySelectorAll('.mobile-review-slide'));
+  const prevBtn = slider.querySelector('.mobile-slider-prev');
+  const nextBtn = slider.querySelector('.mobile-slider-next');
+
+  if (originalSlides.length <= 1) return;
+
+  // 克隆首尾图片实现无缝循环
+  const firstClone = originalSlides[0].cloneNode(true);
+  const lastClone = originalSlides[originalSlides.length - 1].cloneNode(true);
+
+  track.appendChild(firstClone);
+  track.insertBefore(lastClone, originalSlides[0]);
+
+  const slides = track.querySelectorAll('.mobile-review-slide');
+  let currentIndex = 1; // 从第一个真实slide开始（因为前面有一个克隆）
+  let autoplayTimer = null;
+  let startX = 0;
+  let currentX = 0;
+  let isDragging = false;
+
+  function updateSlider(animate = true) {
+    if (animate) {
+      track.style.transition = 'transform 0.5s ease-in-out';
+    } else {
+      track.style.transition = 'none';
+    }
+    const slideWidth = slides[0].offsetWidth;
+    const offset = -currentIndex * slideWidth;
+    track.style.transform = `translateX(${offset}px)`;
+  }
+
+  function handleTransitionEnd() {
+    const slideWidth = slides[0].offsetWidth;
+    // 无缝循环：到达克隆位置时立即跳转到真实位置
+    if (currentIndex === 0) {
+      track.style.transition = 'none';
+      currentIndex = originalSlides.length;
+      track.style.transform = `translateX(${-currentIndex * slideWidth}px)`;
+    } else if (currentIndex === slides.length - 1) {
+      track.style.transition = 'none';
+      currentIndex = 1;
+      track.style.transform = `translateX(${-currentIndex * slideWidth}px)`;
+    }
+  }
+
+  track.addEventListener('transitionend', handleTransitionEnd);
+
+  function nextSlide() {
+    currentIndex++;
+    updateSlider();
+  }
+
+  function prevSlide() {
+    currentIndex--;
+    updateSlider();
+  }
+
+  function startAutoplay() {
+    if (autoplayEnabled) {
+      autoplayTimer = setInterval(nextSlide, autoplayInterval * 1000);
+    }
+  }
+
+  function stopAutoplay() {
+    if (autoplayTimer) {
+      clearInterval(autoplayTimer);
+      autoplayTimer = null;
+    }
+  }
+
+  // 触摸事件
+  track.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    currentX = startX;
+    isDragging = true;
+    stopAutoplay();
+    track.style.transition = 'none';
+  });
+
+  track.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    currentX = e.touches[0].clientX;
+    const diff = currentX - startX;
+    const slideWidth = slides[0].offsetWidth;
+    const offset = -currentIndex * slideWidth + diff;
+    track.style.transform = `translateX(${offset}px)`;
+  });
+
+  track.addEventListener('touchend', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    const diff = currentX - startX;
+    const threshold = track.offsetWidth * 0.2;
+
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        prevSlide();
+      } else {
+        nextSlide();
+      }
+    } else {
+      updateSlider();
+    }
+    startAutoplay();
+  });
+
+  // 鼠标事件
+  track.addEventListener('mousedown', (e) => {
+    startX = e.clientX;
+    currentX = startX;
+    isDragging = true;
+    stopAutoplay();
+    track.style.transition = 'none';
+    e.preventDefault();
+  });
+
+  track.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    currentX = e.clientX;
+    const diff = currentX - startX;
+    const slideWidth = slides[0].offsetWidth;
+    const offset = -currentIndex * slideWidth + diff;
+    track.style.transform = `translateX(${offset}px)`;
+  });
+
+  track.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    const diff = currentX - startX;
+    const threshold = track.offsetWidth * 0.2;
+
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        prevSlide();
+      } else {
+        nextSlide();
+      }
+    } else {
+      updateSlider();
+    }
+    startAutoplay();
+  });
+
+  track.addEventListener('mouseleave', () => {
+    if (isDragging) {
+      isDragging = false;
+      updateSlider();
+      startAutoplay();
+    }
+  });
+
+  prevBtn?.addEventListener('click', () => {
+    stopAutoplay();
+    prevSlide();
+    startAutoplay();
+  });
+
+  nextBtn?.addEventListener('click', () => {
+    stopAutoplay();
+    nextSlide();
+    startAutoplay();
+  });
+
+  // 初始化
+  updateSlider(false);
+  startAutoplay();
+}
+
+// 页面加载后初始化
+document.addEventListener('DOMContentLoaded', () => {
+  initReviewsSlider();
+  initMobileReviewsSlider();
+
+  // Instagram 视频播放功能
+  document.querySelectorAll('.play-btn, .instagram-play-icon').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // 找到对应的视频元素
+      const container = btn.closest('.feed-img-box, .instagram-image');
+      const video = container.querySelector('video');
+
+      if (video) {
+        // 隐藏播放按钮
+        btn.style.display = 'none';
+
+        // 播放视频
+        video.controls = true;
+        video.play();
+
+        // 视频暂停时重新显示播放按钮
+        video.addEventListener('pause', () => {
+          if (video.currentTime < video.duration) {
+            btn.style.display = 'flex';
+            video.controls = false;
+          }
+        });
+
+        // 视频结束时重新显示播放按钮
+        video.addEventListener('ended', () => {
+          btn.style.display = 'flex';
+          video.controls = false;
+          video.currentTime = 0;
+        });
+      }
+    });
+  });
+
+  // 桌面端 FAQ 手风琴
+  document.querySelectorAll('.faq-gallery-section .accordion-header').forEach((header) => {
+    header.addEventListener('click', () => {
+      const item = header.parentElement;
+      const body = item.querySelector('.accordion-body');
+      const isActive = item.classList.contains('active');
+
+      if (isActive) {
+        // 收起
+        body.style.maxHeight = body.scrollHeight + 'px';
+        requestAnimationFrame(() => {
+          body.style.maxHeight = '0';
+        });
+        item.classList.remove('active');
+      } else {
+        // 展开
+        item.classList.add('active');
+        body.style.maxHeight = body.scrollHeight + 'px';
+
+        // 动画结束后移除固定高度，允许内容自适应
+        body.addEventListener('transitionend', function handler() {
+          if (item.classList.contains('active')) {
+            body.style.maxHeight = 'none';
+          }
+          body.removeEventListener('transitionend', handler);
+        });
+      }
+    });
+  });
+
+  // 移动端 FAQ 手风琴（使用 onclick 属性已经处理）
+
+  // ============================================
+  // 用户登录状态检测与切换
+  // ============================================
+  function checkUserLoginStatus() {
+    const authBoxGuest = document.getElementById('authBoxGuest');
+    const authBoxLoggedIn = document.getElementById('authBoxLoggedIn');
+    const userNameEl = document.getElementById('userName');
+
+    // 从 localStorage 读取用户信息
+    const userDataStr = localStorage.getItem('user');
+
+    if (userDataStr) {
+      try {
+        const userData = JSON.parse(userDataStr);
+
+        // 显示已登录状态
+        if (authBoxGuest) authBoxGuest.style.display = 'none';
+        if (authBoxLoggedIn) authBoxLoggedIn.style.display = 'block';
+
+        // 设置用户名显示
+        if (userNameEl && userData.firstName) {
+          userNameEl.textContent = userData.firstName;
+        } else if (userNameEl && userData.email) {
+          // 如果没有名字，显示邮箱前缀
+          const emailPrefix = userData.email.split('@')[0];
+          userNameEl.textContent = emailPrefix;
+        }
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+        // 解析失败，显示未登录状态
+        if (authBoxGuest) authBoxGuest.style.display = 'block';
+        if (authBoxLoggedIn) authBoxLoggedIn.style.display = 'none';
+      }
+    } else {
+      // 未登录，显示登录/注册按钮
+      if (authBoxGuest) authBoxGuest.style.display = 'block';
+      if (authBoxLoggedIn) authBoxLoggedIn.style.display = 'none';
+    }
+  }
+
+  // 注销处理函数
+  window.handleLogout = function() {
+    // 确认注销
+    if (confirm('Are you sure you want to logout?')) {
+      // 清除用户数据
+      localStorage.removeItem('user');
+
+      // 触发自定义事件通知其他组件
+      window.dispatchEvent(new CustomEvent('userLoggedOut'));
+
+      // 刷新页面
+      window.location.reload();
+    }
+  };
+
+  // 监听登录事件
+  window.addEventListener('userLoggedIn', function(event) {
+    console.log('User logged in:', event.detail);
+    checkUserLoginStatus();
+  });
+
+  // 页面加载时检查登录状态
+  checkUserLoginStatus();
+});
+</script>

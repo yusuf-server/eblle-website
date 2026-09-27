@@ -1,0 +1,51 @@
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@layer theme {
+  :root {
+    /* 自定义颜色 */
+    --color-eb-gold: #A3824C;
+    --color-eb-gold-light: #D8C28D;
+    --color-eb-red: #C62828;
+    --color-eb-dark: #1A1A1A;
+    --color-eb-border: #DDD8CE;
+    --color-eb-bg: #FAF8F5;
+    --color-eb-surface: #F7F4EE;
+    --color-eb-text-sub: #6D6A64;
+
+    /* 自定义圆角 */
+    --radius-xs: 4px;
+
+    /* 自定义阴影 */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-2xs: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+
+    /* 字体 */
+    --font-family-display: 'Bodoni Moda', 'Cinzel', serif;
+    --font-family-body: 'Hanken Grotesk', sans-serif;
+  }
+}
+
+/* 隐藏滚动条 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 文本截断 */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

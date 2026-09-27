@@ -1,0 +1,281 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Footer from '../components/Footer.astro';
+import CartDrawer from '../components/CartDrawer.astro';
+---
+
+<Layout title="E.B.Belle - Fine Jewelry">
+  <!-- Mobile Header -->
+  <header class="sticky top-0 z-50 bg-white border-b border-gray-200">
+    <div class="px-4 py-3 flex items-center justify-between">
+      <button class="text-2xl">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <h1 class="font-display text-lg font-semibold tracking-wide">E.B.Belle</h1>
+      <button class="text-xl" onclick="window.toggleCart?.(true)">
+        <i class="fa-solid fa-bag-shopping"></i>
+        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-white text-[10px] rounded-full flex items-center justify-center">2</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="mobile-home">
+    <!-- 1. Hero Banner -->
+    <section class="px-4 py-3">
+      <div class="relative h-60 rounded-lg overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80" alt="Hero" class="w-full h-full object-cover"/>
+        <div class="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent flex items-center justify-between px-4">
+          <div class="max-w-[65%]">
+            <span class="text-[8px] font-bold text-yellow-400 tracking-[0.2em] uppercase block">Collection 2026</span>
+            <h2 class="font-display text-lg font-normal text-white tracking-wide leading-tight">Timeless Elegance</h2>
+            <p class="text-[10px] text-white/80 line-clamp-1 mt-0.5">316L Stainless Steel & PVD Gold.</p>
+          </div>
+          <a href="/shop" class="bg-white text-black hover:bg-gray-100 transition-colors text-[9px] font-bold tracking-widest uppercase px-3.5 py-2 rounded whitespace-nowrap">
+            Shop Now
+          </a>
+        </div>
+      </div>
+
+      <!-- New User Benefits Bar -->
+      <div class="mt-2 bg-yellow-50 border border-dashed border-yellow-600/50 rounded px-3 py-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-gift text-yellow-600 text-sm"></i>
+          <span class="text-[10px] font-bold">NEW USER GIFT PACK: $130 OFF</span>
+        </div>
+        <a href="#" class="text-[9px] font-bold text-yellow-700 uppercase tracking-wider">Claim →</a>
+      </div>
+    </section>
+
+    <!-- 2. Shop by Category (Round Icons) -->
+    <section class="py-4 bg-white border-y border-gray-200">
+      <h3 class="text-center text-sm font-semibold tracking-wider uppercase mb-3 px-4">Shop by Category</h3>
+      <div class="flex gap-4 overflow-x-auto no-scrollbar px-4">
+        <div class="flex flex-col items-center flex-shrink-0">
+          <div class="w-12 h-12 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center mb-1">
+            <i class="fa-regular fa-circle-dot text-base text-gray-600"></i>
+          </div>
+          <span class="text-[10px] font-medium">Rings</span>
+        </div>
+        <div class="flex flex-col items-center flex-shrink-0">
+          <div class="w-12 h-12 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center mb-1">
+            <i class="fa-solid fa-link text-base text-gray-600"></i>
+          </div>
+          <span class="text-[10px] font-medium">Bracelets</span>
+        </div>
+        <div class="flex flex-col items-center flex-shrink-0">
+          <div class="w-12 h-12 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center mb-1">
+            <i class="fa-regular fa-gem text-base text-gray-600"></i>
+          </div>
+          <span class="text-[10px] font-medium">Necklaces</span>
+        </div>
+        <div class="flex flex-col items-center flex-shrink-0">
+          <div class="w-12 h-12 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center mb-1">
+            <i class="fa-solid fa-ring text-base text-gray-600"></i>
+          </div>
+          <span class="text-[10px] font-medium">Anklets</span>
+        </div>
+        <div class="flex flex-col items-center flex-shrink-0">
+          <div class="w-12 h-12 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center mb-1">
+            <i class="fa-solid fa-shield-halved text-base text-gray-600"></i>
+          </div>
+          <span class="text-[10px] font-medium">Body Chains</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Flash Sale Countdown -->
+    <section class="py-4 px-4 bg-white border-b border-gray-200">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-display text-base font-medium tracking-wider uppercase">⚡ Flash Sales</h2>
+        <div class="flex items-center gap-1 text-[10px] font-bold">
+          <span>Ends in</span>
+          <div class="bg-black text-white px-1.5 py-0.5 rounded text-[10px] min-w-[24px] text-center">23</div>
+          <span>:</span>
+          <div class="bg-black text-white px-1.5 py-0.5 rounded text-[10px] min-w-[24px] text-center">59</div>
+          <span>:</span>
+          <div class="bg-black text-white px-1.5 py-0.5 rounded text-[10px] min-w-[24px] text-center">45</div>
+        </div>
+      </div>
+
+      <!-- Horizontal Scroll Products -->
+      <div class="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4">
+        <!-- Product 1 -->
+        <div class="flex-shrink-0 w-36 border border-gray-200 bg-white rounded overflow-hidden">
+          <div class="aspect-square relative bg-gray-50">
+            <span class="absolute top-1.5 left-1.5 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded z-10">-32%</span>
+            <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80" alt="Product" class="w-full h-full object-cover"/>
+          </div>
+          <div class="p-2.5">
+            <h3 class="text-[11px] font-medium line-clamp-1">Gold Fam Gold Earrings & Pearl</h3>
+            <div class="flex items-baseline gap-1.5 mt-1.5">
+              <span class="text-xs font-bold">$11.50</span>
+              <span class="text-[10px] text-gray-500 line-through">$29.90</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product 2 -->
+        <div class="flex-shrink-0 w-36 border border-gray-200 bg-white rounded overflow-hidden">
+          <div class="aspect-square relative bg-gray-50">
+            <span class="absolute top-1.5 left-1.5 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded z-10">-50%</span>
+            <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=300&q=80" alt="Product" class="w-full h-full object-cover"/>
+          </div>
+          <div class="p-2.5">
+            <h3 class="text-[11px] font-medium line-clamp-1">Gold Sam Bracelet Stainless</h3>
+            <div class="flex items-baseline gap-1.5 mt-1.5">
+              <span class="text-xs font-bold">$15.50</span>
+              <span class="text-[10px] text-gray-500 line-through">$28.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product 3 -->
+        <div class="flex-shrink-0 w-36 border border-gray-200 bg-white rounded overflow-hidden">
+          <div class="aspect-square relative bg-gray-50">
+            <span class="absolute top-1.5 left-1.5 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded z-10">-40%</span>
+            <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=300&q=80" alt="Product" class="w-full h-full object-cover"/>
+          </div>
+          <div class="p-2.5">
+            <h3 class="text-[11px] font-medium line-clamp-1">Pearl Pendant Necklace</h3>
+            <div class="flex items-baseline gap-1.5 mt-1.5">
+              <span class="text-xs font-bold">$12.00</span>
+              <span class="text-[10px] text-gray-500 line-through">$20.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product 4 -->
+        <div class="flex-shrink-0 w-36 border border-gray-200 bg-white rounded overflow-hidden">
+          <div class="aspect-square relative bg-gray-50">
+            <span class="absolute top-1.5 left-1.5 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded z-10">-35%</span>
+            <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=300&q=80" alt="Product" class="w-full h-full object-cover"/>
+          </div>
+          <div class="p-2.5">
+            <h3 class="text-[11px] font-medium line-clamp-1">Diamond Ring Set</h3>
+            <div class="flex items-baseline gap-1.5 mt-1.5">
+              <span class="text-xs font-bold">$19.50</span>
+              <span class="text-[10px] text-gray-500 line-through">$30.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Trust Badges -->
+    <section class="py-3 px-4 bg-yellow-50 border-b border-gray-200">
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="flex flex-col items-center">
+          <i class="fa-solid fa-plane-departure text-yellow-600 text-sm mb-0.5"></i>
+          <h5 class="text-[9.5px] font-bold tracking-wider uppercase">Worldwide Shipping</h5>
+          <p class="text-[8.5px] text-gray-600">Fast delivery to your door</p>
+        </div>
+        <div class="flex flex-col items-center">
+          <i class="fa-regular fa-gem text-yellow-600 text-sm mb-0.5"></i>
+          <h5 class="text-[9.5px] font-bold tracking-wider uppercase">Skin-Friendly</h5>
+          <p class="text-[8.5px] text-gray-600">Hypoallergenic Waterproof</p>
+        </div>
+        <div class="flex flex-col items-center pt-2 border-t border-gray-300">
+          <i class="fa-solid fa-industry text-yellow-600 text-sm mb-0.5"></i>
+          <h5 class="text-[9.5px] font-bold tracking-wider uppercase">Factory Direct</h5>
+          <p class="text-[8.5px] text-gray-600">Competitive pricing No MOQ</p>
+        </div>
+        <div class="flex flex-col items-center pt-2 border-t border-gray-300">
+          <i class="fa-solid fa-headset text-yellow-600 text-sm mb-0.5"></i>
+          <h5 class="text-[9.5px] font-bold tracking-wider uppercase">Dedicated Account</h5>
+          <p class="text-[8.5px] text-gray-600">Professional manager</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. New Arrivals / Waterproof -->
+    <section class="py-6 px-4">
+      <h2 class="font-display font-medium text-base uppercase tracking-wider mb-4 pb-2 border-b border-gray-200">
+        New Arrivals / Waterproof
+      </h2>
+
+      <div class="space-y-4">
+        <!-- Group 1 -->
+        <div class="bg-white border border-gray-200 rounded p-3 shadow-sm">
+          <div class="flex justify-between items-baseline mb-2">
+            <h3 class="font-bold text-xs uppercase">8.1st - 8.7th</h3>
+            <span class="text-[10px] text-yellow-600 font-semibold">10k+ Products</span>
+          </div>
+          <div class="grid grid-cols-5 gap-1.5">
+            <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80" alt="" class="col-span-3 aspect-square object-cover rounded"/>
+            <div class="col-span-2 grid grid-cols-2 gap-1.5">
+              <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+              <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+              <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+              <img src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+            </div>
+          </div>
+          <p class="text-xs font-bold mt-2">Halloween & Custom Keychains</p>
+        </div>
+
+        <!-- Group 2 -->
+        <div class="bg-white border border-gray-200 rounded p-3 shadow-sm">
+          <div class="flex justify-between items-baseline mb-2">
+            <h3 class="font-bold text-xs uppercase">Waterproof Jewelry 💧💎</h3>
+            <span class="text-[10px] text-yellow-600 font-semibold">80k+ Products</span>
+          </div>
+          <div class="grid grid-cols-5 gap-1.5">
+            <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=400&q=80" alt="" class="col-span-3 aspect-square object-cover rounded"/>
+            <div class="col-span-2 grid grid-cols-2 gap-1.5">
+              <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+              <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+              <img src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+              <img src="https://images.unsplash.com/photo-1598560917505-59a3ad559071?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+            </div>
+          </div>
+          <p class="text-xs font-bold mt-2">Waterproof Jewelry & Belts</p>
+        </div>
+
+        <!-- Group 3 with Quick Links -->
+        <div class="bg-white border border-gray-200 rounded p-3 shadow-sm">
+          <div class="flex justify-between items-baseline mb-2">
+            <h3 class="font-bold text-xs uppercase">Animal Charms</h3>
+            <span class="text-[10px] text-yellow-600 font-semibold">1k+ Products</span>
+          </div>
+          <div class="grid grid-cols-5 gap-1.5 mb-2.5">
+            <img src="https://images.unsplash.com/photo-1598560917505-59a3ad559071?w=400&q=80" alt="" class="col-span-3 aspect-square object-cover rounded"/>
+            <div class="col-span-2 grid grid-cols-2 gap-1.5">
+              <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+              <img src="https://images.unsplash.com/photo-1630019852942-f89202989a59?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+              <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+              <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=200&q=80" alt="" class="aspect-square object-cover rounded"/>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5 text-center text-[10px]">
+            <a href="#" class="py-1 bg-gray-50 border border-gray-200 rounded">Two Tone Ring</a>
+            <a href="#" class="py-1 bg-gray-50 border border-gray-200 rounded">Engraved Rings</a>
+            <a href="#" class="py-1 bg-gray-50 border border-gray-200 rounded">Sport Charms</a>
+            <a href="#" class="py-1 bg-gray-50 border border-gray-200 rounded">Lariat Necklace</a>
+            <a href="#" class="col-span-2 py-1 text-yellow-600 font-bold uppercase tracking-wider text-[10.5px]">VIEW MORE >></a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .font-display {
+    font-family: 'Bodoni Moda', serif;
+  }
+</style>

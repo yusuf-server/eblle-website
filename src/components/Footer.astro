@@ -1,0 +1,189 @@
+---
+// Footer 组件
+---
+
+<footer class="footer-new">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="logo-icon">
+            <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor"></path>
+            </svg>
+          </div>
+          <h2>E.B.Belle</h2>
+        </div>
+        <p class="footer-desc">
+          Global destination for wholesale jewelry. Connecting quality manufacturers with distributors, retailers, and entrepreneurs worldwide.
+        </p>
+        <div class="footer-social">
+          <a href="#" class="social-btn">FB</a>
+          <a href="#" class="social-btn">IG</a>
+          <a href="#" class="social-btn">IN</a>
+        </div>
+      </div>
+
+      <div class="footer-links">
+        <h5>Guide</h5>
+        <ul>
+          <li><a href="#">How to Order</a></li>
+          <li><a href="#">Custom Branding</a></li>
+          <li><a href="#">Shipping Methods</a></li>
+          <li><a href="#">Quality Control</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links">
+        <h5>Company</h5>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Contact Us</a></li>
+          <li><a href="#">Certifications</a></li>
+          <li><a href="#">Sustainability</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links">
+        <h5>Support</h5>
+        <ul>
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Return Policy</a></li>
+          <li><a href="#">Tracking Order</a></li>
+          <li><a href="#">Safe Payment</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2024 E.B.Belle Marketplace. All Rights Reserved.</p>
+      <div class="footer-bottom-links">
+        <a href="#">Terms of Service</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Cookies</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer-new {
+    background: #fafafa;
+    border-top: 1px solid #e5e5e5;
+    padding: 80px 0 48px;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 80px;
+  }
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #000;
+  }
+  .logo-icon {
+    width: 24px;
+    height: 24px;
+  }
+  .footer-logo h2 {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'Cinzel', serif;
+  }
+  .footer-desc {
+    font-size: 14px;
+    color: #747878;
+    line-height: 1.6;
+    max-width: 400px;
+  }
+  .footer-social {
+    display: flex;
+    gap: 16px;
+  }
+  .social-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #c4c7c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #747878;
+    font-size: 12px;
+    font-weight: 700;
+    transition: all 0.3s;
+  }
+  .social-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  .footer-links h5 {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 24px;
+    color: #1a1a1a;
+  }
+  .footer-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .footer-links a {
+    font-size: 14px;
+    color: #747878;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover {
+    color: var(--primary);
+  }
+  .footer-bottom {
+    padding-top: 32px;
+    border-top: 1px solid #e5e5e5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #747878;
+  }
+  .footer-bottom-links {
+    display: flex;
+    gap: 32px;
+  }
+  .footer-bottom-links a {
+    color: #747878;
+    transition: color 0.2s;
+  }
+  .footer-bottom-links a:hover {
+    color: #1a1a1a;
+  }
+
+  @media (max-width: 1024px) {
+    .footer-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .footer-grid {
+      grid-template-columns: 1fr;
+    }
+    .footer-bottom {
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+    }
+  }
+</style>

@@ -1,0 +1,929 @@
+---
+import SkeletonLoader from '../components/SkeletonLoader.astro';
+import AuthModal from '../components/AuthModal.astro';
+import MobileBottomMenu from '../components/MobileBottomMenu.astro';
+import '../styles/tailwind.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="E.B.Belle - 316L不锈钢珠宝饰品" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Bodoni+Moda:opsz,wght@6..96,400;500;600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <title>{title}</title>
+  </head>
+  <body>
+    <SkeletonLoader />
+    <div id="main-content" style="opacity: 0; transition: opacity 0.3s ease;">
+      <slot />
+    </div>
+    <AuthModal />
+    <MobileBottomMenu />
+
+    <!-- Global Quick Order Components -->
+    <div class="quick-order-overlay" id="quickOrderOverlay"></div>
+    <div class="quick-order-modal" id="quickOrderModal">
+      <button class="quick-order-close" id="quickOrderClose">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      <div class="quick-order-content" id="quickOrderContent">
+        <!-- 产品详情将动态插入这里 -->
+      </div>
+    </div>
+
+    <div class="quick-order-mobile-overlay" id="quickOrderMobileOverlay"></div>
+    <div class="quick-order-mobile-sheet" id="quickOrderMobileSheet">
+      <div class="mobile-sheet-header" id="mobileSheetHeader">
+        <button class="mobile-sheet-close" id="quickOrderMobileClose">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-sheet-content" id="quickOrderMobileContent">
+        <!-- 产品详情将动态插入这里 -->
+      </div>
+    </div>
+
+    <!-- Shop Quick Order - Full Implementation (supports variants) - Load FIRST -->
+    <script is:inline src="/scripts/shop-quick-order.js"></script>
+    <!-- Global Quick Order Script - Basic fallback - Load SECOND -->
+    <script is:inline src="/scripts/quick-order-global.js"></script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --primary: #c9933f;
+    --primary-dark: #b07e2e;
+    --red-accent: #e53935;
+    --dark-text: #1a1a1a;
+    --gray-text: #777777;
+    --light-bg: #f9f9f9;
+    --border-color: #eaeaea;
+    --container-w: 1400px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--dark-text);
+    background-color: #ffffff;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  img {
+    max-width: 100%;
+    display: block;
+    object-fit: cover;
+  }
+
+  ul {
+    list-style: none;
+  }
+
+  .container {
+    width: var(--container-w);
+    margin: 0 auto;
+    padding: 0 15px;
+  }
+
+  .serif-title {
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.5px;
+  }
+
+  /* Global Quick Order Styles - Complete implementation from shop.astro */
+  /* Quick Order Modal (桌面端) */
+  .quick-order-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+
+  .quick-order-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .quick-order-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    width: 90%;
+    max-width: 1200px;
+    max-height: 85vh;
+    background: #fff;
+    border-radius: 12px;
+    z-index: 1002;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  .quick-order-modal.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .quick-order-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #333;
+    z-index: 10;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .quick-order-close:hover {
+    background: #fff;
+    transform: rotate(90deg);
+  }
+
+  .quick-order-content {
+    display: grid;
+    grid-template-columns: 45% 55%;
+    height: 85vh;
+    overflow: hidden;
+  }
+
+  .quick-order-images {
+    background: #f9f9f9;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .quick-order-main-image {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .quick-order-main-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .quick-order-thumbnails {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+
+  .quick-order-thumb {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .quick-order-thumb:hover,
+  .quick-order-thumb.active {
+    border-color: #B8860B;
+  }
+
+  .quick-order-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .quick-order-details {
+    padding: 40px;
+    overflow-y: auto;
+  }
+
+  .quick-order-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #1a1a1a;
+  }
+
+  .quick-order-price {
+    font-size: 32px;
+    font-weight: 700;
+    color: #B8860B;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .quick-order-price-current {
+    font-size: 32px;
+    color: #B8860B;
+  }
+
+  .quick-order-price-regular {
+    font-size: 24px;
+    color: #999;
+    text-decoration: line-through;
+  }
+
+  .quick-order-stock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+
+  .quick-order-stock.in-stock {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .quick-order-stock.out-of-stock {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .quick-order-stock-placeholder {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    background: #f0f0f0;
+    color: #666;
+  }
+
+  .quick-order-section {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .quick-order-section:last-child {
+    border-bottom: none;
+  }
+
+  .quick-order-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 16px;
+  }
+
+  .quick-order-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .quick-order-option {
+    padding: 10px 20px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+  }
+
+  .quick-order-option:hover {
+    border-color: #B8860B;
+  }
+
+  .quick-order-option.selected {
+    border-color: #B8860B;
+    background: #B8860B;
+    color: #fff;
+  }
+
+  .quick-order-quantity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .quick-order-qty-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+  }
+
+  .quick-order-qty-btn:hover {
+    border-color: #B8860B;
+    color: #B8860B;
+  }
+
+  .quick-order-qty-input {
+    width: 60px;
+    height: 36px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+
+  .quick-order-add-btn {
+    width: 100%;
+    padding: 16px;
+    background: #B8860B;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .quick-order-add-btn:hover:not(.disabled) {
+    background: #8B6914;
+  }
+
+  .quick-order-add-btn.disabled {
+    background: #ccc;
+    color: #666;
+    cursor: not-allowed;
+  }
+
+  .quick-order-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f0f0f0;
+    border-top: 4px solid #B8860B;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .quick-order-loading p {
+    color: #666;
+    font-size: 14px;
+  }
+
+  /* Quick Order Mobile Sheet (移动端) */
+  .quick-order-mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+
+  .quick-order-mobile-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .quick-order-mobile-sheet {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 85vh;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    z-index: 1002;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .quick-order-mobile-sheet.active {
+    transform: translateY(0);
+  }
+
+  .mobile-sheet-header {
+    position: relative;
+    padding: 16px;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .mobile-sheet-product-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f5f5f5;
+    margin-top: 8px;
+  }
+
+  .mobile-sheet-product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .mobile-sheet-header-right {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    margin: 0 auto 8px;
+  }
+
+  .mobile-sheet-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+  }
+
+  .mobile-sheet-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: #B8860B;
+  }
+
+  .mobile-sheet-close {
+    position: absolute;
+    top: 8px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #333;
+    z-index: 1;
+  }
+
+  .mobile-sheet-content {
+    overflow-y: auto;
+    max-height: calc(85vh - 60px);
+    padding: 16px;
+  }
+
+  .mobile-quick-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #1a1a1a;
+  }
+
+  .mobile-quick-price-tiers {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 16px;
+  }
+
+  .mobile-tier-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .mobile-tier-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .mobile-tier-title i {
+    color: #B8860B;
+    font-size: 10px;
+  }
+
+  .mobile-tier-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    background: #FFF9E6;
+    color: #B8860B;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
+  .mobile-pricing-grid {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-quick-price-tiers {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 16px;
+  }
+
+  .mobile-tier-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .mobile-tier-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .mobile-tier-title i {
+    color: #B8860B;
+    font-size: 10px;
+  }
+
+  .mobile-tier-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    background: #FFF9E6;
+    color: #B8860B;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
+  .mobile-pricing-grid {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-pricing-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-price-tier {
+    flex-shrink: 0;
+    min-width: 70px;
+    padding: 6px 8px;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    text-align: center;
+    background: #fafafa;
+  }
+
+  .mobile-price-tier.best {
+    border-color: #B8860B;
+    background: #FFF9E6;
+  }
+
+  .mobile-tier-qty {
+    font-size: 9px;
+    color: #666;
+    margin-bottom: 3px;
+    white-space: nowrap;
+  }
+
+  .mobile-tier-price {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 2px;
+  }
+
+  .mobile-tier-save {
+    font-size: 8px;
+    color: #28a745;
+    font-weight: 600;
+  }
+
+  .mobile-tier-label {
+    font-size: 8px;
+    color: #999;
+  }
+
+  .mobile-tier-best-badge {
+    font-size: 8px;
+    color: #B8860B;
+    font-weight: 600;
+  }
+
+  .mobile-attribute-title-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: #B8860B;
+    margin-left: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-attribute-options {
+    display: grid;
+    gap: 8px;
+  }
+
+  /* 3个选项：3列 */
+  .mobile-attribute-options[data-option-count="3"] {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* 4个选项：4列 */
+  .mobile-attribute-options[data-option-count="4"] {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* 5个或更多：5列，多行显示 */
+  .mobile-attribute-options[data-option-count="5"],
+  .mobile-attribute-options[data-option-count="6"],
+  .mobile-attribute-options[data-option-count="7"],
+  .mobile-attribute-options[data-option-count="8"],
+  .mobile-attribute-options[data-option-count="9"],
+  .mobile-attribute-options[data-option-count="10"],
+  .mobile-attribute-options[data-option-count="11"],
+  .mobile-attribute-options[data-option-count="12"],
+  .mobile-attribute-options[data-option-count="13"],
+  .mobile-attribute-options[data-option-count="14"],
+  .mobile-attribute-options[data-option-count="15"] {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  /* 1-2个选项：单行全宽 */
+  .mobile-attribute-options[data-option-count="1"],
+  .mobile-attribute-options[data-option-count="2"] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mobile-attribute-option {
+    padding: 10px 8px;
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    text-align: center;
+    transition: all 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 5个或更多选项时，让按钮更紧凑 */
+  .mobile-attribute-options[data-option-count="5"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="6"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="7"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="8"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="9"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="10"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="11"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="12"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="13"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="14"] .mobile-attribute-option,
+  .mobile-attribute-options[data-option-count="15"] .mobile-attribute-option {
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+
+  .mobile-attribute-option.selected {
+    border-color: #B8860B;
+    background: #FFF9E6;
+    color: #B8860B;
+    font-weight: 600;
+  }
+
+  .mobile-attribute-option:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .mobile-quantity-section {
+    margin-bottom: 120px;
+  }
+
+  .mobile-quantity-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+  }
+
+  .mobile-quantity-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mobile-qty-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .mobile-qty-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .mobile-qty-input {
+    width: 60px;
+    height: 36px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .mobile-stock-status {
+    margin-top: 8px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mobile-stock-status.in-stock {
+    color: #28a745;
+  }
+
+  .mobile-stock-status.out-of-stock {
+    color: #dc3545;
+  }
+
+  .mobile-quick-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid #e5e5e5;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .mobile-quick-add-btn {
+    width: 100%;
+    padding: 14px;
+    background: #B8860B;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .mobile-quick-add-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+
+  /* Quick Order 响应式媒体查询 */
+  @media (max-width: 768px) {
+    .quick-order-overlay,
+    .quick-order-modal {
+      display: none !important;
+    }
+
+    .quick-order-mobile-overlay,
+    .quick-order-mobile-sheet {
+      display: block;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .quick-order-mobile-overlay,
+    .quick-order-mobile-sheet {
+      display: none !important;
+    }
+  }
+</style>
+
+<script>
+  // Show main content after skeleton is hidden
+  document.addEventListener('DOMContentLoaded', () => {
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+      setTimeout(() => {
+        mainContent.style.opacity = '1';
+      }, 150);
+    }
+  });
+</script>

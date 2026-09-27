@@ -1,0 +1,2538 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { getProductBySlug, getProductVariations } from '../../lib/woocommerce';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+
+// 获取产品数据
+const product = await getProductBySlug(slug);
+
+if (!product) {
+  return Astro.redirect('/404');
+}
+
+// 计算折扣百分比
+const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
+const discountPercent = hasDiscount
+  ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
+  : 0;
+
+// 获取主图和缩略图
+const images = product.images && product.images.length > 0
+  ? product.images
+  : [{ src: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80', alt: product.name }];
+
+const mainImage = images[0];
+const thumbnails = images.slice(0, 5); // 最多5张缩略图
+
+// 获取产品分类（用于面包屑）
+const category = product.categories && product.categories.length > 0
+  ? product.categories[0].name
+  : 'All Jewelry';
+
+// 清理HTML标签
+const stripHtml = (html: string) => html?.replace(/<[^>]*>/g, '') || '';
+const shortDesc = stripHtml(product.short_description || product.description || '').substring(0, 200);
+
+// 获取变体数据（如果是变体产品）
+let variations = [];
+let attributes = [];
+if (product.type === 'variable' && product.variations && product.variations.length > 0) {
+  variations = await getProductVariations(product.id);
+  attributes = product.attributes || [];
+}
+---
+
+<Layout title={`${product.name} - E.B.Belle`}>
+  <Header />
+
+  <main class="product-detail-page">
+    <div class="product-container">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a>
+        <i class="fa-solid fa-chevron-right"></i>
+        <a href="/shop">All Jewelry</a>
+        <i class="fa-solid fa-chevron-right"></i>
+        <span>{category}</span>
+      </nav>
+
+      <!-- Product Hero Section -->
+      <div class="product-hero">
+        <!-- Left: Product Image Gallery -->
+        <div class="product-gallery">
+          <!-- Main Image Slider -->
+          <div class="main-image-slider">
+            <div class="slider-container" id="sliderContainer">
+              {images.map((img, index) => (
+                <div class="slider-item" data-index={index}>
+                  <img src={img.src} alt={`${product.name} - View ${index + 1}`}>
+                </div>
+              ))}
+            </div>
+
+            <!-- Image Counter -->
+            <div class="image-counter">
+              <span id="currentImageIndex">1</span>/{images.length}
+            </div>
+
+            <!-- Navigation Arrows -->
+            {images.length > 1 && (
+              <>
+                <button type="button" class="slider-arrow prev" onclick="prevImage()" aria-label="Previous image">
+                  <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button type="button" class="slider-arrow next" onclick="nextImage()" aria-label="Next image">
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </>
+            )}
+          </div>
+
+          <!-- Thumbnails -->
+          <div class="thumbnails">
+            {thumbnails.map((img, index) => (
+              <div
+                class={`thumbnail ${index === 0 ? 'active' : ''}`}
+                onclick={`goToSlide(${index})`}
+                data-index={index}
+              >
+                <img src={img.src} alt={`View ${index + 1}`}>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- Right: Product Info -->
+        <div class="product-info">
+          <!-- Title & Price Header -->
+          <div class="product-header">
+            <h1 class="product-title">{product.name}</h1>
+            <div class="price-row">
+              <span class="current-price"><span class="dollar">$</span>{product.price}</span>
+              {hasDiscount && (
+                <>
+                  <span class="original-price">${product.regular_price}</span>
+                  <span class="sale-badge">Sale · Save {discountPercent}%</span>
+                </>
+              )}
+            </div>
+            <div class="rating-row">
+              <i class="fa-solid fa-star star-icon"></i>
+              <span class="rating-score">{product.average_rating || '0.0'}</span>
+              <span class="rating-count">({product.rating_count || 0} reviews)</span>
+            </div>
+          </div>
+
+          <!-- Wholesale Pricing Table -->
+          <div class="wholesale-table">
+            <div class="table-header">
+              <div class="header-left">
+                <i class="fa-solid fa-tag"></i>
+                <span>Wholesale & Volume Pricing</span>
+              </div>
+              <span class="header-badge">Tiered Discounts</span>
+            </div>
+            <div class="pricing-grid">
+              <div class="price-tier">
+                <span class="tier-qty">1 – 9 pcs</span>
+                <span class="tier-price">${product.price}</span>
+                <span class="tier-label">Retail</span>
+              </div>
+              <div class="price-tier">
+                <span class="tier-qty">10 – 49 pcs</span>
+                <span class="tier-price">${(parseFloat(product.price) * 0.79).toFixed(2)}</span>
+                <span class="tier-save">Save 21%</span>
+              </div>
+              <div class="price-tier">
+                <span class="tier-qty">50 – 99 pcs</span>
+                <span class="tier-price">${(parseFloat(product.price) * 0.62).toFixed(2)}</span>
+                <span class="tier-save">Save 38%</span>
+              </div>
+              <div class="price-tier best">
+                <span class="tier-qty">100+ pcs</span>
+                <span class="tier-price">${(parseFloat(product.price) * 0.45).toFixed(2)}</span>
+                <span class="tier-badge">Best Value</span>
+              </div>
+            </div>
+            <div class="auto-apply">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>Applied automatically in cart based on order quantity</span>
+            </div>
+          </div>
+
+          <!-- Description & Badges -->
+          <p class="product-description">
+            {shortDesc}
+          </p>
+          <div class="feature-badges">
+            <span class="badge">316L STAINLESS STEEL</span>
+            <span class="badge">PVD GOLD PLATING</span>
+            <span class="badge">WATERPROOF</span>
+            <span class="badge">HYPOALLERGENIC</span>
+          </div>
+
+          <!-- Product Variants Selection -->
+          {attributes.length > 0 && (
+            <div class="variants-section">
+              {attributes.map((attr) => {
+                const options = attr.options || [];
+                const attrName = attr.name || '';
+                const attrSlug = attrName.toLowerCase().replace(/\s+/g, '-');
+
+                // 默认隐藏的属性
+                const hiddenAttributes = ['material', 'weight'];
+                if (hiddenAttributes.includes(attrSlug)) {
+                  return null;
+                }
+
+                // 必须显示的属性（即使只有1个选项）
+                const alwaysShowAttributes = ['set', 'style'];
+                const mustShow = alwaysShowAttributes.includes(attrSlug);
+
+                // 其他属性（包括color和size）：只有选项数>1时才显示（除非是必须显示的）
+                if (!mustShow && options.length <= 1) {
+                  return null;
+                }
+
+                return (
+                  <div class="variant-group">
+                    <div class="variant-label">
+                      <span class="label-text">{attrName}:</span>
+                      <span class="selected-value" id={`selected-${attrSlug}`}>
+                        {options.length > 0 ? options[0] : 'Select'}
+                      </span>
+                    </div>
+                    <div class="variant-options">
+                      {options.map((option, index) => (
+                        <button
+                          type="button"
+                          class={`variant-option ${index === 0 ? 'active' : ''}`}
+                          data-attribute={attrSlug}
+                          data-value={option}
+                          onclick={`selectVariant('${attrSlug}', '${option}', this)`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <!-- Hidden data container for variations -->
+          {variations.length > 0 && (
+            <script is:inline id="variationsData" type="application/json" set:html={JSON.stringify(variations)} />
+          )}
+
+          <!-- Quantity & Actions -->
+          <div class="actions-section" id="actionsSection">
+            <div class="quantity-row">
+              <span class="qty-label">Quantity</span>
+              <div class="quantity-selector">
+                <button type="button" onclick="changeQty(-1)"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" id="qtyInput" value="1" min="1" readonly>
+                <button type="button" onclick="changeQty(1)"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+            <div class="button-group">
+              <button type="button" class="btn-add-cart">Add to Cart</button>
+              <button type="button" class="btn-buy-now">Buy Now</button>
+            </div>
+            <button type="button" class="btn-wholesale">Inquire for Wholesale / Customization</button>
+          </div>
+
+          <!-- Member Offers -->
+          <div class="offers-card">
+            <div class="offers-header">
+              <div class="header-left">
+                <i class="fa-solid fa-ticket"></i>
+                <span>Exclusive Member Offers</span>
+              </div>
+              <span class="header-badge">Limited Time</span>
+            </div>
+            <div class="offers-grid">
+              <div class="offer-item">
+                <div class="offer-amount">US$ 130</div>
+                <button type="button" class="offer-btn">Claim <i class="fa-solid fa-arrow-right"></i></button>
+                <p class="offer-desc">Sign up for membership to claim US$ 130 coupon package</p>
+              </div>
+              <div class="offer-item">
+                <div class="offer-amount">15% OFF</div>
+                <button type="button" class="offer-btn">Get Code <i class="fa-solid fa-arrow-right"></i></button>
+                <p class="offer-desc">Enjoy introductory discount up to 15% on your order</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Free Gift Carousel -->
+          <div class="gift-carousel">
+            <button type="button" class="carousel-btn prev" aria-label="Previous gift"><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="gift-content">
+              <div class="gift-image">
+                <div class="gift-placeholder">E.B.B</div>
+              </div>
+              <div class="gift-info">
+                <h4>E.B.belle PVC Zipper Jewelry Packaging Bag Pouch (Custom Logo Accepted)</h4>
+                <div class="gift-price-row">
+                  <span class="gift-price">$0.00</span>
+                  <span class="gift-tag">Complimentary Gift</span>
+                </div>
+              </div>
+            </div>
+            <div class="gift-actions">
+              <button type="button" class="btn-add-gift">ADD FREE GIFT</button>
+              <button type="button" class="carousel-btn next" aria-label="Next gift"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+
+          <!-- Safe Checkout -->
+          <div class="checkout-badges">
+            <div class="section-divider">
+              <span>Guaranteed Safe Checkout</span>
+            </div>
+            <div class="payment-methods">
+              <div class="payment-badge visa">VISA</div>
+              <div class="payment-badge mc">MC</div>
+              <div class="payment-badge amex">AMEX</div>
+              <div class="payment-badge discover">DISCOVER</div>
+              <div class="payment-badge paypal">PayPal</div>
+              <div class="payment-badge apple">Apple Pay</div>
+            </div>
+          </div>
+
+          <!-- Accordions -->
+          <div class="accordions">
+            <div class="accordion-item">
+              <button type="button" class="accordion-header" onclick="toggleAccordion('desc')">
+                <span>Description</span>
+                <i class="fa-solid fa-chevron-down" id="icon-desc"></i>
+              </button>
+              <div class="accordion-content active" id="content-desc">
+                <div class="accordion-body" set:html={product.description || product.short_description || '<p>No description available.</p>'}>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-header" onclick="toggleAccordion('care')">
+                <span>Material & Care</span>
+                <i class="fa-solid fa-chevron-down" id="icon-care"></i>
+              </button>
+              <div class="accordion-content" id="content-care">
+                <div class="accordion-body">
+                  <p>Crafted with 316L Stainless Steel and plated with 14K Gold using PVD technology. This piece is tarnish-resistant, waterproof, and hypoallergenic.</p>
+                  <p>To maintain its shine, gently wipe with a soft cloth after use. While waterproof, we recommend removing before swimming in chlorinated pools or oceans to extend its lifespan.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-header" onclick="toggleAccordion('shipping')">
+                <span>Shipping & Returns</span>
+                <i class="fa-solid fa-chevron-down" id="icon-shipping"></i>
+              </button>
+              <div class="accordion-content" id="content-shipping">
+                <div class="accordion-body">
+                  <p>Enjoy free standard shipping on all orders over $50. Orders are typically processed within 1-2 business days.</p>
+                  <p>We accept returns within 30 days of delivery. Items must be in original condition with tags attached. See our full return policy for details.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-header" onclick="toggleAccordion('wholesale')">
+                <span>Wholesale & Customization</span>
+                <i class="fa-solid fa-chevron-down" id="icon-wholesale"></i>
+              </button>
+              <div class="accordion-content" id="content-wholesale">
+                <div class="accordion-body">
+                  <p><strong>Minimum Order Quantity:</strong> 50 pieces per design</p>
+                  <p><strong>Customization Options:</strong> Logo engraving, custom plating (18k Gold, Rose Gold, Rhodium), and bespoke packaging.</p>
+                  <p><strong>Lead Time:</strong> 15-25 business days depending on order volume.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Related Products Section -->
+      <section class="related-products">
+        <h2 class="section-title">You May Also Like</h2>
+        <div class="products-grid">
+          <!-- Product 1 -->
+          <div class="product-card">
+            <div class="product-image">
+              <span class="discount-badge">-20%</span>
+              <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=400&q=80" alt="Diamond Accent Gold Hoops">
+            </div>
+            <div class="product-details">
+              <h3>Diamond Accent Gold Hoops</h3>
+              <div class="prices">
+                <span class="price">$32.00</span>
+                <span class="original">$40.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product 2 -->
+          <div class="product-card">
+            <div class="product-image">
+              <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=400&q=80" alt="Textured Stacking Rings Set">
+            </div>
+            <div class="product-details">
+              <h3>Textured Stacking Rings Set</h3>
+              <div class="prices">
+                <span class="price">$28.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product 3 -->
+          <div class="product-card">
+            <div class="product-image">
+              <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400&q=80" alt="Pearl Station Bracelet">
+            </div>
+            <div class="product-details">
+              <h3>Pearl Station Bracelet</h3>
+              <div class="prices">
+                <span class="price">$24.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product 4 -->
+          <div class="product-card">
+            <div class="product-image">
+              <img src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=400&q=80" alt="Classic Pearl Studs">
+            </div>
+            <div class="product-details">
+              <h3>Classic Pearl Studs</h3>
+              <div class="prices">
+                <span class="price">$18.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Customer Reviews Section -->
+      <section class="customer-reviews">
+        <div class="reviews-header">
+          <h2 class="section-title">Customer Reviews</h2>
+          <div class="rating-summary">
+            <div class="stars">
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star-half-stroke"></i>
+            </div>
+            <span class="rating-text">4.8 (124 Reviews)</span>
+          </div>
+        </div>
+
+        <div class="reviews-grid">
+          <!-- Review 1 -->
+          <div class="review-card">
+            <div class="review-header">
+              <div class="reviewer-info">
+                <span class="reviewer-name">Sarah M.</span>
+                <span class="verified-badge">
+                  <i class="fa-solid fa-circle-check"></i>
+                  Verified Buyer
+                </span>
+              </div>
+              <div class="review-stars">
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+              </div>
+            </div>
+            <h4 class="review-title">Perfect everyday piece</h4>
+            <p class="review-text">I've worn this necklace every day since I got it. It hasn't tarnished at all in the shower, and it looks so elegant layered with my other gold chains. Highly recommend!</p>
+          </div>
+
+          <!-- Review 2 -->
+          <div class="review-card">
+            <div class="review-header">
+              <div class="reviewer-info">
+                <span class="reviewer-name">Emily R.</span>
+                <span class="verified-badge">
+                  <i class="fa-solid fa-circle-check"></i>
+                  Verified Buyer
+                </span>
+              </div>
+              <div class="review-stars">
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-regular fa-star"></i>
+              </div>
+            </div>
+            <h4 class="review-title">Beautiful but delicate</h4>
+            <p class="review-text">The pearl is lovely and has a nice luster. The chain is very thin, which gives it that dainty look, but you have to be a bit careful not to snag it. Overall, a great purchase for the price.</p>
+          </div>
+        </div>
+
+        <div class="reviews-footer">
+          <button type="button" class="btn-read-all">Read All Reviews</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Mobile Sticky Bottom Buy Bar -->
+    <div class="mobile-sticky-action-bar">
+      <div class="sticky-price-block">
+        <span class="sticky-price">${product.price}</span>
+        {hasDiscount && <span class="sticky-original">${product.regular_price}</span>}
+      </div>
+      <div class="sticky-btn-group">
+        <button type="button" class="sticky-btn-cart" onclick="document.querySelector('.btn-add-cart')?.click()">Add to Cart</button>
+        <button type="button" class="sticky-btn-buy" onclick="document.querySelector('.btn-buy-now')?.click()">Buy Now</button>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  /* =========================================================
+     1. 全局与基础安全布局重置（杜绝任何横向溢出与白边）
+     ========================================================= */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  .product-detail-page {
+    background: #ffffff;
+    padding: 24px 0 80px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .product-container {
+    width: 100%;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+
+  /* 面包屑导航 */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13.5px;
+    color: #747878;
+    margin-bottom: 32px;
+    white-space: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .breadcrumb::-webkit-scrollbar {
+    display: none;
+  }
+  .breadcrumb a {
+    color: #747878;
+    text-decoration: none;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+  .breadcrumb a:hover {
+    color: #0e0f0f;
+  }
+  .breadcrumb i {
+    font-size: 9px;
+    flex-shrink: 0;
+    color: #aaa;
+  }
+  .breadcrumb span {
+    color: #0e0f0f;
+    flex-shrink: 0;
+  }
+
+  /* =========================================================
+     2. 主图与画廊 (Gallery)
+     ========================================================= */
+  .product-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    margin-bottom: 80px;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .product-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Main Image Slider */
+  .main-image-slider {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    background: #f6f3ed;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .slider-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .slider-item {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .slider-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  /* Image Counter */
+  .image-counter {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(14, 15, 15, 0.75);
+    backdrop-filter: blur(4px);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    z-index: 3;
+    letter-spacing: 0.3px;
+  }
+
+  .image-counter #currentImageIndex {
+    font-weight: 700;
+  }
+
+  /* Slider Navigation Arrows */
+  .slider-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(221, 216, 206, 0.8);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    color: #0e0f0f;
+  }
+
+  .slider-arrow:hover {
+    background: #ffffff;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .slider-arrow.prev {
+    left: 16px;
+  }
+
+  .slider-arrow.next {
+    right: 16px;
+  }
+
+  /* Hide arrows on mobile */
+  @media (max-width: 768px) {
+    .slider-arrow {
+      display: none;
+    }
+  }
+
+  .main-image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    background: #f6f3ed;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .gallery-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: #0e0f0f;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    z-index: 2;
+  }
+  .btn-wishlist {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ddd8ce;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #444;
+    cursor: pointer;
+    font-size: 15px;
+    z-index: 2;
+    transition: all 0.2s;
+  }
+  .btn-wishlist:hover {
+    background: #fff;
+    color: #a82424;
+    transform: scale(1.05);
+  }
+  .main-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.2s ease;
+  }
+  .thumbnails {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .thumbnails::-webkit-scrollbar {
+    display: none;
+  }
+  .thumbnail {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    border: 1px solid #ddd8ce;
+    border-radius: 3px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f6f3ed;
+  }
+  .thumbnail:hover {
+    border-color: #747878;
+  }
+  .thumbnail.active {
+    border-color: #0e0f0f;
+    border-width: 2px;
+  }
+  .thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* =========================================================
+     3. 产品主信息区 (Info Header)
+     ========================================================= */
+  .product-info {
+    display: flex;
+    flex-direction: column;
+    padding-top: 4px;
+    gap: 22px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .product-header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd8ce;
+    min-width: 0;
+  }
+  .product-title {
+    font-size: 32px;
+    font-weight: 500;
+    font-family: 'Bodoni Moda', Georgia, serif;
+    color: #0e0f0f;
+    line-height: 1.25;
+    margin: 0;
+    word-break: break-word;
+  }
+  .price-rating-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .price-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .current-price {
+    font-size: 34px;
+    font-weight: 400;
+    color: #0e0f0f;
+    font-family: 'Bodoni Moda', Georgia, serif;
+  }
+  .current-price .dollar {
+    font-size: 26px;
+    margin-right: 2px;
+  }
+  .original-price {
+    font-size: 16px;
+    color: #8c8c8c;
+    text-decoration: line-through;
+  }
+  .sale-badge {
+    background: #f7f4ee;
+    border: 1px solid rgba(163, 130, 76, 0.6);
+    color: #725b29;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+  .rating-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .star-icon {
+    color: #725b29;
+    font-size: 13px;
+  }
+  .rating-score {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0e0f0f;
+  }
+  .rating-count {
+    font-size: 12px;
+    color: #747878;
+  }
+
+  /* =========================================================
+     4. 批发阶梯价格表 (Wholesale Table)
+     ========================================================= */
+  .wholesale-table {
+    background: #fbf9f5;
+    border: 1px solid #e2ddd3;
+    border-radius: 4px;
+    padding: 18px 20px;
+    width: 100%;
+  }
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-left i {
+    color: #725b29;
+    font-size: 14px;
+  }
+  .header-left span {
+    font-size: 12.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #0e0f0f;
+  }
+  .header-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #725b29;
+  }
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .price-tier {
+    background: #fff;
+    border: 1px solid #e0dad0;
+    border-radius: 3px;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 3px;
+    min-width: 0;
+  }
+  .price-tier.best {
+    background: #fdf6e9;
+    border-color: #d1a85f;
+  }
+  .tier-qty {
+    font-size: 10px;
+    font-weight: 600;
+    color: #6d6a64;
+    text-transform: uppercase;
+  }
+  .tier-price {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0e0f0f;
+  }
+  .tier-label, .tier-save, .tier-badge {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .tier-label {
+    color: #8c8c8c;
+  }
+  .tier-save {
+    color: #16a34a;
+  }
+  .tier-badge {
+    color: #8c631a;
+  }
+  .auto-apply {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: #666;
+    line-height: 1.4;
+  }
+  .auto-apply i {
+    color: #16a34a;
+    font-size: 13px;
+  }
+
+  /* 描述文案与标签 */
+  .product-description {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: #4a4d4d;
+    margin: 0;
+    word-break: break-word;
+  }
+  .feature-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .feature-badges .badge {
+    background: #fbf9f5;
+    border: 1px solid #ddd8ce;
+    color: #5c5f5f;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    padding: 5px 10px;
+    border-radius: 2px;
+  }
+
+  /* =========================================================
+     Product Variants Selection
+     ========================================================= */
+  .variants-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px 0;
+    border-bottom: 1px solid #e5dfd5;
+    width: 100%;
+  }
+
+  .variant-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .variant-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .variant-label .label-text {
+    color: #5c5f5f;
+    font-weight: 600;
+  }
+
+  .variant-label .selected-value {
+    color: #0e0f0f;
+    font-weight: 600;
+  }
+
+  .variant-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .variant-option {
+    min-width: 60px;
+    height: 40px;
+    padding: 0 16px;
+    background: #ffffff;
+    border: 1.5px solid #ddd8ce;
+    border-radius: 3px;
+    color: #5c5f5f;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .variant-option:hover {
+    border-color: #0e0f0f;
+    background: #fbf9f5;
+  }
+
+  .variant-option.active {
+    border-color: #0e0f0f;
+    background: #0e0f0f;
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  .variant-option:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f5f5f5;
+    border-color: #e5e5e5;
+    position: relative;
+  }
+
+  .variant-option:disabled:hover {
+    border-color: #e5e5e5;
+    background: #f5f5f5;
+  }
+
+  .variant-option.out-of-stock {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f5f5f5;
+    border-color: #e5e5e5;
+    text-decoration: line-through;
+    color: #999;
+  }
+
+  .variant-option.out-of-stock:hover {
+    border-color: #e5e5e5;
+    background: #f5f5f5;
+  }
+
+  /* =========================================================
+     5. 核心操作区：数量与购买按钮（重点优化）
+     ========================================================= */
+  .actions-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid #ddd8ce;
+    width: 100%;
+  }
+
+  /* 数量行：两端对齐，轻巧极简 */
+  .quantity-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .qty-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #666;
+  }
+  .quantity-selector {
+    display: flex;
+    align-items: center;
+    border: 1px solid #dcd7ce;
+    background: #fbf9f5;
+    height: 32px;
+    width: 96px;
+    border-radius: 2px;
+  }
+  .quantity-selector button {
+    width: 28px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: #444;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0;
+  }
+  .quantity-selector input {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111;
+    padding: 0;
+  }
+  .quantity-selector input:focus {
+    outline: none;
+  }
+
+  /* 按钮组：强制横向左右并排平分 */
+  .button-group {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+  .btn-add-cart,
+  .btn-buy-now {
+    flex: 1 1 0% !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase !important;
+    border-radius: 2px !important;
+    cursor: pointer !important;
+    padding: 0 8px !important;
+    white-space: nowrap !important;
+    transition: all 0.2s ease !important;
+  }
+  /* 左边：黑底白字 */
+  .btn-add-cart {
+    background: #0e0f0f !important;
+    border: 1px solid #0e0f0f !important;
+    color: #ffffff !important;
+  }
+  .btn-add-cart:hover,
+  .btn-add-cart:active {
+    background: #2b2b2b !important;
+  }
+  /* 右边：香槟轻奢浅米金底 */
+  .btn-buy-now {
+    background: #eee8dc !important;
+    border: 1px solid #ded7ca !important;
+    color: #111111 !important;
+  }
+  .btn-buy-now:hover,
+  .btn-buy-now:active {
+    background: #e4dccf !important;
+  }
+
+  /* 批发全宽线框按钮 */
+  .btn-wholesale {
+    width: 100% !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: 1px solid #0e0f0f !important;
+    color: #0e0f0f !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase !important;
+    border-radius: 2px !important;
+    cursor: pointer !important;
+    padding: 0 12px !important;
+    white-space: nowrap !important;
+    transition: all 0.2s ease !important;
+  }
+  .btn-wholesale:hover,
+  .btn-wholesale:active {
+    background: #fbf9f5 !important;
+  }
+
+  /* =========================================================
+     6. 会员优惠券与赠品栏
+     ========================================================= */
+  .offers-card {
+    background: #fbf9f5;
+    border: 1px solid #e2ddd3;
+    border-radius: 4px;
+    padding: 16px 18px;
+    width: 100%;
+  }
+  .offers-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .offers-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .offer-item {
+    background: #fff;
+    border: 1px solid #e2ddd3;
+    border-radius: 3px;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .offer-amount {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111;
+  }
+  .offer-desc {
+    font-size: 11px;
+    color: #777;
+    line-height: 1.35;
+    margin: 0;
+  }
+  .offer-btn {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    color: #0e0f0f;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0;
+    margin-top: 4px;
+  }
+  .offer-btn:hover {
+    color: #725b29;
+  }
+
+  /* 赠品横条 */
+  .gift-carousel {
+    background: #fbf9f5;
+    border: 1px solid #e2ddd3;
+    border-radius: 4px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+  .carousel-btn {
+    display: none;
+  }
+  .gift-content {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+  }
+  .gift-image {
+    width: 44px;
+    height: 44px;
+    background: #fff;
+    border: 1px solid #ddd8ce;
+    border-radius: 3px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .gift-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #725b29;
+  }
+  .gift-info {
+    min-width: 0;
+    flex: 1;
+  }
+  .gift-info h4 {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #1c1c18;
+    line-height: 1.3;
+    margin: 0 0 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gift-price-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .gift-price {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #0e0f0f;
+  }
+  .gift-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #16a34a;
+    background: #f0fdf4;
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+  .gift-actions {
+    flex-shrink: 0;
+  }
+  .btn-add-gift {
+    padding: 8px 12px;
+    background: #0e0f0f;
+    border: none;
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  /* 安全支付与保障徽章 */
+  .checkout-badges {
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd8ce;
+    width: 100%;
+  }
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .section-divider::before,
+  .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: repeating-linear-gradient(to right, #ddd8ce 0, #ddd8ce 4px, transparent 4px, transparent 8px);
+  }
+  .section-divider span {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #8c8c8c;
+    white-space: nowrap;
+  }
+  .payment-methods {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  .payment-badge {
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .payment-badge.visa { background: #1A1F71; }
+  .payment-badge.mc { background: #EB001B; }
+  .payment-badge.amex { background: #006FCF; }
+  .payment-badge.discover { background: #FF6000; }
+  .payment-badge.paypal { background: #003087; }
+  .payment-badge.apple { background: #000; }
+
+  /* 三大服务保障条 */
+  .trust-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid #ddd8ce;
+    width: 100%;
+    gap: 8px;
+  }
+  .trust-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+  .trust-item i {
+    font-size: 16px;
+    color: #725b29;
+    flex-shrink: 0;
+  }
+  .trust-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .trust-text strong {
+    font-size: 11px;
+    color: #111;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .trust-text span {
+    font-size: 9.5px;
+    color: #777;
+    white-space: nowrap;
+  }
+
+  /* 手风琴面板 */
+  .accordions {
+    border-top: none;
+    margin-bottom: 24px;
+    width: 100%;
+  }
+  .accordion-item {
+    border-bottom: 1px solid #ddd8ce;
+  }
+  .accordion-header {
+    width: 100%;
+    padding: 14px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+  }
+  .accordion-header span {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #111;
+  }
+  .accordion-header i {
+    font-size: 12px;
+    color: #747878;
+    transition: transform 0.3s;
+  }
+  .accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+  }
+  .accordion-content.active {
+    max-height: 800px;
+  }
+  .accordion-body {
+    padding-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #555;
+    word-break: break-word;
+  }
+  .accordion-body p { margin: 0 0 6px; }
+  .accordion-body ul { padding-left: 18px; margin: 6px 0; }
+  .accordion-body li { margin-bottom: 3px; }
+
+  /* 推荐商品区 */
+  .related-products {
+    border-top: 1px solid #ddd8ce;
+    padding-top: 40px;
+    margin-bottom: 60px;
+    width: 100%;
+    text-align: center;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 500;
+    font-family: 'Bodoni Moda', Georgia, serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #0e0f0f;
+    margin: 0 0 4px;
+  }
+  .section-subtitle {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #888;
+    margin: 0 0 24px;
+    text-transform: uppercase;
+  }
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    width: 100%;
+    text-align: left;
+  }
+  .product-card {
+    border: 1px solid #ddd8ce;
+    background: #fbf9f5;
+    transition: all 0.3s;
+    cursor: pointer;
+    min-width: 0;
+  }
+  .product-card:hover {
+    border-color: #c9a66a;
+  }
+  .product-image {
+    aspect-ratio: 1;
+    background: #f0eee8;
+    overflow: hidden;
+    position: relative;
+  }
+  .product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .discount-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: #0e0f0f;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    text-transform: uppercase;
+  }
+  .product-details {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .product-details h3 {
+    font-size: 13px;
+    font-weight: 500;
+    color: #0e0f0f;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .prices {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .prices .price {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0e0f0f;
+  }
+  .prices .original {
+    font-size: 12px;
+    color: #8c8c8c;
+    text-decoration: line-through;
+  }
+
+  /* 评价区 */
+  .customer-reviews {
+    border-top: 1px solid #ddd8ce;
+    padding-top: 40px;
+    width: 100%;
+  }
+  .reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .reviews-header-left .section-title {
+    text-align: left;
+    margin: 0 0 2px;
+  }
+  .reviews-sub {
+    font-size: 9.5px;
+    letter-spacing: 1.5px;
+    color: #888;
+    text-transform: uppercase;
+    display: block;
+  }
+  .rating-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .stars {
+    display: flex;
+    gap: 2px;
+    color: #c9a66a;
+    font-size: 12px;
+  }
+  .rating-text {
+    font-size: 12.5px;
+    color: #747878;
+  }
+  .reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+    width: 100%;
+  }
+  .review-card {
+    padding: 16px 18px;
+    border: 1px solid #ddd8ce;
+    background: #fbf9f5;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .reviewer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .reviewer-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0e0f0f;
+  }
+  .verified-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #747878;
+  }
+  .verified-badge i {
+    color: #16a34a;
+    font-size: 9px;
+  }
+  .review-stars {
+    display: flex;
+    gap: 2px;
+    color: #c9a66a;
+    font-size: 10px;
+  }
+  .review-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0e0f0f;
+    margin: 0;
+  }
+  .review-text {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #555;
+    margin: 0;
+    word-break: break-word;
+  }
+  .reviews-footer {
+    text-align: center;
+  }
+  .btn-read-all {
+    background: transparent;
+    border: 1px solid #0e0f0f;
+    color: #0e0f0f;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 11px 28px;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+
+  .mobile-sticky-action-bar {
+    display: none;
+  }
+
+  /* =========================================================
+     7. 移动端断点专属精准适配 (参考图 screen.jpg 像素级对齐)
+     ========================================================= */
+  @media (max-width: 1024px) {
+    .product-hero {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 32px;
+      margin-bottom: 40px;
+    }
+  }
+
+  @media (max-width: 768px) {
+     :root {
+      --container-w: 100%;
+    }
+    .product-detail-page {
+      box-sizing: border-box;
+      padding: 12px 0 80px;
+    }
+    .product-container {
+      box-sizing: border-box;
+      padding: 0 14px;
+    }
+    .breadcrumb {
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .product-title {
+      font-size: 24px;
+      line-height: 1.25;
+    }
+    .current-price {
+      font-size: 26px;
+    }
+    .current-price .dollar {
+      font-size: 20px;
+    }
+
+    /* 缩略图横排紧凑 */
+    .thumbnails {
+      gap: 8px;
+    }
+    .thumbnail {
+      width: 54px;
+      height: 54px;
+    }
+
+    /* 变体选择器移动端优化 */
+    .variants-section {
+      gap: 16px;
+      padding: 16px 0;
+    }
+
+    .variant-group {
+      gap: 10px;
+    }
+
+    .variant-label {
+      font-size: 13px;
+    }
+
+    .variant-options {
+      gap: 8px;
+    }
+
+    .variant-option {
+      min-width: 52px;
+      height: 36px;
+      padding: 0 12px;
+      font-size: 13px;
+      border-width: 1.5px;
+    }
+
+    /* 批发阶梯价横向 4 等分紧凑排布 */
+    .wholesale-table {
+      padding: 12px;
+    }
+    .pricing-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 5px;
+    }
+    .price-tier {
+      padding: 8px 3px;
+      gap: 2px;
+    }
+    .tier-qty {
+      font-size: 9px;
+    }
+    .tier-price {
+      font-size: 14px;
+    }
+    .tier-label, .tier-save, .tier-badge {
+      font-size: 8.5px;
+    }
+
+    /* 核心：移动端按钮左右等分双列横排（彻底消除细扁上下条问题） */
+    .button-group {
+      display: flex !important;
+      flex-direction: row !important;
+      gap: 8px !important;
+      width: 100% !important;
+    }
+    .btn-add-cart,
+    .btn-buy-now {
+      flex: 1 1 0% !important;
+      height: 44px !important;
+      min-height: 44px !important;
+      font-size: 11px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      border-radius: 2px !important;
+    }
+    .btn-wholesale {
+      height: 42px !important;
+      min-height: 42px !important;
+      font-size: 10.5px !important;
+    }
+
+    /* 会员优惠券双列卡片 */
+    .offers-card {
+      padding: 12px;
+    }
+    .offers-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .offer-item {
+      padding: 10px;
+    }
+    .offer-amount {
+      font-size: 17px;
+    }
+
+    /* 赠品栏紧凑单行 */
+    .gift-carousel {
+      padding: 10px 12px;
+    }
+    .gift-image {
+      width: 40px;
+      height: 40px;
+    }
+    .btn-add-gift {
+      padding: 6px 10px;
+      font-size: 9px;
+    }
+
+    /* 信任保障条横排自适应 */
+    .trust-strip {
+      padding: 14px 0;
+      gap: 4px;
+    }
+    .trust-item {
+      gap: 6px;
+    }
+    .trust-item i {
+      font-size: 14px;
+    }
+    .trust-text strong {
+      font-size: 9.5px;
+    }
+    .trust-text span {
+      font-size: 8px;
+    }
+
+    /* 推荐商品与评价双列卡片流 */
+    .products-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .reviews-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+    }
+    .reviews-header {
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    /* 底部移动端悬浮操作条 */
+    .mobile-sticky-action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: 60px;
+      background: #ffffff;
+      border-top: 1px solid #e2ddd3;
+      padding: 8px 14px;
+      z-index: 80;
+      box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.06);
+      gap: 10px;
+      box-sizing: border-box;
+    }
+    .sticky-price-block {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sticky-price {
+      font-family: 'Bodoni Moda', Georgia, serif;
+      font-size: 19px;
+      font-weight: 600;
+      color: #0e0f0f;
+      line-height: 1;
+    }
+    .sticky-original {
+      font-size: 11px;
+      color: #888;
+      text-decoration: line-through;
+    }
+    .sticky-btn-group {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+    .sticky-btn-cart,
+    .sticky-btn-buy {
+      flex: 1;
+      height: 42px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border-radius: 2px;
+      cursor: pointer;
+      white-space: nowrap;
+      padding: 0;
+      border: none;
+    }
+    .sticky-btn-cart {
+      background: #0e0f0f;
+      border: 1px solid #0e0f0f;
+      color: #fff;
+    }
+    .sticky-btn-buy {
+      background: #eee8dc;
+      border: 1px solid #d9d2c5;
+      color: #111;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .pricing-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .trust-text span {
+      display: none;
+    }
+  }
+</style>
+
+<script is:inline define:vars={{ productId: product.id, productSlug: product.slug }}>
+  // 产品数据
+  window.productId = productId;
+  window.productSlug = productSlug;
+
+  // 图片滑动器状态
+  let currentSlide = 0;
+  let totalSlides = 0;
+  let autoPlayTimer = null;
+  let isAutoPlaying = true;
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  // 初始化滑动器
+  function initSlider() {
+    const sliderContainer = document.getElementById('sliderContainer');
+    if (!sliderContainer) return;
+
+    const slides = sliderContainer.querySelectorAll('.slider-item');
+    totalSlides = slides.length;
+
+    if (totalSlides <= 1) return; // 只有一张图片时不需要滑动
+
+    // 添加触摸事件
+    sliderContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+    sliderContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    // 添加鼠标拖动事件
+    let isDragging = false;
+    let startX = 0;
+
+    sliderContainer.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      sliderContainer.style.cursor = 'grabbing';
+      pauseAutoPlay();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+    });
+
+    document.addEventListener('mouseup', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      sliderContainer.style.cursor = 'grab';
+
+      const diffX = e.clientX - startX;
+      if (Math.abs(diffX) > 50) {
+        if (diffX > 0) {
+          prevImage();
+        } else {
+          nextImage();
+        }
+      }
+    });
+
+    // 鼠标悬停时暂停自动播放
+    sliderContainer.addEventListener('mouseenter', pauseAutoPlay);
+    sliderContainer.addEventListener('mouseleave', resumeAutoPlay);
+
+    // 开始自动播放
+    startAutoPlay();
+  }
+
+  // 跳转到指定幻灯片
+  function goToSlide(index) {
+    if (index < 0 || index >= totalSlides) return;
+
+    currentSlide = index;
+    updateSlider();
+    updateThumbnails();
+    pauseAutoPlay();
+
+    // 3秒后恢复自动播放
+    setTimeout(resumeAutoPlay, 3000);
+  }
+
+  // 上一张
+  function prevImage() {
+    currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+    updateSlider();
+    updateThumbnails();
+    pauseAutoPlay();
+    setTimeout(resumeAutoPlay, 3000);
+  }
+
+  // 下一张
+  function nextImage() {
+    currentSlide = (currentSlide + 1) % totalSlides;
+    updateSlider();
+    updateThumbnails();
+    pauseAutoPlay();
+    setTimeout(resumeAutoPlay, 3000);
+  }
+
+  // 更新滑动器位置
+  function updateSlider() {
+    const sliderContainer = document.getElementById('sliderContainer');
+    if (!sliderContainer) return;
+
+    sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+
+    // 更新计数器
+    const counter = document.getElementById('currentImageIndex');
+    if (counter) {
+      counter.textContent = currentSlide + 1;
+    }
+  }
+
+  // 更新缩略图激活状态
+  function updateThumbnails() {
+    document.querySelectorAll('.thumbnail').forEach((thumb, index) => {
+      if (index === currentSlide) {
+        thumb.classList.add('active');
+      } else {
+        thumb.classList.remove('active');
+      }
+    });
+  }
+
+  // 触摸开始
+  function handleTouchStart(e) {
+    touchStartX = e.changedTouches[0].screenX;
+    pauseAutoPlay();
+  }
+
+  // 触摸结束
+  function handleTouchEnd(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }
+
+  // 处理滑动手势
+  function handleSwipe() {
+    const swipeThreshold = 50;
+    const diff = touchStartX - touchEndX;
+
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        // 向左滑动 - 下一张
+        nextImage();
+      } else {
+        // 向右滑动 - 上一张
+        prevImage();
+      }
+    } else {
+      // 滑动距离不够，恢复自动播放
+      setTimeout(resumeAutoPlay, 3000);
+    }
+  }
+
+  // 开始自动播放
+  function startAutoPlay() {
+    if (totalSlides <= 1) return;
+
+    autoPlayTimer = setInterval(() => {
+      if (isAutoPlaying) {
+        nextImage();
+      }
+    }, 4000); // 每4秒切换一次
+  }
+
+  // 暂停自动播放
+  function pauseAutoPlay() {
+    isAutoPlaying = false;
+    if (autoPlayTimer) {
+      clearInterval(autoPlayTimer);
+      autoPlayTimer = null;
+    }
+  }
+
+  // 恢复自动播放
+  function resumeAutoPlay() {
+    if (!isAutoPlaying && totalSlides > 1) {
+      isAutoPlaying = true;
+      startAutoPlay();
+    }
+  }
+
+  // 修改购买数量
+  function changeQty(delta) {
+    const input = document.getElementById('qtyInput');
+    if (input) {
+      const currentValue = parseInt(input.value, 10) || 1;
+      const newValue = Math.max(1, currentValue + delta);
+      input.value = newValue;
+    }
+  }
+
+  // ========== 购物车功能 ==========
+
+  // 获取当前产品信息
+  function getCurrentProductData() {
+    const quantity = parseInt(document.getElementById('qtyInput')?.value || 1);
+    const selectedAttrs = getSelectedAttributes();
+    const matchingVariation = findMatchingVariation(selectedAttrs);
+
+    // 获取产品基本信息
+    const productName = document.querySelector('.product-title')?.textContent || '';
+    const productImage = document.querySelector('.slider-item img')?.src ||
+                        document.querySelector('.main-image img')?.src || '';
+
+    let price = document.querySelector('.current-price')?.textContent.replace(/[^0-9.]/g, '') || '0';
+    let variationId = null;
+    let stockStatus = 'instock';
+
+    // 如果找到匹配的变体，使用变体数据
+    if (matchingVariation) {
+      price = matchingVariation.price;
+      variationId = matchingVariation.id;
+      stockStatus = matchingVariation.stock_status;
+    }
+
+    return {
+      id: variationId || window.productId, // 使用变体ID或产品ID
+      productId: window.productId,
+      variationId: variationId,
+      name: productName,
+      price: price,
+      quantity: quantity,
+      image: productImage,
+      selectedVariants: selectedAttrs,
+      stockStatus: stockStatus,
+      slug: window.productSlug
+    };
+  }
+
+  // 添加到购物车
+  function addToCartHandler() {
+    const productData = getCurrentProductData();
+
+    // 检查库存
+    if (productData.stockStatus !== 'instock') {
+      alert('Sorry, this product is out of stock.');
+      return;
+    }
+
+    // 获取现有购物车
+    let cart = [];
+    try {
+      const cartData = localStorage.getItem('ebbelle_cart');
+      cart = cartData ? JSON.parse(cartData) : [];
+    } catch (e) {
+      console.error('Failed to get cart:', e);
+    }
+
+    // 查找是否已存在相同的商品
+    const existingIndex = cart.findIndex(item =>
+      item.productId === productData.productId &&
+      item.variationId === productData.variationId &&
+      JSON.stringify(item.selectedVariants) === JSON.stringify(productData.selectedVariants)
+    );
+
+    if (existingIndex > -1) {
+      // 如果已存在，增加数量
+      cart[existingIndex].quantity += productData.quantity;
+    } else {
+      // 如果不存在，添加新商品
+      cart.push({
+        ...productData,
+        cartItemId: Date.now() + Math.random()
+      });
+    }
+
+    // 保存购物车
+    try {
+      localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
+
+      // 触发购物车更新事件
+      window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+
+      // 打开购物车抽屉
+      if (typeof window.toggleCart === 'function') {
+        window.toggleCart(true);
+      }
+
+      console.log('Added to cart:', productData);
+    } catch (e) {
+      console.error('Failed to save cart:', e);
+      alert('Failed to add to cart. Please try again.');
+    }
+  }
+
+  // 立即购买
+  function buyNowHandler() {
+    const productData = getCurrentProductData();
+
+    // 检查库存
+    if (productData.stockStatus !== 'instock') {
+      alert('Sorry, this product is out of stock.');
+      return;
+    }
+
+    // 添加到购物车
+    addToCartHandler();
+
+    // 跳转到结账页面
+    setTimeout(() => {
+      window.location.href = '/checkout';
+    }, 300);
+  }
+
+  // 绑定按钮事件
+  function bindCartButtons() {
+    // 绑定所有"Add to Cart"按钮
+    document.querySelectorAll('.btn-add-cart, .sticky-btn-cart').forEach(btn => {
+      btn.addEventListener('click', addToCartHandler);
+    });
+
+    // 绑定所有"Buy Now"按钮
+    document.querySelectorAll('.btn-buy-now, .sticky-btn-buy').forEach(btn => {
+      btn.addEventListener('click', buyNowHandler);
+    });
+  }
+
+  // 手风琴折叠展开
+  function toggleAccordion(id) {
+    const content = document.getElementById(`content-${id}`);
+    const icon = document.getElementById(`icon-${id}`);
+
+    if (content) {
+      const isActive = content.classList.contains('active');
+
+      // 关闭同组其他手风琴
+      document.querySelectorAll('.accordion-content').forEach(acc => {
+        acc.classList.remove('active');
+      });
+      document.querySelectorAll('.accordion-header i').forEach(ic => {
+        ic.classList.remove('fa-chevron-up');
+        ic.classList.add('fa-chevron-down');
+      });
+
+      // 切换当前手风琴状态
+      if (!isActive) {
+        content.classList.add('active');
+        if (icon) {
+          icon.classList.remove('fa-chevron-down');
+          icon.classList.add('fa-chevron-up');
+        }
+      }
+    }
+  }
+
+  // 获取变体数据
+  let variationsData = [];
+  try {
+    const dataElement = document.getElementById('variationsData');
+    if (dataElement) {
+      variationsData = JSON.parse(dataElement.textContent);
+    }
+  } catch (e) {
+    console.error('Failed to parse variations data:', e);
+  }
+
+  // 获取当前选中的所有属性
+  function getSelectedAttributes() {
+    const selected = {};
+    document.querySelectorAll('.variant-option.active').forEach(btn => {
+      const attribute = btn.getAttribute('data-attribute');
+      const value = btn.getAttribute('data-value');
+      if (attribute && value) {
+        selected[attribute] = value;
+      }
+    });
+    return selected;
+  }
+
+  // 根据选中的属性查找匹配的变体
+  function findMatchingVariation(selectedAttrs) {
+    if (!variationsData || variationsData.length === 0) return null;
+
+    return variationsData.find(variation => {
+      if (!variation.attributes || variation.attributes.length === 0) return false;
+
+      // 检查所有属性是否匹配
+      return variation.attributes.every(attr => {
+        const attrSlug = attr.name.toLowerCase().replace(/\s+/g, '-');
+        return selectedAttrs[attrSlug] &&
+               selectedAttrs[attrSlug].toLowerCase() === attr.option.toLowerCase();
+      });
+    });
+  }
+
+  // 更新可用选项（禁用缺货的选项）
+  function updateAvailableOptions() {
+    if (!variationsData || variationsData.length === 0) return;
+
+    const selectedAttrs = getSelectedAttributes();
+
+    // 检查每个属性的每个选项
+    document.querySelectorAll('.variant-group').forEach(group => {
+      const buttons = group.querySelectorAll('.variant-option');
+
+      buttons.forEach(btn => {
+        const attribute = btn.getAttribute('data-attribute');
+        const value = btn.getAttribute('data-value');
+
+        // 创建临时选择来测试这个选项
+        const testAttrs = { ...selectedAttrs, [attribute]: value };
+
+        // 查找是否有匹配且有库存的变体
+        const hasStockVariation = variationsData.some(variation => {
+          if (!variation.attributes || variation.attributes.length === 0) return false;
+
+          const matches = variation.attributes.every(attr => {
+            const attrSlug = attr.name.toLowerCase().replace(/\s+/g, '-');
+            return testAttrs[attrSlug] &&
+                   testAttrs[attrSlug].toLowerCase() === attr.option.toLowerCase();
+          });
+
+          return matches && variation.stock_status === 'instock';
+        });
+
+        // 如果没有有库存的变体，禁用这个选项
+        if (!hasStockVariation) {
+          btn.disabled = true;
+          btn.classList.add('out-of-stock');
+        } else {
+          btn.disabled = false;
+          btn.classList.remove('out-of-stock');
+        }
+      });
+    });
+  }
+
+  // 更新价格和库存状态
+  function updatePriceAndStock(variation) {
+    if (!variation) return;
+
+    // 更新价格
+    const currentPrice = document.querySelector('.current-price');
+    const originalPrice = document.querySelector('.original-price');
+    const stickyPrice = document.querySelector('.sticky-price');
+    const stickyOriginal = document.querySelector('.sticky-original');
+
+    if (variation.price && currentPrice) {
+      const priceText = currentPrice.querySelector('.dollar') ?
+        `<span class="dollar">$</span>${variation.price}` :
+        `$${variation.price}`;
+      currentPrice.innerHTML = priceText;
+    }
+
+    if (stickyPrice) {
+      stickyPrice.textContent = `$${variation.price}`;
+    }
+
+    // 更新库存状态
+    const stockStatus = document.querySelector('.info-item:has(.fa-circle-check) span');
+    if (stockStatus) {
+      stockStatus.textContent = variation.stock_status === 'instock' ? 'In Stock' : 'Out of Stock';
+    }
+
+    // 禁用/启用购买按钮
+    const addToCartBtns = document.querySelectorAll('.btn-add-cart, .sticky-btn-cart');
+    const buyNowBtns = document.querySelectorAll('.btn-buy-now, .sticky-btn-buy');
+
+    if (variation.stock_status !== 'instock') {
+      addToCartBtns.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+      });
+      buyNowBtns.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+      });
+    } else {
+      addToCartBtns.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      });
+      buyNowBtns.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      });
+    }
+  }
+
+  // 变体选择
+  function selectVariant(attribute, value, element) {
+    // 更新选中状态
+    const buttons = element.parentElement.querySelectorAll('.variant-option');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    element.classList.add('active');
+
+    // 更新显示的选中值
+    const selectedValueSpan = document.getElementById(`selected-${attribute}`);
+    if (selectedValueSpan) {
+      selectedValueSpan.textContent = value;
+    }
+
+    // 获取当前选中的所有属性
+    const selectedAttrs = getSelectedAttributes();
+
+    // 查找匹配的变体
+    const matchingVariation = findMatchingVariation(selectedAttrs);
+
+    if (matchingVariation) {
+      console.log('Found matching variation:', matchingVariation);
+      updatePriceAndStock(matchingVariation);
+    }
+
+    // 更新可用选项
+    updateAvailableOptions();
+  }
+
+  // 暴露全局函数
+  window.goToSlide = goToSlide;
+  window.prevImage = prevImage;
+  window.nextImage = nextImage;
+  window.changeQty = changeQty;
+  window.selectVariant = selectVariant;
+  window.toggleAccordion = toggleAccordion;
+
+  // 初始化变体选择器
+  function initVariants() {
+    if (variationsData && variationsData.length > 0) {
+      // 初始化时更新可用选项
+      updateAvailableOptions();
+
+      // 检查默认选中的变体
+      const selectedAttrs = getSelectedAttributes();
+      const matchingVariation = findMatchingVariation(selectedAttrs);
+      if (matchingVariation) {
+        updatePriceAndStock(matchingVariation);
+      }
+    }
+  }
+
+  // 页面加载完成后初始化
+  function initAll() {
+    initSlider();
+    initVariants();
+    bindCartButtons();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    initAll();
+  }
+</script>
