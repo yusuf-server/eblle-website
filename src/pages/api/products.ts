@@ -37,25 +37,31 @@ export const POST: APIRoute = async ({ request }) => {
       if (typeof body.category === 'string' && isNaN(Number(body.category))) {
         console.log('分类参数是 slug，需要查询 ID:', body.category);
 
-        const WC_STORE_URL = import.meta.env.WC_STORE_URL;
+        const WC_STORE_URL = (import.meta.env.WC_STORE_URL || '').replace(/\/$/, '');
         const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
         const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
 
         // 查询分类 ID
         const categoryUrl = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products/categories`);
-        categoryUrl.searchParams.append('consumer_key', WC_CONSUMER_KEY);
-        categoryUrl.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
         categoryUrl.searchParams.append('slug', body.category);
 
+        // 跨环境 Base64 编码
+        const authString = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
+        const base64Auth = typeof Buffer !== 'undefined'
+          ? Buffer.from(authString).toString('base64')
+          : btoa(authString);
+
+        // 保持最纯粹的请求头
         const headers: Record<string, string> = {
-          'Accept': 'application/json, text/plain, */*',
-          'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Authorization': `Basic ${base64Auth}`,
+          'Accept': 'application/json',
+          'User-Agent': 'curl/7.88.1'
         };
 
-        const categoryResponse = await fetch(categoryUrl.toString(), { headers });
+        const categoryResponse = await fetch(categoryUrl.toString(), {
+          method: 'GET',
+          headers
+        });
 
         if (categoryResponse.ok) {
           const categories = await categoryResponse.json();

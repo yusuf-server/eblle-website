@@ -30,27 +30,33 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log('获取产品变体，产品ID:', productId);
 
-    const WC_STORE_URL = import.meta.env.WC_STORE_URL;
+    const WC_STORE_URL = (import.meta.env.WC_STORE_URL || '').replace(/\/$/, '');
     const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
     const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
 
     // 获取所有变体
     const apiUrl = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products/${productId}/variations`);
-    apiUrl.searchParams.append('consumer_key', WC_CONSUMER_KEY);
-    apiUrl.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
     apiUrl.searchParams.append('per_page', '100');
 
+    // 跨环境 Base64 编码
+    const authString = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
+    const base64Auth = typeof Buffer !== 'undefined'
+      ? Buffer.from(authString).toString('base64')
+      : btoa(authString);
+
+    // 保持最纯粹的请求头
     const headers: Record<string, string> = {
-      'Accept': 'application/json, text/plain, */*',
-      'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
+      'Authorization': `Basic ${base64Auth}`,
+      'Accept': 'application/json',
+      'User-Agent': 'curl/7.88.1'
     };
 
     console.log('请求WooCommerce API:', apiUrl.toString());
 
-    const response = await fetch(apiUrl.toString(), { headers });
+    const response = await fetch(apiUrl.toString(), {
+      method: 'GET',
+      headers
+    });
 
     console.log('WooCommerce响应状态:', response.status);
 

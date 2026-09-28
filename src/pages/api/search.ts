@@ -29,28 +29,34 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    const WC_STORE_URL = import.meta.env.WC_STORE_URL;
+    const WC_STORE_URL = (import.meta.env.WC_STORE_URL || '').replace(/\/$/, '');
     const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
     const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
 
+    // 跨环境 Base64 编码
+    const authString = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
+    const base64Auth = typeof Buffer !== 'undefined'
+      ? Buffer.from(authString).toString('base64')
+      : btoa(authString);
+
+    // 保持最纯粹的请求头
+    const headers: Record<string, string> = {
+      'Authorization': `Basic ${base64Auth}`,
+      'Accept': 'application/json',
+      'User-Agent': 'curl/7.88.1'
+    };
+
     // 1. 搜索商品
     const productsUrl = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products`);
-    productsUrl.searchParams.append('consumer_key', WC_CONSUMER_KEY);
-    productsUrl.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
     productsUrl.searchParams.append('search', query);
     productsUrl.searchParams.append('per_page', limit.toString());
     productsUrl.searchParams.append('status', 'publish');
     productsUrl.searchParams.append('stock_status', 'instock');
 
-    const headers: Record<string, string> = {
-      'Accept': 'application/json, text/plain, */*',
-      'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    };
-
-    const productsResponse = await fetch(productsUrl.toString(), { headers });
+    const productsResponse = await fetch(productsUrl.toString(), {
+      method: 'GET',
+      headers
+    });
 
     let products = [];
     let totalProducts = 0;
@@ -62,13 +68,14 @@ export const GET: APIRoute = async ({ url }) => {
 
     // 2. 搜索相关分类（根据搜索词匹配分类名称）
     const categoriesUrl = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products/categories`);
-    categoriesUrl.searchParams.append('consumer_key', WC_CONSUMER_KEY);
-    categoriesUrl.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
     categoriesUrl.searchParams.append('search', query);
     categoriesUrl.searchParams.append('per_page', '5');
     categoriesUrl.searchParams.append('hide_empty', 'true');
 
-    const categoriesResponse = await fetch(categoriesUrl.toString(), { headers });
+    const categoriesResponse = await fetch(categoriesUrl.toString(), {
+      method: 'GET',
+      headers
+    });
 
     let categories = [];
 
