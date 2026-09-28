@@ -7,10 +7,7 @@ import cloudflare from '@astrojs/cloudflare';
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({
-    mode: 'directory',
-    platformProxy: {
-      enabled: true
-    }
+    mode: 'directory'
   }),
   vite: {
     ssr: {
