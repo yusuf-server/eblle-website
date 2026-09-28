@@ -9,14 +9,13 @@ export const GET: APIRoute = async () => {
     const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
 
     const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products`);
-    const isHttps = url.protocol === 'https:';
-
     url.searchParams.append('per_page', '5');
 
-    console.log('Protocol:', url.protocol);
-    console.log('Is HTTPS:', isHttps);
+    // 使用 Basic Auth
+    const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
 
     const headers: Record<string, string> = {
+      'Authorization': `Basic ${auth}`,
       'Accept': 'application/json, text/plain, */*',
       'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -24,28 +23,18 @@ export const GET: APIRoute = async () => {
       'Pragma': 'no-cache'
     };
 
-    if (isHttps) {
-      url.searchParams.append('consumer_key', WC_CONSUMER_KEY);
-      url.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
-      console.log('Using URL params auth (HTTPS)');
-    } else {
-      const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
-      headers['Authorization'] = `Basic ${auth}`;
-      console.log('Using Basic Auth (HTTP)');
-    }
-
-    console.log('Requesting:', url.toString().replace(WC_CONSUMER_KEY, 'KEY').replace(WC_CONSUMER_SECRET, 'SECRET'));
+    console.log('Using Basic Auth');
+    console.log('Requesting:', url.toString());
 
     const response = await fetch(url.toString(), { headers });
 
     const responseText = await response.text();
 
     const result = {
+      authMethod: 'Basic Auth (Authorization header)',
       status: response.status,
       statusText: response.statusText,
       ok: response.ok,
-      isHttps,
-      protocol: url.protocol,
       headers: {
         'content-type': response.headers.get('content-type'),
         'x-wp-total': response.headers.get('x-wp-total'),
