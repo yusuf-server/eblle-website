@@ -1,0 +1,125 @@
+---
+/**
+ * 优化的图片组件
+ *
+ * 特性：
+ * 1. 自动懒加载（首屏除外）
+ * 2. WebP 支持（带回退）
+ * 3. 响应式 srcset
+ * 4. 占位符防止布局偏移
+ * 5. 自动解码（decoding="async"）
+ */
+
+export interface Props {
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  loading?: 'lazy' | 'eager';
+  priority?: boolean; // 是否为关键图片
+  srcset?: string;
+  webp?: string;
+  sizes?: string;
+  class?: string;
+  objectFit?: 'cover' | 'contain' | 'fill';
+}
+
+const {
+  src,
+  alt,
+  width,
+  height,
+  loading = 'lazy',
+  priority = false,
+  srcset,
+  webp,
+  sizes = '100vw',
+  class: className = '',
+  objectFit = 'cover'
+} = Astro.props;
+
+// 优先加载的图片使用 eager
+const finalLoading = priority ? 'eager' : loading;
+
+// 生成占位符（防止 CLS）
+const placeholder = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width || 400} ${height || 300}'%3E%3Crect fill='%23f5f5f5' width='${width || 400}' height='${height || 300}'/%3E%3C/svg%3E`;
+
+// 检查是否真的有 webp 或 srcset 数据
+const hasWebp = webp && webp.length > 0;
+const hasSrcset = srcset && srcset.length > 0;
+const usePicture = hasWebp || hasSrcset;
+---
+
+{usePicture ? (
+  <picture class={className}>
+    {hasWebp && (
+      <source type="image/webp" srcset={webp} sizes={sizes} />
+    )}
+    {hasSrcset && (
+      <source type="image/jpeg" srcset={srcset} sizes={sizes} />
+    )}
+    <img
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      loading={finalLoading}
+      decoding="async"
+      data-placeholder={placeholder}
+    />
+  </picture>
+) : (
+  <img
+    src={src}
+    alt={alt}
+    width={width}
+    height={height}
+    loading={finalLoading}
+    decoding="async"
+    class={className}
+    data-placeholder={placeholder}
+  />
+)}
+
+<style>
+  /* picture 表现为普通块元素，不破坏父容器布局 */
+  picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* img 继承所有样式 */
+  img {
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.3s ease;
+  }
+
+  /* 图片加载前的占位背景 */
+  img[loading="lazy"] {
+    background: #f5f5f5;
+  }
+
+  /* 图片加载完成后的淡入效果 */
+  img.loaded {
+    opacity: 1;
+  }
+</style>
+
+<script>
+  // 监听图片加载完成
+  document.addEventListener('DOMContentLoaded', () => {
+    const images = document.querySelectorAll('img[loading="lazy"]');
+
+    images.forEach((img) => {
+      if (img.complete) {
+        img.classList.add('loaded');
+      } else {
+        img.addEventListener('load', () => {
+          img.classList.add('loaded');
+        });
+      }
+    });
+  });
+</script>

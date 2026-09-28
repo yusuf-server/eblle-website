@@ -5,9 +5,11 @@ import Footer from '../components/Footer.astro';
 import CartDrawer from '../components/CartDrawer.astro';
 import AuthModal from '../components/AuthModal.astro';
 import ProductSkeleton from '../components/ProductSkeleton.astro';
+import OptimizedImage from '../components/OptimizedImage.astro';
 import { getCategories } from '../lib/woocommerce';
 import { getProductsWithPrices } from '../lib/productCache';
 import { getHomepageData, parseACFLink, parseACFImage } from '../lib/wordpress';
+import { optimizeACFImage } from '../lib/imageOptimizer';
 
 // 获取首页动态数据
 const heroData = await getHomepageData();
@@ -262,8 +264,8 @@ const staticProducts = [
 ---
 
 <Layout title="E.B.Belle - Jewelry Store">
-  <!-- 预加载关键图片 -->
-  <link rel="preload" as="image" href={mainBanner.image.url} slot="head" />
+  <!-- 预加载关键图片（优化后的版本） -->
+  <link rel="preload" as="image" href={mainBanner.image.url || mainBanner.image.src} slot="head" />
   {mobileHeroBanner.image.url && (
     <link rel="preload" as="image" href={mobileHeroBanner.image.url} slot="head" media="(max-width: 768px)" />
   )}
@@ -276,13 +278,17 @@ const staticProducts = [
       <div class="hero-grid">
         <!-- Main Large Banner -->
         <div class="hero-main-card">
-          <img
-            src={mainBanner.image.url}
-            alt={mainBanner.image.alt}
-            loading="eager"
+          <OptimizedImage
+            src={mainBanner.image.url || mainBanner.image.src}
+            alt={mainBanner.image.alt || 'Main Jewelry Collection'}
             width={mainBanner.image.width || 1200}
             height={mainBanner.image.height || 600}
-          >
+            srcset={mainBanner.image.srcset}
+            webp={mainBanner.image.webp}
+            priority={true}
+            loading="eager"
+            class="hero-banner-img"
+          />
           <div class="hero-overlay">
             <h2 class="serif-title">{mainBanner.title}</h2>
             <p>{mainBanner.description}</p>
@@ -303,13 +309,17 @@ const staticProducts = [
             class="mid-sub-card"
             target={midCard1.link.target}
           >
-            <img
-              src={midCard1.image.url}
-              alt={midCard1.image.alt}
-              loading="eager"
+            <OptimizedImage
+              src={midCard1.image.url || midCard1.image.src}
+              alt={midCard1.image.alt || 'New Collections'}
               width={midCard1.image.width || 500}
               height={midCard1.image.height || 500}
-            >
+              srcset={midCard1.image.srcset}
+              webp={midCard1.image.webp}
+              priority={true}
+              loading="eager"
+              class="mid-card-img"
+            />
             <div class="mid-card-overlay">
               <span>{midCard1.label}</span>
               <h3>{midCard1.title}</h3>
@@ -320,13 +330,17 @@ const staticProducts = [
             class="mid-sub-card"
             target={midCard2.link.target}
           >
-            <img
-              src={midCard2.image.url}
-              alt={midCard2.image.alt}
-              loading="eager"
+            <OptimizedImage
+              src={midCard2.image.url || midCard2.image.src}
+              alt={midCard2.image.alt || 'Trending Now'}
               width={midCard2.image.width || 500}
               height={midCard2.image.height || 500}
-            >
+              srcset={midCard2.image.srcset}
+              webp={midCard2.image.webp}
+              priority={true}
+              loading="eager"
+              class="mid-card-img"
+            />
             <div class="mid-card-overlay">
               <span>{midCard2.label}</span>
               <h3>{midCard2.title}</h3>
@@ -488,10 +502,23 @@ const staticProducts = [
                   >
                     <div class="group-images">
                       <div class="images-row">
-                        <img src={group.large_image} alt={group.group_name} class="large-img" loading="lazy" />
+                        <OptimizedImage
+                          src={group.large_image}
+                          alt={group.group_name}
+                          width={400}
+                          height={400}
+                          loading="lazy"
+                          class="large-img"
+                        />
                         <div class="small-imgs">
                           {group.small_images?.map((smallImg) => (
-                            <img src={smallImg.image} alt="" loading="lazy" />
+                            <OptimizedImage
+                              src={smallImg.image}
+                              alt=""
+                              width={200}
+                              height={200}
+                              loading="lazy"
+                            />
                           ))}
                         </div>
                       </div>
@@ -534,12 +561,43 @@ const staticProducts = [
               <div class="product-group">
                 <div class="group-images">
                   <div class="images-row">
-                    <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80" alt="Halloween" class="large-img" loading="lazy">
+                    <OptimizedImage
+                      src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80"
+                      alt="Halloween"
+                      width={400}
+                      height={400}
+                      loading="lazy"
+                      class="large-img"
+                    />
                     <div class="small-imgs">
-                      <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80" alt="" loading="lazy">
-                      <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80" alt="" loading="lazy">
-                      <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80" alt="" loading="lazy">
-                      <img src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80" alt="" loading="lazy">
+                      <OptimizedImage
+                        src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80"
+                        alt=""
+                        width={200}
+                        height={200}
+                        loading="lazy"
+                      />
+                      <OptimizedImage
+                        src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80"
+                        alt=""
+                        width={200}
+                        height={200}
+                        loading="lazy"
+                      />
+                      <OptimizedImage
+                        src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80"
+                        alt=""
+                        width={200}
+                        height={200}
+                        loading="lazy"
+                      />
+                      <OptimizedImage
+                        src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80"
+                        alt=""
+                        width={200}
+                        height={200}
+                        loading="lazy"
+                      />
                     </div>
                   </div>
                 </div>
@@ -857,10 +915,14 @@ const staticProducts = [
     <!-- Mobile Hero Banner -->
     <section class="mobile-hero">
       <div class="mobile-hero-banner">
-        <img
-          src={mobileHeroBanner.image.url}
-          alt={mobileHeroBanner.image.alt}
+        <OptimizedImage
+          src={mobileHeroBanner.image.url || mobileHeroBanner.image.src}
+          alt={mobileHeroBanner.image.alt || 'Mobile Hero Banner'}
+          width={mobileHeroBanner.image.width || 800}
+          height={mobileHeroBanner.image.height || 600}
+          priority={true}
           loading="eager"
+          class="mobile-hero-img"
         />
         <div class="mobile-hero-overlay">
           <div class="mobile-hero-text">
@@ -885,10 +947,14 @@ const staticProducts = [
           class="mobile-subcard"
           target={mobileSubCard1.link.target}
         >
-          <img
-            src={mobileSubCard1.image.url}
-            alt={mobileSubCard1.image.alt}
+          <OptimizedImage
+            src={mobileSubCard1.image.url || mobileSubCard1.image.src}
+            alt={mobileSubCard1.image.alt || 'Mobile Sub Card 1'}
+            width={mobileSubCard1.image.width || 400}
+            height={mobileSubCard1.image.height || 400}
+            priority={true}
             loading="eager"
+            class="mobile-subcard-img"
           />
           <div class="mobile-subcard-overlay">
             <span class="mobile-subcard-tag">{mobileSubCard1.tag}</span>
@@ -900,10 +966,14 @@ const staticProducts = [
           class="mobile-subcard"
           target={mobileSubCard2.link.target}
         >
-          <img
-            src={mobileSubCard2.image.url}
-            alt={mobileSubCard2.image.alt}
+          <OptimizedImage
+            src={mobileSubCard2.image.url || mobileSubCard2.image.src}
+            alt={mobileSubCard2.image.alt || 'Mobile Sub Card 2'}
+            width={mobileSubCard2.image.width || 400}
+            height={mobileSubCard2.image.height || 400}
+            priority={true}
             loading="eager"
+            class="mobile-subcard-img"
           />
           <div class="mobile-subcard-overlay">
             <span class="mobile-subcard-tag">{mobileSubCard2.tag}</span>
@@ -1033,10 +1103,23 @@ const staticProducts = [
                     class="mobile-arrival-group"
                   >
                     <div class="mobile-arrival-images">
-                      <img src={group.large_image} alt={group.group_name} class="main-img" loading="lazy" />
+                      <OptimizedImage
+                        src={group.large_image}
+                        alt={group.group_name}
+                        width={400}
+                        height={400}
+                        loading="lazy"
+                        class="main-img"
+                      />
                       <div class="side-imgs">
                         {group.small_images?.map((smallImg) => (
-                          <img src={smallImg.image} alt="" loading="lazy" />
+                          <OptimizedImage
+                            src={smallImg.image}
+                            alt=""
+                            width={200}
+                            height={200}
+                            loading="lazy"
+                          />
                         ))}
                       </div>
                     </div>
@@ -1077,12 +1160,43 @@ const staticProducts = [
               <span>10k+ Products</span>
             </div>
             <div class="mobile-arrival-images">
-              <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80" alt="" class="main-img" loading="lazy" />
+              <OptimizedImage
+                src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80"
+                alt="Halloween"
+                width={400}
+                height={400}
+                loading="lazy"
+                class="main-img"
+              />
               <div class="side-imgs">
-                <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80" alt="" loading="lazy" />
-                <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80" alt="" loading="lazy" />
-                <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80" alt="" loading="lazy" />
-                <img src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80" alt="" loading="lazy" />
+                <OptimizedImage
+                  src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80"
+                  alt=""
+                  width={200}
+                  height={200}
+                  loading="lazy"
+                />
+                <OptimizedImage
+                  src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80"
+                  alt=""
+                  width={200}
+                  height={200}
+                  loading="lazy"
+                />
+                <OptimizedImage
+                  src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80"
+                  alt=""
+                  width={200}
+                  height={200}
+                  loading="lazy"
+                />
+                <OptimizedImage
+                  src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80"
+                  alt=""
+                  width={200}
+                  height={200}
+                  loading="lazy"
+                />
               </div>
             </div>
             <p class="mobile-arrival-name">Halloween</p>
