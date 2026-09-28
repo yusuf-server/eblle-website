@@ -10,6 +10,12 @@ if [ -f "dist/server/wrangler.json" ]; then
   rm dist/server/wrangler.json
 fi
 
+# 删除 .wrangler 目录，避免配置冲突
+if [ -d ".wrangler" ]; then
+  echo "删除 .wrangler 目录..."
+  rm -rf .wrangler
+fi
+
 # 生成 _routes.json 来控制路由
 cat > dist/_routes.json << 'EOF'
 {
