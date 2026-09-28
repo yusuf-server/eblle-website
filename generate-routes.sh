@@ -1,31 +1,6 @@
 #!/bin/bash
 
-# 构建后脚本：生成 _routes.json 和 _worker.js
+# 构建后脚本：Advanced mode 不需要额外配置
 
-echo "生成 _routes.json..."
-
-cat > dist/_routes.json << 'EOF'
-{
-  "version": 1,
-  "include": [
-    "/*"
-  ],
-  "exclude": [
-    "/_astro/*",
-    "/favicon.ico",
-    "/favicon.svg",
-    "/scripts/*"
-  ]
-}
-EOF
-
-echo "_routes.json 已生成"
-
-echo "生成 _worker.js..."
-
-cat > dist/_worker.js << 'EOF'
-import worker from './server/entry.mjs';
-export default worker;
-EOF
-
-echo "_worker.js 已生成"
+echo "Astro Cloudflare adapter (advanced mode) 构建完成"
+echo "输出目录: dist/"

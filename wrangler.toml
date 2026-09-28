@@ -1,0 +1,6 @@
+name = "ebelle-website"
+pages_build_output_dir = "dist"
+compatibility_flags = ["nodejs_compat"]
+compatibility_date = "2024-09-27"
+
+# 不需要其他配置，Astro 会处理
