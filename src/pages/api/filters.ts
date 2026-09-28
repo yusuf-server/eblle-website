@@ -4,35 +4,45 @@ export const prerender = false;
 
 // WooCommerce API 辅助函数
 async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
-  const WC_STORE_URL = import.meta.env.WC_STORE_URL;
+  const WC_STORE_URL = (import.meta.env.WC_STORE_URL || '').replace(/\/$/, '');
   const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
   const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
 
+  if (!WC_STORE_URL || !WC_CONSUMER_KEY || !WC_CONSUMER_SECRET) {
+    throw new Error('缺少 WooCommerce 必要的环境变量配置 (WC_STORE_URL, WC_CONSUMER_KEY, WC_CONSUMER_SECRET)');
+  }
+
   const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/${endpoint}`);
 
-  // 使用 URL 参数认证（不使用 Authorization header）
-  url.searchParams.append('consumer_key', WC_CONSUMER_KEY);
-  url.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
-
-  // 添加查询参数
+  // 添加业务查询参数（不暴露任何密钥）
   Object.keys(params).forEach(key => {
     if (params[key] !== undefined && params[key] !== null) {
       url.searchParams.append(key, params[key].toString());
     }
   });
 
-  // 不包含 Authorization header，只用浏览器标准头
-  const headers: Record<string, string> = {
-    'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache'
-  };
+  // 跨环境 Base64 编码
+const authString = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
+const base64Auth = typeof Buffer !== 'undefined'
+  ? Buffer.from(authString).toString('base64')
+  : btoa(authString);
 
-  const response = await fetch(url.toString(), { headers });
+// 保持最纯粹的请求头，不要加 Cache-Control, Pragma, Origin, Referer, Accept-Language 等任何多余项
+const headers: Record<string, string> = {
+  'Authorization': `Basic ${base64Auth}`,
+  'Accept': 'application/json',
+  'User-Agent': 'curl/7.88.1' // 直接伪装成 curl 的 User-Agent
+};
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers
+  });
 
   if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`[Filters WooCommerce Error] Status: ${response.status} ${response.statusText}`);
+    console.error(`[Filters WooCommerce Error Body]: ${errorBody.slice(0, 300)}`);
     throw new Error(`WooCommerce API Error: ${response.status} ${response.statusText}`);
   }
 
@@ -60,22 +70,22 @@ export const GET: APIRoute = async () => {
     const newArrivalsSlugs = ['new-arrivals'];
 
     // 筛选"ALL JEWELRY"分类
-    const allJewelryCategories = allCategories.filter(cat =>
+    const allJewelryCategories = allCategories.filter((cat: any) =>
       allJewelrySlugs.includes(cat.slug)
-    ).map(cat => ({
+    ).map((cat: any) => ({
       id: cat.id,
-      name: cat.name.toUpperCase(), // 转为大写
+      name: cat.name.toUpperCase(),
       slug: cat.slug,
       parent: cat.parent,
       count: cat.count
     }));
 
     // 筛选"NEW ARRIVALS"分类
-    const newArrivalsCategories = allCategories.filter(cat =>
+    const newArrivalsCategories = allCategories.filter((cat: any) =>
       newArrivalsSlugs.includes(cat.slug)
-    ).map(cat => ({
+    ).map((cat: any) => ({
       id: cat.id,
-      name: cat.name.toUpperCase(), // 转为大写
+      name: cat.name.toUpperCase(),
       slug: cat.slug,
       parent: cat.parent,
       count: cat.count
@@ -84,10 +94,10 @@ export const GET: APIRoute = async () => {
     // 获取子分类
     const getAllChildCategories = (parentId: number) => {
       return allCategories
-        .filter(cat => cat.parent === parentId)
-        .map(cat => ({
+        .filter((cat: any) => cat.parent === parentId)
+        .map((cat: any) => ({
           id: cat.id,
-          name: cat.name.toUpperCase(), // 转为大写
+          name: cat.name.toUpperCase(),
           slug: cat.slug,
           parent: cat.parent,
           count: cat.count
@@ -95,93 +105,62 @@ export const GET: APIRoute = async () => {
     };
 
     // 为每个分类添加子分类
-    const allJewelryWithChildren = allJewelryCategories.map(cat => ({
+    const allJewelryWithChildren = allJewelryCategories.map((cat: any) => ({
       ...cat,
       children: getAllChildCategories(cat.id)
     }));
 
-    const newArrivalsWithChildren = newArrivalsCategories.map(cat => ({
+    const newArrivalsWithChildren = newArrivalsCategories.map((cat: any) => ({
       ...cat,
       children: getAllChildCategories(cat.id)
     }));
 
-    // 颜色和材质筛选（这些通常是属性）
-    // 查询产品属性，确定如何存储
+    // 颜色和材质筛选属性查询
     let colorAttributeInfo = null;
     let materialAttributeInfo = null;
 
     try {
-      // 获取产品属性列表
-      const attributesResponse = await api.get('products/attributes');
+      // 统一使用 wcRequest 代替未定义的 api 变量
+      const attributes = await wcRequest('products/attributes');
       console.log('===== 产品属性列表 =====');
-      console.log('总共', attributesResponse.data.length, '个属性');
-      attributesResponse.data.forEach(attr => {
-        console.log(`- ID: ${attr.id}, Name: ${attr.name}, Slug: ${attr.slug}`);
-      });
+      console.log('总共', attributes.length, '个属性');
 
       // 查找颜色属性
-      const colorAttr = attributesResponse.data.find(attr =>
-        attr.slug.toLowerCase().includes('color') ||
-        attr.slug.toLowerCase().includes('colour') ||
-        attr.name.toLowerCase().includes('color') ||
-        attr.name.toLowerCase().includes('colour')
+      const colorAttr = attributes.find((attr: any) =>
+        attr.slug?.toLowerCase().includes('color') ||
+        attr.slug?.toLowerCase().includes('colour') ||
+        attr.name?.toLowerCase().includes('color') ||
+        attr.name?.toLowerCase().includes('colour')
       );
 
       // 查找材质属性
-      const materialAttr = attributesResponse.data.find(attr =>
-        attr.slug.toLowerCase().includes('material') ||
-        attr.name.toLowerCase().includes('material')
+      const materialAttr = attributes.find((attr: any) =>
+        attr.slug?.toLowerCase().includes('material') ||
+        attr.name?.toLowerCase().includes('material')
       );
 
       if (colorAttr) {
-        console.log('===== 找到颜色属性 =====');
-        console.log('ID:', colorAttr.id);
-        console.log('Name:', colorAttr.name);
-        console.log('Slug:', colorAttr.slug);
-
-        // 获取颜色的所有术语
-        const colorTermsResponse = await api.get(`products/attributes/${colorAttr.id}/terms`, { per_page: 100 });
-        console.log('颜色的所有术语:');
-        colorTermsResponse.data.forEach(term => {
-          console.log(`  - ID: ${term.id}, Name: ${term.name}, Slug: ${term.slug}`);
-        });
-
+        const colorTerms = await wcRequest(`products/attributes/${colorAttr.id}/terms`, { per_page: 100 });
         colorAttributeInfo = {
           id: colorAttr.id,
           slug: colorAttr.slug,
-          terms: colorTermsResponse.data
+          terms: colorTerms
         };
-      } else {
-        console.log('未找到颜色属性');
       }
 
       if (materialAttr) {
-        console.log('===== 找到材质属性 =====');
-        console.log('ID:', materialAttr.id);
-        console.log('Name:', materialAttr.name);
-        console.log('Slug:', materialAttr.slug);
-
-        // 获取材质的所有术语
-        const materialTermsResponse = await api.get(`products/attributes/${materialAttr.id}/terms`, { per_page: 100 });
-        console.log('材质的所有术语:');
-        materialTermsResponse.data.forEach(term => {
-          console.log(`  - ID: ${term.id}, Name: ${term.name}, Slug: ${term.slug}`);
-        });
-
+        const materialTerms = await wcRequest(`products/attributes/${materialAttr.id}/terms`, { per_page: 100 });
         materialAttributeInfo = {
           id: materialAttr.id,
           slug: materialAttr.slug,
-          terms: materialTermsResponse.data
+          terms: materialTerms
         };
-      } else {
-        console.log('未找到材质属性');
       }
     } catch (attrError) {
       console.error('获取产品属性失败:', attrError);
     }
 
-    // 固定的颜色列表（只有gold和silver）
-    // 根据WooCommerce后台，silver的ID是23，gold的ID是474
+    // 固定的颜色列表
     const colors = [
       {
         id: 474,
@@ -200,7 +179,6 @@ export const GET: APIRoute = async () => {
     ];
 
     // 固定的材质列表
-    // 根据之前查询的结果，使用实际的术语ID
     const materials = [
       { id: 97, slug: '316l-stainless-steel', name: '316L STAINLESS STEEL', attributeSlug: materialAttributeInfo?.slug },
       { id: 866, slug: 'stainless-steel', name: 'STAINLESS STEEL', attributeSlug: materialAttributeInfo?.slug },
@@ -228,7 +206,7 @@ export const GET: APIRoute = async () => {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=1800' // 缓存30分钟
+        'Cache-Control': 'public, max-age=1800'
       }
     });
   } catch (error) {

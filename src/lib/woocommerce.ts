@@ -1,4 +1,4 @@
-// 使用原生 fetch 替代 WooCommerce REST API 包，以支持 Cloudflare Workers
+// 使用原生 fetch 替代 WooCommerce REST API 包，兼容 Node.js 与 Cloudflare Workers
 
 // 产品接口定义
 export interface WooCommerceProduct {
@@ -68,41 +68,51 @@ export interface WooCommerceCategory {
 
 // WooCommerce API 辅助函数
 async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
-  const WC_STORE_URL = import.meta.env.WC_STORE_URL;
+  const WC_STORE_URL = (import.meta.env.WC_STORE_URL || '').replace(/\/$/, '');
   const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
   const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
 
+  if (!WC_STORE_URL || !WC_CONSUMER_KEY || !WC_CONSUMER_SECRET) {
+    throw new Error('缺少 WooCommerce 必要的环境变量配置 (WC_STORE_URL, WC_CONSUMER_KEY, WC_CONSUMER_SECRET)');
+  }
+
   const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/${endpoint}`);
 
-  // 使用 URL 参数认证（不使用 Authorization header）
-  url.searchParams.append('consumer_key', WC_CONSUMER_KEY);
-  url.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
-
-  // 添加查询参数
+  // 添加业务查询参数（不在 URL 暴露密钥）
   Object.keys(params).forEach(key => {
     if (params[key] !== undefined && params[key] !== null) {
       url.searchParams.append(key, params[key].toString());
     }
   });
 
-  // 不包含 Authorization header，只用浏览器标准头
-  const headers: Record<string, string> = {
-    'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache'
-  };
+  // 跨环境 Base64 编码
+const authString = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
+const base64Auth = typeof Buffer !== 'undefined'
+  ? Buffer.from(authString).toString('base64')
+  : btoa(authString);
 
-  const response = await fetch(url.toString(), { headers });
+// 保持最纯粹的请求头，不要加 Cache-Control, Pragma, Origin, Referer, Accept-Language 等任何多余项
+const headers: Record<string, string> = {
+  'Authorization': `Basic ${base64Auth}`,
+  'Accept': 'application/json',
+  'User-Agent': 'curl/7.88.1' // 直接伪装成 curl 的 User-Agent
+};
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers
+  });
 
   if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`[WooCommerce Error] Status: ${response.status} ${response.statusText}`);
+    console.error(`[WooCommerce Error Body]: ${errorBody.slice(0, 300)}`);
     throw new Error(`WooCommerce API Error: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
-  const total = parseInt(response.headers.get('x-wp-total') || '0');
-  const totalPages = parseInt(response.headers.get('x-wp-totalpages') || '1');
+  const total = parseInt(response.headers.get('x-wp-total') || '0', 10);
+  const totalPages = parseInt(response.headers.get('x-wp-totalpages') || '1', 10);
 
   return { data, total, totalPages };
 }
