@@ -4,19 +4,23 @@
 
 echo "配置 Cloudflare Pages..."
 
-# 删除 wrangler.json 以避免 Pages 部署时的配置冲突
+# 删除 wrangler 配置文件
 if [ -f "dist/server/wrangler.json" ]; then
-  echo "删除 wrangler.json（Pages 不需要）..."
+  echo "删除 wrangler.json..."
   rm dist/server/wrangler.json
 fi
 
-# 删除 .wrangler 目录，避免配置冲突
 if [ -d ".wrangler" ]; then
   echo "删除 .wrangler 目录..."
   rm -rf .wrangler
 fi
 
-# 生成 _routes.json 来控制路由
+# 将 server 目录移到根目录，并重命名 entry.mjs 为 _worker.js
+echo "创建 _worker.js..."
+cp -r dist/server/* dist/
+mv dist/entry.mjs dist/_worker.js 2>/dev/null || echo "entry.mjs 已是 _worker.js"
+
+# 生成 _routes.json
 cat > dist/_routes.json << 'EOF'
 {
   "version": 1,
@@ -33,4 +37,4 @@ cat > dist/_routes.json << 'EOF'
 EOF
 
 echo "✓ Cloudflare Pages 配置完成"
-echo "✓ 构建输出目录应设置为: dist"
+echo "✓ 构建输出目录: dist"
