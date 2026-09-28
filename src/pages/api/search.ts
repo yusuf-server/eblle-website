@@ -33,20 +33,30 @@ export const GET: APIRoute = async ({ url }) => {
     const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
     const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
 
-    const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
-
     // 1. 搜索商品
     const productsUrl = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products`);
+    const isHttps = productsUrl.protocol === 'https:';
+
     productsUrl.searchParams.append('search', query);
     productsUrl.searchParams.append('per_page', limit.toString());
     productsUrl.searchParams.append('status', 'publish');
     productsUrl.searchParams.append('stock_status', 'instock');
 
-    const productsResponse = await fetch(productsUrl.toString(), {
-      headers: {
-        'Authorization': `Basic ${auth}`,
-      },
-    });
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': 'application/json'
+    };
+
+    if (isHttps) {
+      productsUrl.searchParams.append('consumer_key', WC_CONSUMER_KEY);
+      productsUrl.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
+    } else {
+      const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
+      headers['Authorization'] = `Basic ${auth}`;
+    }
+
+    const productsResponse = await fetch(productsUrl.toString(), { headers });
 
     let products = [];
     let totalProducts = 0;
@@ -62,11 +72,12 @@ export const GET: APIRoute = async ({ url }) => {
     categoriesUrl.searchParams.append('per_page', '5');
     categoriesUrl.searchParams.append('hide_empty', 'true');
 
-    const categoriesResponse = await fetch(categoriesUrl.toString(), {
-      headers: {
-        'Authorization': `Basic ${auth}`,
-      },
-    });
+    if (isHttps) {
+      categoriesUrl.searchParams.append('consumer_key', WC_CONSUMER_KEY);
+      categoriesUrl.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
+    }
+
+    const categoriesResponse = await fetch(categoriesUrl.toString(), { headers });
 
     let categories = [];
 

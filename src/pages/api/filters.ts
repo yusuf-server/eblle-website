@@ -10,9 +10,14 @@ async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
 
   const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/${endpoint}`);
 
-  // 添加认证参数到 URL（Cloudflare 兼容方式）
-  url.searchParams.append('consumer_key', WC_CONSUMER_KEY);
-  url.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
+  // 判断是否为 HTTPS
+  const isHttps = url.protocol === 'https:';
+
+  if (isHttps) {
+    // HTTPS: 使用 URL 参数（Cloudflare 兼容）
+    url.searchParams.append('consumer_key', WC_CONSUMER_KEY);
+    url.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
+  }
 
   // 添加查询参数
   Object.keys(params).forEach(key => {
@@ -21,14 +26,20 @@ async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
     }
   });
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      'Content-Type': 'application/json',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      'Accept': 'application/json',
-      'Accept-Language': 'en-US,en;q=0.9'
-    }
-  });
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'application/json',
+    'Accept-Language': 'en-US,en;q=0.9'
+  };
+
+  // HTTP: 使用 Basic Auth
+  if (!isHttps) {
+    const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
+    headers['Authorization'] = `Basic ${auth}`;
+  }
+
+  const response = await fetch(url.toString(), { headers });
 
   if (!response.ok) {
     throw new Error(`WooCommerce API Error: ${response.status} ${response.statusText}`);

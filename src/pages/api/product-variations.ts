@@ -30,19 +30,33 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log('获取产品变体，产品ID:', productId);
 
-    const consumerKey = "ck_6bc2dd3dfd88dd3c8f6c3d48e3f78b8ef0131fb7";
-    const consumerSecret = "cs_2ea17d3b89e2b732c78feb38e9dd7cc8698ebcad";
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
+    const WC_STORE_URL = import.meta.env.WC_STORE_URL;
+    const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
+    const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
 
     // 获取所有变体
-    const apiUrl = `https://ebbellejewelry.com/wp-json/wc/v3/products/${productId}/variations?per_page=100`;
-    console.log('请求WooCommerce API:', apiUrl);
+    const apiUrl = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products/${productId}/variations`);
+    const isHttps = apiUrl.protocol === 'https:';
 
-    const response = await fetch(apiUrl, {
-      headers: {
-        'Authorization': `Basic ${auth}`
-      }
-    });
+    apiUrl.searchParams.append('per_page', '100');
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': 'application/json'
+    };
+
+    if (isHttps) {
+      apiUrl.searchParams.append('consumer_key', WC_CONSUMER_KEY);
+      apiUrl.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
+    } else {
+      const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
+      headers['Authorization'] = `Basic ${auth}`;
+    }
+
+    console.log('请求WooCommerce API:', apiUrl.toString().replace(WC_CONSUMER_KEY, 'KEY').replace(WC_CONSUMER_SECRET, 'SECRET'));
+
+    const response = await fetch(apiUrl.toString(), { headers });
 
     console.log('WooCommerce响应状态:', response.status);
 

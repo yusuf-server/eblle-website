@@ -40,15 +40,28 @@ export const POST: APIRoute = async ({ request }) => {
         const WC_STORE_URL = import.meta.env.WC_STORE_URL;
         const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
         const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
-        const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
 
         // 查询分类 ID
         const categoryUrl = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products/categories`);
         categoryUrl.searchParams.append('slug', body.category);
 
-        const categoryResponse = await fetch(categoryUrl.toString(), {
-          headers: { 'Authorization': `Basic ${auth}` }
-        });
+        const isHttps = categoryUrl.protocol === 'https:';
+
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'application/json'
+        };
+
+        if (isHttps) {
+          categoryUrl.searchParams.append('consumer_key', WC_CONSUMER_KEY);
+          categoryUrl.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
+        } else {
+          const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
+          headers['Authorization'] = `Basic ${auth}`;
+        }
+
+        const categoryResponse = await fetch(categoryUrl.toString(), { headers });
 
         if (categoryResponse.ok) {
           const categories = await categoryResponse.json();
