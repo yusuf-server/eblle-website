@@ -74,6 +74,10 @@ async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
 
   const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/${endpoint}`);
 
+  // 使用 URL 参数认证（不使用 Authorization header）
+  url.searchParams.append('consumer_key', WC_CONSUMER_KEY);
+  url.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
+
   // 添加查询参数
   Object.keys(params).forEach(key => {
     if (params[key] !== undefined && params[key] !== null) {
@@ -81,11 +85,8 @@ async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
     }
   });
 
-  // 使用 Basic Auth（不在 URL 中暴露密钥）
-  const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
-
+  // 不包含 Authorization header，只用浏览器标准头
   const headers: Record<string, string> = {
-    'Authorization': `Basic ${auth}`,
     'Accept': 'application/json, text/plain, */*',
     'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',

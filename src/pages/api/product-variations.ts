@@ -36,13 +36,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     // 获取所有变体
     const apiUrl = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products/${productId}/variations`);
+    apiUrl.searchParams.append('consumer_key', WC_CONSUMER_KEY);
+    apiUrl.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
     apiUrl.searchParams.append('per_page', '100');
 
-    // 使用 Basic Auth
-    const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
-
     const headers: Record<string, string> = {
-      'Authorization': `Basic ${auth}`,
       'Accept': 'application/json, text/plain, */*',
       'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',

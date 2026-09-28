@@ -9,13 +9,11 @@ export const GET: APIRoute = async () => {
     const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
 
     const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products`);
+    url.searchParams.append('consumer_key', WC_CONSUMER_KEY);
+    url.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
     url.searchParams.append('per_page', '5');
 
-    // 使用 Basic Auth
-    const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
-
     const headers: Record<string, string> = {
-      'Authorization': `Basic ${auth}`,
       'Accept': 'application/json, text/plain, */*',
       'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -23,15 +21,15 @@ export const GET: APIRoute = async () => {
       'Pragma': 'no-cache'
     };
 
-    console.log('Using Basic Auth');
-    console.log('Requesting:', url.toString());
+    console.log('Using URL params auth (no Authorization header)');
+    console.log('Requesting:', url.toString().replace(WC_CONSUMER_KEY, 'KEY').replace(WC_CONSUMER_SECRET, 'SECRET'));
 
     const response = await fetch(url.toString(), { headers });
 
     const responseText = await response.text();
 
     const result = {
-      authMethod: 'Basic Auth (Authorization header)',
+      authMethod: 'URL params (no Authorization header)',
       status: response.status,
       statusText: response.statusText,
       ok: response.ok,
