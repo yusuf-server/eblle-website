@@ -1,28 +1,49 @@
 import type { APIRoute } from 'astro';
-import WooCommerceRestApi from "@woocommerce/woocommerce-rest-api";
 
 export const prerender = false;
 
-const WooCommerce = WooCommerceRestApi.default || WooCommerceRestApi;
-const api = new WooCommerce({
-  url: import.meta.env.WOOCOMMERCE_URL || import.meta.env.WC_STORE_URL,
-  consumerKey: import.meta.env.WOOCOMMERCE_CONSUMER_KEY || import.meta.env.WC_CONSUMER_KEY,
-  consumerSecret: import.meta.env.WOOCOMMERCE_CONSUMER_SECRET || import.meta.env.WC_CONSUMER_SECRET,
-  version: 'wc/v3',
-  queryStringAuth: true
-});
+// WooCommerce API 辅助函数
+async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
+  const WC_STORE_URL = import.meta.env.WC_STORE_URL;
+  const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
+  const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
+
+  const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/${endpoint}`);
+
+  // 添加查询参数
+  Object.keys(params).forEach(key => {
+    if (params[key] !== undefined && params[key] !== null) {
+      url.searchParams.append(key, params[key].toString());
+    }
+  });
+
+  // 使用 Basic Auth
+  const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`WooCommerce API Error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data;
+}
 
 export const GET: APIRoute = async () => {
   try {
     console.log('正在获取筛选数据...');
 
     // 获取所有产品分类
-    const categoriesResponse = await api.get('products/categories', {
+    const allCategories = await wcRequest('products/categories', {
       per_page: 100,
       hide_empty: true
     });
-
-    const allCategories = categoriesResponse.data;
 
     // 根据要求组织分类数据
     const allJewelrySlugs = [

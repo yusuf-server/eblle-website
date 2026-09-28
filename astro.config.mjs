@@ -11,5 +11,10 @@ export default defineConfig({
     platformProxy: {
       enabled: true
     }
-  })
+  }),
+  vite: {
+    ssr: {
+      external: ['node:util', 'node:stream', 'node:path', 'node:http', 'node:https', 'node:url', 'node:fs', 'node:crypto', 'node:net', 'node:tls', 'node:assert', 'node:tty', 'node:events', 'node:http2', 'node:zlib']
+    }
+  }
 });

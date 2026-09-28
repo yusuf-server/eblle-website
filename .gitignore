@@ -22,9 +22,8 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
-# Wrangler
+# Wrangler local state
 .wrangler/
-wrangler.toml
 
 # 备份文件
 *.backup

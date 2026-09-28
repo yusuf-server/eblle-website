@@ -1,0 +1,14 @@
+name = "ebelle-website"
+compatibility_date = "2024-09-27"
+pages_build_output_dir = "dist"
+
+# 启用 Node.js 兼容性
+compatibility_flags = ["nodejs_compat"]
+
+# KV Namespaces（在 Cloudflare Dashboard 创建后绑定）
+# [[kv_namespaces]]
+# binding = "SESSION"
+# id = "your-kv-namespace-id"
+
+# 环境变量（在 Cloudflare Pages 设置中配置）
+# 不要在这里写敏感信息

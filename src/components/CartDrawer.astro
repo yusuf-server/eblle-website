@@ -523,6 +523,20 @@
       cartCountSpan.textContent = `(${totalItems})`;
     }
 
+    // 更新 Header 购物车角标
+    const headerBadge = document.querySelector('.cart-badge');
+    if (headerBadge) {
+      headerBadge.textContent = totalItems;
+      headerBadge.style.display = totalItems > 0 ? 'flex' : 'none';
+    }
+
+    // 更新移动端底部菜单购物车角标
+    const bottomBadge = document.querySelector('.bottom-cart-badge');
+    if (bottomBadge) {
+      bottomBadge.textContent = totalItems;
+      bottomBadge.style.display = totalItems > 0 ? 'flex' : 'none';
+    }
+
     // 计算总金额
     const subtotal = cart.reduce((sum, item) => {
       const price = parseFloat(item.price) || 0;
@@ -680,6 +694,20 @@
     const cartCountSpan = document.querySelector('.cart-count');
     if (cartCountSpan) {
       cartCountSpan.textContent = `(${totalItems})`;
+    }
+
+    // 更新 Header 购物车角标
+    const headerBadge = document.querySelector('.cart-badge');
+    if (headerBadge) {
+      headerBadge.textContent = totalItems;
+      headerBadge.style.display = totalItems > 0 ? 'flex' : 'none';
+    }
+
+    // 更新移动端底部菜单购物车角标
+    const bottomBadge = document.querySelector('.bottom-cart-badge');
+    if (bottomBadge) {
+      bottomBadge.textContent = totalItems;
+      bottomBadge.style.display = totalItems > 0 ? 'flex' : 'none';
     }
 
     // 计算总价

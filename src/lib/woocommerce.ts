@@ -1,13 +1,4 @@
-import WooCommerceRestApi from "@woocommerce/woocommerce-rest-api";
-
-// 初始化 WooCommerce API 客户端
-const WooCommerce = WooCommerceRestApi.default || WooCommerceRestApi;
-const api = new WooCommerce({
-  url: import.meta.env.WC_STORE_URL || '',
-  consumerKey: import.meta.env.WC_CONSUMER_KEY || '',
-  consumerSecret: import.meta.env.WC_CONSUMER_SECRET || '',
-  version: "wc/v3"
-});
+// 使用原生 fetch 替代 WooCommerce REST API 包，以支持 Cloudflare Workers
 
 // 产品接口定义
 export interface WooCommerceProduct {
@@ -75,6 +66,42 @@ export interface WooCommerceCategory {
   count: number;
 }
 
+// WooCommerce API 辅助函数
+async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
+  const WC_STORE_URL = import.meta.env.WC_STORE_URL;
+  const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
+  const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
+
+  const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/${endpoint}`);
+
+  // 添加查询参数
+  Object.keys(params).forEach(key => {
+    if (params[key] !== undefined && params[key] !== null) {
+      url.searchParams.append(key, params[key].toString());
+    }
+  });
+
+  // 使用 Basic Auth
+  const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`WooCommerce API Error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const total = parseInt(response.headers.get('x-wp-total') || '0');
+  const totalPages = parseInt(response.headers.get('x-wp-totalpages') || '1');
+
+  return { data, total, totalPages };
+}
+
 // 获取所有产品
 export async function getProducts(params?: {
   per_page?: number;
@@ -86,8 +113,8 @@ export async function getProducts(params?: {
   order?: 'asc' | 'desc';
 }): Promise<WooCommerceProduct[]> {
   try {
-    const response = await api.get("products", params);
-    return response.data;
+    const { data } = await wcRequest('products', params);
+    return data;
   } catch (error) {
     console.error("获取产品失败:", error);
     return [];
@@ -108,11 +135,9 @@ export async function getProductsWithTotal(params?: {
   attribute_term?: string;  // 属性值
 }): Promise<{ products: WooCommerceProduct[]; total: number; totalPages: number }> {
   try {
-    const response = await api.get("products", params);
-    const total = parseInt(response.headers['x-wp-total'] || '0');
-    const totalPages = parseInt(response.headers['x-wp-totalpages'] || '1');
+    const { data, total, totalPages } = await wcRequest('products', params);
     return {
-      products: response.data,
+      products: data,
       total,
       totalPages
     };
@@ -125,8 +150,8 @@ export async function getProductsWithTotal(params?: {
 // 根据ID获取单个产品
 export async function getProduct(id: number): Promise<WooCommerceProduct | null> {
   try {
-    const response = await api.get(`products/${id}`);
-    return response.data;
+    const { data } = await wcRequest(`products/${id}`);
+    return data;
   } catch (error) {
     console.error(`获取产品 ${id} 失败:`, error);
     return null;
@@ -137,14 +162,14 @@ export async function getProduct(id: number): Promise<WooCommerceProduct | null>
 export async function getProductBySlug(slug: string): Promise<WooCommerceProduct | null> {
   try {
     console.log(`获取产品详情: ${slug}`);
-    const response = await api.get("products", { slug });
+    const { data } = await wcRequest("products", { slug });
 
-    if (!response.data || response.data.length === 0) {
+    if (!data || data.length === 0) {
       console.log(`✗ 未找到产品: ${slug}`);
       return null;
     }
 
-    const product = response.data[0];
+    const product = data[0];
 
     // 如果是变体产品，获取所有变体来确定价格范围
     if (product.type === 'variable' && product.variations && product.variations.length > 0) {
@@ -194,8 +219,8 @@ export async function getCategories(params?: {
   parent?: number;
 }): Promise<WooCommerceCategory[]> {
   try {
-    const response = await api.get("products/categories", params);
-    return response.data;
+    const { data } = await wcRequest("products/categories", params);
+    return data;
   } catch (error) {
     console.error("获取分类失败:", error);
     return [];
@@ -205,8 +230,8 @@ export async function getCategories(params?: {
 // 根据ID获取单个分类
 export async function getCategory(id: number): Promise<WooCommerceCategory | null> {
   try {
-    const response = await api.get(`products/categories/${id}`);
-    return response.data;
+    const { data } = await wcRequest(`products/categories/${id}`);
+    return data;
   } catch (error) {
     console.error(`获取分类 ${id} 失败:`, error);
     return null;
@@ -217,8 +242,8 @@ export async function getCategory(id: number): Promise<WooCommerceCategory | nul
 export async function getProductVariations(productId: number, retries = 2): Promise<any[]> {
   for (let i = 0; i <= retries; i++) {
     try {
-      const response = await api.get(`products/${productId}/variations`);
-      return response.data;
+      const { data } = await wcRequest(`products/${productId}/variations`);
+      return data;
     } catch (error) {
       if (i === retries) {
         console.error(`获取产品 ${productId} 的变体失败 (已重试${retries}次):`, error);
@@ -234,8 +259,8 @@ export async function getProductVariations(productId: number, retries = 2): Prom
 // 根据slug获取分类
 export async function getCategoryBySlug(slug: string): Promise<WooCommerceCategory | null> {
   try {
-    const response = await api.get("products/categories", { slug });
-    return response.data[0] || null;
+    const { data } = await wcRequest("products/categories", { slug });
+    return data[0] || null;
   } catch (error) {
     console.error(`获取分类 ${slug} 失败:`, error);
     return null;
@@ -245,12 +270,10 @@ export async function getCategoryBySlug(slug: string): Promise<WooCommerceCatego
 // 搜索产品
 export async function searchProducts(search: string): Promise<WooCommerceProduct[]> {
   try {
-    const response = await api.get("products", { search });
-    return response.data;
+    const { data } = await wcRequest("products", { search });
+    return data;
   } catch (error) {
     console.error("搜索产品失败:", error);
     return [];
   }
 }
-
-export default api;

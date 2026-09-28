@@ -45,18 +45,6 @@ if (Astro.response) {
   <Header />
 
   <!-- Mobile Search Bar -->
-  <div class="mobile-search-container">
-    <div class="mobile-search-wrapper">
-      <i class="fa-solid fa-magnifying-glass search-icon"></i>
-      <input
-        type="text"
-        class="mobile-search-input"
-        placeholder="Search 50,000+ wholesale necklaces..."
-      />
-      <button class="mobile-search-btn">SEARCH</button>
-    </div>
-  </div>
-
   <!-- BREADCRUMB -->
   <div class="breadcrumb-section">
     <div class="container">
@@ -220,10 +208,6 @@ if (Astro.response) {
             </div>
             <div class="sort-right">
               <span class="products-count"><span id="products-count-desktop">0</span> Products Found</span>
-              <div class="view-toggle">
-                <button class="view-btn active"><i class="fa-solid fa-grip"></i></button>
-                <button class="view-btn"><i class="fa-solid fa-list"></i></button>
-              </div>
             </div>
           </div>
 
@@ -294,57 +278,6 @@ if (Astro.response) {
     .mobile-results-count {
       width: 30%;
       max-width: 30%;
-    }
-  }
-  .mobile-search-container {
-    display: none;
-    padding: 12px 16px;
-    background: white;
-    border-bottom: 1px solid #e5e5e5;
-  }
-  .mobile-search-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    background: #F7F4EE;
-    border: 1px solid #e5e5e5;
-    border-radius: 8px;
-    padding: 10px 12px;
-  }
-  .search-icon {
-    font-size: 16px;
-    color: #999;
-    margin-right: 10px;
-  }
-  .mobile-search-input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    font-size: 13px;
-    color: #333;
-    outline: none;
-  }
-  .mobile-search-input::placeholder {
-    color: #999;
-  }
-  .mobile-search-btn {
-    background: transparent;
-    border: none;
-    color: #B8860B;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    padding: 0 8px;
-    cursor: pointer;
-    text-transform: uppercase;
-  }
-  .mobile-search-btn:active {
-    opacity: 0.7;
-  }
-
-  @media (max-width: 768px) {
-    .mobile-search-container {
-      display: block;
     }
   }
 
@@ -2127,26 +2060,6 @@ if (Astro.response) {
   }
   .products-count {
     color: #666;
-  }
-  .view-toggle {
-    display: flex;
-    gap: 4px;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .view-btn {
-    padding: 6px 10px;
-    background: #fff;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: #999;
-  }
-  .view-btn:hover,
-  .view-btn.active {
-    background: #000;
-    color: #fff;
   }
 
   /* Products Grid */
