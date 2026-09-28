@@ -7,8 +7,9 @@ import cloudflare from '@astrojs/cloudflare';
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({
-    mode: 'advanced',
-    functionPerRoute: false
+    mode: 'directory',
+    // 不使用 platformProxy，避免生成 KV 和 ASSETS 绑定
+    imageService: 'compile'
   }),
   vite: {
     ssr: {
