@@ -182,8 +182,13 @@
       <nav class="main-nav">
         <a href="/new-arrival">NEW ARRIVAL</a>
         <a href="/best-sellers">BEST SELLERS</a>
+        
         <a href="/about">ABOUT E.B.BELLE</a>
         <a href="/contact">CONTACT US</a>
+        <a href="/halloween" class="halloween-special-link">
+          <i class="fa-solid fa-fire halloween-flame"></i>
+          <span class="halloween-text">Halloween</span>
+        </a>
       </nav>
 
       <!-- Right Link: Order Tracking -->
@@ -234,6 +239,10 @@
         <a href="/best-sellers">BEST SELLERS</a>
         <a href="/about">ABOUT E.B.BELLE</a>
         <a href="/contact">CONTACT US</a>
+        <a href="/halloween" class="halloween-special-link">
+          <i class="fa-solid fa-fire halloween-flame"></i>
+          <span class="halloween-text">Halloween</span>
+        </a>
       </div>
     </div>
 
@@ -555,6 +564,69 @@
   }
   .main-nav a:hover {
     color: #b21b1b;
+  }
+
+  /* Halloween 特效链接 */
+  .halloween-special-link {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+  }
+
+  .halloween-flame {
+    font-size: 14px;
+    animation: flameFlicker 0.8s ease-in-out infinite;
+  }
+
+  .halloween-text {
+    text-transform: uppercase;
+    font-weight: 700;
+    animation: colorPulse 1.5s ease-in-out infinite;
+  }
+
+  /* 火焰闪烁动画 */
+  @keyframes flameFlicker {
+    0%, 100% {
+      color: #ff6b35;
+      transform: scale(1) rotate(0deg);
+      filter: drop-shadow(0 0 3px #ff6b35);
+    }
+    25% {
+      color: #ff8c42;
+      transform: scale(1.1) rotate(-5deg);
+      filter: drop-shadow(0 0 5px #ff8c42);
+    }
+    50% {
+      color: #ffa500;
+      transform: scale(1.15) rotate(5deg);
+      filter: drop-shadow(0 0 8px #ffa500);
+    }
+    75% {
+      color: #ff8c42;
+      transform: scale(1.05) rotate(-3deg);
+      filter: drop-shadow(0 0 5px #ff8c42);
+    }
+  }
+
+  /* 文字颜色脉动动画（绿色到红色） */
+  @keyframes colorPulse {
+    0%, 100% {
+      color: #22c55e;
+      text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    }
+    50% {
+      color: #ef4444;
+      text-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+  }
+
+  .halloween-special-link:hover .halloween-flame {
+    animation-duration: 0.4s;
+  }
+
+  .halloween-special-link:hover .halloween-text {
+    animation-duration: 0.8s;
   }
   .nav-right {
     margin-left: auto;
