@@ -1,189 +1,412 @@
 ---
-// Footer 组件
+// Footer 组件 - 新版设计
 ---
 
-<footer class="footer-new">
-  <div class="container">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <div class="footer-logo">
-          <div class="logo-icon">
-            <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-              <path d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z" fill="currentColor"></path>
-            </svg>
+<!-- Footer 主组件 -->
+<footer class="site-footer">
+  <div class="footer-container">
+
+    <!-- 主内容栅格 -->
+    <div class="footer-main-grid">
+
+      <!-- 左侧：订阅邀请 -->
+      <div class="footer-newsletter">
+        <h2 class="newsletter-heading">GET 10% OFF YOUR FIRST ORDER</h2>
+        <form class="newsletter-form" id="newsletter-form">
+          <div class="newsletter-form-line">
+            <input type="email" class="newsletter-input" placeholder="Enter your email address" required />
+            <button type="submit" class="newsletter-submit-btn" aria-label="Subscribe">
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
           </div>
-          <h2>E.B.Belle</h2>
+          <label class="newsletter-privacy">
+            <input type="checkbox" required />
+            <span>By get 10% off, you agree to our <a href="/privacy" class="privacy-link">Security & Privacy</a>.*</span>
+          </label>
+        </form>
+      </div>
+
+      <!-- 右侧：导航链接三列 -->
+      <div class="footer-nav-columns">
+        <!-- Column 1: HELP -->
+        <div class="footer-nav-col">
+          <h4 class="nav-col-title">HELP</h4>
+          <ul class="nav-links-list">
+            <li><a href="/faqs">FAQs</a></li>
+            <li><a href="/shipping">Shipping</a></li>
+            <li><a href="/returns">Returns</a></li>
+            <li><a href="/materials-care">Materials & Care</a></li>
+            <li><a href="/ring-size-guide">Ring Size Guide</a></li>
+            <li><a href="/size-guide">Size Guide</a></li>
+            <li><a href="/contact">Contact Us</a></li>
+          </ul>
         </div>
-        <p class="footer-desc">
-          Global destination for wholesale jewelry. Connecting quality manufacturers with distributors, retailers, and entrepreneurs worldwide.
-        </p>
-        <div class="footer-social">
-          <a href="#" class="social-btn">FB</a>
-          <a href="#" class="social-btn">IG</a>
-          <a href="#" class="social-btn">IN</a>
+
+        <!-- Column 2: ABOUT US -->
+        <div class="footer-nav-col">
+          <h4 class="nav-col-title">ABOUT US</h4>
+          <ul class="nav-links-list">
+            <li><a href="/about">About E.B.belle</a></li>
+            <li><a href="/showroom">Our Showroom</a></li>
+            <li><a href="/wholesale">Wholesale</a></li>
+            <li><a href="/dropshipping">Dropshipping</a></li>
+            <li><a href="/oem-odm">OEM & ODM</a></li>
+            <li><a href="/blog">Blog</a></li>
+          </ul>
+        </div>
+
+        <!-- Column 3: MORE INFO -->
+        <div class="footer-nav-col">
+          <h4 class="nav-col-title">MORE INFO</h4>
+          <ul class="nav-links-list">
+            <li><a href="/offers">Offers & Promos</a></li>
+            <li><a href="/terms">Terms & Conditions</a></li>
+            <li><a href="/privacy">Privacy & Security</a></li>
+            <li><a href="/collection">Collection</a></li>
+            <li><a href="/product">Product</a></li>
+            <li><a href="/order-tracking">Tracking order</a></li>
+          </ul>
         </div>
       </div>
 
-      <div class="footer-links">
-        <h5>Guide</h5>
-        <ul>
-          <li><a href="#">How to Order</a></li>
-          <li><a href="#">Custom Branding</a></li>
-          <li><a href="#">Shipping Methods</a></li>
-          <li><a href="#">Quality Control</a></li>
-        </ul>
-      </div>
-
-      <div class="footer-links">
-        <h5>Company</h5>
-        <ul>
-          <li><a href="#">About Us</a></li>
-          <li><a href="#">Contact Us</a></li>
-          <li><a href="#">Certifications</a></li>
-          <li><a href="#">Sustainability</a></li>
-        </ul>
-      </div>
-
-      <div class="footer-links">
-        <h5>Support</h5>
-        <ul>
-          <li><a href="#">Help Center</a></li>
-          <li><a href="#">Return Policy</a></li>
-          <li><a href="#">Tracking Order</a></li>
-          <li><a href="#">Safe Payment</a></li>
-        </ul>
-      </div>
     </div>
 
-    <div class="footer-bottom">
-      <p>© 2024 E.B.Belle Marketplace. All Rights Reserved.</p>
-      <div class="footer-bottom-links">
-        <a href="#">Terms of Service</a>
-        <a href="#">Privacy Policy</a>
-        <a href="#">Cookies</a>
+    <!-- 底部：支付方式与版权信息 -->
+    <div class="footer-bottom-row">
+      <div class="payment-icons-group">
+        <!-- Visa -->
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
+          <rect width="38" height="24" rx="3" fill="#1434CB"/>
+          <path d="M16.5 16.5L18.3 7.5H20.4L18.6 16.5H16.5ZM13.8 7.5L11.8 13.8L11.5 12.3C11.1 10.7 9.5 8.9 7.8 8L9.6 16.5H11.9L15.9 7.5H13.8ZM25.7 16.5H27.6L25.9 7.5H24.3C23.9 7.5 23.5 7.8 23.4 8.2L20.2 16.5H22.4L22.9 15.2H25.4L25.7 16.5ZM23.4 13.6L24.5 10.1L25.1 13.6H23.4ZM9.8 7.5H6.3L6.3 7.7C8.9 8.4 11.2 10.3 11.8 12.3L11.1 8.5C11 8 10.6 7.6 10.1 7.5H9.8Z" fill="#FFFFFF"/>
+        </svg>
+
+        <!-- Mastercard -->
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
+          <rect width="38" height="24" rx="3" fill="#000000"/>
+          <circle cx="15" cy="12" r="7" fill="#EB001B"/>
+          <circle cx="23" cy="12" r="7" fill="#F79E1B"/>
+          <path d="M19 6.8a6.9 6.9 0 0 0-2.6 5.2 6.9 6.9 0 0 0 2.6 5.2 6.9 6.9 0 0 0 2.6-5.2A6.9 6.9 0 0 0 19 6.8z" fill="#FF5F00"/>
+        </svg>
+
+        <!-- American Express -->
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
+          <rect width="38" height="24" rx="3" fill="#006FCF"/>
+          <path d="M7 16.5L10 7.5H12.4L15.4 16.5H13.1L12.5 14.5H9.9L9.3 16.5H7ZM10.4 12.8H12L11.2 10L10.4 12.8ZM16.3 16.5V7.5H19.5L21.4 13.2L23.3 7.5H26.5V16.5H24.5V10.8L22.4 16.5H20.4L18.3 10.8V16.5H16.3ZM27.8 16.5V7.5H33.2V9.4H29.9V11.1H32.8V12.9H29.9V14.6H33.3V16.5H27.8Z" fill="#FFFFFF"/>
+        </svg>
+
+        <!-- PayPal -->
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
+          <rect width="38" height="24" rx="3" fill="#F7F9FA"/>
+          <path d="M15.2 6.5h4.1c1.9 0 3.3.4 3.7 1.8.4 1.3.1 2.7-1.1 3.5 1.5.5 1.8 2 1.4 3.4-.5 1.9-2.3 2.8-4.5 2.8h-1.6l-.8 4h-2.3l2.8-15.5zm2.7 5.1h1.4c1 0 1.9-.3 2.1-1.2.2-.9-.4-1.4-1.5-1.4h-1.3l-.7 2.6zm-.9 4.3h1.6c1.1 0 2.1-.4 2.3-1.4.2-1-.5-1.5-1.7-1.5h-1.5l-.7 2.9z" fill="#003087"/>
+          <path d="M13.6 8.5h4.1c1.9 0 3.3.4 3.7 1.8.4 1.3.1 2.7-1.1 3.5 1.5.5 1.8 2 1.4 3.4-.5 1.9-2.3 2.8-4.5 2.8h-1.6l-.8 4H12.5l2.8-15.5z" fill="#0079C1" opacity="0.85"/>
+        </svg>
+
+        <!-- Apple Pay -->
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
+          <rect width="38" height="24" rx="3" fill="#FFFFFF"/>
+          <path d="M12.9 10.2c-.3.4-.8.7-1.3.6-.1-.5.2-1 .5-1.4.3-.4.8-.6 1.3-.6.1.5-.2 1-.5 1.4zm.5 1.4c-.7 0-1.3.4-1.7.4-.4 0-1-.4-1.6-.4-.8 0-1.6.5-2.1 1.3-.9 1.6-.2 3.9.7 5.2.4.6 1 1.3 1.7 1.3.7 0 .9-.4 1.7-.4.8 0 1 .4 1.7.4.7 0 1.2-.6 1.7-1.3.5-.7.7-1.4.7-1.4-.1 0-1.4-.5-1.4-2.1 0-1.3 1.1-1.9 1.1-2-.6-.9-1.5-1-1.8-1.1zm6.2-2.3h-2.3v9.5h1.5v-3.4h.8c2.2 0 3.6-1.4 3.6-3.1 0-1.8-1.4-3-3.6-3zm-.1 4.7h-.7V10.7h.7c1.3 0 2.1.7 2.1 1.6 0 1-.8 1.7-2.1 1.7zm6.7-.4c-1.3 0-2.3.9-2.3 2.2 0 1.3 1 2.2 2.3 2.2.6 0 1.2-.3 1.5-.7v.7h1.4v-4.3h-1.4v.6c-.3-.4-.9-.7-1.5-.7zm.2 3.1c-.6 0-1.1-.4-1.1-1 0-.6.5-1 1.1-1 .6 0 1.1.4 1.1 1 0 .6-.5 1-1.1 1zm4.8.8l-1.5-4h-1.6l2.3 5.4-1.7 3.5h1.5l4.3-8.9h-1.6l-1.7 4z" fill="#000000"/>
+        </svg>
+
+        <!-- Google Pay -->
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
+          <rect width="38" height="24" rx="3" fill="#FFFFFF"/>
+          <path d="M14.9 12.3c0-.3 0-.6-.1-.9h-4.3v1.7h2.5c-.1.6-.5 1.1-.9 1.5v1.2h1.5c.9-.8 1.3-2.1 1.3-3.5z" fill="#4285F4"/>
+          <path d="M10.5 16.7c1.2 0 2.2-.4 3-1.1l-1.5-1.2c-.4.3-.9.5-1.5.5-1.1 0-2.1-.8-2.5-1.8H6.5v1.2c.8 1.5 2.3 2.4 4 2.4z" fill="#34A853"/>
+          <path d="M8 13.1c-.1-.3-.2-.7-.2-1.1s.1-.8.2-1.1V9.7H6.5C6.2 10.4 6 11.2 6 12s.2 1.6.5 2.3l1.5-1.2z" fill="#FBBC04"/>
+          <path d="M10.5 8.9c.7 0 1.3.2 1.8.7l1.3-1.3c-.8-.8-1.9-1.2-3.1-1.2-1.7 0-3.2.9-4 2.4l1.5 1.2c.4-1 1.4-1.8 2.5-1.8z" fill="#EA4335"/>
+          <path d="M19.4 8.7h-1.4v7.7h1.4V8.7zm5.5 2.7c-1.1 0-2 .8-2 2 0 1.2.9 2 2 2 .5 0 1-.2 1.3-.6v.5h1.3v-5.6h-1.3v.6c-.3-.4-.8-.6-1.3-.6zm.2 2.8c-.5 0-.9-.4-.9-1s.4-1 .9-1 .9.4.9 1-.4 1-.9 1zm4.3.7l-1.4-3.5h-1.4l2.1 4.8-1.5 3.3h1.4l3.8-8.1h-1.4l-1.6 3.5z" fill="#5F6368"/>
+        </svg>
       </div>
+
+      <p class="copyright-txt">© 2026 E.B.belle Limited. All rights reserved.</p>
     </div>
+
   </div>
 </footer>
 
-<style>
-  .footer-new {
-    background: #fafafa;
-    border-top: 1px solid #e5e5e5;
-    padding: 80px 0 48px;
+<style is:global>
+  /* Footer 顶层容器 */
+  .site-footer {
+    background-color: #ffffff;
+    border-top: 1px solid #ebe7df;
+    padding: 80px 0 36px;
+    width: 100%;
   }
-  .footer-grid {
+
+  .footer-container {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  /* 上半部分主体网格布局 */
+  .footer-main-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: 48px;
-    margin-bottom: 80px;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 72px;
+    padding-bottom: 64px;
+    border-bottom: 1px solid #f0ede6;
   }
-  .footer-brand {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+
+  /* 左侧：邮件订阅区块 */
+  .footer-newsletter {
+    max-width: 520px;
   }
-  .footer-logo {
+
+  .newsletter-heading {
+    font-family: 'Bodoni Moda', 'Didot', serif;
+    font-size: 34px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: #111111;
+    margin-bottom: 36px;
+    line-height: 1.18;
+  }
+
+  .newsletter-form-line {
     display: flex;
     align-items: center;
-    gap: 12px;
-    color: #000;
+    border-bottom: 1.5px solid #1a1a1a;
+    padding-bottom: 10px;
+    margin-bottom: 18px;
+    transition: border-color 0.25s ease;
   }
-  .logo-icon {
-    width: 24px;
-    height: 24px;
+
+  .newsletter-form-line:focus-within {
+    border-color: #b86227;
   }
-  .footer-logo h2 {
+
+  .newsletter-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14.5px;
+    color: #111111;
+    background: transparent;
+    padding: 4px 0;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+  }
+
+  .newsletter-input::placeholder {
+    color: #8c867d;
+    font-weight: 400;
+  }
+
+  .newsletter-submit-btn {
+    background: none;
+    border: none;
+    color: #1a1a1a;
     font-size: 18px;
-    font-weight: 700;
-    font-family: 'Cinzel', serif;
-  }
-  .footer-desc {
-    font-size: 14px;
-    color: #747878;
-    line-height: 1.6;
-    max-width: 400px;
-  }
-  .footer-social {
-    display: flex;
-    gap: 16px;
-  }
-  .social-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 1px solid #c4c7c7;
+    cursor: pointer;
+    padding: 0 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #747878;
-    font-size: 12px;
-    font-weight: 700;
-    transition: all 0.3s;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .social-btn:hover {
-    border-color: var(--primary);
-    color: var(--primary);
+
+  .newsletter-submit-btn:hover {
+    color: #b86227;
+    transform: translateX(5px);
   }
-  .footer-links h5 {
-    font-size: 14px;
+
+  /* 隐私复选框行 */
+  .newsletter-privacy {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 13px;
+    color: #4a453f;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.45;
+  }
+
+  .newsletter-privacy input[type="checkbox"] {
+    margin-top: 2px;
+    width: 14px;
+    height: 14px;
+    accent-color: #1a1a1a;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  .privacy-link {
+    color: #b86227;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    font-weight: 500;
+  }
+
+  .privacy-link:hover {
+    text-decoration: underline;
+    color: #8f4614;
+  }
+
+  /* 右侧：三列导航链接 */
+  .footer-nav-columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 36px;
+  }
+
+  .nav-col-title {
+    font-size: 13.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 0.08em;
+    color: #111111;
     margin-bottom: 24px;
-    color: #1a1a1a;
   }
-  .footer-links ul {
+
+  .nav-links-list {
     list-style: none;
-    padding: 0;
-    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 15px;
   }
-  .footer-links a {
-    font-size: 14px;
-    color: #747878;
-    transition: color 0.2s;
+
+  .nav-links-list a {
+    text-decoration: none;
+    color: #44403c;
+    font-size: 13.5px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: inline-block;
   }
-  .footer-links a:hover {
-    color: var(--primary);
+
+  .nav-links-list a:hover {
+    color: #b86227;
+    transform: translateX(2px);
   }
-  .footer-bottom {
-    padding-top: 32px;
-    border-top: 1px solid #e5e5e5;
+
+  /* 下半部分：支付卡标与版权 */
+  .footer-bottom-row {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 28px;
+  }
+
+  .payment-icons-group {
+    display: flex;
     align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* 支付卡徽标微调 */
+  .pay-card-svg {
+    height: 24px;
+    width: auto;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s ease;
+  }
+
+  .pay-card-svg:hover {
+    transform: translateY(-1px);
+  }
+
+  .copyright-txt {
     font-size: 12px;
-    color: #747878;
-  }
-  .footer-bottom-links {
-    display: flex;
-    gap: 32px;
-  }
-  .footer-bottom-links a {
-    color: #747878;
-    transition: color 0.2s;
-  }
-  .footer-bottom-links a:hover {
-    color: #1a1a1a;
+    color: #78716c;
+    letter-spacing: 0.02em;
   }
 
-  @media (max-width: 1024px) {
-    .footer-grid {
-      grid-template-columns: repeat(2, 1fr);
+  /* 移动端与平板响应式适配 */
+  @media (max-width: 992px) {
+    .footer-container {
+      padding: 0 28px;
     }
-  }
-
-  @media (max-width: 768px) {
-    .footer-grid {
+    .footer-main-grid {
       grid-template-columns: 1fr;
+      gap: 48px;
+      padding-bottom: 48px;
     }
-    .footer-bottom {
-      flex-direction: column;
-      gap: 16px;
-      text-align: center;
+    .newsletter-heading {
+      font-size: 28px;
+      margin-bottom: 28px;
+    }
+    .footer-nav-columns {
+      gap: 24px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .site-footer {
+      padding: 56px 0 28px;
+    }
+    .footer-container {
+      padding: 0 20px;
+    }
+    .footer-nav-columns {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+    .nav-col-title {
+      margin-bottom: 16px;
+    }
+    .payment-icons-group {
+      gap: 8px;
+    }
+    .pay-card-svg {
+      height: 22px;
     }
   }
 </style>
+
+<script>
+  // Newsletter form submission
+  const newsletterForm = document.getElementById('newsletter-form');
+
+  if (newsletterForm) {
+    newsletterForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const emailInput = newsletterForm.querySelector('input[type="email"]');
+      const checkbox = newsletterForm.querySelector('input[type="checkbox"]');
+      const submitBtn = newsletterForm.querySelector('.newsletter-submit-btn');
+
+      if (!emailInput || !checkbox || !submitBtn) return;
+
+      const email = emailInput.value.trim();
+
+      if (!email || !checkbox.checked) {
+        alert('Please enter your email and agree to the privacy policy.');
+        return;
+      }
+
+      // Disable button during submission
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.5';
+
+      try {
+        // TODO: Replace with actual newsletter API endpoint
+        // const response = await fetch('/api/newsletter', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ email })
+        // });
+
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        alert('Thank you for subscribing! Check your email for your 10% discount code.');
+        emailInput.value = '';
+        checkbox.checked = false;
+      } catch (error) {
+        console.error('Newsletter subscription error:', error);
+        alert('Subscription failed. Please try again.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+      }
+    });
+  }
+</script>

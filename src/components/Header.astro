@@ -1456,4 +1456,66 @@
   } else {
     initAllSearches();
   }
+
+  // =========================================================
+  // Mobile Drawer Menu (移动端抽屉菜单)
+  // =========================================================
+  function initMobileDrawer() {
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const drawerBackdrop = document.getElementById('drawer-backdrop');
+    const mobileDrawer = document.getElementById('mobile-drawer');
+    const drawerClose = document.getElementById('drawer-close');
+
+    if (!mobileMenuBtn || !drawerBackdrop || !mobileDrawer) return;
+
+    // 打开菜单
+    function openDrawer() {
+      drawerBackdrop.classList.add('open');
+      mobileDrawer.classList.add('open');
+      document.body.style.overflow = 'hidden'; // 防止背景滚动
+    }
+
+    // 关闭菜单
+    function closeDrawer() {
+      drawerBackdrop.classList.remove('open');
+      mobileDrawer.classList.remove('open');
+      document.body.style.overflow = ''; // 恢复滚动
+    }
+
+    // 绑定打开按钮
+    mobileMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDrawer();
+    });
+
+    // 绑定关闭按钮
+    if (drawerClose) {
+      drawerClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeDrawer();
+      });
+    }
+
+    // 点击背景关闭
+    drawerBackdrop.addEventListener('click', closeDrawer);
+
+    // 点击菜单内部不关闭
+    mobileDrawer.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    // ESC 键关闭
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && mobileDrawer.classList.contains('open')) {
+        closeDrawer();
+      }
+    });
+  }
+
+  // 初始化移动端菜单
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobileDrawer);
+  } else {
+    initMobileDrawer();
+  }
 </script>
