@@ -1,64 +1,17 @@
 import type { APIRoute } from 'astro';
+import { wcRequest } from '../../lib/woocommerce';
 
 export const prerender = false;
 
-// WooCommerce API 辅助函数
-async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
-  const WC_STORE_URL = (import.meta.env.WC_STORE_URL || '').replace(/\/$/, '');
-  const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
-  const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
-
-  if (!WC_STORE_URL || !WC_CONSUMER_KEY || !WC_CONSUMER_SECRET) {
-    throw new Error('缺少 WooCommerce 必要的环境变量配置 (WC_STORE_URL, WC_CONSUMER_KEY, WC_CONSUMER_SECRET)');
-  }
-
-  const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/${endpoint}`);
-
-  // 添加业务查询参数（不暴露任何密钥）
-  Object.keys(params).forEach(key => {
-    if (params[key] !== undefined && params[key] !== null) {
-      url.searchParams.append(key, params[key].toString());
-    }
-  });
-
-  // 跨环境 Base64 编码
-const authString = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
-const base64Auth = typeof Buffer !== 'undefined'
-  ? Buffer.from(authString).toString('base64')
-  : btoa(authString);
-
-// 保持最纯粹的请求头，不要加 Cache-Control, Pragma, Origin, Referer, Accept-Language 等任何多余项
-const headers: Record<string, string> = {
-  'Authorization': `Basic ${base64Auth}`,
-  'Accept': 'application/json',
-  'User-Agent': 'curl/7.88.1' // 直接伪装成 curl 的 User-Agent
-};
-
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error(`[Filters WooCommerce Error] Status: ${response.status} ${response.statusText}`);
-    console.error(`[Filters WooCommerce Error Body]: ${errorBody.slice(0, 300)}`);
-    throw new Error(`WooCommerce API Error: ${response.status} ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data;
-}
-
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async (context) => {
   try {
     console.log('正在获取筛选数据...');
 
-    // 获取所有产品分类
-    const allCategories = await wcRequest('products/categories', {
+    // 传入 context.locals，兼容 Cloudflare Pages SSR 运行时读取环境变量
+    const { data: allCategories } = await wcRequest('products/categories', {
       per_page: 100,
       hide_empty: true
-    });
+    }, context.locals);
 
     // 根据要求组织分类数据
     const allJewelrySlugs = [
@@ -120,10 +73,7 @@ export const GET: APIRoute = async () => {
     let materialAttributeInfo = null;
 
     try {
-      // 统一使用 wcRequest 代替未定义的 api 变量
-      const attributes = await wcRequest('products/attributes');
-      console.log('===== 产品属性列表 =====');
-      console.log('总共', attributes.length, '个属性');
+      const { data: attributes } = await wcRequest('products/attributes', {}, context.locals);
 
       // 查找颜色属性
       const colorAttr = attributes.find((attr: any) =>
@@ -140,7 +90,7 @@ export const GET: APIRoute = async () => {
       );
 
       if (colorAttr) {
-        const colorTerms = await wcRequest(`products/attributes/${colorAttr.id}/terms`, { per_page: 100 });
+        const { data: colorTerms } = await wcRequest(`products/attributes/${colorAttr.id}/terms`, { per_page: 100 }, context.locals);
         colorAttributeInfo = {
           id: colorAttr.id,
           slug: colorAttr.slug,
@@ -149,7 +99,7 @@ export const GET: APIRoute = async () => {
       }
 
       if (materialAttr) {
-        const materialTerms = await wcRequest(`products/attributes/${materialAttr.id}/terms`, { per_page: 100 });
+        const { data: materialTerms } = await wcRequest(`products/attributes/${materialAttr.id}/terms`, { per_page: 100 }, context.locals);
         materialAttributeInfo = {
           id: materialAttr.id,
           slug: materialAttr.slug,
@@ -209,9 +159,12 @@ export const GET: APIRoute = async () => {
         'Cache-Control': 'public, max-age=1800'
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('获取筛选数据失败:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch filters' }), {
+    return new Response(JSON.stringify({
+      error: 'Failed to fetch filters',
+      message: error?.message || String(error)
+    }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json'

@@ -66,19 +66,33 @@ export interface WooCommerceCategory {
   count: number;
 }
 
-// WooCommerce API 辅助函数
-async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
-  const WC_STORE_URL = (import.meta.env.WC_STORE_URL || '').replace(/\/$/, '');
-  const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
-  const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
+// 辅助函数：跨环境安全提取环境变量（兼容 Cloudflare Pages runtime 与 本地 Vite）
+export function getEnv(key: string, locals?: any): string {
+  if (locals?.runtime?.env?.[key]) {
+    return locals.runtime.env[key];
+  }
+  if (typeof process !== 'undefined' && process.env?.[key]) {
+    return process.env[key] as string;
+  }
+  if (typeof import.meta !== 'undefined' && import.meta.env?.[key]) {
+    return import.meta.env[key];
+  }
+  return '';
+}
+
+// WooCommerce API 核心请求函数
+export async function wcRequest(endpoint: string, params: Record<string, any> = {}, locals?: any) {
+  const WC_STORE_URL = (getEnv('WC_STORE_URL', locals) || '').replace(/\/$/, '');
+  const WC_CONSUMER_KEY = getEnv('WC_CONSUMER_KEY', locals);
+  const WC_CONSUMER_SECRET = getEnv('WC_CONSUMER_SECRET', locals);
 
   if (!WC_STORE_URL || !WC_CONSUMER_KEY || !WC_CONSUMER_SECRET) {
-    throw new Error('缺少 WooCommerce 必要的环境变量配置 (WC_STORE_URL, WC_CONSUMER_KEY, WC_CONSUMER_SECRET)');
+    throw new Error(`缺少 WooCommerce 必要的环境变量配置 (STORE_URL: ${!!WC_STORE_URL}, KEY: ${!!WC_CONSUMER_KEY}, SECRET: ${!!WC_CONSUMER_SECRET})`);
   }
 
   const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/${endpoint}`);
 
-  // 添加业务查询参数（不在 URL 暴露密钥）
+  // 添加业务查询参数
   Object.keys(params).forEach(key => {
     if (params[key] !== undefined && params[key] !== null) {
       url.searchParams.append(key, params[key].toString());
@@ -86,17 +100,16 @@ async function wcRequest(endpoint: string, params: Record<string, any> = {}) {
   });
 
   // 跨环境 Base64 编码
-const authString = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
-const base64Auth = typeof Buffer !== 'undefined'
-  ? Buffer.from(authString).toString('base64')
-  : btoa(authString);
+  const authString = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
+  const base64Auth = typeof Buffer !== 'undefined'
+    ? Buffer.from(authString).toString('base64')
+    : btoa(authString);
 
-// 保持最纯粹的请求头，不要加 Cache-Control, Pragma, Origin, Referer, Accept-Language 等任何多余项
-const headers: Record<string, string> = {
-  'Authorization': `Basic ${base64Auth}`,
-  'Accept': 'application/json',
-  'User-Agent': 'curl/7.88.1' // 直接伪装成 curl 的 User-Agent
-};
+  const headers: Record<string, string> = {
+    'Authorization': `Basic ${base64Auth}`,
+    'Accept': 'application/json',
+    'User-Agent': 'curl/7.88.1'
+  };
 
   const response = await fetch(url.toString(), {
     method: 'GET',
@@ -126,9 +139,9 @@ export async function getProducts(params?: {
   on_sale?: boolean;
   orderby?: string;
   order?: 'asc' | 'desc';
-}): Promise<WooCommerceProduct[]> {
+}, locals?: any): Promise<WooCommerceProduct[]> {
   try {
-    const { data } = await wcRequest('products', params);
+    const { data } = await wcRequest('products', params, locals);
     return data;
   } catch (error) {
     console.error("获取产品失败:", error);
@@ -140,17 +153,17 @@ export async function getProducts(params?: {
 export async function getProductsWithTotal(params?: {
   per_page?: number;
   page?: number;
-  category?: number | string;  // 支持分类 ID 或 slug
+  category?: number | string;
   featured?: boolean;
   on_sale?: boolean;
   orderby?: string;
   order?: 'asc' | 'desc';
-  search?: string;  // 添加搜索支持
-  attribute?: string;  // 属性筛选
-  attribute_term?: string;  // 属性值
-}): Promise<{ products: WooCommerceProduct[]; total: number; totalPages: number }> {
+  search?: string;
+  attribute?: string;
+  attribute_term?: string;
+}, locals?: any): Promise<{ products: WooCommerceProduct[]; total: number; totalPages: number }> {
   try {
-    const { data, total, totalPages } = await wcRequest('products', params);
+    const { data, total, totalPages } = await wcRequest('products', params, locals);
     return {
       products: data,
       total,
@@ -163,9 +176,9 @@ export async function getProductsWithTotal(params?: {
 }
 
 // 根据ID获取单个产品
-export async function getProduct(id: number): Promise<WooCommerceProduct | null> {
+export async function getProduct(id: number, locals?: any): Promise<WooCommerceProduct | null> {
   try {
-    const { data } = await wcRequest(`products/${id}`);
+    const { data } = await wcRequest(`products/${id}`, {}, locals);
     return data;
   } catch (error) {
     console.error(`获取产品 ${id} 失败:`, error);
@@ -174,10 +187,10 @@ export async function getProduct(id: number): Promise<WooCommerceProduct | null>
 }
 
 // 根据slug获取产品
-export async function getProductBySlug(slug: string): Promise<WooCommerceProduct | null> {
+export async function getProductBySlug(slug: string, locals?: any): Promise<WooCommerceProduct | null> {
   try {
     console.log(`获取产品详情: ${slug}`);
-    const { data } = await wcRequest("products", { slug });
+    const { data } = await wcRequest("products", { slug }, locals);
 
     if (!data || data.length === 0) {
       console.log(`✗ 未找到产品: ${slug}`);
@@ -190,10 +203,9 @@ export async function getProductBySlug(slug: string): Promise<WooCommerceProduct
     if (product.type === 'variable' && product.variations && product.variations.length > 0) {
       try {
         console.log(`产品 ${product.name} 是变体产品，获取变体价格...`);
-        const variations = await getProductVariations(product.id);
+        const variations = await getProductVariations(product.id, 2, locals);
 
         if (variations && variations.length > 0) {
-          // 获取所有有效价格
           const prices = variations.map(v => parseFloat(v.price)).filter(p => !isNaN(p) && p > 0);
           const regularPrices = variations.map(v => parseFloat(v.regular_price)).filter(p => !isNaN(p) && p > 0);
 
@@ -209,7 +221,6 @@ export async function getProductBySlug(slug: string): Promise<WooCommerceProduct
             console.log(`✓ 设置最低原价: $${product.regular_price}`);
           }
 
-          // 确保有折扣时on_sale为true
           if (product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price)) {
             product.on_sale = true;
           }
@@ -232,9 +243,9 @@ export async function getCategories(params?: {
   per_page?: number;
   page?: number;
   parent?: number;
-}): Promise<WooCommerceCategory[]> {
+}, locals?: any): Promise<WooCommerceCategory[]> {
   try {
-    const { data } = await wcRequest("products/categories", params);
+    const { data } = await wcRequest("products/categories", params, locals);
     return data;
   } catch (error) {
     console.error("获取分类失败:", error);
@@ -243,9 +254,9 @@ export async function getCategories(params?: {
 }
 
 // 根据ID获取单个分类
-export async function getCategory(id: number): Promise<WooCommerceCategory | null> {
+export async function getCategory(id: number, locals?: any): Promise<WooCommerceCategory | null> {
   try {
-    const { data } = await wcRequest(`products/categories/${id}`);
+    const { data } = await wcRequest(`products/categories/${id}`, {}, locals);
     return data;
   } catch (error) {
     console.error(`获取分类 ${id} 失败:`, error);
@@ -254,17 +265,16 @@ export async function getCategory(id: number): Promise<WooCommerceCategory | nul
 }
 
 // 获取产品变体（带重试）
-export async function getProductVariations(productId: number, retries = 2): Promise<any[]> {
+export async function getProductVariations(productId: number, retries = 2, locals?: any): Promise<any[]> {
   for (let i = 0; i <= retries; i++) {
     try {
-      const { data } = await wcRequest(`products/${productId}/variations`);
+      const { data } = await wcRequest(`products/${productId}/variations`, {}, locals);
       return data;
     } catch (error) {
       if (i === retries) {
         console.error(`获取产品 ${productId} 的变体失败 (已重试${retries}次):`, error);
         return [];
       }
-      // 等待一段时间后重试
       await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
     }
   }
@@ -272,9 +282,9 @@ export async function getProductVariations(productId: number, retries = 2): Prom
 }
 
 // 根据slug获取分类
-export async function getCategoryBySlug(slug: string): Promise<WooCommerceCategory | null> {
+export async function getCategoryBySlug(slug: string, locals?: any): Promise<WooCommerceCategory | null> {
   try {
-    const { data } = await wcRequest("products/categories", { slug });
+    const { data } = await wcRequest("products/categories", { slug }, locals);
     return data[0] || null;
   } catch (error) {
     console.error(`获取分类 ${slug} 失败:`, error);
@@ -283,9 +293,9 @@ export async function getCategoryBySlug(slug: string): Promise<WooCommerceCatego
 }
 
 // 搜索产品
-export async function searchProducts(search: string): Promise<WooCommerceProduct[]> {
+export async function searchProducts(search: string, locals?: any): Promise<WooCommerceProduct[]> {
   try {
-    const { data } = await wcRequest("products", { search });
+    const { data } = await wcRequest("products", { search }, locals);
     return data;
   } catch (error) {
     console.error("搜索产品失败:", error);
