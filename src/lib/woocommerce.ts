@@ -313,3 +313,133 @@ export async function searchProducts(search: string): Promise<WooCommerceProduct
     return [];
   }
 }
+
+// 获取相关产品（基于分类和标签）
+export async function getRelatedProducts(
+  productId: number,
+  categoryIds: number[] = [],
+  tagIds: number[] = [],
+  limit: number = 6
+): Promise<WooCommerceProduct[]> {
+  try {
+    // 优先基于分类获取相关产品
+    if (categoryIds.length > 0) {
+      const { data } = await wcRequest("products", {
+        category: categoryIds.join(','),
+        per_page: limit + 5, // 多获取一些，用于排除当前产品和处理变体
+        orderby: 'popularity',
+        order: 'desc',
+        status: 'publish'
+      });
+
+      // 排除当前产品
+      const filtered = data.filter((p: WooCommerceProduct) => p.id !== productId);
+
+      // 处理变体产品价格
+      const processed = await Promise.all(
+        filtered.slice(0, limit).map(async (product: WooCommerceProduct) => {
+          if (product.type === 'variable' && product.variations && product.variations.length > 0) {
+            // 获取变体数据
+            const variations = await getProductVariations(product.id);
+
+            if (variations.length > 0) {
+              // 从变体中提取价格
+              const prices = variations.map(v => parseFloat(v.price)).filter(p => !isNaN(p) && p > 0);
+              const regularPrices = variations.map(v => parseFloat(v.regular_price)).filter(p => !isNaN(p) && p > 0);
+
+              if (prices.length > 0) {
+                const minPrice = Math.min(...prices);
+                product.price = minPrice.toFixed(2);
+
+                // 如果有 regular_price，设置为最低原价
+                if (regularPrices.length > 0) {
+                  const minRegularPrice = Math.min(...regularPrices);
+                  product.regular_price = minRegularPrice.toFixed(2);
+                }
+              }
+            }
+          }
+          return product;
+        })
+      );
+
+      return processed;
+    }
+
+    // 如果没有分类，基于标签获取
+    if (tagIds.length > 0) {
+      const { data } = await wcRequest("products", {
+        tag: tagIds.join(','),
+        per_page: limit + 5,
+        orderby: 'popularity',
+        order: 'desc',
+        status: 'publish'
+      });
+
+      const filtered = data.filter((p: WooCommerceProduct) => p.id !== productId);
+
+      const processed = await Promise.all(
+        filtered.slice(0, limit).map(async (product: WooCommerceProduct) => {
+          if (product.type === 'variable' && product.variations && product.variations.length > 0) {
+            const variations = await getProductVariations(product.id);
+            if (variations.length > 0) {
+              const prices = variations.map(v => parseFloat(v.price)).filter(p => !isNaN(p) && p > 0);
+              const regularPrices = variations.map(v => parseFloat(v.regular_price)).filter(p => !isNaN(p) && p > 0);
+
+              if (prices.length > 0) {
+                const minPrice = Math.min(...prices);
+                product.price = minPrice.toFixed(2);
+
+                if (regularPrices.length > 0) {
+                  const minRegularPrice = Math.min(...regularPrices);
+                  product.regular_price = minRegularPrice.toFixed(2);
+                }
+              }
+            }
+          }
+          return product;
+        })
+      );
+
+      return processed;
+    }
+
+    // 如果都没有，返回热门产品
+    const { data } = await wcRequest("products", {
+      per_page: limit + 5,
+      orderby: 'popularity',
+      order: 'desc',
+      status: 'publish'
+    });
+
+    const filtered = data.filter((p: WooCommerceProduct) => p.id !== productId);
+
+    const processed = await Promise.all(
+      filtered.slice(0, limit).map(async (product: WooCommerceProduct) => {
+        if (product.type === 'variable' && product.variations && product.variations.length > 0) {
+          const variations = await getProductVariations(product.id);
+          if (variations.length > 0) {
+            const prices = variations.map(v => parseFloat(v.price)).filter(p => !isNaN(p) && p > 0);
+            const regularPrices = variations.map(v => parseFloat(v.regular_price)).filter(p => !isNaN(p) && p > 0);
+
+            if (prices.length > 0) {
+              const minPrice = Math.min(...prices);
+              product.price = minPrice.toFixed(2);
+
+              if (regularPrices.length > 0) {
+                const minRegularPrice = Math.min(...regularPrices);
+                product.regular_price = minRegularPrice.toFixed(2);
+              }
+            }
+          }
+        }
+        return product;
+      })
+    );
+
+    return processed;
+  } catch (error) {
+    console.error("获取相关产品失败:", error);
+    return [];
+  }
+}

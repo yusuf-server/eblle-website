@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import CartDrawer from '../../components/CartDrawer.astro';
-import { getProductBySlug, getProductVariations } from '../../lib/woocommerce';
+import { getProductBySlug, getProductVariations, getRelatedProducts } from '../../lib/woocommerce';
 
 export const prerender = false;
 
@@ -31,9 +31,25 @@ const mainImage = images[0];
 const thumbnails = images.slice(0, 5); // 最多5张缩略图
 
 // 获取产品分类（用于面包屑）
-const category = product.categories && product.categories.length > 0
-  ? product.categories[0].name
-  : 'All Jewelry';
+// 优先显示主分类，如果没有则取第一个分类
+const getPrimaryCategory = () => {
+  if (!product.categories || product.categories.length === 0) {
+    return { name: 'All Jewelry', slug: '' };
+  }
+
+  // 如果只有一个分类，直接返回
+  if (product.categories.length === 1) {
+    return product.categories[0];
+  }
+
+  // 多分类情况：优先取第一个（通常是主分类）
+  // WooCommerce 默认会把主分类放在第一位
+  return product.categories[0];
+};
+
+const primaryCategory = getPrimaryCategory();
+const category = primaryCategory.name;
+const categorySlug = primaryCategory.slug;
 
 // 清理HTML标签
 const stripHtml = (html: string) => html?.replace(/<[^>]*>/g, '') || '';
@@ -46,6 +62,11 @@ if (product.type === 'variable' && product.variations && product.variations.leng
   variations = await getProductVariations(product.id);
   attributes = product.attributes || [];
 }
+
+// 获取相关产品（基于分类和标签）
+const categoryIds = product.categories?.map(cat => cat.id) || [];
+const tagIds = product.tags?.map(tag => tag.id) || [];
+const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds, 6);
 ---
 
 <Layout title={`${product.name} - E.B.Belle`}>
@@ -57,9 +78,15 @@ if (product.type === 'variable' && product.variations && product.variations.leng
       <nav class="breadcrumb" aria-label="Breadcrumb">
         <a href="/">Home</a>
         <i class="fa-solid fa-chevron-right"></i>
-        <a href="/shop">All Jewelry</a>
+        <a href="/shop">Shop</a>
         <i class="fa-solid fa-chevron-right"></i>
-        <span>{category}</span>
+        {categorySlug ? (
+          <a href={`/shop?category=${categorySlug}`}>{category}</a>
+        ) : (
+          <span>{category}</span>
+        )}
+        <i class="fa-solid fa-chevron-right"></i>
+        <span class="breadcrumb-current">{product.name}</span>
       </nav>
 
       <!-- Product Hero Section -->
@@ -365,64 +392,65 @@ if (product.type === 'variable' && product.variations && product.variations.leng
       </div>
 
       <!-- Related Products Section -->
-      <section class="related-products">
-        <h2 class="section-title">You May Also Like</h2>
-        <div class="products-grid">
-          <!-- Product 1 -->
-          <div class="product-card">
-            <div class="product-image">
-              <span class="discount-badge">-20%</span>
-              <img src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=400&q=80" alt="Diamond Accent Gold Hoops">
-            </div>
-            <div class="product-details">
-              <h3>Diamond Accent Gold Hoops</h3>
-              <div class="prices">
-                <span class="price">$32.00</span>
-                <span class="original">$40.00</span>
-              </div>
-            </div>
-          </div>
+      <!-- Related Products Section -->
+      {relatedProducts.length > 0 && (
+        <section class="related-products">
+          <h2 class="section-title">You May Also Like</h2>
 
-          <!-- Product 2 -->
-          <div class="product-card">
-            <div class="product-image">
-              <img src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=400&q=80" alt="Textured Stacking Rings Set">
-            </div>
-            <div class="product-details">
-              <h3>Textured Stacking Rings Set</h3>
-              <div class="prices">
-                <span class="price">$28.00</span>
-              </div>
-            </div>
-          </div>
+          <div class="related-slider-container">
+            <!-- Previous Button -->
+            <button type="button" class="slider-nav prev-btn" id="relatedPrevBtn" aria-label="Previous products">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
 
-          <!-- Product 3 -->
-          <div class="product-card">
-            <div class="product-image">
-              <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400&q=80" alt="Pearl Station Bracelet">
-            </div>
-            <div class="product-details">
-              <h3>Pearl Station Bracelet</h3>
-              <div class="prices">
-                <span class="price">$24.00</span>
-              </div>
-            </div>
-          </div>
+            <!-- Products Slider -->
+            <div class="related-slider" id="relatedSlider">
+              {relatedProducts.map((relatedProduct) => {
+                const relatedImage = relatedProduct.images?.[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80';
 
-          <!-- Product 4 -->
-          <div class="product-card">
-            <div class="product-image">
-              <img src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=400&q=80" alt="Classic Pearl Studs">
+                // 确保价格有效
+                const regularPrice = relatedProduct.regular_price && relatedProduct.regular_price !== ''
+                  ? parseFloat(relatedProduct.regular_price)
+                  : 0;
+                const salePrice = relatedProduct.price && relatedProduct.price !== ''
+                  ? parseFloat(relatedProduct.price)
+                  : 0;
+
+                // 计算折扣
+                const relatedHasDiscount = regularPrice > 0 && salePrice > 0 && regularPrice > salePrice;
+                const relatedDiscountPercent = relatedHasDiscount
+                  ? Math.round(((regularPrice - salePrice) / regularPrice) * 100)
+                  : 0;
+
+                return (
+                  <a href={`/product/${relatedProduct.slug}`} class="product-card">
+                    <div class="product-image">
+                      {relatedHasDiscount && relatedDiscountPercent > 0 && (
+                        <span class="discount-badge">-{relatedDiscountPercent}%</span>
+                      )}
+                      <img src={relatedImage} alt={relatedProduct.name} loading="lazy" />
+                    </div>
+                    <div class="product-details">
+                      <h3>{relatedProduct.name}</h3>
+                      <div class="prices">
+                        <span class="price">${salePrice.toFixed(2)}</span>
+                        {relatedHasDiscount && (
+                          <span class="original">${regularPrice.toFixed(2)}</span>
+                        )}
+                      </div>
+                    </div>
+                  </a>
+                );
+              })}
             </div>
-            <div class="product-details">
-              <h3>Classic Pearl Studs</h3>
-              <div class="prices">
-                <span class="price">$18.00</span>
-              </div>
-            </div>
+
+            <!-- Next Button -->
+            <button type="button" class="slider-nav next-btn" id="relatedNextBtn" aria-label="Next products">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <!-- Customer Reviews Section -->
       <section class="customer-reviews">
@@ -566,6 +594,39 @@ if (product.type === 'variable' && product.variations && product.variations.leng
   .breadcrumb span {
     color: #0e0f0f;
     flex-shrink: 0;
+  }
+  .breadcrumb-current {
+    color: #0e0f0f;
+    font-weight: 500;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 移动端响应式优化 */
+  @media (max-width: 768px) {
+    .breadcrumb {
+      gap: 8px;
+      font-size: 12.5px;
+      margin-bottom: 20px;
+    }
+    .breadcrumb i {
+      font-size: 8px;
+    }
+    .breadcrumb-current {
+      max-width: 150px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .breadcrumb {
+      gap: 6px;
+      font-size: 12px;
+    }
+    .breadcrumb-current {
+      max-width: 120px;
+    }
   }
 
   /* =========================================================
@@ -1520,7 +1581,6 @@ if (product.type === 'variable' && product.variations && product.variations.leng
     padding-top: 40px;
     margin-bottom: 60px;
     width: 100%;
-    text-align: center;
   }
   .section-title {
     font-size: 22px;
@@ -1529,31 +1589,85 @@ if (product.type === 'variable' && product.variations && product.variations.leng
     text-transform: uppercase;
     letter-spacing: 2px;
     color: #0e0f0f;
-    margin: 0 0 4px;
+    margin: 0 0 32px;
+    text-align: center;
   }
-  .section-subtitle {
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: #888;
-    margin: 0 0 24px;
-    text-transform: uppercase;
+
+  /* Related Products Slider Container */
+  .related-slider-container {
+    position: relative;
+    padding: 0 60px;
+    overflow: hidden;
   }
-  .products-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  .related-slider {
+    display: flex;
     gap: 16px;
-    width: 100%;
-    text-align: left;
+    transition: transform 0.5s ease-in-out;
+    will-change: transform;
   }
+
+  .related-slider .product-card {
+    flex: 0 0 calc(25% - 12px);
+    min-width: 0;
+  }
+
+  /* Slider Navigation Buttons */
+  .slider-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ddd8ce;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .slider-nav:hover {
+    background: #ffffff;
+    border-color: #c9a66a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .slider-nav:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .slider-nav i {
+    font-size: 16px;
+    color: #0e0f0f;
+  }
+
+  .prev-btn {
+    left: 0;
+  }
+
+  .next-btn {
+    right: 0;
+  }
+
   .product-card {
     border: 1px solid #ddd8ce;
     background: #fbf9f5;
     transition: all 0.3s;
     cursor: pointer;
-    min-width: 0;
+    text-decoration: none;
+    display: block;
   }
   .product-card:hover {
     border-color: #c9a66a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
   .product-image {
     aspect-ratio: 1;
@@ -1984,6 +2098,73 @@ if (product.type === 'variable' && product.variations && product.variations.leng
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .trust-text span {
+      display: none;
+    }
+  }
+
+  /* Related Products 移动端响应式 */
+  @media (max-width: 992px) {
+    .related-slider-container {
+      padding: 0 50px;
+    }
+    .related-slider {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .slider-nav {
+      width: 38px;
+      height: 38px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .related-slider-container {
+      padding: 0 45px;
+    }
+    .related-slider {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .slider-nav {
+      width: 36px;
+      height: 36px;
+    }
+    .slider-nav i {
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .related-products {
+      padding-top: 32px;
+      margin-bottom: 40px;
+    }
+    .section-title {
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+    .related-slider-container {
+      padding: 0;
+      overflow: hidden;
+    }
+    .related-slider {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 8px;
+    }
+    .related-slider::-webkit-scrollbar {
+      display: none;
+    }
+    .related-slider .product-card {
+      flex: 0 0 70%;
+      max-width: 280px;
+      scroll-snap-align: start;
+    }
+    .slider-nav {
       display: none;
     }
   }
@@ -2523,11 +2704,248 @@ if (product.type === 'variable' && product.variations && product.variations.leng
     }
   }
 
+  // =========================================================
+  // Related Products Slider (自动轮播 + 手动控制)
+  // =========================================================
+  function initRelatedSlider() {
+    const slider = document.getElementById('relatedSlider');
+    const prevBtn = document.getElementById('relatedPrevBtn');
+    const nextBtn = document.getElementById('relatedNextBtn');
+
+    if (!slider || !prevBtn || !nextBtn) return;
+
+    const allProducts = Array.from(slider.children);
+    const totalProducts = allProducts.length;
+
+    if (totalProducts === 0) return;
+
+    let currentIndex = 0;
+    let productsPerPage = 4;
+    let autoPlayInterval = null;
+    let isAutoPlaying = true;
+    let isMobile = false;
+
+    // 根据屏幕宽度确定每页显示数量
+    function updateProductsPerPage() {
+      const width = window.innerWidth;
+      isMobile = width <= 480;
+
+      if (isMobile) {
+        // 移动端：使用原生滚动
+        return;
+      } else if (width <= 768) {
+        productsPerPage = 2;
+      } else if (width <= 992) {
+        productsPerPage = 3;
+      } else {
+        productsPerPage = 4;
+      }
+    }
+
+    // 桌面端：每次滑动一个产品（使用 transform 实现平滑动画）
+    function showProducts(startIndex) {
+      // 确保所有产品都显示（通过 transform 控制位置）
+      allProducts.forEach(product => {
+        product.style.display = 'block';
+      });
+
+      // 计算偏移量
+      const cardWidth = allProducts[0].offsetWidth + 16; // 卡片宽度 + gap
+      const offset = -startIndex * cardWidth;
+
+      // 应用 transform 动画
+      slider.style.transform = `translateX(${offset}px)`;
+
+      currentIndex = startIndex;
+
+      // 无限循环，按钮始终可用
+      prevBtn.disabled = false;
+      nextBtn.disabled = false;
+    }
+
+    // 下一页（无限循环）
+    function nextSlide() {
+      if (currentIndex + productsPerPage < totalProducts) {
+        showProducts(currentIndex + 1);
+      } else {
+        // 到达末尾，循环回到开头
+        showProducts(0);
+      }
+    }
+
+    // 上一页（无限循环）
+    function prevSlide() {
+      if (currentIndex > 0) {
+        showProducts(currentIndex - 1);
+      } else {
+        // 到达开头，循环到末尾
+        const lastIndex = Math.max(0, totalProducts - productsPerPage);
+        showProducts(lastIndex);
+      }
+    }
+
+    // 开始自动播放
+    function startAutoPlay() {
+      if (autoPlayInterval) clearInterval(autoPlayInterval);
+
+      autoPlayInterval = setInterval(() => {
+        if (isAutoPlaying) {
+          nextSlide();
+        }
+      }, 3000); // 每3秒滑动一次
+    }
+
+    // 停止自动播放
+    function stopAutoPlay() {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+      }
+    }
+
+    // 暂停自动播放（临时）
+    function pauseAutoPlay() {
+      isAutoPlaying = false;
+      setTimeout(() => {
+        isAutoPlaying = true;
+      }, 5000); // 5秒后恢复自动播放
+    }
+
+    // 按钮点击事件
+    prevBtn.addEventListener('click', () => {
+      pauseAutoPlay();
+      prevSlide();
+    });
+
+    nextBtn.addEventListener('click', () => {
+      pauseAutoPlay();
+      nextSlide();
+    });
+
+    // 移动端触摸滑动暂停自动播放
+    if (isMobile) {
+      let touchStartTime = 0;
+
+      slider.addEventListener('touchstart', () => {
+        touchStartTime = Date.now();
+        pauseAutoPlay();
+      });
+
+      slider.addEventListener('touchend', () => {
+        const touchDuration = Date.now() - touchStartTime;
+        // 如果是快速滑动（小于300ms），认为是用户主动操作
+        if (touchDuration < 300) {
+          pauseAutoPlay();
+        }
+      });
+
+      // 监听滚动事件，滚动时暂停
+      slider.addEventListener('scroll', () => {
+        pauseAutoPlay();
+      });
+    }
+
+    // 窗口大小改变时重新计算
+    window.addEventListener('resize', () => {
+      const oldProductsPerPage = productsPerPage;
+      const wasMobile = isMobile;
+      updateProductsPerPage();
+
+      if (isMobile && !wasMobile) {
+        // 切换到移动端：显示所有产品，隐藏按钮
+        stopAutoPlay();
+        allProducts.forEach(product => {
+          product.style.display = 'block';
+        });
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+
+        // 移动端也启动自动播放（通过滚动实现）
+        startMobileAutoScroll();
+      } else if (!isMobile && wasMobile) {
+        // 切换到桌面端：显示按钮，重新分页
+        stopMobileAutoScroll();
+        prevBtn.style.display = 'flex';
+        nextBtn.style.display = 'flex';
+        currentIndex = 0;
+        showProducts(0);
+        startAutoPlay();
+      } else if (!isMobile && oldProductsPerPage !== productsPerPage) {
+        // 桌面端改变尺寸
+        currentIndex = 0;
+        showProducts(0);
+      }
+    });
+
+    // 移动端自动滚动
+    let mobileAutoScrollInterval = null;
+
+    function startMobileAutoScroll() {
+      if (!isMobile || mobileAutoScrollInterval) return;
+
+      mobileAutoScrollInterval = setInterval(() => {
+        if (isAutoPlaying && slider) {
+          const scrollWidth = slider.scrollWidth;
+          const clientWidth = slider.clientWidth;
+          const maxScroll = scrollWidth - clientWidth;
+
+          if (slider.scrollLeft >= maxScroll - 10) {
+            // 滚动到末尾，返回开头
+            slider.scrollTo({ left: 0, behavior: 'smooth' });
+          } else {
+            // 滚动一个卡片宽度
+            const cardWidth = allProducts[0].offsetWidth + 12; // 卡片宽度 + gap
+            slider.scrollBy({ left: cardWidth, behavior: 'smooth' });
+          }
+        }
+      }, 3000);
+    }
+
+    function stopMobileAutoScroll() {
+      if (mobileAutoScrollInterval) {
+        clearInterval(mobileAutoScrollInterval);
+        mobileAutoScrollInterval = null;
+      }
+    }
+
+    // 初始化
+    updateProductsPerPage();
+
+    if (isMobile) {
+      // 移动端：显示所有产品，启动自动滚动
+      allProducts.forEach(product => {
+        product.style.display = 'block';
+      });
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+      startMobileAutoScroll();
+    } else {
+      // 桌面端：分页显示，启动自动播放
+      showProducts(0);
+      startAutoPlay();
+    }
+
+    // 页面可见性变化时控制自动播放
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopAutoPlay();
+        stopMobileAutoScroll();
+      } else {
+        if (isMobile) {
+          startMobileAutoScroll();
+        } else {
+          startAutoPlay();
+        }
+      }
+    });
+  }
+
   // 页面加载完成后初始化
   function initAll() {
     initSlider();
     initVariants();
     bindCartButtons();
+    initRelatedSlider();
   }
 
   if (document.readyState === 'loading') {
