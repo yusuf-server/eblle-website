@@ -3,15 +3,15 @@ import { wcRequest } from '../../lib/woocommerce';
 
 export const prerender = false;
 
-export const GET: APIRoute = async (context) => {
+export const GET: APIRoute = async () => {
   try {
     console.log('正在获取筛选数据...');
 
-    // 传入 context.locals，兼容 Cloudflare Pages SSR 运行时读取环境变量
+    // 直接复用统一的 wcRequest，自动处理 Cloudflare Workers 环境变量
     const { data: allCategories } = await wcRequest('products/categories', {
       per_page: 100,
       hide_empty: true
-    }, context.locals);
+    });
 
     // 根据要求组织分类数据
     const allJewelrySlugs = [
@@ -73,7 +73,7 @@ export const GET: APIRoute = async (context) => {
     let materialAttributeInfo = null;
 
     try {
-      const { data: attributes } = await wcRequest('products/attributes', {}, context.locals);
+      const { data: attributes } = await wcRequest('products/attributes');
 
       // 查找颜色属性
       const colorAttr = attributes.find((attr: any) =>
@@ -90,7 +90,7 @@ export const GET: APIRoute = async (context) => {
       );
 
       if (colorAttr) {
-        const { data: colorTerms } = await wcRequest(`products/attributes/${colorAttr.id}/terms`, { per_page: 100 }, context.locals);
+        const { data: colorTerms } = await wcRequest(`products/attributes/${colorAttr.id}/terms`, { per_page: 100 });
         colorAttributeInfo = {
           id: colorAttr.id,
           slug: colorAttr.slug,
@@ -99,7 +99,7 @@ export const GET: APIRoute = async (context) => {
       }
 
       if (materialAttr) {
-        const { data: materialTerms } = await wcRequest(`products/attributes/${materialAttr.id}/terms`, { per_page: 100 }, context.locals);
+        const { data: materialTerms } = await wcRequest(`products/attributes/${materialAttr.id}/terms`, { per_page: 100 });
         materialAttributeInfo = {
           id: materialAttr.id,
           slug: materialAttr.slug,
