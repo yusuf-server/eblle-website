@@ -31,7 +31,7 @@ export async function getHomepageData() {
     const startTime = Date.now();
 
     // 获取 slug 为 'home' 的页面
-    const response = await fetch(`${WP_API_BASE}/wp-json/wp/v2/pages?slug=home&_embed=1`, {
+    const response = await fetch(`${WP_API_BASE}/wp-json/wp/v2/pages?slug=home-settings&_embed=1`, {
       headers: {
         'Accept': 'application/json',
       },

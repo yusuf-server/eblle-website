@@ -9,7 +9,7 @@ export const prerender = false;
 
 const { slug } = Astro.params;
 
-// 获取产品数据
+// 获取当前主产品数据
 const product = await getProductBySlug(slug);
 
 if (!product) {
@@ -17,7 +17,7 @@ if (!product) {
 }
 
 // 计算折扣百分比
-const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
+const hasDiscount = Boolean(product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price));
 const discountPercent = hasDiscount
   ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
   : 0;
@@ -28,22 +28,12 @@ const images = product.images && product.images.length > 0
   : [{ src: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80', alt: product.name }];
 
 const mainImage = images[0];
-const thumbnails = images.slice(0, 5); // 最多5张缩略图
+const thumbnails = images.slice(0, 10);
 
-// 获取产品分类（用于面包屑）
-// 优先显示主分类，如果没有则取第一个分类
 const getPrimaryCategory = () => {
   if (!product.categories || product.categories.length === 0) {
     return { name: 'All Jewelry', slug: '' };
   }
-
-  // 如果只有一个分类，直接返回
-  if (product.categories.length === 1) {
-    return product.categories[0];
-  }
-
-  // 多分类情况：优先取第一个（通常是主分类）
-  // WooCommerce 默认会把主分类放在第一位
   return product.categories[0];
 };
 
@@ -51,11 +41,10 @@ const primaryCategory = getPrimaryCategory();
 const category = primaryCategory.name;
 const categorySlug = primaryCategory.slug;
 
-// 清理HTML标签
-const stripHtml = (html: string) => html?.replace(/<[^>]*>/g, '') || '';
+// 确保为纯 JS 语法，去除类型标记
+const stripHtml = (html) => (html ? html.replace(/<[^>]*>/g, '') : '');
 const shortDesc = stripHtml(product.short_description || product.description || '').substring(0, 200);
 
-// 获取变体数据（如果是变体产品）
 let variations = [];
 let attributes = [];
 if (product.type === 'variable' && product.variations && product.variations.length > 0) {
@@ -63,10 +52,96 @@ if (product.type === 'variable' && product.variations && product.variations.leng
   attributes = product.attributes || [];
 }
 
-// 获取相关产品（基于分类和标签）
-const categoryIds = product.categories?.map(cat => cat.id) || [];
-const tagIds = product.tags?.map(tag => tag.id) || [];
-const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds, 6);
+const categoryIds = product.categories ? product.categories.map((cat) => cat.id) : [];
+const tagIds = product.tags ? product.tags.map((tag) => tag.id) : [];
+// 获取 10 个相关产品
+const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds, 10);
+
+// =========================================================
+// 纯原生 JavaScript 获取 56339 & 57994 真实数据
+// =========================================================
+const giftProductIds = [56339, 57994];
+const wcUrl = import.meta.env.WC_STORE_URL || import.meta.env.WC_URL || import.meta.env.PUBLIC_WC_URL || '';
+const wcKey = import.meta.env.WC_CONSUMER_KEY || '';
+const wcSecret = import.meta.env.WC_CONSUMER_SECRET || '';
+
+function getAccurateRegularPrice(p) {
+  if (!p) return '0.00';
+  if (p.regular_price !== undefined && p.regular_price !== null && p.regular_price !== '') {
+    return parseFloat(p.regular_price).toFixed(2);
+  }
+  if (p.price !== undefined && p.price !== null && p.price !== '') {
+    return parseFloat(p.price).toFixed(2);
+  }
+  return '0.00';
+}
+
+function encodeBasicAuth(key, secret) {
+  if (typeof btoa === 'function') {
+    return btoa(key + ':' + secret);
+  }
+  return '';
+}
+
+const rawGiftProducts = await Promise.all(
+  giftProductIds.map(async (id) => {
+    try {
+      if (!wcUrl || !wcKey || !wcSecret) return null;
+      const auth = encodeBasicAuth(wcKey, wcSecret);
+      const endpoint = wcUrl.replace(/\/$/, '') + '/wp-json/wc/v3/products/' + id;
+      const res = await fetch(endpoint, {
+        headers: {
+          'Authorization': 'Basic ' + auth,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+
+      if (data && data.type === 'variable' && (!data.price || data.price === '') && data.variations && data.variations.length > 0) {
+        const varEndpoint = wcUrl.replace(/\/$/, '') + '/wp-json/wc/v3/products/' + id + '/variations/' + data.variations[0];
+        const varRes = await fetch(varEndpoint, {
+          headers: {
+            'Authorization': 'Basic ' + auth,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (varRes.ok) {
+          const varData = await varRes.json();
+          data.regular_price = (varData.regular_price !== undefined && varData.regular_price !== '') ? varData.regular_price : varData.price;
+          data.price = varData.price;
+          if ((!data.images || data.images.length === 0) && varData.image) {
+            data.images = [varData.image];
+          }
+        }
+      }
+      return data;
+    } catch (e) {
+      console.warn('[Gift Fetch Error] Product ' + id + ':', e);
+      return null;
+    }
+  })
+);
+
+const giftProducts = giftProductIds.map((id, index) => {
+  const p = rawGiftProducts[index];
+  if (p && p.name) {
+    return {
+      id: p.id,
+      name: p.name,
+      image: (p.images && p.images[0]) ? p.images[0].src : '',
+      regular_price: getAccurateRegularPrice(p),
+      loaded: true
+    };
+  }
+  return {
+    id: id,
+    name: (id === 56339) ? 'E.B.belle PVC Zipper Jewelry Packaging Bag Pouch' : 'E.B.belle Velvet Anti-Tarnish Jewelry Keepsake Pouch',
+    image: '',
+    regular_price: '0.00',
+    loaded: false
+  };
+});
 ---
 
 <Layout title={`${product.name} - E.B.Belle`}>
@@ -93,7 +168,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       <div class="product-hero">
         <!-- Left: Product Image Gallery -->
         <div class="product-gallery">
-          <!-- Main Image Slider -->
           <div class="main-image-slider">
             <div class="slider-container" id="sliderContainer">
               {images.map((img, index) => (
@@ -103,12 +177,10 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
               ))}
             </div>
 
-            <!-- Image Counter -->
             <div class="image-counter">
               <span id="currentImageIndex">1</span>/{images.length}
             </div>
 
-            <!-- Navigation Arrows -->
             {images.length > 1 && (
               <>
                 <button type="button" class="slider-arrow prev" onclick="prevImage()" aria-label="Previous image">
@@ -121,7 +193,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
             )}
           </div>
 
-          <!-- Thumbnails -->
           <div class="thumbnails">
             {thumbnails.map((img, index) => (
               <div
@@ -193,10 +264,60 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
             </div>
           </div>
 
-          <!-- Description & Badges -->
-          <p class="product-description">
-            {shortDesc}
-          </p>
+          <!-- Product Carousel -->
+          <div class="gift-carousel" id="giftCarousel">
+            <button type="button" class="carousel-btn prev" id="giftPrevBtn" aria-label="Previous gift">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="gift-viewport">
+              <div class="gift-track" id="giftTrack">
+                {giftProducts.map((gift, idx) => (
+                  <div 
+                    class={`gift-slide ${idx === 0 ? 'active' : ''}`}
+                    data-id={gift.id}
+                    data-name={gift.name}
+                    data-price={gift.regular_price}
+                    data-image={gift.image}
+                    data-loaded={gift.loaded ? "true" : "false"}
+                  >
+                    <div class="gift-content">
+                      <div class="gift-image">
+                        <img 
+                          class="gift-img-el" 
+                          src={gift.image || 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&q=80'} 
+                          alt={gift.name} 
+                        />
+                      </div>
+                      <div class="gift-info">
+                        <h4 class="gift-title-el" title={gift.name}>{gift.name}</h4>
+                        <div class="gift-price-row">
+                          <span class="gift-price gift-price-el">${gift.regular_price}</span>
+                          <span class="gift-tag">Add-on Item</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div class="gift-actions">
+              <button type="button" class="btn-add-gift" id="addGiftBtn">ADD TO BAG</button>
+              <button type="button" class="carousel-btn next" id="giftNextBtn" aria-label="Next gift">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Description with Fade & Show More/Less -->
+          <div class="desc-expandable-wrapper" id="descWrapper">
+            <div class="product-description-content" id="descContent">
+              <p class="product-description">
+                {stripHtml(product.description || product.short_description || '')}
+              </p>
+            </div>
+            <button type="button" class="btn-toggle-desc" id="btnToggleDesc">Show more</button>
+          </div>
+
           <div class="feature-badges">
             <span class="badge">316L STAINLESS STEEL</span>
             <span class="badge">PVD GOLD PLATING</span>
@@ -207,24 +328,39 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
           <!-- Product Variants Selection -->
           {attributes.length > 0 && (
             <div class="variants-section">
-              {attributes.map((attr) => {
+              {attributes.map((attr, attrIndex) => {
                 const options = attr.options || [];
                 const attrName = attr.name || '';
                 const attrSlug = attrName.toLowerCase().replace(/\s+/g, '-');
 
-                // 默认隐藏的属性
                 const hiddenAttributes = ['material', 'weight'];
                 if (hiddenAttributes.includes(attrSlug)) {
                   return null;
                 }
 
-                // 必须显示的属性（即使只有1个选项）
                 const alwaysShowAttributes = ['set', 'style'];
                 const mustShow = alwaysShowAttributes.includes(attrSlug);
 
-                // 其他属性（包括color和size）：只有选项数>1时才显示（除非是必须显示的）
                 if (!mustShow && options.length <= 1) {
                   return null;
+                }
+
+                const isFirstAttribute = attrIndex === 0;
+
+                const optionImages = {};
+                if (isFirstAttribute && variations.length > 0) {
+                  options.forEach((option) => {
+                    const matchingVariation = variations.find((v) => {
+                      return v.attributes && v.attributes.some((a) =>
+                        a.name.toLowerCase().replace(/\s+/g, '-') === attrSlug &&
+                        a.option.toLowerCase() === option.toLowerCase()
+                      );
+                    });
+
+                    if (matchingVariation && matchingVariation.image && matchingVariation.image.src) {
+                      optionImages[option] = matchingVariation.image.src;
+                    }
+                  });
                 }
 
                 return (
@@ -236,17 +372,26 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
                       </span>
                     </div>
                     <div class="variant-options">
-                      {options.map((option, index) => (
-                        <button
-                          type="button"
-                          class={`variant-option ${index === 0 ? 'active' : ''}`}
-                          data-attribute={attrSlug}
-                          data-value={option}
-                          onclick={`selectVariant('${attrSlug}', '${option}', this)`}
-                        >
-                          {option}
-                        </button>
-                      ))}
+                      {options.map((option, index) => {
+                        const hasImage = isFirstAttribute && optionImages[option];
+
+                        return (
+                          <button
+                            type="button"
+                            class={`variant-option ${index === 0 ? 'active' : ''} ${hasImage ? 'with-image' : ''}`}
+                            data-attribute={attrSlug}
+                            data-value={option}
+                            onclick={`selectVariant('${attrSlug}', '${option}', this)`}
+                          >
+                            {hasImage && (
+                              <span class="option-image">
+                                <img src={optionImages[option]} alt={option} loading="lazy" />
+                              </span>
+                            )}
+                            <span class="option-label">{option}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -254,7 +399,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
             </div>
           )}
 
-          <!-- Hidden data container for variations -->
           {variations.length > 0 && (
             <script is:inline id="variationsData" type="application/json" set:html={JSON.stringify(variations)} />
           )}
@@ -296,27 +440,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
                 <button type="button" class="offer-btn">Get Code <i class="fa-solid fa-arrow-right"></i></button>
                 <p class="offer-desc">Enjoy introductory discount up to 15% on your order</p>
               </div>
-            </div>
-          </div>
-
-          <!-- Free Gift Carousel -->
-          <div class="gift-carousel">
-            <button type="button" class="carousel-btn prev" aria-label="Previous gift"><i class="fa-solid fa-chevron-left"></i></button>
-            <div class="gift-content">
-              <div class="gift-image">
-                <div class="gift-placeholder">E.B.B</div>
-              </div>
-              <div class="gift-info">
-                <h4>E.B.belle PVC Zipper Jewelry Packaging Bag Pouch (Custom Logo Accepted)</h4>
-                <div class="gift-price-row">
-                  <span class="gift-price">$0.00</span>
-                  <span class="gift-tag">Complimentary Gift</span>
-                </div>
-              </div>
-            </div>
-            <div class="gift-actions">
-              <button type="button" class="btn-add-gift">ADD FREE GIFT</button>
-              <button type="button" class="carousel-btn next" aria-label="Next gift"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
           </div>
 
@@ -391,36 +514,25 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
         </div>
       </div>
 
-      <!-- Related Products Section -->
-      <!-- Related Products Section -->
+      <!-- =========================================================
+           Related Products Section (桌面端 5 列 / 移动端 1 列 / 每次滑动 1 个)
+           ========================================================= -->
       {relatedProducts.length > 0 && (
         <section class="related-products">
           <h2 class="section-title">You May Also Like</h2>
 
           <div class="related-slider-container">
-            <!-- Previous Button -->
             <button type="button" class="slider-nav prev-btn" id="relatedPrevBtn" aria-label="Previous products">
               <i class="fa-solid fa-chevron-left"></i>
             </button>
 
-            <!-- Products Slider -->
             <div class="related-slider" id="relatedSlider">
               {relatedProducts.map((relatedProduct) => {
-                const relatedImage = relatedProduct.images?.[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80';
-
-                // 确保价格有效
-                const regularPrice = relatedProduct.regular_price && relatedProduct.regular_price !== ''
-                  ? parseFloat(relatedProduct.regular_price)
-                  : 0;
-                const salePrice = relatedProduct.price && relatedProduct.price !== ''
-                  ? parseFloat(relatedProduct.price)
-                  : 0;
-
-                // 计算折扣
-                const relatedHasDiscount = regularPrice > 0 && salePrice > 0 && regularPrice > salePrice;
-                const relatedDiscountPercent = relatedHasDiscount
-                  ? Math.round(((regularPrice - salePrice) / regularPrice) * 100)
-                  : 0;
+                const relatedImage = (relatedProduct.images && relatedProduct.images[0]) ? relatedProduct.images[0].src : 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80';
+                const regularPrice = (relatedProduct.regular_price && relatedProduct.regular_price !== '') ? parseFloat(relatedProduct.regular_price) : 0;
+                const salePrice = (relatedProduct.price && relatedProduct.price !== '') ? parseFloat(relatedProduct.price) : 0;
+                const relatedHasDiscount = Boolean(regularPrice > 0 && salePrice > 0 && regularPrice > salePrice);
+                const relatedDiscountPercent = relatedHasDiscount ? Math.round(((regularPrice - salePrice) / regularPrice) * 100) : 0;
 
                 return (
                   <a href={`/product/${relatedProduct.slug}`} class="product-card">
@@ -444,7 +556,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
               })}
             </div>
 
-            <!-- Next Button -->
             <button type="button" class="slider-nav next-btn" id="relatedNextBtn" aria-label="Next products">
               <i class="fa-solid fa-chevron-right"></i>
             </button>
@@ -469,7 +580,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
         </div>
 
         <div class="reviews-grid">
-          <!-- Review 1 -->
           <div class="review-card">
             <div class="review-header">
               <div class="reviewer-info">
@@ -491,7 +601,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
             <p class="review-text">I've worn this necklace every day since I got it. It hasn't tarnished at all in the shower, and it looks so elegant layered with my other gold chains. Highly recommend!</p>
           </div>
 
-          <!-- Review 2 -->
           <div class="review-card">
             <div class="review-header">
               <div class="reviewer-info">
@@ -520,15 +629,41 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       </section>
     </div>
 
-    <!-- Mobile Sticky Bottom Buy Bar -->
+    <!-- 移动端底部悬浮购买栏 (48px高清缩略图 + 放大镜角标 + 动态规格) -->
     <div class="mobile-sticky-action-bar">
-      <div class="sticky-price-block">
-        <span class="sticky-price">${product.price}</span>
-        {hasDiscount && <span class="sticky-original">${product.regular_price}</span>}
+      <!-- 左侧大变体预览图 (48x48，点击唤起 Lightbox) -->
+      <div class="sticky-thumb-wrap" onclick="openMobileLightbox()" aria-label="Zoom image">
+        <img id="stickyThumbImg" src={mainImage.src} alt={product.name} />
+        <!-- 放大微标识角标 -->
+        <span class="zoom-indicator">
+          <i class="fa-solid fa-magnifying-glass-plus"></i>
+        </span>
       </div>
+
+      <!-- 价格与动态规格文字 -->
+      <div class="sticky-price-block">
+        <div class="sticky-prices">
+          <span class="sticky-price" id="stickyPriceVal">${product.price}</span>
+          {hasDiscount && <span class="sticky-original">${product.regular_price}</span>}
+        </div>
+        <span class="sticky-variant-label" id="stickyVariantLabel">Standard</span>
+      </div>
+
+      <!-- 购买按钮组 -->
       <div class="sticky-btn-group">
         <button type="button" class="sticky-btn-cart" onclick="document.querySelector('.btn-add-cart')?.click()">Add to Cart</button>
         <button type="button" class="sticky-btn-buy" onclick="document.querySelector('.btn-buy-now')?.click()">Buy Now</button>
+      </div>
+    </div>
+
+    <!-- 移动端专属高清大图 Lightbox 遮罩层 (桌面端隐藏) -->
+    <div id="mobileLightboxModal" class="mobile-lightbox" onclick="closeMobileLightbox(event)">
+      <button type="button" class="lightbox-close" onclick="closeMobileLightbox()" aria-label="Close preview">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="lightbox-content">
+        <img id="lightboxImg" src={mainImage.src} alt="Product Full View" />
+        <span class="lightbox-caption">Tap anywhere to close</span>
       </div>
     </div>
   </main>
@@ -538,9 +673,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
 </Layout>
 
 <style>
-  /* =========================================================
-     1. 全局与基础安全布局重置（杜绝任何横向溢出与白边）
-     ========================================================= */
   *, *::before, *::after {
     box-sizing: border-box;
   }
@@ -555,13 +687,12 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
 
   .product-container {
     width: 100%;
-    max-width: 1240px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 0 20px;
     box-sizing: border-box;
   }
 
-  /* 面包屑导航 */
   .breadcrumb {
     display: flex;
     align-items: center;
@@ -604,7 +735,57 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     white-space: nowrap;
   }
 
-  /* 移动端响应式优化 */
+  /* Description 文字渐变截断与展开/折叠样式 */
+  .desc-expandable-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .product-description-content {
+    position: relative;
+    max-height: 4.8em;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  .product-description-content.expanded {
+    max-height: 1000px;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .product-description {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: #4a4d4d;
+    margin: 0;
+    word-break: break-word;
+  }
+
+  .btn-toggle-desc {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0e0f0f;
+    cursor: pointer;
+    outline: none;
+    transition: opacity 0.2s ease;
+    user-select: none;
+  }
+
+  .btn-toggle-desc:hover {
+    opacity: 0.7;
+  }
+
   @media (max-width: 768px) {
     .breadcrumb {
       gap: 8px;
@@ -629,9 +810,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     }
   }
 
-  /* =========================================================
-     2. 主图与画廊 (Gallery)
-     ========================================================= */
   .product-hero {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -649,7 +827,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     min-width: 0;
   }
 
-  /* Main Image Slider */
   .main-image-slider {
     position: relative;
     width: 100%;
@@ -685,7 +862,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     -webkit-user-drag: none;
   }
 
-  /* Image Counter */
   .image-counter {
     position: absolute;
     top: 16px;
@@ -705,7 +881,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     font-weight: 700;
   }
 
-  /* Slider Navigation Arrows */
   .slider-arrow {
     position: absolute;
     top: 50%;
@@ -739,67 +914,12 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     right: 16px;
   }
 
-  /* Hide arrows on mobile */
   @media (max-width: 768px) {
     .slider-arrow {
       display: none;
     }
   }
 
-  .main-image {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1;
-    background: #f6f3ed;
-    border: 1px solid #ddd8ce;
-    border-radius: 4px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .gallery-badge {
-    position: absolute;
-    top: 14px;
-    left: 14px;
-    background: #0e0f0f;
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    padding: 4px 10px;
-    border-radius: 2px;
-    z-index: 2;
-  }
-  .btn-wishlist {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #ddd8ce;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #444;
-    cursor: pointer;
-    font-size: 15px;
-    z-index: 2;
-    transition: all 0.2s;
-  }
-  .btn-wishlist:hover {
-    background: #fff;
-    color: #a82424;
-    transform: scale(1.05);
-  }
-  .main-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: opacity 0.2s ease;
-  }
   .thumbnails {
     display: flex;
     gap: 12px;
@@ -835,9 +955,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     object-fit: cover;
   }
 
-  /* =========================================================
-     3. 产品主信息区 (Info Header)
-     ========================================================= */
   .product-info {
     display: flex;
     flex-direction: column;
@@ -863,13 +980,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     line-height: 1.25;
     margin: 0;
     word-break: break-word;
-  }
-  .price-rating-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
   }
   .price-row {
     display: flex;
@@ -922,9 +1032,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     color: #747878;
   }
 
-  /* =========================================================
-     4. 批发阶梯价格表 (Wholesale Table)
-     ========================================================= */
   .wholesale-table {
     background: #fbf9f5;
     border: 1px solid #e2ddd3;
@@ -1024,14 +1131,175 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     font-size: 13px;
   }
 
-  /* 描述文案与标签 */
-  .product-description {
-    font-size: 14.5px;
-    line-height: 1.6;
-    color: #4a4d4d;
-    margin: 0;
-    word-break: break-word;
+  .gift-carousel {
+    background: #fbf9f5;
+    border: 1px solid #e2ddd3;
+    border-radius: 4px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    position: relative;
+    box-sizing: border-box;
   }
+
+  .gift-viewport {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    min-width: 0;
+  }
+
+  .gift-track {
+    display: flex;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    width: 100%;
+  }
+
+  .gift-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .gift-content {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .gift-image {
+    width: 44px;
+    height: 44px;
+    background: #ffffff;
+    border: 1px solid #ddd8ce;
+    border-radius: 3px;
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gift-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .gift-info {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .gift-info h4 {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #1c1c18;
+    line-height: 1.3;
+    margin: 0 0 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gift-price-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .gift-price {
+    font-family: 'Bodoni Moda', Georgia, serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #0e0f0f;
+  }
+
+  .gift-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #725b29;
+    background: #f7f4ee;
+    border: 1px solid rgba(163, 130, 76, 0.4);
+    padding: 1px 6px;
+    border-radius: 2px;
+  }
+
+  .carousel-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid #ddd8ce;
+    color: #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    outline: none;
+    padding: 0;
+  }
+
+  .carousel-btn:hover {
+    background: #0e0f0f;
+    color: #ffffff;
+    border-color: #0e0f0f;
+  }
+
+  .gift-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .btn-add-gift {
+    padding: 8px 12px;
+    background: #0e0f0f;
+    border: 1px solid #0e0f0f;
+    color: #ffffff;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+
+  .btn-add-gift:hover {
+    background: #2b2b2b;
+  }
+
+  @media (max-width: 640px) {
+    .gift-carousel {
+      padding: 8px 10px;
+      gap: 6px;
+    }
+    .gift-image {
+      width: 38px;
+      height: 38px;
+    }
+    .btn-add-gift {
+      padding: 6px 9px;
+      font-size: 8.5px;
+    }
+    .carousel-btn {
+      width: 22px;
+      height: 22px;
+      font-size: 9px;
+    }
+  }
+
   .feature-badges {
     display: flex;
     flex-wrap: wrap;
@@ -1048,9 +1316,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     border-radius: 2px;
   }
 
-  /* =========================================================
-     Product Variants Selection
-     ========================================================= */
   .variants-section {
     display: flex;
     flex-direction: column;
@@ -1126,11 +1391,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     position: relative;
   }
 
-  .variant-option:disabled:hover {
-    border-color: #e5e5e5;
-    background: #f5f5f5;
-  }
-
   .variant-option.out-of-stock {
     opacity: 0.4;
     cursor: not-allowed;
@@ -1140,14 +1400,62 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     color: #999;
   }
 
-  .variant-option.out-of-stock:hover {
-    border-color: #e5e5e5;
-    background: #f5f5f5;
+  .variant-option.with-image {
+    min-width: 140px;
+    height: auto;
+    min-height: 56px;
+    padding: 4px;
+    justify-content: flex-start;
+    gap: 10px;
   }
 
-  /* =========================================================
-     5. 核心操作区：数量与购买按钮（重点优化）
-     ========================================================= */
+  .variant-option .option-image {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e8e8e8;
+  }
+
+  .variant-option .option-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .variant-option .option-label {
+    flex: 1;
+    text-align: left;
+    padding-right: 8px;
+  }
+
+  .variant-option.with-image.active {
+    background: #faf9f7;
+    border-color: #0e0f0f;
+    border-width: 2px;
+    padding: 3px;
+  }
+
+  .variant-option.with-image.active .option-image {
+    border: 2px solid #0e0f0f;
+  }
+
+  .variant-option.with-image.active .option-label {
+    color: #0e0f0f;
+    font-weight: 600;
+  }
+
+  .variant-option.with-image:hover {
+    background: #fbf9f5;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
   .actions-section {
     display: flex;
     flex-direction: column;
@@ -1157,7 +1465,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     width: 100%;
   }
 
-  /* 数量行：两端对齐，轻巧极简 */
   .quantity-row {
     display: flex;
     align-items: center;
@@ -1209,7 +1516,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     outline: none;
   }
 
-  /* 按钮组：强制横向左右并排平分 */
   .button-group {
     display: flex !important;
     flex-direction: row !important;
@@ -1234,28 +1540,23 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     white-space: nowrap !important;
     transition: all 0.2s ease !important;
   }
-  /* 左边：黑底白字 */
   .btn-add-cart {
     background: #0e0f0f !important;
     border: 1px solid #0e0f0f !important;
     color: #ffffff !important;
   }
-  .btn-add-cart:hover,
-  .btn-add-cart:active {
+  .btn-add-cart:hover {
     background: #2b2b2b !important;
   }
-  /* 右边：香槟轻奢浅米金底 */
   .btn-buy-now {
     background: #eee8dc !important;
     border: 1px solid #ded7ca !important;
     color: #111111 !important;
   }
-  .btn-buy-now:hover,
-  .btn-buy-now:active {
+  .btn-buy-now:hover {
     background: #e4dccf !important;
   }
 
-  /* 批发全宽线框按钮 */
   .btn-wholesale {
     width: 100% !important;
     height: 44px !important;
@@ -1276,14 +1577,10 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     white-space: nowrap !important;
     transition: all 0.2s ease !important;
   }
-  .btn-wholesale:hover,
-  .btn-wholesale:active {
+  .btn-wholesale:hover {
     background: #fbf9f5 !important;
   }
 
-  /* =========================================================
-     6. 会员优惠券与赠品栏
-     ========================================================= */
   .offers-card {
     background: #fbf9f5;
     border: 1px solid #e2ddd3;
@@ -1343,98 +1640,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     color: #725b29;
   }
 
-  /* 赠品横条 */
-  .gift-carousel {
-    background: #fbf9f5;
-    border: 1px solid #e2ddd3;
-    border-radius: 4px;
-    padding: 12px 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-  }
-  .carousel-btn {
-    display: none;
-  }
-  .gift-content {
-    flex: 1;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    min-width: 0;
-  }
-  .gift-image {
-    width: 44px;
-    height: 44px;
-    background: #fff;
-    border: 1px solid #ddd8ce;
-    border-radius: 3px;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-  .gift-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: #725b29;
-  }
-  .gift-info {
-    min-width: 0;
-    flex: 1;
-  }
-  .gift-info h4 {
-    font-size: 11.5px;
-    font-weight: 500;
-    color: #1c1c18;
-    line-height: 1.3;
-    margin: 0 0 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .gift-price-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .gift-price {
-    font-size: 12.5px;
-    font-weight: 700;
-    color: #0e0f0f;
-  }
-  .gift-tag {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    color: #16a34a;
-    background: #f0fdf4;
-    padding: 1px 5px;
-    border-radius: 2px;
-  }
-  .gift-actions {
-    flex-shrink: 0;
-  }
-  .btn-add-gift {
-    padding: 8px 12px;
-    background: #0e0f0f;
-    border: none;
-    color: #fff;
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    border-radius: 2px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  /* 安全支付与保障徽章 */
   .checkout-badges {
     padding-bottom: 20px;
     border-bottom: 1px solid #ddd8ce;
@@ -1485,46 +1690,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
   .payment-badge.paypal { background: #003087; }
   .payment-badge.apple { background: #000; }
 
-  /* 三大服务保障条 */
-  .trust-strip {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 0;
-    border-bottom: 1px solid #ddd8ce;
-    width: 100%;
-    gap: 8px;
-  }
-  .trust-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-  }
-  .trust-item i {
-    font-size: 16px;
-    color: #725b29;
-    flex-shrink: 0;
-  }
-  .trust-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-  .trust-text strong {
-    font-size: 11px;
-    color: #111;
-    font-weight: 600;
-    line-height: 1.2;
-    white-space: nowrap;
-  }
-  .trust-text span {
-    font-size: 9.5px;
-    color: #777;
-    white-space: nowrap;
-  }
-
-  /* 手风琴面板 */
   .accordions {
     border-top: none;
     margin-bottom: 24px;
@@ -1575,112 +1740,80 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
   .accordion-body ul { padding-left: 18px; margin: 6px 0; }
   .accordion-body li { margin-bottom: 3px; }
 
-  /* 推荐商品区 */
+  /* Related Products: 桌面端 5 列 / 移动端 1 列 */
   .related-products {
     border-top: 1px solid #ddd8ce;
-    padding-top: 40px;
+    padding-top: 48px;
     margin-bottom: 60px;
     width: 100%;
+    position: relative;
+    box-sizing: border-box;
   }
-  .section-title {
+
+  .related-products .section-title {
     font-size: 22px;
     font-weight: 500;
     font-family: 'Bodoni Moda', Georgia, serif;
     text-transform: uppercase;
     letter-spacing: 2px;
     color: #0e0f0f;
-    margin: 0 0 32px;
+    margin: 0 0 28px;
     text-align: center;
   }
 
-  /* Related Products Slider Container */
   .related-slider-container {
     position: relative;
-    padding: 0 60px;
+    padding: 0 54px;
     overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .related-slider {
     display: flex;
     gap: 16px;
-    transition: transform 0.5s ease-in-out;
+    transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
     will-change: transform;
+    width: 100%;
   }
 
   .related-slider .product-card {
-    flex: 0 0 calc(25% - 12px);
-    min-width: 0;
-  }
-
-  /* Slider Navigation Buttons */
-  .slider-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid #ddd8ce;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .slider-nav:hover {
-    background: #ffffff;
-    border-color: #c9a66a;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .slider-nav:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-
-  .slider-nav i {
-    font-size: 16px;
-    color: #0e0f0f;
-  }
-
-  .prev-btn {
-    left: 0;
-  }
-
-  .next-btn {
-    right: 0;
-  }
-
-  .product-card {
+    flex: 0 0 calc((100% - 64px) / 5);
+    min-width: calc((100% - 64px) / 5);
+    max-width: calc((100% - 64px) / 5);
     border: 1px solid #ddd8ce;
     background: #fbf9f5;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     cursor: pointer;
     text-decoration: none;
-    display: block;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    border-radius: 2px;
   }
-  .product-card:hover {
+
+  .related-slider .product-card:hover {
     border-color: #c9a66a;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
-  .product-image {
+
+  .related-slider .product-image {
     aspect-ratio: 1;
     background: #f0eee8;
     overflow: hidden;
     position: relative;
+    width: 100%;
   }
-  .product-image img {
+
+  .related-slider .product-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
   }
-  .discount-badge {
+
+  .related-slider .discount-badge {
     position: absolute;
     top: 6px;
     left: 6px;
@@ -1691,14 +1824,18 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     letter-spacing: 0.5px;
     padding: 2px 6px;
     text-transform: uppercase;
+    z-index: 2;
   }
-  .product-details {
-    padding: 12px;
+
+  .related-slider .product-details {
+    padding: 10px 12px 14px;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    background: #ffffff;
   }
-  .product-details h3 {
+
+  .related-slider .product-details h3 {
     font-size: 13px;
     font-weight: 500;
     color: #0e0f0f;
@@ -1707,23 +1844,109 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .prices {
+
+  .related-slider .prices {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 6px;
   }
-  .prices .price {
+
+  .related-slider .prices .price {
     font-size: 14px;
     font-weight: 700;
     color: #0e0f0f;
   }
-  .prices .original {
+
+  .related-slider .prices .original {
     font-size: 12px;
     color: #8c8c8c;
     text-decoration: line-through;
   }
 
-  /* 评价区 */
+  .slider-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ddd8ce;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    outline: none;
+  }
+
+  .slider-nav:hover {
+    background: #0e0f0f;
+    border-color: #0e0f0f;
+  }
+
+  .slider-nav:hover i {
+    color: #ffffff;
+  }
+
+  .slider-nav i {
+    font-size: 14px;
+    color: #0e0f0f;
+  }
+
+  .prev-btn {
+    left: 6px;
+  }
+
+  .next-btn {
+    right: 6px;
+  }
+
+  @media (max-width: 1024px) and (min-width: 769px) {
+    .related-slider .product-card {
+      flex: 0 0 calc((100% - 32px) / 3);
+      min-width: calc((100% - 32px) / 3);
+      max-width: calc((100% - 32px) / 3);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .related-products {
+      padding-top: 32px;
+      margin-bottom: 36px;
+    }
+
+    .related-slider-container {
+      padding: 0 46px;
+    }
+
+    .related-slider {
+      gap: 16px;
+    }
+
+    .related-slider .product-card {
+      flex: 0 0 100% !important;
+      min-width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    .slider-nav {
+      width: 34px;
+      height: 34px;
+    }
+
+    .prev-btn {
+      left: 4px;
+    }
+
+    .next-btn {
+      right: 4px;
+    }
+  }
+
+  /* Customer Reviews */
   .customer-reviews {
     border-top: 1px solid #ddd8ce;
     padding-top: 40px;
@@ -1817,7 +2040,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     font-size: 14px;
     font-weight: 600;
     color: #0e0f0f;
-    margin: 0;
   }
   .review-text {
     font-size: 12.5px;
@@ -1842,13 +2064,12 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     cursor: pointer;
   }
 
-  .mobile-sticky-action-bar {
+  /* 默认桌面隐藏移动端专属部件 */
+  .mobile-sticky-action-bar,
+  .mobile-lightbox {
     display: none;
   }
 
-  /* =========================================================
-     7. 移动端断点专属精准适配 (参考图 screen.jpg 像素级对齐)
-     ========================================================= */
   @media (max-width: 1024px) {
     .product-hero {
       grid-template-columns: minmax(0, 1fr);
@@ -1857,8 +2078,11 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     }
   }
 
+  /* =========================================================
+     移动端响应式精准优化
+     ========================================================= */
   @media (max-width: 768px) {
-     :root {
+    :root {
       --container-w: 100%;
     }
     .product-detail-page {
@@ -1884,7 +2108,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       font-size: 20px;
     }
 
-    /* 缩略图横排紧凑 */
     .thumbnails {
       gap: 8px;
     }
@@ -1893,7 +2116,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       height: 54px;
     }
 
-    /* 变体选择器移动端优化 */
     .variants-section {
       gap: 16px;
       padding: 16px 0;
@@ -1919,7 +2141,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       border-width: 1.5px;
     }
 
-    /* 批发阶梯价横向 4 等分紧凑排布 */
     .wholesale-table {
       padding: 12px;
     }
@@ -1941,7 +2162,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       font-size: 8.5px;
     }
 
-    /* 核心：移动端按钮左右等分双列横排（彻底消除细扁上下条问题） */
     .button-group {
       display: flex !important;
       flex-direction: row !important;
@@ -1965,7 +2185,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       font-size: 10.5px !important;
     }
 
-    /* 会员优惠券双列卡片 */
     .offers-card {
       padding: 12px;
     }
@@ -1980,42 +2199,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       font-size: 17px;
     }
 
-    /* 赠品栏紧凑单行 */
-    .gift-carousel {
-      padding: 10px 12px;
-    }
-    .gift-image {
-      width: 40px;
-      height: 40px;
-    }
-    .btn-add-gift {
-      padding: 6px 10px;
-      font-size: 9px;
-    }
-
-    /* 信任保障条横排自适应 */
-    .trust-strip {
-      padding: 14px 0;
-      gap: 4px;
-    }
-    .trust-item {
-      gap: 6px;
-    }
-    .trust-item i {
-      font-size: 14px;
-    }
-    .trust-text strong {
-      font-size: 9.5px;
-    }
-    .trust-text span {
-      font-size: 8px;
-    }
-
-    /* 推荐商品与评价双列卡片流 */
-    .products-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
     .reviews-grid {
       grid-template-columns: minmax(0, 1fr);
       gap: 10px;
@@ -2025,71 +2208,194 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       margin-bottom: 16px;
     }
 
-    /* 底部移动端悬浮操作条 */
+    /* 底部悬浮操作条 */
     .mobile-sticky-action-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      width: 100%;
-      height: 60px;
-      background: #ffffff;
-      border-top: 1px solid #e2ddd3;
-      padding: 8px 14px;
-      z-index: 80;
-      box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.06);
-      gap: 10px;
-      box-sizing: border-box;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      height: 66px !important;
+      background: #ffffff !important;
+      border-top: 1px solid #e2ddd3 !important;
+      padding: 8px 12px !important;
+      z-index: 90 !important;
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08) !important;
+      gap: 10px !important;
+      box-sizing: border-box !important;
     }
+
+    /* 48px 大缩略图容器与四周精致边框 */
+    .sticky-thumb-wrap {
+      width: 48px !important;
+      height: 48px !important;
+      border-radius: 4px !important;
+      border: 1.5px solid #d5cfc4 !important;
+      background: #fbf9f5 !important;
+      overflow: hidden !important;
+      flex-shrink: 0 !important;
+      position: relative !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
+    }
+    .sticky-thumb-wrap img {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      transition: opacity 0.2s ease !important;
+    }
+
+    /* 右下角放大微标识角标 */
+    .zoom-indicator {
+      position: absolute !important;
+      bottom: 2px !important;
+      right: 2px !important;
+      width: 15px !important;
+      height: 15px !important;
+      background: rgba(14, 15, 15, 0.75) !important;
+      color: #ffffff !important;
+      border-radius: 3px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 8px !important;
+      pointer-events: none !important;
+    }
+
+    /* 中间价格与动态规格信息 */
     .sticky-price-block {
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      flex-shrink: 0 !important;
+      min-width: 70px !important;
+      max-width: 90px !important;
+    }
+    .sticky-prices {
+      display: flex !important;
+      align-items: baseline !important;
+      gap: 4px !important;
+      line-height: 1 !important;
     }
     .sticky-price {
-      font-family: 'Bodoni Moda', Georgia, serif;
-      font-size: 19px;
-      font-weight: 600;
-      color: #0e0f0f;
-      line-height: 1;
+      font-family: 'Bodoni Moda', Georgia, serif !important;
+      font-size: 17px !important;
+      font-weight: 700 !important;
+      color: #0e0f0f !important;
+      line-height: 1 !important;
     }
     .sticky-original {
-      font-size: 11px;
-      color: #888;
-      text-decoration: line-through;
+      font-size: 10.5px !important;
+      color: #888888 !important;
+      text-decoration: line-through !important;
     }
+
+    /* 动态选中的变体选项文字 (杜绝 Default) */
+    .sticky-variant-label {
+      font-size: 9.5px !important;
+      color: #725b29 !important;
+      font-weight: 600 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      margin-top: 3px !important;
+      line-height: 1.2 !important;
+      display: block !important;
+    }
+
+    /* 按钮组 */
     .sticky-btn-group {
-      display: flex;
-      gap: 8px;
-      flex: 1;
-      min-width: 0;
+      display: flex !important;
+      gap: 6px !important;
+      flex: 1 !important;
+      min-width: 0 !important;
     }
     .sticky-btn-cart,
     .sticky-btn-buy {
-      flex: 1;
-      height: 42px;
-      font-size: 10.5px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      border-radius: 2px;
-      cursor: pointer;
-      white-space: nowrap;
-      padding: 0;
-      border: none;
+      flex: 1 1 0% !important;
+      height: 44px !important;
+      font-size: 10.5px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.5px !important;
+      text-transform: uppercase !important;
+      border-radius: 2px !important;
+      cursor: pointer !important;
+      white-space: nowrap !important;
+      padding: 0 4px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
     }
     .sticky-btn-cart {
-      background: #0e0f0f;
-      border: 1px solid #0e0f0f;
-      color: #fff;
+      background: #0e0f0f !important;
+      border: 1px solid #0e0f0f !important;
+      color: #ffffff !important;
     }
     .sticky-btn-buy {
-      background: #eee8dc;
-      border: 1px solid #d9d2c5;
-      color: #111;
+      background: #eee8dc !important;
+      border: 1px solid #ded7ca !important;
+      color: #111111 !important;
+    }
+
+    /* 移动端专属 Lightbox 弹窗样式 */
+    .mobile-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .mobile-lightbox.active {
+      display: flex !important;
+    }
+    .lightbox-content {
+      position: relative;
+      max-width: 90vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .lightbox-content img {
+      width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .lightbox-caption {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 24px;
+      right: 20px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 10000;
     }
   }
 
@@ -2097,85 +2403,13 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     .pricing-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    .trust-text span {
-      display: none;
-    }
-  }
-
-  /* Related Products 移动端响应式 */
-  @media (max-width: 992px) {
-    .related-slider-container {
-      padding: 0 50px;
-    }
-    .related-slider {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-    .slider-nav {
-      width: 38px;
-      height: 38px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .related-slider-container {
-      padding: 0 45px;
-    }
-    .related-slider {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .slider-nav {
-      width: 36px;
-      height: 36px;
-    }
-    .slider-nav i {
-      font-size: 14px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .related-products {
-      padding-top: 32px;
-      margin-bottom: 40px;
-    }
-    .section-title {
-      font-size: 18px;
-      margin-bottom: 20px;
-    }
-    .related-slider-container {
-      padding: 0;
-      overflow: hidden;
-    }
-    .related-slider {
-      display: flex;
-      gap: 12px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 8px;
-    }
-    .related-slider::-webkit-scrollbar {
-      display: none;
-    }
-    .related-slider .product-card {
-      flex: 0 0 70%;
-      max-width: 280px;
-      scroll-snap-align: start;
-    }
-    .slider-nav {
-      display: none;
-    }
   }
 </style>
 
 <script is:inline define:vars={{ productId: product.id, productSlug: product.slug }}>
-  // 产品数据
   window.productId = productId;
   window.productSlug = productSlug;
 
-  // 图片滑动器状态
   let currentSlide = 0;
   let totalSlides = 0;
   let autoPlayTimer = null;
@@ -2183,7 +2417,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
   let touchStartX = 0;
   let touchEndX = 0;
 
-  // 初始化滑动器
   function initSlider() {
     const sliderContainer = document.getElementById('sliderContainer');
     if (!sliderContainer) return;
@@ -2191,13 +2424,11 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     const slides = sliderContainer.querySelectorAll('.slider-item');
     totalSlides = slides.length;
 
-    if (totalSlides <= 1) return; // 只有一张图片时不需要滑动
+    if (totalSlides <= 1) return;
 
-    // 添加触摸事件
     sliderContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
     sliderContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
 
-    // 添加鼠标拖动事件
     let isDragging = false;
     let startX = 0;
 
@@ -2228,15 +2459,12 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       }
     });
 
-    // 鼠标悬停时暂停自动播放
     sliderContainer.addEventListener('mouseenter', pauseAutoPlay);
     sliderContainer.addEventListener('mouseleave', resumeAutoPlay);
 
-    // 开始自动播放
     startAutoPlay();
   }
 
-  // 跳转到指定幻灯片
   function goToSlide(index) {
     if (index < 0 || index >= totalSlides) return;
 
@@ -2245,11 +2473,9 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     updateThumbnails();
     pauseAutoPlay();
 
-    // 3秒后恢复自动播放
     setTimeout(resumeAutoPlay, 3000);
   }
 
-  // 上一张
   function prevImage() {
     currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
     updateSlider();
@@ -2258,7 +2484,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     setTimeout(resumeAutoPlay, 3000);
   }
 
-  // 下一张
   function nextImage() {
     currentSlide = (currentSlide + 1) % totalSlides;
     updateSlider();
@@ -2267,21 +2492,18 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     setTimeout(resumeAutoPlay, 3000);
   }
 
-  // 更新滑动器位置
   function updateSlider() {
     const sliderContainer = document.getElementById('sliderContainer');
     if (!sliderContainer) return;
 
     sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
 
-    // 更新计数器
     const counter = document.getElementById('currentImageIndex');
     if (counter) {
       counter.textContent = currentSlide + 1;
     }
   }
 
-  // 更新缩略图激活状态
   function updateThumbnails() {
     document.querySelectorAll('.thumbnail').forEach((thumb, index) => {
       if (index === currentSlide) {
@@ -2292,38 +2514,31 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     });
   }
 
-  // 触摸开始
   function handleTouchStart(e) {
     touchStartX = e.changedTouches[0].screenX;
     pauseAutoPlay();
   }
 
-  // 触摸结束
   function handleTouchEnd(e) {
     touchEndX = e.changedTouches[0].screenX;
     handleSwipe();
   }
 
-  // 处理滑动手势
   function handleSwipe() {
     const swipeThreshold = 50;
     const diff = touchStartX - touchEndX;
 
     if (Math.abs(diff) > swipeThreshold) {
       if (diff > 0) {
-        // 向左滑动 - 下一张
         nextImage();
       } else {
-        // 向右滑动 - 上一张
         prevImage();
       }
     } else {
-      // 滑动距离不够，恢复自动播放
       setTimeout(resumeAutoPlay, 3000);
     }
   }
 
-  // 开始自动播放
   function startAutoPlay() {
     if (totalSlides <= 1) return;
 
@@ -2331,10 +2546,9 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       if (isAutoPlaying) {
         nextImage();
       }
-    }, 4000); // 每4秒切换一次
+    }, 4000);
   }
 
-  // 暂停自动播放
   function pauseAutoPlay() {
     isAutoPlaying = false;
     if (autoPlayTimer) {
@@ -2343,7 +2557,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     }
   }
 
-  // 恢复自动播放
   function resumeAutoPlay() {
     if (!isAutoPlaying && totalSlides > 1) {
       isAutoPlaying = true;
@@ -2351,7 +2564,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     }
   }
 
-  // 修改购买数量
   function changeQty(delta) {
     const input = document.getElementById('qtyInput');
     if (input) {
@@ -2361,24 +2573,49 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     }
   }
 
+  // =========================================================
+  // 移动端专属 Lightbox 弹窗交互
+  // =========================================================
+  function openMobileLightbox() {
+    if (window.innerWidth > 768) return;
+    const modal = document.getElementById('mobileLightboxModal');
+    const stickyImg = document.getElementById('stickyThumbImg');
+    const lightboxImg = document.getElementById('lightboxImg');
+
+    if (modal && stickyImg && lightboxImg) {
+      lightboxImg.src = stickyImg.src;
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closeMobileLightbox(e) {
+    const modal = document.getElementById('mobileLightboxModal');
+    if (e && e.target && e.target.id === 'lightboxImg') return;
+
+    if (modal) {
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  window.openMobileLightbox = openMobileLightbox;
+  window.closeMobileLightbox = closeMobileLightbox;
+
   // ========== 购物车功能 ==========
 
-  // 获取当前产品信息
   function getCurrentProductData() {
     const quantity = parseInt(document.getElementById('qtyInput')?.value || 1);
     const selectedAttrs = getSelectedAttributes();
     const matchingVariation = findMatchingVariation(selectedAttrs);
 
-    // 获取产品基本信息
     const productName = document.querySelector('.product-title')?.textContent || '';
-    const productImage = document.querySelector('.slider-item img')?.src ||
-                        document.querySelector('.main-image img')?.src || '';
+    const productImage = document.querySelector('.slider-item img')?.src || '';
 
     let price = document.querySelector('.current-price')?.textContent.replace(/[^0-9.]/g, '') || '0';
     let variationId = null;
     let stockStatus = 'instock';
 
-    // 如果找到匹配的变体，使用变体数据
     if (matchingVariation) {
       price = matchingVariation.price;
       variationId = matchingVariation.id;
@@ -2386,7 +2623,7 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     }
 
     return {
-      id: variationId || window.productId, // 使用变体ID或产品ID
+      id: variationId || window.productId,
       productId: window.productId,
       variationId: variationId,
       name: productName,
@@ -2399,17 +2636,14 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     };
   }
 
-  // 添加到购物车
   function addToCartHandler() {
     const productData = getCurrentProductData();
 
-    // 检查库存
     if (productData.stockStatus !== 'instock') {
       alert('Sorry, this product is out of stock.');
       return;
     }
 
-    // 获取现有购物车
     let cart = [];
     try {
       const cartData = localStorage.getItem('ebbelle_cart');
@@ -2418,7 +2652,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       console.error('Failed to get cart:', e);
     }
 
-    // 查找是否已存在相同的商品
     const existingIndex = cart.findIndex(item =>
       item.productId === productData.productId &&
       item.variationId === productData.variationId &&
@@ -2426,24 +2659,18 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     );
 
     if (existingIndex > -1) {
-      // 如果已存在，增加数量
       cart[existingIndex].quantity += productData.quantity;
     } else {
-      // 如果不存在，添加新商品
       cart.push({
         ...productData,
         cartItemId: Date.now() + Math.random()
       });
     }
 
-    // 保存购物车
     try {
       localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
-
-      // 触发购物车更新事件
       window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
 
-      // 打开购物车抽屉
       if (typeof window.toggleCart === 'function') {
         window.toggleCart(true);
       }
@@ -2455,39 +2682,31 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     }
   }
 
-  // 立即购买
   function buyNowHandler() {
     const productData = getCurrentProductData();
 
-    // 检查库存
     if (productData.stockStatus !== 'instock') {
       alert('Sorry, this product is out of stock.');
       return;
     }
 
-    // 添加到购物车
     addToCartHandler();
 
-    // 跳转到结账页面
     setTimeout(() => {
       window.location.href = '/checkout';
     }, 300);
   }
 
-  // 绑定按钮事件
   function bindCartButtons() {
-    // 绑定所有"Add to Cart"按钮
     document.querySelectorAll('.btn-add-cart, .sticky-btn-cart').forEach(btn => {
       btn.addEventListener('click', addToCartHandler);
     });
 
-    // 绑定所有"Buy Now"按钮
     document.querySelectorAll('.btn-buy-now, .sticky-btn-buy').forEach(btn => {
       btn.addEventListener('click', buyNowHandler);
     });
   }
 
-  // 手风琴折叠展开
   function toggleAccordion(id) {
     const content = document.getElementById(`content-${id}`);
     const icon = document.getElementById(`icon-${id}`);
@@ -2495,7 +2714,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     if (content) {
       const isActive = content.classList.contains('active');
 
-      // 关闭同组其他手风琴
       document.querySelectorAll('.accordion-content').forEach(acc => {
         acc.classList.remove('active');
       });
@@ -2504,7 +2722,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
         ic.classList.add('fa-chevron-down');
       });
 
-      // 切换当前手风琴状态
       if (!isActive) {
         content.classList.add('active');
         if (icon) {
@@ -2515,7 +2732,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     }
   }
 
-  // 获取变体数据
   let variationsData = [];
   try {
     const dataElement = document.getElementById('variationsData');
@@ -2526,7 +2742,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     console.error('Failed to parse variations data:', e);
   }
 
-  // 获取当前选中的所有属性
   function getSelectedAttributes() {
     const selected = {};
     document.querySelectorAll('.variant-option.active').forEach(btn => {
@@ -2539,14 +2754,12 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     return selected;
   }
 
-  // 根据选中的属性查找匹配的变体
   function findMatchingVariation(selectedAttrs) {
     if (!variationsData || variationsData.length === 0) return null;
 
     return variationsData.find(variation => {
       if (!variation.attributes || variation.attributes.length === 0) return false;
 
-      // 检查所有属性是否匹配
       return variation.attributes.every(attr => {
         const attrSlug = attr.name.toLowerCase().replace(/\s+/g, '-');
         return selectedAttrs[attrSlug] &&
@@ -2555,13 +2768,11 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     });
   }
 
-  // 更新可用选项（禁用缺货的选项）
   function updateAvailableOptions() {
     if (!variationsData || variationsData.length === 0) return;
 
     const selectedAttrs = getSelectedAttributes();
 
-    // 检查每个属性的每个选项
     document.querySelectorAll('.variant-group').forEach(group => {
       const buttons = group.querySelectorAll('.variant-option');
 
@@ -2569,10 +2780,8 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
         const attribute = btn.getAttribute('data-attribute');
         const value = btn.getAttribute('data-value');
 
-        // 创建临时选择来测试这个选项
         const testAttrs = { ...selectedAttrs, [attribute]: value };
 
-        // 查找是否有匹配且有库存的变体
         const hasStockVariation = variationsData.some(variation => {
           if (!variation.attributes || variation.attributes.length === 0) return false;
 
@@ -2585,7 +2794,6 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
           return matches && variation.stock_status === 'instock';
         });
 
-        // 如果没有有库存的变体，禁用这个选项
         if (!hasStockVariation) {
           btn.disabled = true;
           btn.classList.add('out-of-stock');
@@ -2597,15 +2805,13 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     });
   }
 
-  // 更新价格和库存状态
   function updatePriceAndStock(variation) {
     if (!variation) return;
 
-    // 更新价格
+    // 1. 同步价格更新 (桌面端与移动端悬浮底栏)
     const currentPrice = document.querySelector('.current-price');
     const originalPrice = document.querySelector('.original-price');
-    const stickyPrice = document.querySelector('.sticky-price');
-    const stickyOriginal = document.querySelector('.sticky-original');
+    const stickyPriceVal = document.getElementById('stickyPriceVal');
 
     if (variation.price && currentPrice) {
       const priceText = currentPrice.querySelector('.dollar') ?
@@ -2614,17 +2820,53 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       currentPrice.innerHTML = priceText;
     }
 
-    if (stickyPrice) {
-      stickyPrice.textContent = `$${variation.price}`;
+    if (stickyPriceVal && variation.price) {
+      stickyPriceVal.textContent = `$${variation.price}`;
     }
 
-    // 更新库存状态
+    // 2. 同步图片：主图悄悄同步切过去，同时给底部 48px 大缩略图换图（绝不乱滚页面）
+    const variationImgSrc = variation.image && variation.image.src ? variation.image.src : null;
+    if (variationImgSrc) {
+      const stickyThumbImg = document.getElementById('stickyThumbImg');
+      if (stickyThumbImg) {
+        stickyThumbImg.src = variationImgSrc;
+      }
+
+      const sliderContainer = document.getElementById('sliderContainer');
+      const allSlideImgs = sliderContainer ? sliderContainer.querySelectorAll('.slider-item img') : [];
+      
+      let matchedIndex = -1;
+      allSlideImgs.forEach((img, idx) => {
+        const cleanSlideSrc = img.src.split('?')[0];
+        const cleanVarSrc = variationImgSrc.split('?')[0];
+        if (img.src === variationImgSrc || cleanSlideSrc === cleanVarSrc) {
+          matchedIndex = idx;
+        }
+      });
+
+      if (matchedIndex !== -1) {
+        if (typeof window.goToSlide === 'function') {
+          window.goToSlide(matchedIndex);
+        }
+      } else if (allSlideImgs.length > 0) {
+        allSlideImgs[0].src = variationImgSrc;
+        const firstThumbnailImg = document.querySelector('.thumbnail img');
+        if (firstThumbnailImg) {
+          firstThumbnailImg.src = variationImgSrc;
+        }
+        if (typeof window.goToSlide === 'function') {
+          window.goToSlide(0);
+        }
+      }
+    }
+
+    // 3. 库存状态文字更新
     const stockStatus = document.querySelector('.info-item:has(.fa-circle-check) span');
     if (stockStatus) {
       stockStatus.textContent = variation.stock_status === 'instock' ? 'In Stock' : 'Out of Stock';
     }
 
-    // 禁用/启用购买按钮
+    // 4. 加购与立即购买按钮状态切换
     const addToCartBtns = document.querySelectorAll('.btn-add-cart, .sticky-btn-cart');
     const buyNowBtns = document.querySelectorAll('.btn-buy-now, .sticky-btn-buy');
 
@@ -2653,35 +2895,33 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
     }
   }
 
-  // 变体选择
   function selectVariant(attribute, value, element) {
-    // 更新选中状态
     const buttons = element.parentElement.querySelectorAll('.variant-option');
     buttons.forEach(btn => btn.classList.remove('active'));
     element.classList.add('active');
 
-    // 更新显示的选中值
     const selectedValueSpan = document.getElementById(`selected-${attribute}`);
     if (selectedValueSpan) {
       selectedValueSpan.textContent = value;
     }
 
-    // 获取当前选中的所有属性
+    // 实时读取当前全部选中的属性值，拼成 "Gold / Set A" 的直观规格，绝不卡在 Default
     const selectedAttrs = getSelectedAttributes();
+    const valuesList = Object.values(selectedAttrs);
+    const stickyLabel = document.getElementById('stickyVariantLabel');
+    if (stickyLabel && valuesList.length > 0) {
+      stickyLabel.textContent = valuesList.join(' / ');
+    }
 
-    // 查找匹配的变体
     const matchingVariation = findMatchingVariation(selectedAttrs);
 
     if (matchingVariation) {
-      console.log('Found matching variation:', matchingVariation);
       updatePriceAndStock(matchingVariation);
     }
 
-    // 更新可用选项
     updateAvailableOptions();
   }
 
-  // 暴露全局函数
   window.goToSlide = goToSlide;
   window.prevImage = prevImage;
   window.nextImage = nextImage;
@@ -2689,13 +2929,10 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
   window.selectVariant = selectVariant;
   window.toggleAccordion = toggleAccordion;
 
-  // 初始化变体选择器
   function initVariants() {
     if (variationsData && variationsData.length > 0) {
-      // 初始化时更新可用选项
       updateAvailableOptions();
 
-      // 检查默认选中的变体
       const selectedAttrs = getSelectedAttributes();
       const matchingVariation = findMatchingVariation(selectedAttrs);
       if (matchingVariation) {
@@ -2705,97 +2942,78 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
   }
 
   // =========================================================
-  // Related Products Slider (自动轮播 + 手动控制)
+  // Related Products Slider (桌面 5 个 / 移动端 1 个 / 每次滑动 1 个)
   // =========================================================
   function initRelatedSlider() {
+    const sliderContainer = document.querySelector('.related-slider-container');
     const slider = document.getElementById('relatedSlider');
     const prevBtn = document.getElementById('relatedPrevBtn');
     const nextBtn = document.getElementById('relatedNextBtn');
 
-    if (!slider || !prevBtn || !nextBtn) return;
+    if (!slider || !prevBtn || !nextBtn || !sliderContainer) return;
 
     const allProducts = Array.from(slider.children);
     const totalProducts = allProducts.length;
-
     if (totalProducts === 0) return;
 
     let currentIndex = 0;
-    let productsPerPage = 4;
     let autoPlayInterval = null;
     let isAutoPlaying = true;
-    let isMobile = false;
 
-    // 根据屏幕宽度确定每页显示数量
-    function updateProductsPerPage() {
+    function getVisibleCount() {
       const width = window.innerWidth;
-      isMobile = width <= 480;
-
-      if (isMobile) {
-        // 移动端：使用原生滚动
-        return;
-      } else if (width <= 768) {
-        productsPerPage = 2;
-      } else if (width <= 992) {
-        productsPerPage = 3;
-      } else {
-        productsPerPage = 4;
+      if (width <= 768) {
+        return 1;
       }
+      if (width <= 1024) {
+        return 3;
+      }
+      return 5;
     }
 
-    // 桌面端：每次滑动一个产品（使用 transform 实现平滑动画）
-    function showProducts(startIndex) {
-      // 确保所有产品都显示（通过 transform 控制位置）
-      allProducts.forEach(product => {
-        product.style.display = 'block';
-      });
+    function updateSliderPosition() {
+      const firstCard = allProducts[0];
+      if (!firstCard) return;
 
-      // 计算偏移量
-      const cardWidth = allProducts[0].offsetWidth + 16; // 卡片宽度 + gap
-      const offset = -startIndex * cardWidth;
+      const stepWidth = firstCard.offsetWidth + 16;
+      const offset = -currentIndex * stepWidth;
 
-      // 应用 transform 动画
       slider.style.transform = `translateX(${offset}px)`;
-
-      currentIndex = startIndex;
-
-      // 无限循环，按钮始终可用
-      prevBtn.disabled = false;
-      nextBtn.disabled = false;
     }
 
-    // 下一页（无限循环）
     function nextSlide() {
-      if (currentIndex + productsPerPage < totalProducts) {
-        showProducts(currentIndex + 1);
+      const visibleCount = getVisibleCount();
+      const maxIndex = Math.max(0, totalProducts - visibleCount);
+
+      if (currentIndex < maxIndex) {
+        currentIndex += 1;
       } else {
-        // 到达末尾，循环回到开头
-        showProducts(0);
+        currentIndex = 0;
       }
+      updateSliderPosition();
     }
 
-    // 上一页（无限循环）
     function prevSlide() {
+      const visibleCount = getVisibleCount();
+      const maxIndex = Math.max(0, totalProducts - visibleCount);
+
       if (currentIndex > 0) {
-        showProducts(currentIndex - 1);
+        currentIndex -= 1;
       } else {
-        // 到达开头，循环到末尾
-        const lastIndex = Math.max(0, totalProducts - productsPerPage);
-        showProducts(lastIndex);
+        currentIndex = maxIndex;
       }
+      updateSliderPosition();
     }
 
-    // 开始自动播放
     function startAutoPlay() {
-      if (autoPlayInterval) clearInterval(autoPlayInterval);
-
+      stopAutoPlay();
       autoPlayInterval = setInterval(() => {
         if (isAutoPlaying) {
           nextSlide();
         }
-      }, 3000); // 每3秒滑动一次
+      }, 3500);
     }
 
-    // 停止自动播放
     function stopAutoPlay() {
       if (autoPlayInterval) {
         clearInterval(autoPlayInterval);
@@ -2803,149 +3021,280 @@ const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds
       }
     }
 
-    // 暂停自动播放（临时）
-    function pauseAutoPlay() {
+    function pauseAndResume() {
       isAutoPlaying = false;
+      stopAutoPlay();
       setTimeout(() => {
         isAutoPlaying = true;
-      }, 5000); // 5秒后恢复自动播放
+        startAutoPlay();
+      }, 4000);
     }
 
-    // 按钮点击事件
     prevBtn.addEventListener('click', () => {
-      pauseAutoPlay();
       prevSlide();
+      pauseAndResume();
     });
 
     nextBtn.addEventListener('click', () => {
-      pauseAutoPlay();
+      nextSlide();
+      pauseAndResume();
+    });
+
+    sliderContainer.addEventListener('mouseenter', stopAutoPlay);
+    sliderContainer.addEventListener('mouseleave', startAutoPlay);
+
+    let touchStartX = 0;
+    sliderContainer.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+      stopAutoPlay();
+    }, { passive: true });
+
+    sliderContainer.addEventListener('touchend', (e) => {
+      const diffX = touchStartX - e.changedTouches[0].screenX;
+      if (Math.abs(diffX) > 40) {
+        if (diffX > 0) {
+          nextSlide();
+        } else {
+          prevSlide();
+        }
+      }
+      pauseAndResume();
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+      const visibleCount = getVisibleCount();
+      const maxIndex = Math.max(0, totalProducts - visibleCount);
+      if (currentIndex > maxIndex) {
+        currentIndex = maxIndex;
+      }
+      updateSliderPosition();
+    });
+
+    updateSliderPosition();
+    startAutoPlay();
+  }
+
+  // =========================================================
+  // Product Carousel (Gift) 驱动 + 客户端兜底与加购
+  // =========================================================
+  async function initGiftCarousel() {
+    const carousel = document.getElementById('giftCarousel');
+    const track = document.getElementById('giftTrack');
+    const slides = carousel ? carousel.querySelectorAll('.gift-slide') : [];
+    const prevBtn = document.getElementById('giftPrevBtn');
+    const nextBtn = document.getElementById('giftNextBtn');
+    const addGiftBtn = document.getElementById('addGiftBtn');
+
+    if (!carousel || !track || slides.length === 0) return;
+
+    slides.forEach(async (slide) => {
+      const isLoaded = slide.getAttribute('data-loaded') === 'true';
+      const giftId = slide.getAttribute('data-id');
+
+      if (!isLoaded && giftId) {
+        try {
+          const res = await fetch('/api/products/' + giftId);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.name) {
+              slide.setAttribute('data-name', data.name);
+              const titleEl = slide.querySelector('.gift-title-el');
+              if (titleEl) {
+                titleEl.textContent = data.name;
+                titleEl.title = data.name;
+              }
+              const regPrice = (data.regular_price !== undefined && data.regular_price !== null && data.regular_price !== '')
+                ? data.regular_price
+                : (data.price || '0.00');
+              const finalPrice = parseFloat(regPrice).toFixed(2);
+              
+              slide.setAttribute('data-price', finalPrice);
+              const priceEl = slide.querySelector('.gift-price-el');
+              if (priceEl) {
+                priceEl.textContent = '$' + finalPrice;
+              }
+              const imgSrc = (data.images && data.images[0]) ? data.images[0].src : '';
+              if (imgSrc) {
+                slide.setAttribute('data-image', imgSrc);
+                const imgEl = slide.querySelector('.gift-img-el');
+                if (imgEl) imgEl.src = imgSrc;
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[Client Product Fetch Error] for ' + giftId + ':', err);
+        }
+      }
+    });
+
+    let currentIndex = 0;
+    const totalSlides = slides.length;
+    let autoPlayTimer = null;
+    const AUTO_DELAY = 4000;
+
+    function updateSlide(index) {
+      currentIndex = (index + totalSlides) % totalSlides;
+      track.style.transform = 'translateX(-' + (currentIndex * 100) + '%)';
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === currentIndex);
+      });
+    }
+
+    function nextSlide() {
+      updateSlide(currentIndex + 1);
+    }
+
+    function prevSlide() {
+      updateSlide(currentIndex - 1);
+    }
+
+    function startAutoPlay() {
+      stopAutoPlay();
+      autoPlayTimer = setInterval(nextSlide, AUTO_DELAY);
+    }
+
+    function stopAutoPlay() {
+      if (autoPlayTimer) {
+        clearInterval(autoPlayTimer);
+        autoPlayTimer = null;
+      }
+    }
+
+    function pauseAndRestart() {
+      stopAutoPlay();
+      setTimeout(startAutoPlay, 3500);
+    }
+
+    nextBtn?.addEventListener('click', () => {
+      pauseAndRestart();
       nextSlide();
     });
 
-    // 移动端触摸滑动暂停自动播放
-    if (isMobile) {
-      let touchStartTime = 0;
+    prevBtn?.addEventListener('click', () => {
+      pauseAndRestart();
+      prevSlide();
+    });
 
-      slider.addEventListener('touchstart', () => {
-        touchStartTime = Date.now();
-        pauseAutoPlay();
-      });
+    carousel.addEventListener('mouseenter', stopAutoPlay);
+    carousel.addEventListener('mouseleave', startAutoPlay);
 
-      slider.addEventListener('touchend', () => {
-        const touchDuration = Date.now() - touchStartTime;
-        // 如果是快速滑动（小于300ms），认为是用户主动操作
-        if (touchDuration < 300) {
-          pauseAutoPlay();
-        }
-      });
+    let touchStartX = 0;
+    carousel.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+      stopAutoPlay();
+    }, { passive: true });
 
-      // 监听滚动事件，滚动时暂停
-      slider.addEventListener('scroll', () => {
-        pauseAutoPlay();
-      });
-    }
+    carousel.addEventListener('touchend', (e) => {
+      const diffX = touchStartX - e.changedTouches[0].screenX;
+      if (Math.abs(diffX) > 40) {
+        if (diffX > 0) nextSlide();
+        else prevSlide();
+      }
+      pauseAndRestart();
+    }, { passive: true });
 
-    // 窗口大小改变时重新计算
-    window.addEventListener('resize', () => {
-      const oldProductsPerPage = productsPerPage;
-      const wasMobile = isMobile;
-      updateProductsPerPage();
+    addGiftBtn?.addEventListener('click', () => {
+      const currentSlide = slides[currentIndex];
+      const giftId = parseInt(currentSlide.getAttribute('data-id'), 10);
+      const giftName = currentSlide.getAttribute('data-name');
+      const giftPrice = currentSlide.getAttribute('data-price') || '0.00';
+      const giftImage = currentSlide.getAttribute('data-image') || '';
 
-      if (isMobile && !wasMobile) {
-        // 切换到移动端：显示所有产品，隐藏按钮
-        stopAutoPlay();
-        allProducts.forEach(product => {
-          product.style.display = 'block';
+      const giftItemData = {
+        id: giftId,
+        productId: giftId,
+        variationId: null,
+        name: giftName,
+        price: giftPrice,
+        quantity: 1,
+        image: giftImage,
+        selectedVariants: {},
+        stockStatus: 'instock',
+        slug: ''
+      };
+
+      let cart = [];
+      try {
+        const cartData = localStorage.getItem('ebbelle_cart');
+        cart = cartData ? JSON.parse(cartData) : [];
+      } catch (e) {
+        console.error('Failed to get cart:', e);
+      }
+
+      const existingIndex = cart.findIndex((item) =>
+        item.productId === giftItemData.productId &&
+        item.variationId === giftItemData.variationId
+      );
+
+      if (existingIndex > -1) {
+        cart[existingIndex].quantity += 1;
+      } else {
+        cart.push({
+          ...giftItemData,
+          cartItemId: Date.now() + Math.random()
         });
-        prevBtn.style.display = 'none';
-        nextBtn.style.display = 'none';
+      }
 
-        // 移动端也启动自动播放（通过滚动实现）
-        startMobileAutoScroll();
-      } else if (!isMobile && wasMobile) {
-        // 切换到桌面端：显示按钮，重新分页
-        stopMobileAutoScroll();
-        prevBtn.style.display = 'flex';
-        nextBtn.style.display = 'flex';
-        currentIndex = 0;
-        showProducts(0);
-        startAutoPlay();
-      } else if (!isMobile && oldProductsPerPage !== productsPerPage) {
-        // 桌面端改变尺寸
-        currentIndex = 0;
-        showProducts(0);
+      try {
+        localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
+        window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+
+        if (typeof window.toggleCart === 'function') {
+          window.toggleCart(true);
+        }
+
+        const originalText = addGiftBtn.textContent;
+        addGiftBtn.textContent = 'ADDED ✓';
+        addGiftBtn.style.background = '#16a34a';
+        addGiftBtn.style.borderColor = '#16a34a';
+        setTimeout(() => {
+          addGiftBtn.textContent = originalText;
+          addGiftBtn.style.background = '';
+          addGiftBtn.style.borderColor = '';
+        }, 1200);
+      } catch (e) {
+        console.error('Failed to save cart:', e);
+        alert('Failed to add item to cart. Please try again.');
       }
     });
 
-    // 移动端自动滚动
-    let mobileAutoScrollInterval = null;
+    startAutoPlay();
+  }
 
-    function startMobileAutoScroll() {
-      if (!isMobile || mobileAutoScrollInterval) return;
+  // 文字展开与折叠切换逻辑
+  function initDescToggle() {
+    const wrapper = document.getElementById('descWrapper');
+    const content = document.getElementById('descContent');
+    const btn = document.getElementById('btnToggleDesc');
 
-      mobileAutoScrollInterval = setInterval(() => {
-        if (isAutoPlaying && slider) {
-          const scrollWidth = slider.scrollWidth;
-          const clientWidth = slider.clientWidth;
-          const maxScroll = scrollWidth - clientWidth;
+    if (!wrapper || !content || !btn) return;
 
-          if (slider.scrollLeft >= maxScroll - 10) {
-            // 滚动到末尾，返回开头
-            slider.scrollTo({ left: 0, behavior: 'smooth' });
-          } else {
-            // 滚动一个卡片宽度
-            const cardWidth = allProducts[0].offsetWidth + 12; // 卡片宽度 + gap
-            slider.scrollBy({ left: cardWidth, behavior: 'smooth' });
-          }
-        }
-      }, 3000);
+    if (content.scrollHeight <= content.clientHeight + 10) {
+      content.style.webkitMaskImage = 'none';
+      content.style.maskImage = 'none';
+      btn.style.display = 'none';
+      return;
     }
 
-    function stopMobileAutoScroll() {
-      if (mobileAutoScrollInterval) {
-        clearInterval(mobileAutoScrollInterval);
-        mobileAutoScrollInterval = null;
-      }
-    }
-
-    // 初始化
-    updateProductsPerPage();
-
-    if (isMobile) {
-      // 移动端：显示所有产品，启动自动滚动
-      allProducts.forEach(product => {
-        product.style.display = 'block';
-      });
-      prevBtn.style.display = 'none';
-      nextBtn.style.display = 'none';
-      startMobileAutoScroll();
-    } else {
-      // 桌面端：分页显示，启动自动播放
-      showProducts(0);
-      startAutoPlay();
-    }
-
-    // 页面可见性变化时控制自动播放
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        stopAutoPlay();
-        stopMobileAutoScroll();
+    btn.addEventListener('click', () => {
+      const isExpanded = content.classList.contains('expanded');
+      if (isExpanded) {
+        content.classList.remove('expanded');
+        btn.textContent = 'Show more';
       } else {
-        if (isMobile) {
-          startMobileAutoScroll();
-        } else {
-          startAutoPlay();
-        }
+        content.classList.add('expanded');
+        btn.textContent = 'Show less';
       }
     });
   }
 
-  // 页面加载完成后初始化
   function initAll() {
     initSlider();
     initVariants();
     bindCartButtons();
     initRelatedSlider();
+    initGiftCarousel();
+    initDescToggle();
   }
 
   if (document.readyState === 'loading') {

@@ -204,7 +204,7 @@ let flashSaleProducts = [];
 try {
   console.log('正在获取 enamel-cuff-bangles 分类的产品...');
   flashSaleProducts = await getProductsWithPrices({
-    per_page: 6,
+    per_page: 10,
     category: 942, // enamel-cuff-bangles
     orderby: 'date',
     order: 'desc'
@@ -446,7 +446,7 @@ const staticProducts = [
             );
           })
         ) : (
-          <ProductSkeleton count={6} columns={6} />
+          <ProductSkeleton count={10} columns={5} />
         )}
       </div>
     </div>
@@ -2055,7 +2055,7 @@ const staticProducts = [
 
   .product-grid-6 {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 16px;
   }
   .product-card {
