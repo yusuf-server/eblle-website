@@ -2404,6 +2404,11 @@ const giftProducts = giftProductIds.map((id, index) => {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
+:global(.mobile-bottom-menu),
+:global(#mobile-bottom-nav),
+:global(.mobile-nav-bar) {
+  display: none !important;
+}
 </style>
 
 <script is:inline define:vars={{ productId: product.id, productSlug: product.slug }}>
