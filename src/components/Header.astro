@@ -1,12 +1,212 @@
 ---
 // Header 组件
+// 1. 数据结构：根据 WooCommerce 分类 CSV 构建完整的 1-2-3 级菜单映射
+const categoryMenu = [
+  {
+    name: "WOMEN JEWELRY",
+    slug: "women-jewelry",
+    children: [
+      {
+        name: "RING",
+        slug: "ring",
+        children: [
+          { name: "Stainless Steel Rings", slug: "stainless-steel-rings" },
+          { name: "CZ Rings", slug: "cz-rings" },
+          { name: "Stackable Rings", slug: "stackable-rings" },
+          { name: "Signet Rings", slug: "signet-rings" }
+        ]
+      },
+      {
+        name: "EARRING",
+        slug: "earring",
+        children: [
+          { name: "CZ Earrings", slug: "cz-earrings" },
+          { name: "Stainless Steel Earrings", slug: "stainless-steel-earrings" },
+          { name: "Zircon Earrings", slug: "zircon-earrings" },
+          { name: "Pearl Earrings", slug: "pearl-earrings" },
+          { name: "Enamel Cartoon Earrings", slug: "enamel-cartoon-earrings" },
+          { name: "Hoop Earrings", slug: "hoop-earrings" },
+          { name: "Stud Earrings", slug: "stud-earrings" },
+          { name: "Drop & Dangle Earrings", slug: "drop-dangle-earrings" },
+          { name: "Ear Clips", slug: "ear-clips" }
+        ]
+      },
+      {
+        name: "BRACELET",
+        slug: "bracelet",
+        children: [
+          { name: "Stainless Steel Bracelets", slug: "stainless-steel-bracelets" },
+          { name: "CZ Bracelets", slug: "cz-bracelets" },
+          { name: "Pearl Bracelets", slug: "pearl-bracelets" },
+          { name: "Chain Bracelets", slug: "chain-bracelets" },
+          { name: "Cuff Bangles", slug: "cuff-bangles" }
+        ]
+      },
+      {
+        name: "ANKLETS",
+        slug: "anklets",
+        children: []
+      },
+      {
+        name: "NECKLACE",
+        slug: "necklace",
+        children: [
+          { name: "Dainty Necklaces", slug: "dainty-necklaces" },
+          { name: "Layered Necklaces", slug: "layered-necklaces" },
+          { name: "Initial & Name Necklaces", slug: "initial-name-necklaces" },
+          { name: "Toggle Clasp Necklace", slug: "toggle-clasp-necklace" },
+          { name: "CZ Necklaces", slug: "cz-necklaces" },
+          { name: "Pearl Necklaces", slug: "pearl-necklaces" },
+          { name: "Zodiac Necklaces", slug: "zodiac-necklaces" },
+          { name: "12 Birthstone Necklaces", slug: "12-birthstone-necklaces" },
+          { name: "Moon & Star Necklaces", slug: "moon-star-necklaces" },
+          { name: "Tarot Necklaces", slug: "tarot-necklaces" }
+        ]
+      },
+      {
+        name: "CHAIN TYPE",
+        slug: "chain-type",
+        children: [
+          { name: "Body Chain", slug: "body-chain" },
+          { name: "Snake Chain", slug: "snake-chain" },
+          { name: "Paperclip Chain", slug: "paperclip-chain" },
+          { name: "Cable Chain", slug: "cable-chain" },
+          { name: "Cuban Link", slug: "cuban-link" },
+          { name: "Figaro Chain", slug: "figaro-chain" },
+          { name: "Ball / Bead Chain", slug: "ball-bead-chain" },
+          { name: "Box Chain", slug: "box-chain" },
+          { name: "Curb Chain", slug: "curb-chain" },
+          { name: "Mariner / Anchor Chain", slug: "mariner-anchor-chain" },
+          { name: "Rolo Chain", slug: "rolo-chain" },
+          { name: "Rope Chain", slug: "rope-chain" },
+          { name: "Wheat (Spiga) Chain", slug: "wheat-spiga-chain" }
+        ]
+      }
+    ]
+  },
+  {
+    name: "JEWELRY SET",
+    slug: "jewelry-set",
+    children: [
+      { name: "Zircon Jewelry Sets", slug: "zircon-jewelry-sets", children: [] },
+      { name: "Pearl Jewelry Sets", slug: "pearl-jewelry-sets", children: [] },
+      { name: "Enamel Cartoon Jewelry Sets", slug: "enamel-cartoon-jewelry-sets", children: [] },
+      { name: "Necklace & Earring Sets", slug: "necklace-earring-sets", children: [] },
+      { name: "Ring & Bracelet Sets", slug: "ring-bracelet-sets", children: [] },
+      { name: "All-in-one Jewelry Bundles", slug: "all-in-one-jewelry-bundles", children: [] }
+    ]
+  },
+  {
+    name: "TWO-TONES JEWELRY",
+    slug: "two-tones-jewelry",
+    children: [
+      { name: "Two-Tones Necklaces", slug: "two-tones-necklaces", children: [] },
+      { name: "Two-Tones Earrings", slug: "two-tones-earrings", children: [] },
+      { name: "Two-Tones Rings", slug: "two-tones-rings", children: [] },
+      { name: "Two-Tones Bracelets", slug: "two-tones-bracelets", children: [] },
+      { name: "Two-Tones Jewelry Sets", slug: "two-tones-jewelry-sets", children: [] }
+    ]
+  },
+  {
+    name: "GIFT JEWELRY",
+    slug: "gift-jewelry",
+    children: [
+      { name: "Birthstone Gifts", slug: "birthstone-gifts", children: [] },
+      { name: "Birthday Jewelry Gifts", slug: "birthday-jewelry-gifts", children: [] },
+      { name: "Anniversary Gifts", slug: "anniversary-gifts", children: [] },
+      { name: "Friendship Jewelry Gifts", slug: "friendship-jewelry-gifts", children: [] },
+      {
+        name: "Holiday Gift Sets",
+        slug: "holiday-gift-sets",
+        children: [
+          { name: "Valentine's Day", slug: "valentines-day" },
+          { name: "New Year", slug: "new-year" },
+          { name: "Christmas", slug: "christmas" },
+          { name: "National Day", slug: "national-day" },
+          { name: "Halloween", slug: "halloween" },
+          { name: "Mother's Day", slug: "mothers-day" },
+          { name: "Easter", slug: "easter" },
+          { name: "Thanksgiving", slug: "thanksgiving" },
+          { name: "Mardi Gras", slug: "mardi-gras" },
+          { name: "Super Bowl", slug: "super-bowl" }
+        ]
+      },
+      { name: "Jewelry Gift Sets", slug: "jewelry-gift-sets", children: [] },
+      { name: "Graduation", slug: "graduation", children: [] },
+      { name: "Bridesmaid", slug: "bridesmaid", children: [] },
+      { name: "4th of July", slug: "4th-of-july", children: [] }
+    ]
+  },
+  {
+    name: "ACCESSORIES",
+    slug: "accessories",
+    children: [
+      { name: "BROOCH", slug: "brooch", children: [] },
+      { name: "KEY-CHAIN", slug: "key-chain", children: [] },
+      { name: "HAIR CLIP", slug: "hair-clip", children: [] },
+      { name: "DIY JEWELRY ACCESSORIES", slug: "diy-jewelry-accessories", children: [] }
+    ]
+  },
+  {
+    name: "JEWELRY BOXES & STORAGE",
+    slug: "jewelry-boxes-storage",
+    children: [
+      { name: "Jewelry Gift Boxes", slug: "jewelry-gift-boxes", children: [] },
+      { name: "Ring Boxes", slug: "ring-boxes", children: [] },
+      { name: "Earring Boxes", slug: "earring-boxes", children: [] },
+      { name: "Necklace Boxes", slug: "necklace-boxes", children: [] },
+      { name: "Jewelry Pouches & Bags", slug: "jewelry-pouches-bags", children: [] }
+    ]
+  },
+  {
+    name: "DAINTY MINIMALIST COLLECTION",
+    slug: "dainty-minimalist-collection",
+    children: [
+      { name: "Dainty Minimalist Necklaces", slug: "dainty-minimalist-necklaces", children: [] },
+      { name: "Dainty Minimalist Earrings", slug: "dainty-minimalist-earrings", children: [] },
+      { name: "Dainty Minimalist Rings", slug: "dainty-minimalist-rings", children: [] },
+      { name: "Dainty Minimalist Bracelets", slug: "dainty-minimalist-bracelets", children: [] },
+      { name: "Dainty Minimalist Anklets", slug: "dainty-minimalist-anklets", children: [] },
+      { name: "Dainty Minimalist Ear Clips", slug: "dainty-minimalist-earclips", children: [] },
+      { name: "Dainty Minimalist Jewelry Sets", slug: "dainty-minimalist-jewelry-sets", children: [] },
+      { name: "Thin Stackable Rings", slug: "thin-stackable-rings", children: [] },
+      { name: "Tiny Stud Earrings", slug: "tiny-stud-earrings", children: [] }
+    ]
+  },
+  {
+    name: "HEART COLLECTION",
+    slug: "heart-collection",
+    children: [
+      { name: "Heart Accessories", slug: "heart-accessories", children: [] },
+      { name: "Heart Charm Keychains", slug: "heart-charm-keychains", children: [] },
+      { name: "Heart Earrings", slug: "heart-earrings", children: [] },
+      { name: "Heart Hair Band", slug: "heart-hair-band", children: [] },
+      { name: "Heart Hair Clip", slug: "heart-hair-clip", children: [] },
+      { name: "Heart Pendant Anklets", slug: "heart-pendant-anklets", children: [] },
+      { name: "Heart Pendant Bracelets", slug: "heart-pendant-bracelets", children: [] },
+      { name: "Heart Pendant Necklace", slug: "heart-pendant-necklace", children: [] },
+      { name: "Heart Rings", slug: "heart-rings", children: [] }
+    ]
+  }
+];
+
+// 2. New Arrivals 默认数据（带友好标题）
+const newArrivalSubcategories = [
+  { name: "All New Arrivals", slug: "new-arrivals" },
+  { name: "2026.10.NEW", slug: "2026-10-new" },
+  { name: "2026.9.NEW", slug: "2026-9-new" },
+  { name: "2026.8.NEW", slug: "2026-8-new" },
+  { name: "2026.7.NEW", slug: "2026-7-new" },
+  { name: "Latest Waterproof Series", slug: "latest-waterproof" }
+];
 ---
 
-<!-- 1. Announcement Bar -->
+<!-- 1. Announcement Bar (加大字体与间距，配备动态倒计时) -->
 <div class="announcement-bar">
   <div class="announcement-content">
-    <span>GET $130 COUPONS + 50% OFF AIR SHIPPING</span>
-    <span class="countdown">Ends in 84 D : 21 H : 25 M : 14 S</span>
+    <span class="announcement-promo">GET $130 COUPONS + 50% OFF AIR SHIPPING</span>
+    <span class="announcement-sep">•</span>
+    <span class="countdown" id="headerCountdown">Ends in <span id="countdownTimer">84 D : 21 H : 25 M : 14 S</span></span>
   </div>
 </div>
 
@@ -14,19 +214,16 @@
 <header class="main-header">
   <div class="header-container">
     <div class="header-top">
-      <!-- Mobile: Hamburger Menu Toggle Button -->
       <button class="mobile-menu-toggle" id="mobile-menu-btn" aria-label="Open Menu" type="button">
         <i class="fa-solid fa-bars"></i>
       </button>
 
-      <!-- Brand Logo -->
       <div class="header-brand">
         <a href="/">
           <h1>E.B.Belle</h1>
         </a>
       </div>
 
-      <!-- Desktop Search Bar (Center) -->
       <div class="header-search">
         <div class="search-box">
           <div class="search-box-inner">
@@ -41,26 +238,14 @@
             </button>
           </div>
 
-          <!-- Desktop Search Dropdown -->
           <div class="search-dropdown" id="search-dropdown" style="display: none;">
             <div class="search-dropdown-content">
-              <!-- Loading State -->
               <div class="search-loading" id="search-loading" style="display: none;">
                 <div class="spinner-small"></div>
                 <span>Searching...</span>
               </div>
-
-              <!-- Results -->
-              <div class="search-results" id="search-results">
-                <!-- Products will be inserted here -->
-              </div>
-
-              <!-- Categories -->
-              <div class="search-categories" id="search-categories">
-                <!-- Categories will be inserted here -->
-              </div>
-
-              <!-- No Results -->
+              <div class="search-results" id="search-results"></div>
+              <div class="search-categories" id="search-categories"></div>
               <div class="search-no-results" id="search-no-results" style="display: none;">
                 <i class="fa-solid fa-search"></i>
                 <p>No products found</p>
@@ -71,28 +256,23 @@
         </div>
       </div>
 
-      <!-- Action Utilities (Right) -->
       <div class="header-actions">
-        <!-- Mobile Search Button -->
         <button class="action-item mobile-search-btn" id="mobile-search-toggle" aria-label="Toggle Search" type="button">
           <i class="fa-solid fa-magnifying-glass"></i>
         </button>
 
-        <!-- Desktop: Region / Currency -->
         <button class="action-item desktop-only" title="Region & Language" type="button">
           <i class="fa-solid fa-globe"></i>
           <span>USD/English</span>
           <i class="fa-solid fa-angle-down arrow-down"></i>
         </button>
 
-        <!-- Desktop: Account -->
         <div class="account-wrapper">
           <button class="action-item desktop-only" id="desktopAccountBtn" title="Account" type="button">
             <i class="fa-regular fa-user"></i>
             <span id="desktopAccountText">Login/Register</span>
           </button>
 
-          <!-- Desktop: User Menu Dropdown (when logged in) -->
           <div class="user-menu-dropdown" id="userMenuDropdown">
             <a href="/account" class="user-menu-item">
               <i class="fa-regular fa-user"></i>
@@ -113,7 +293,6 @@
           </div>
         </div>
 
-        <!-- Cart (Both Desktop & Mobile) -->
         <button class="action-item cart-btn" title="Shopping Bag" type="button" onclick="window.toggleCart?.(true)">
           <div class="cart-icon-wrapper">
             <i class="fa-solid fa-cart-shopping"></i>
@@ -124,7 +303,6 @@
       </div>
     </div>
 
-    <!-- Mobile Dropdown Search Field -->
     <div class="mobile-search-drawer" id="mobile-search-drawer">
       <div class="mobile-search-box-wrapper">
         <div class="mobile-search-box">
@@ -139,22 +317,14 @@
           </button>
         </div>
 
-        <!-- Mobile Search Dropdown (动态结果弹层) -->
         <div class="search-dropdown mobile-search-dropdown" id="mobile-search-dropdown" style="display: none;">
           <div class="search-dropdown-content">
             <div class="search-loading" id="mobile-search-loading" style="display: none;">
               <div class="spinner-small"></div>
               <span>Searching...</span>
             </div>
-
-            <div class="search-results" id="mobile-search-results">
-              <!-- Products will be inserted here -->
-            </div>
-
-            <div class="search-categories" id="mobile-search-categories">
-              <!-- Categories will be inserted here -->
-            </div>
-
+            <div class="search-results" id="mobile-search-results"></div>
+            <div class="search-categories" id="mobile-search-categories"></div>
             <div class="search-no-results" id="mobile-search-no-results" style="display: none;">
               <i class="fa-solid fa-search"></i>
               <p>No products found</p>
@@ -169,20 +339,108 @@
   <!-- 3. Desktop Bottom Navigation Bar -->
   <div class="header-nav-bar">
     <div class="header-container nav-container">
-      <!-- All Categories Trigger -->
-      <div class="all-categories-trigger">
-        <button class="categories-btn" type="button">
+      <!-- ALL CATEGORIES 一体化三栏容器 -->
+      <div class="all-categories-trigger" id="allCategoriesTrigger">
+        <button class="categories-btn" type="button" aria-expanded="false">
           <i class="fa-solid fa-bars"></i>
           <span>ALL CATEGORIES</span>
           <i class="fa-solid fa-angle-down arrow-down"></i>
         </button>
+
+        <div class="categories-unified-mega-dropdown" id="categoriesUnifiedDropdown">
+          <!-- Column 1: 一级菜单列 -->
+          <div class="mega-column col-level-1">
+            <ul class="cat-list">
+              {categoryMenu.map((l1, idx1) => (
+                <li class={`cat-item level-1-item ${idx1 === 0 ? 'is-active' : ''}`} data-index={idx1}>
+                  <a href={`/shop?category=${l1.slug}`} class="cat-link">
+                    <span>{l1.name}</span>
+                    {l1.children && l1.children.length > 0 && (
+                      <i class="fa-solid fa-angle-right sub-arrow"></i>
+                    )}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <!-- Column 2: 二级菜单列 (平级并列) -->
+          <div class="mega-column col-level-2" id="level2Column">
+            {categoryMenu.map((l1, idx1) => (
+              <div class={`sub-group-l2 ${idx1 === 0 ? 'is-active' : ''}`} id={`subGroupL2_${idx1}`}>
+                {l1.children && l1.children.length > 0 ? (
+                  <ul class="cat-list">
+                    {l1.children.map((l2, idx2) => (
+                      <li class={`cat-item level-2-item ${idx1 === 0 && idx2 === 0 ? 'is-active' : ''}`} data-parent={idx1} data-index={idx2}>
+                        <a href={`/shop?category=${l2.slug}`} class="cat-link">
+                          <span>{l2.name}</span>
+                          {l2.children && l2.children.length > 0 && (
+                            <i class="fa-solid fa-angle-right sub-arrow"></i>
+                          )}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ))}
+          </div>
+
+          <!-- Column 3: 三级菜单列 (平级并列) -->
+          <div class="mega-column col-level-3" id="level3Column">
+            {categoryMenu.map((l1, idx1) =>
+              l1.children.map((l2, idx2) =>
+                l2.children && l2.children.length > 0 ? (
+                  <div class={`sub-group-l3 ${idx1 === 0 && idx2 === 0 ? 'is-active' : ''}`} id={`subGroupL3_${idx1}_${idx2}`}>
+                    <ul class="cat-list">
+                      {l2.children.map((l3) => (
+                        <li class="cat-item level-3-item">
+                          <a href={`/shop?category=${l3.slug}`} class="cat-link">
+                            <span>{l3.name}</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null
+              )
+            )}
+          </div>
+        </div>
       </div>
 
       <!-- Main Navigation Menu -->
       <nav class="main-nav">
-        <a href="/new-arrival">NEW ARRIVAL</a>
+        <!-- NEW ARRIVAL (重构优化：通透高质感下拉菜单) -->
+        <div class="nav-item-dropdown-wrapper">
+          <a href="/shop?category=new-arrivals" class="nav-main-link has-dropdown">
+            <span>NEW ARRIVAL</span>
+            <i class="fa-solid fa-angle-down nav-arrow"></i>
+          </a>
+          <div class="nav-simple-dropdown" id="desktopNewArrivalDropdown">
+            <div class="nav-dropdown-header">
+              <span class="dropdown-tag">LATEST DROPS</span>
+              <span class="dropdown-note">Updated Weekly</span>
+            </div>
+            <ul class="nav-dropdown-list" id="newArrivalsListDesktop">
+              <li>
+                <a href="/shop?category=new-arrivals" class="nav-dropdown-link is-primary">
+                  <span class="link-label">All New Arrivals</span>
+                  <i class="fa-solid fa-arrow-right link-icon"></i>
+                </a>
+              </li>
+              {newArrivalSubcategories.slice(1).map((item) => (
+                <li>
+                  <a href={`/shop?category=${item.slug}`} class="nav-dropdown-link">
+                    <span class="link-label">{item.name}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
         <a href="/best-sellers">BEST SELLERS</a>
-        
         <a href="/about">ABOUT E.B.BELLE</a>
         <a href="/contact">CONTACT US</a>
         <a href="/halloween" class="halloween-special-link">
@@ -191,7 +449,6 @@
         </a>
       </nav>
 
-      <!-- Right Link: Order Tracking -->
       <div class="nav-right">
         <a href="/order-tracking" class="tracking-link">
           <i class="fa-solid fa-truck-fast"></i>
@@ -202,7 +459,7 @@
   </div>
 </header>
 
-<!-- 4. Mobile Off-Canvas Drawer Menu & Backdrop -->
+<!-- 4. Mobile Off-Canvas Drawer Menu & Backdrop (手机端全量同步) -->
 <div class="drawer-backdrop" id="drawer-backdrop"></div>
 <aside class="mobile-drawer" id="mobile-drawer" aria-label="Mobile Navigation">
   <div class="drawer-header">
@@ -213,29 +470,47 @@
   </div>
 
   <div class="drawer-body">
-    <!-- Category Accordion Block -->
+    <!-- Categories 区域：完全同步 CSV 8 个一级分类，二三级不展示 -->
     <div class="drawer-section">
       <div class="drawer-section-title">
         <i class="fa-solid fa-layer-group"></i>
         <span>Categories</span>
       </div>
       <div class="drawer-links">
-        <a href="/category/necklaces">Necklaces & Pendants</a>
-        <a href="/category/rings">Earrings & Rings</a>
-        <a href="/category/bracelets">Bracelets & Bangles</a>
-        <a href="/category/stainless-steel">Stainless Steel Series</a>
-        <a href="/category/sets">Jewelry Sets</a>
+        {categoryMenu.map((l1) => (
+          <a href={`/shop?category=${l1.slug}`}>{l1.name}</a>
+        ))}
       </div>
     </div>
 
-    <!-- Main Navigation Links -->
+    <!-- Discover 区域：NEW ARRIVAL 双列胶囊卡片排版，告别紧密拥挤 -->
     <div class="drawer-section">
       <div class="drawer-section-title">
         <i class="fa-solid fa-compass"></i>
         <span>Discover</span>
       </div>
       <div class="drawer-links">
-        <a href="/new-arrival">NEW ARRIVAL</a>
+        <!-- 可折叠的 Mobile New Arrivals -->
+        <div class="mobile-accordion-item" id="mobileNewArrivalAccordion">
+          <div class="mobile-accordion-trigger" id="mobileNewArrivalToggle">
+            <a href="/shop?category=new-arrivals" class="mobile-acc-title">NEW ARRIVAL</a>
+            <button type="button" class="mobile-acc-arrow-btn" aria-label="Toggle subcategories">
+              <i class="fa-solid fa-chevron-down mobile-acc-icon"></i>
+            </button>
+          </div>
+          <div class="mobile-accordion-content" id="mobileNewArrivalContent">
+            <div class="mobile-sublinks-grid" id="newArrivalsListMobile">
+              <a href="/shop?category=new-arrivals" class="mobile-sublink is-primary-pill">
+                <span>All New Arrivals</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </a>
+              {newArrivalSubcategories.slice(1).map((item) => (
+                <a href={`/shop?category=${item.slug}`} class="mobile-sublink">{item.name}</a>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <a href="/best-sellers">BEST SELLERS</a>
         <a href="/about">ABOUT E.B.BELLE</a>
         <a href="/contact">CONTACT US</a>
@@ -275,26 +550,37 @@
   .announcement-bar {
     background: #b21b1b;
     color: #ffffff;
-    min-height: 34px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px 16px;
+    padding: 6px 20px;
   }
   .announcement-content {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    font-size: 11px;
+    gap: 16px;
+    font-size: 12.5px;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     text-align: center;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
+  .announcement-sep {
+    opacity: 0.6;
+    font-size: 10px;
+  }
+  .countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+  }
 
-  /* 2. Main Header Container */
+  /* 2. Main Header */
   .main-header {
     background: #ffffff;
     border-bottom: 1px solid #eeebe5;
@@ -309,7 +595,6 @@
     position: relative;
   }
 
-  /* Top Row */
   .header-top {
     display: flex;
     align-items: center;
@@ -318,7 +603,6 @@
     padding: 14px 0;
   }
 
-  /* Mobile Hamburger */
   .mobile-menu-toggle {
     display: none;
     background: none;
@@ -329,7 +613,6 @@
     cursor: pointer;
   }
 
-  /* Brand Logo */
   .header-brand a {
     text-decoration: none;
   }
@@ -344,14 +627,12 @@
     white-space: nowrap;
   }
 
-  /* Center Search (Desktop) */
   .header-search {
     flex: 1;
     max-width: 560px;
     display: flex;
   }
 
-  /* Action Buttons Right */
   .header-actions {
     display: flex;
     align-items: center;
@@ -382,14 +663,12 @@
     color: #666;
   }
 
-  /* Account Wrapper */
   .account-wrapper {
     position: relative;
     display: flex;
     align-items: center;
   }
 
-  /* User Menu Dropdown */
   .user-menu-dropdown {
     position: absolute;
     top: calc(100% + 8px);
@@ -413,11 +692,6 @@
     transform: translateY(0);
   }
 
-  .user-menu-dropdown.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
   .user-menu-item {
     display: flex;
     align-items: center;
@@ -442,12 +716,10 @@
     font-size: 14px;
   }
 
-  /* Mobile Search Icon in Header */
   .mobile-search-btn {
     display: none;
   }
 
-  /* Cart Badge */
   .cart-icon-wrapper {
     position: relative;
     display: flex;
@@ -469,9 +741,8 @@
     text-align: center;
   }
 
-  /* Mobile Dropdown Search Drawer */
   .mobile-search-drawer {
-    display: none; /* 桌面端默认不加载 */
+    display: none;
   }
 
   .mobile-search-box-wrapper {
@@ -520,16 +791,22 @@
     background: #faf8f5;
     border-top: 1px solid #f0eee9;
     border-bottom: 1px solid #e8e5df;
+    position: relative;
+    z-index: 40;
   }
   .nav-container {
     display: flex;
     align-items: center;
     height: 44px;
   }
+
+  /* ALL CATEGORIES 一体化三栏容器 */
   .all-categories-trigger {
+    position: relative;
     height: 100%;
     margin-right: 28px;
   }
+
   .categories-btn {
     height: 100%;
     background: none;
@@ -539,14 +816,158 @@
     gap: 8px;
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     color: #111111;
     cursor: pointer;
-    padding: 0;
+    padding: 0 4px;
+    transition: color 0.2s;
   }
   .categories-btn i.fa-bars {
     font-size: 14px;
   }
+  .categories-btn .arrow-down {
+    transition: transform 0.25s ease;
+  }
+
+  .all-categories-trigger:hover .categories-btn {
+    color: #b21b1b;
+  }
+  .all-categories-trigger:hover .categories-btn .arrow-down {
+    transform: rotate(180deg);
+  }
+
+  .categories-unified-mega-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    display: flex;
+    align-items: flex-start;
+    background: #ffffff;
+    border: 1px solid #e8e4dc;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.12);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    z-index: 1000;
+  }
+
+  .all-categories-trigger:hover .categories-unified-mega-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .mega-column {
+    background: #ffffff;
+    box-sizing: border-box;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .col-level-1 {
+    width: 240px;
+    border-right: 1px solid #f0ece1;
+  }
+
+  .col-level-2 {
+    width: 240px;
+    display: none;
+    border-right: 1px solid #f0ece1;
+  }
+  .col-level-2.is-open {
+    display: block;
+  }
+
+  .col-level-3 {
+    width: 260px;
+    display: none;
+  }
+  .col-level-3.is-open {
+    display: block;
+  }
+
+  .sub-group-l2,
+  .sub-group-l3 {
+    display: none;
+  }
+  .sub-group-l2.is-active,
+  .sub-group-l3.is-active {
+    display: block;
+  }
+
+  .cat-list {
+    list-style: none;
+    margin: 0;
+    padding: 6px 0;
+  }
+
+  .cat-item {
+    position: relative;
+  }
+
+  .cat-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9.5px 16px;
+    text-decoration: none;
+    color: #2b2b2b;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    transition: all 0.15s ease;
+    line-height: 1.35;
+    white-space: nowrap;
+  }
+
+  .cat-item.is-active > .cat-link,
+  .cat-link:hover {
+    background: #faf7f2;
+    color: #b21b1b;
+    padding-left: 19px;
+  }
+
+  .sub-arrow {
+    font-size: 10px;
+    color: #aaa;
+    transition: transform 0.15s ease, color 0.15s ease;
+    margin-left: 8px;
+    flex-shrink: 0;
+  }
+
+  .cat-item.is-active > .cat-link .sub-arrow,
+  .cat-link:hover .sub-arrow {
+    color: #b21b1b;
+    transform: translateX(2px);
+  }
+
+  .level-2-item .cat-link {
+    font-weight: 500;
+  }
+
+  .level-3-item .cat-link {
+    font-weight: 400;
+    color: #4a4a4a;
+  }
+  .level-3-item .cat-link:hover {
+    color: #b21b1b;
+    font-weight: 500;
+  }
+
+  .mega-column::-webkit-scrollbar,
+  .nav-simple-dropdown::-webkit-scrollbar {
+    width: 4px;
+  }
+  .mega-column::-webkit-scrollbar-thumb,
+  .nav-simple-dropdown::-webkit-scrollbar-thumb {
+    background: #ddd8ce;
+    border-radius: 4px;
+  }
+
+  /* Main Nav Menu */
   .main-nav {
     display: flex;
     align-items: center;
@@ -564,6 +985,154 @@
   }
   .main-nav a:hover {
     color: #b21b1b;
+  }
+
+  /* =========================================================
+     NEW ARRIVALS 桌面端下拉菜单 (重构：通透舒展，杜绝拥挤)
+     ========================================================= */
+  .nav-item-dropdown-wrapper {
+    position: relative;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .nav-main-link.has-dropdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    padding: 0 4px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #333333;
+    transition: color 0.2s;
+  }
+
+  .nav-arrow {
+    font-size: 10px;
+    transition: transform 0.25s ease;
+    color: #777;
+  }
+
+  .nav-item-dropdown-wrapper:hover .nav-main-link.has-dropdown {
+    color: #b21b1b;
+  }
+
+  .nav-item-dropdown-wrapper:hover .nav-arrow {
+    transform: rotate(180deg);
+    color: #b21b1b;
+  }
+
+  /* 桌面端下拉浮层卡片 */
+  .nav-simple-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 250px;
+    background: #ffffff;
+    border: 1px solid #e8e4dc;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.12);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
+    z-index: 1000;
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+    padding: 8px 10px 12px;
+    box-sizing: border-box;
+  }
+
+  .nav-item-dropdown-wrapper:hover .nav-simple-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  /* 小顶部标题栏 */
+  .nav-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px 8px;
+    border-bottom: 1px solid #f2ede4;
+    margin-bottom: 6px;
+  }
+  .dropdown-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #725b29;
+  }
+  .dropdown-note {
+    font-size: 9.5px;
+    color: #999;
+  }
+
+  .nav-dropdown-list,
+  :global(.nav-dropdown-list) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  /* 全局穿透：确保动态注入与静态渲染均享有高质感轻奢排版 */
+  :global(.nav-dropdown-link) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    height: 38px !important;
+    padding: 0 14px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.04em !important;
+    color: #333333 !important;
+    text-decoration: none !important;
+    border-radius: 4px !important;
+    background: transparent !important;
+    transition: all 0.16s ease !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+  }
+
+  :global(.nav-dropdown-link .link-label) {
+    flex: 1;
+  }
+
+  :global(.nav-dropdown-link:hover) {
+    background: #faf7f2 !important;
+    color: #b21b1b !important;
+    padding-left: 18px !important;
+  }
+
+  :global(.nav-dropdown-link.is-primary) {
+    background: #faf7f2 !important;
+    color: #0e0f0f !important;
+    font-weight: 600 !important;
+    margin-bottom: 4px !important;
+    border: 1px solid #eee7db !important;
+  }
+  :global(.nav-dropdown-link.is-primary:hover) {
+    background: #0e0f0f !important;
+    color: #ffffff !important;
+    border-color: #0e0f0f !important;
+  }
+  :global(.nav-dropdown-link .link-icon) {
+    font-size: 10px !important;
+    opacity: 0.6 !important;
+    transition: transform 0.2s ease !important;
+  }
+  :global(.nav-dropdown-link:hover .link-icon) {
+    transform: translateX(3px) !important;
+    opacity: 1 !important;
   }
 
   /* Halloween 特效链接 */
@@ -585,7 +1154,6 @@
     animation: colorPulse 1.5s ease-in-out infinite;
   }
 
-  /* 火焰闪烁动画 */
   @keyframes flameFlicker {
     0%, 100% {
       color: #ff6b35;
@@ -609,7 +1177,6 @@
     }
   }
 
-  /* 文字颜色脉动动画（绿色到红色） */
   @keyframes colorPulse {
     0%, 100% {
       color: #22c55e;
@@ -621,13 +1188,6 @@
     }
   }
 
-  .halloween-special-link:hover .halloween-flame {
-    animation-duration: 0.4s;
-  }
-
-  .halloween-special-link:hover .halloween-text {
-    animation-duration: 0.8s;
-  }
   .nav-right {
     margin-left: auto;
   }
@@ -647,7 +1207,7 @@
     font-size: 13px;
   }
 
-  /* 4. Mobile Off-Canvas Drawer */
+  /* 4. Mobile Off-Canvas Drawer (手机端抽屉) */
   .drawer-backdrop {
     position: fixed;
     inset: 0;
@@ -745,6 +1305,126 @@
   .drawer-links a:hover {
     color: #b21b1b;
   }
+
+  /* =========================================================
+     移动端 NEW ARRIVAL 折叠菜单 (重构：双列呼吸感胶囊布局，拒绝密集拥挤)
+     ========================================================= */
+  .mobile-accordion-item {
+    border-bottom: 1px solid #f6f4f0;
+  }
+
+  .mobile-accordion-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .mobile-accordion-trigger a.mobile-acc-title {
+    flex: 1;
+    border-bottom: none !important;
+    padding: 10px 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #222;
+    text-decoration: none;
+  }
+
+  .mobile-acc-arrow-btn {
+    background: none;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-acc-icon {
+    font-size: 11px;
+    transition: transform 0.25s ease;
+  }
+
+  .mobile-accordion-item.is-expanded .mobile-acc-icon {
+    transform: rotate(180deg);
+    color: #b21b1b;
+  }
+
+  .mobile-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #faf8f5;
+    border-radius: 6px;
+  }
+
+  .mobile-accordion-item.is-expanded .mobile-accordion-content {
+    max-height: 520px;
+    margin-bottom: 12px;
+    border: 1px solid #eee7db;
+  }
+
+  /* 呼吸感网格容器 (Grid) */
+  .mobile-sublinks-grid,
+  :global(.mobile-sublinks-grid) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    max-height: 440px !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 单个胶囊子项 (全局穿透) */
+  :global(.mobile-sublink) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 38px !important;
+    padding: 0 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    color: #333333 !important;
+    background: #ffffff !important;
+    border: 1px solid #e5dfd5 !important;
+    border-radius: 4px !important;
+    text-decoration: none !important;
+    text-align: center !important;
+    transition: all 0.18s ease !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    box-sizing: border-box !important;
+  }
+
+  :global(.mobile-sublink:hover),
+  :global(.mobile-sublink:active) {
+    border-color: #b21b1b !important;
+    color: #b21b1b !important;
+    background: #fff8f8 !important;
+  }
+
+  /* All New Arrivals 全宽首项高亮横幅 */
+  :global(.mobile-sublink.is-primary-pill) {
+    grid-column: 1 / -1 !important;
+    justify-content: space-between !important;
+    padding: 0 14px !important;
+    background: #0e0f0f !important;
+    color: #ffffff !important;
+    border-color: #0e0f0f !important;
+    font-size: 12px !important;
+  }
+  :global(.mobile-sublink.is-primary-pill:hover),
+  :global(.mobile-sublink.is-primary-pill:active) {
+    background: #2b2b2b !important;
+    color: #ffffff !important;
+  }
+  :global(.mobile-sublink.is-primary-pill i) {
+    font-size: 11px !important;
+  }
+
   .drawer-highlight-link {
     display: flex;
     align-items: center;
@@ -798,14 +1478,23 @@
   }
 
   @media (max-width: 768px) {
+    .announcement-bar {
+      min-height: 48px;
+      padding: 6px 14px;
+    }
     .announcement-content {
       flex-direction: column;
-      gap: 2px;
-      padding: 4px 0;
+      gap: 3px;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+    .announcement-sep {
+      display: none;
     }
     .countdown {
-      font-size: 10px;
-      opacity: 0.9;
+      font-size: 10.5px;
+      font-weight: 700;
+      opacity: 0.95;
     }
     .header-top {
       padding: 10px 0;
@@ -827,8 +1516,7 @@
       padding: 6px;
       font-size: 17px;
     }
-    
-    /* 核心修复：移动端搜索抽屉滑动展开机制 */
+
     .mobile-search-drawer {
       display: block;
       max-height: 0;
@@ -845,15 +1533,13 @@
       pointer-events: auto;
       padding-bottom: 12px;
     }
-    
+
     .header-nav-bar {
       display: none;
     }
   }
 
-  /* =========================================================
-     Search Dropdown Styles (全面优化与全局穿透适配)
-     ========================================================= */
+  /* Search Dropdown Styles */
   .search-box {
     position: relative;
     width: 100%;
@@ -908,7 +1594,6 @@
     font-size: 14px;
   }
 
-  /* 下拉容器整体样式 (桌面端 + 移动端通用基础) */
   .search-dropdown {
     position: absolute;
     top: calc(100% + 6px);
@@ -925,7 +1610,6 @@
     scrollbar-color: #ddd8ce transparent;
   }
 
-  /* 移动端专属下拉位置修正与优化 */
   .mobile-search-dropdown {
     top: calc(100% + 4px);
     max-height: 70vh;
@@ -946,7 +1630,6 @@
     padding: 4px 0;
   }
 
-  /* Loading State */
   .search-loading {
     display: flex;
     align-items: center;
@@ -974,7 +1657,6 @@
     to { transform: rotate(360deg); }
   }
 
-  /* 搜索结果项全局穿透样式 */
   :global(.search-results) {
     padding: 0;
     margin: 0;
@@ -1071,7 +1753,6 @@
     font-weight: 400 !important;
   }
 
-  /* View All Link */
   :global(.search-view-all) {
     display: flex !important;
     align-items: center !important;
@@ -1105,7 +1786,6 @@
     transform: translateX(3px) !important;
   }
 
-  /* Categories Section */
   .search-categories {
     border-top: 1px solid #eee8df;
     padding: 14px 16px;
@@ -1169,7 +1849,6 @@
     color: rgba(255, 255, 255, 0.7) !important;
   }
 
-  /* No Results */
   .search-no-results {
     display: flex;
     flex-direction: column;
@@ -1199,7 +1878,33 @@
 </style>
 
 <script>
-  // 检查用户登录状态
+  // 1. 顶部公告栏实时倒计时驱动
+  function initAnnouncementCountdown() {
+    const timerEl = document.getElementById('countdownTimer');
+    if (!timerEl) return;
+
+    let totalSeconds = (84 * 86400) + (21 * 3600) + (25 * 60) + 14;
+
+    function renderTime() {
+      if (totalSeconds <= 0) {
+        timerEl.textContent = '00 D : 00 H : 00 M : 00 S';
+        return;
+      }
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      const pad = (n: number) => String(n).padStart(2, '0');
+      timerEl.textContent = `${days} D : ${pad(hours)} H : ${pad(minutes)} M : ${pad(seconds)} S`;
+      totalSeconds--;
+    }
+
+    renderTime();
+    setInterval(renderTime, 1000);
+  }
+
+  // 2. 检查用户登录状态
   async function checkAuthStatus() {
     try {
       const response = await fetch('/api/auth/me');
@@ -1216,8 +1921,7 @@
     }
   }
 
-  // 更新Header显示已登录用户
-  function updateHeaderForLoggedInUser(user) {
+  function updateHeaderForLoggedInUser(user: any) {
     const desktopAccountBtn = document.getElementById('desktopAccountBtn');
     const desktopAccountText = document.getElementById('desktopAccountText');
     const userMenuDropdown = document.getElementById('userMenuDropdown');
@@ -1238,7 +1942,6 @@
     localStorage.setItem('user', JSON.stringify(user));
   }
 
-  // 更新Header显示访客状态
   function updateHeaderForGuest() {
     const desktopAccountText = document.getElementById('desktopAccountText');
     const desktopAccountBtn = document.getElementById('desktopAccountBtn');
@@ -1254,8 +1957,8 @@
 
     if (desktopAccountBtn) {
       desktopAccountBtn.onclick = function() {
-        if (typeof window.openAuthModal === 'function') {
-          window.openAuthModal('login');
+        if (typeof (window as any).openAuthModal === 'function') {
+          (window as any).openAuthModal('login');
         }
       };
     }
@@ -1263,7 +1966,6 @@
     localStorage.removeItem('user');
   }
 
-  // 处理登出
   async function handleLogout() {
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' });
@@ -1280,17 +1982,14 @@
     }
   }
 
-  window.addEventListener('userLoggedIn', (e) => {
+  window.addEventListener('userLoggedIn', (e: any) => {
     updateHeaderForLoggedInUser(e.detail);
   });
 
-  document.addEventListener('DOMContentLoaded', checkAuthStatus);
-  window.handleLogout = handleLogout;
+  (window as any).handleLogout = handleLogout;
 
-  // =========================================================
-  // Search Functionality (Desktop & Mobile 深度同步引擎)
-  // =========================================================
-  function initSearchModule(config) {
+  // 3. 搜索模块
+  function initSearchModule(config: any) {
     const {
       inputEl,
       btnEl,
@@ -1303,17 +2002,17 @@
 
     if (!inputEl || !dropdownEl) return;
 
-    let searchTimeout;
-    let searchCache = {};
+    let searchTimeout: any;
+    let searchCache: Record<string, any> = {};
 
-    function debounceSearch(query) {
+    function debounceSearch(query: string) {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
         performSearch(query);
       }, 300);
     }
 
-    async function performSearch(query) {
+    async function performSearch(query: string) {
       if (!query || query.trim().length < 2) {
         hideDropdown();
         return;
@@ -1346,7 +2045,7 @@
       }
     }
 
-    function renderResults(data) {
+    function renderResults(data: any) {
       hideLoading();
       const { products = [], categories = [], total = 0, query = '' } = data;
 
@@ -1356,7 +2055,7 @@
       }
 
       if (products.length > 0) {
-        resultsEl.innerHTML = products.map(product => {
+        resultsEl.innerHTML = products.map((product: any) => {
           const priceHtml = product.on_sale && product.sale_price ?
             `<div class="search-result-price on-sale">
               <span class="sale-price">$${parseFloat(product.sale_price).toFixed(2)}</span>
@@ -1395,7 +2094,7 @@
         categoriesEl.innerHTML = `
           <div class="search-categories-title">Related Categories</div>
           <div class="search-category-list">
-            ${categories.map(cat => `
+            ${categories.map((cat: any) => `
               <a href="/shop?category=${cat.slug}" class="search-category-item">
                 <i class="fa-solid fa-tag"></i>
                 <span>${cat.name}</span>
@@ -1436,19 +2135,18 @@
       dropdownEl.style.display = 'none';
     }
 
-    // 绑定输入与键盘交互
-    inputEl.addEventListener('input', (e) => {
+    inputEl.addEventListener('input', (e: any) => {
       debounceSearch(e.target.value);
     });
 
-    inputEl.addEventListener('focus', (e) => {
+    inputEl.addEventListener('focus', (e: any) => {
       const q = e.target.value.trim();
       if (q.length >= 2 && searchCache[q]) {
         renderResults(searchCache[q]);
       }
     });
 
-    inputEl.addEventListener('keypress', (e) => {
+    inputEl.addEventListener('keypress', (e: any) => {
       if (e.key === 'Enter') {
         const q = e.target.value.trim();
         if (q.length >= 2) {
@@ -1466,17 +2164,14 @@
       });
     }
 
-    // 点击外部区域自动收起下拉框
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', (e: any) => {
       if (!dropdownEl.contains(e.target) && !inputEl.contains(e.target)) {
         hideDropdown();
       }
     });
   }
 
-  // 初始化桌面端与移动端两套搜索通道
   function initAllSearches() {
-    // 1. 初始化桌面端搜索
     initSearchModule({
       inputEl: document.getElementById('desktop-search-input'),
       btnEl: document.getElementById('desktop-search-btn'),
@@ -1487,7 +2182,6 @@
       noResultsEl: document.getElementById('search-no-results')
     });
 
-    // 2. 初始化移动端搜索
     initSearchModule({
       inputEl: document.getElementById('mobile-search-input'),
       btnEl: document.getElementById('mobile-search-submit'),
@@ -1498,7 +2192,6 @@
       noResultsEl: document.getElementById('mobile-search-no-results')
     });
 
-    // 3. 核心修复：移动端放大镜图标点击展开/收起切换
     const mobileSearchToggle = document.getElementById('mobile-search-toggle');
     const mobileSearchInput = document.getElementById('mobile-search-input');
     const mobileSearchDrawer = document.getElementById('mobile-search-drawer');
@@ -1510,12 +2203,10 @@
         const isActive = mobileSearchDrawer.classList.toggle('active');
 
         if (isActive) {
-          // 展开时平滑聚焦
           setTimeout(() => {
             mobileSearchInput?.focus();
           }, 200);
         } else {
-          // 收起时收起软键盘并隐藏下拉结果
           mobileSearchInput?.blur();
           if (mobileDropdown) mobileDropdown.style.display = 'none';
         }
@@ -1523,15 +2214,153 @@
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAllSearches);
-  } else {
-    initAllSearches();
+  // 4. 一体化三栏多级菜单控制器 (0 毫秒响应，永不断触)
+  function initUnifiedMegaMenu() {
+    const trigger = document.getElementById('allCategoriesTrigger');
+    const dropdown = document.getElementById('categoriesUnifiedDropdown');
+    const col2 = document.getElementById('level2Column');
+    const col3 = document.getElementById('level3Column');
+
+    if (!trigger || !dropdown || !col2 || !col3) return;
+
+    const l1Items = dropdown.querySelectorAll('.level-1-item');
+    const l2Items = dropdown.querySelectorAll('.level-2-item');
+
+    function activateLevel1(idx: string | number) {
+      l1Items.forEach((item) => item.classList.remove('is-active'));
+      const activeL1 = dropdown.querySelector(`.level-1-item[data-index="${idx}"]`);
+      if (activeL1) activeL1.classList.add('is-active');
+
+      const allSubL2 = dropdown.querySelectorAll('.sub-group-l2');
+      allSubL2.forEach((g) => g.classList.remove('is-active'));
+
+      const targetL2 = document.getElementById(`subGroupL2_${idx}`);
+      if (targetL2 && targetL2.querySelectorAll('.level-2-item').length > 0) {
+        col2.classList.add('is-open');
+        targetL2.classList.add('is-active');
+
+        const firstL2Item = targetL2.querySelector('.level-2-item');
+        if (firstL2Item) {
+          const l2Idx = firstL2Item.getAttribute('data-index');
+          activateLevel2(idx, l2Idx);
+        } else {
+          col3.classList.remove('is-open');
+        }
+      } else {
+        col2.classList.remove('is-open');
+        col3.classList.remove('is-open');
+      }
+    }
+
+    function activateLevel2(parentIdx: string | number, subIdx: string | number | null) {
+      if (subIdx === null) return;
+      const currentL2Group = document.getElementById(`subGroupL2_${parentIdx}`);
+      if (currentL2Group) {
+        currentL2Group.querySelectorAll('.level-2-item').forEach((item) => item.classList.remove('is-active'));
+        const activeL2 = currentL2Group.querySelector(`.level-2-item[data-index="${subIdx}"]`);
+        if (activeL2) activeL2.classList.add('is-active');
+      }
+
+      const allSubL3 = dropdown.querySelectorAll('.sub-group-l3');
+      allSubL3.forEach((g) => g.classList.remove('is-active'));
+
+      const targetL3 = document.getElementById(`subGroupL3_${parentIdx}_${subIdx}`);
+      if (targetL3 && targetL3.querySelectorAll('.level-3-item').length > 0) {
+        col3.classList.add('is-open');
+        targetL3.classList.add('is-active');
+      } else {
+        col3.classList.remove('is-open');
+      }
+    }
+
+    l1Items.forEach((item) => {
+      item.addEventListener('mouseenter', () => {
+        const idx = item.getAttribute('data-index');
+        if (idx !== null) activateLevel1(idx);
+      });
+    });
+
+    l2Items.forEach((item) => {
+      item.addEventListener('mouseenter', () => {
+        const parentIdx = item.getAttribute('data-parent');
+        const subIdx = item.getAttribute('data-index');
+        if (parentIdx !== null && subIdx !== null) {
+          activateLevel2(parentIdx, subIdx);
+        }
+      });
+    });
+
+    trigger.addEventListener('mouseenter', () => {
+      activateLevel1(0);
+    });
   }
 
-  // =========================================================
-  // Mobile Drawer Menu (移动端抽屉菜单)
-  // =========================================================
+  // 5. 动态同步 WooCommerce New Arrivals 子分类数据 (注入精细化格式)
+  async function syncNewArrivalSubcategories() {
+    try {
+      const res = await fetch('/api/filters');
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data && data.newArrivals && data.newArrivals.length > 0) {
+        let subCats: any[] = [];
+        data.newArrivals.forEach((cat: any) => {
+          if (cat.children && cat.children.length > 0) {
+            subCats.push(...cat.children);
+          }
+        });
+
+        if (subCats.length > 0) {
+          subCats.sort((a, b) => {
+            const extractDate = (name: string) => {
+              const match = name.match(/(\d{4})\.(\d{1,2})/);
+              if (match) return parseInt(match[1]) * 100 + parseInt(match[2]);
+              return 0;
+            };
+            return extractDate(b.name) - extractDate(a.name);
+          });
+
+          // 1. 同步桌面端下拉列表 (通透卡片条目)
+          const desktopListEl = document.getElementById('newArrivalsListDesktop');
+          if (desktopListEl) {
+            desktopListEl.innerHTML = `
+              <li>
+                <a href="/shop?category=new-arrivals" class="nav-dropdown-link is-primary">
+                  <span class="link-label">All New Arrivals</span>
+                  <i class="fa-solid fa-arrow-right link-icon"></i>
+                </a>
+              </li>
+              ${subCats.map(c => `
+                <li>
+                  <a href="/shop?category=${c.slug}" class="nav-dropdown-link">
+                    <span class="link-label">${c.name}</span>
+                  </a>
+                </li>
+              `).join('')}
+            `;
+          }
+
+          // 2. 同步手机端抽屉子分类列表 (双列呼吸感胶囊标签)
+          const mobileListEl = document.getElementById('newArrivalsListMobile');
+          if (mobileListEl) {
+            mobileListEl.innerHTML = `
+              <a href="/shop?category=new-arrivals" class="mobile-sublink is-primary-pill">
+                <span>All New Arrivals</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </a>
+              ${subCats.map(c => `
+                <a href="/shop?category=${c.slug}" class="mobile-sublink">${c.name}</a>
+              `).join('')}
+            `;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Sync new arrivals subcategories skipped:', e);
+    }
+  }
+
+  // 6. Mobile Drawer 及 New Arrival 折叠展开逻辑
   function initMobileDrawer() {
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const drawerBackdrop = document.getElementById('drawer-backdrop');
@@ -1540,27 +2369,23 @@
 
     if (!mobileMenuBtn || !drawerBackdrop || !mobileDrawer) return;
 
-    // 打开菜单
     function openDrawer() {
       drawerBackdrop.classList.add('open');
       mobileDrawer.classList.add('open');
-      document.body.style.overflow = 'hidden'; // 防止背景滚动
+      document.body.style.overflow = 'hidden';
     }
 
-    // 关闭菜单
     function closeDrawer() {
       drawerBackdrop.classList.remove('open');
       mobileDrawer.classList.remove('open');
-      document.body.style.overflow = ''; // 恢复滚动
+      document.body.style.overflow = '';
     }
 
-    // 绑定打开按钮
     mobileMenuBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       openDrawer();
     });
 
-    // 绑定关闭按钮
     if (drawerClose) {
       drawerClose.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1568,26 +2393,41 @@
       });
     }
 
-    // 点击背景关闭
     drawerBackdrop.addEventListener('click', closeDrawer);
-
-    // 点击菜单内部不关闭
     mobileDrawer.addEventListener('click', (e) => {
       e.stopPropagation();
     });
 
-    // ESC 键关闭
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && mobileDrawer.classList.contains('open')) {
         closeDrawer();
       }
     });
+
+    const newArrivalAccordion = document.getElementById('mobileNewArrivalAccordion');
+    const newArrivalArrowBtn = newArrivalAccordion?.querySelector('.mobile-acc-arrow-btn');
+
+    if (newArrivalAccordion && newArrivalArrowBtn) {
+      newArrivalArrowBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        newArrivalAccordion.classList.toggle('is-expanded');
+      });
+    }
   }
 
-  // 初始化移动端菜单
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMobileDrawer);
-  } else {
+  function initHeader() {
+    initAnnouncementCountdown();
+    checkAuthStatus();
+    initAllSearches();
+    initUnifiedMegaMenu();
+    syncNewArrivalSubcategories();
     initMobileDrawer();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeader);
+  } else {
+    initHeader();
   }
 </script>
