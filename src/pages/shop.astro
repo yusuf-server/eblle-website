@@ -5,37 +5,8 @@ import Footer from '../components/Footer.astro';
 import CartDrawer from '../components/CartDrawer.astro';
 import ProductSkeleton from '../components/ProductSkeleton.astro';
 
-// 不再在服务端获取数据，改为客户端加载
 const perPage = 20;
 
-// 生成分页数组
-const generatePagination = (current: number, total: number) => {
-  const pages: (number | string)[] = [];
-
-  if (total <= 7) {
-    for (let i = 1; i <= total; i++) {
-      pages.push(i);
-    }
-  } else {
-    pages.push(1);
-    if (current > 3) {
-      pages.push('...');
-    }
-    const start = Math.max(2, current - 1);
-    const end = Math.min(total - 1, current + 1);
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-    if (current < total - 2) {
-      pages.push('...');
-    }
-    pages.push(total);
-  }
-
-  return pages;
-};
-
-// 添加缓存控制，确保页面不被缓存
 if (Astro.response) {
   Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
 }
@@ -60,17 +31,17 @@ if (Astro.response) {
     </div>
   </div>
 
-  <!-- Mobile Filter Bar -->
+  <!-- Mobile Filter Bar (完整恢复圆角胶囊药丸样式) -->
   <div class="mobile-filter-bar">
-    <button class="filter-main-btn" id="mobileFilterBtn">
+    <button class="filter-main-btn" id="mobileFilterBtn" type="button">
       <i class="fa-solid fa-sliders"></i>
       <span>Filters</span>
       <span class="filter-count" id="mobileFilterCount">0</span>
     </button>
-    <button class="filter-tag-btn active">Best Match</button>
-    <button class="filter-tag-btn">316L Steel</button>
-    <button class="filter-tag-btn">$925 Silver</button>
-    <button class="filter-tag-btn">Waterproof</button>
+    <button class="filter-tag-btn active" type="button">Best Match</button>
+    <button class="filter-tag-btn" type="button">316L Steel</button>
+    <button class="filter-tag-btn" type="button">$925 Silver</button>
+    <button class="filter-tag-btn" type="button">Waterproof</button>
   </div>
 
   <!-- Mobile Filter Drawer -->
@@ -78,19 +49,17 @@ if (Astro.response) {
   <div class="mobile-filter-drawer" id="mobileFilterDrawer">
     <div class="mobile-filter-header">
       <h3>Filters</h3>
-      <button class="mobile-filter-close" id="mobileFilterClose">
+      <button class="mobile-filter-close" id="mobileFilterClose" type="button">
         <i class="fa-solid fa-times"></i>
       </button>
     </div>
-    <div class="mobile-filter-content" id="mobileFilterContent">
-      <!-- 筛选内容将动态插入这里 -->
-    </div>
+    <div class="mobile-filter-content" id="mobileFilterContent"></div>
     <div class="mobile-filter-footer">
-      <button class="mobile-filter-reset" id="mobileFilterReset">
+      <button class="mobile-filter-reset" id="mobileFilterReset" type="button">
         <i class="fa-solid fa-rotate-right"></i>
         Reset
       </button>
-      <button class="mobile-filter-apply" id="mobileFilterApply">
+      <button class="mobile-filter-apply" id="mobileFilterApply" type="button">
         Apply Filters
       </button>
     </div>
@@ -99,39 +68,34 @@ if (Astro.response) {
   <!-- Quick Order Modal (桌面端) -->
   <div class="quick-order-overlay" id="quickOrderOverlay"></div>
   <div class="quick-order-modal" id="quickOrderModal">
-    <button class="quick-order-close" id="quickOrderClose">
+    <button class="quick-order-close" id="quickOrderClose" type="button">
       <i class="fa-solid fa-times"></i>
     </button>
-    <div class="quick-order-content" id="quickOrderContent">
-      <!-- 产品详情将动态插入这里 -->
-    </div>
+    <div class="quick-order-content" id="quickOrderContent"></div>
   </div>
 
   <!-- Quick Order Mobile Sheet (移动端) -->
   <div class="quick-order-mobile-overlay" id="quickOrderMobileOverlay"></div>
   <div class="quick-order-mobile-sheet" id="quickOrderMobileSheet">
     <div class="mobile-sheet-header" id="mobileSheetHeader">
-      <button class="mobile-sheet-close" id="quickOrderMobileClose">
+      <button class="mobile-sheet-close" id="quickOrderMobileClose" type="button">
         <i class="fa-solid fa-times"></i>
       </button>
-      <!-- 产品图片、标题、价格将动态插入这里 -->
     </div>
-    <div class="mobile-sheet-content" id="quickOrderMobileContent">
-      <!-- 产品详情将动态插入这里 -->
-    </div>
+    <div class="mobile-sheet-content" id="quickOrderMobileContent"></div>
   </div>
 
   <!-- Mobile Sort & Layout Control -->
   <div class="mobile-control-bar">
-    <button class="sort-btn" id="mobileSortBtn">
+    <button class="sort-btn" id="mobileSortBtn" type="button">
       <span>Sort</span>
       <i class="fa-solid fa-chevron-down"></i>
     </button>
     <div class="layout-toggle">
-      <button class="layout-btn active" data-layout="grid">
+      <button class="layout-btn active" data-layout="grid" type="button">
         <i class="fa-solid fa-grip"></i>
       </button>
-      <button class="layout-btn" data-layout="list">
+      <button class="layout-btn" data-layout="list" type="button">
         <i class="fa-solid fa-bars"></i>
       </button>
     </div>
@@ -139,12 +103,12 @@ if (Astro.response) {
 
   <!-- Sort Dropdown -->
   <div class="mobile-sort-dropdown" id="mobileSortDropdown">
-    <button class="sort-option active" data-sort="menu_order">Default sorting</button>
-    <button class="sort-option" data-sort="popularity">Sort by popularity</button>
-    <button class="sort-option" data-sort="rating">Sort by average rating</button>
-    <button class="sort-option" data-sort="date">Sort by latest</button>
-    <button class="sort-option" data-sort="price">Sort by price: low to high</button>
-    <button class="sort-option" data-sort="price-desc">Sort by price: high to low</button>
+    <button class="sort-option active" data-sort="menu_order" type="button">Default sorting</button>
+    <button class="sort-option" data-sort="popularity" type="button">Sort by popularity</button>
+    <button class="sort-option" data-sort="rating" type="button">Sort by average rating</button>
+    <button class="sort-option" data-sort="date" type="button">Sort by latest</button>
+    <button class="sort-option" data-sort="price" type="button">Sort by price: low to high</button>
+    <button class="sort-option" data-sort="price-desc" type="button">Sort by price: high to low</button>
   </div>
 
   <!-- Mobile Products Grid -->
@@ -155,11 +119,11 @@ if (Astro.response) {
 
     <!-- Mobile Pagination -->
     <div class="mobile-pagination" id="pagination-mobile">
-      <button class="mobile-page-btn page-prev" data-page="prev" disabled>
+      <button class="mobile-page-btn page-prev" data-page="prev" disabled type="button">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
-      <button class="mobile-page-btn active" data-page="1">1</button>
-      <button class="mobile-page-btn page-next" data-page="next">
+      <button class="mobile-page-btn active" data-page="1" type="button">1</button>
+      <button class="mobile-page-btn page-next" data-page="next" type="button">
         <i class="fa-solid fa-chevron-right"></i>
       </button>
     </div>
@@ -169,7 +133,7 @@ if (Astro.response) {
   <div class="shop-container">
     <div class="container">
       <div class="shop-layout">
-        <!-- Sidebar Filters -->
+        <!-- Sidebar Filters (扩宽至 290px，通透舒展) -->
         <aside class="shop-sidebar">
           <div id="filters-container">
             <div class="filters-loading">
@@ -186,12 +150,12 @@ if (Astro.response) {
           <div class="sorting-bar">
             <div class="sort-left">
               <span class="sort-label">Sort by:</span>
-              <button class="sort-btn active" data-sort="menu_order">Default sorting</button>
-              <button class="sort-btn" data-sort="popularity">Sort by popularity</button>
-              <button class="sort-btn" data-sort="rating">Sort by average rating</button>
-              <button class="sort-btn" data-sort="date">Sort by latest</button>
-              <button class="sort-btn" data-sort="price">Sort by price: low to high</button>
-              <button class="sort-btn" data-sort="price-desc">Sort by price: high to low</button>
+              <button class="sort-btn active" data-sort="menu_order" type="button">Default sorting</button>
+              <button class="sort-btn" data-sort="popularity" type="button">Sort by popularity</button>
+              <button class="sort-btn" data-sort="rating" type="button">Sort by average rating</button>
+              <button class="sort-btn" data-sort="date" type="button">Sort by latest</button>
+              <button class="sort-btn" data-sort="price" type="button">Sort by price: low to high</button>
+              <button class="sort-btn" data-sort="price-desc" type="button">Sort by price: high to low</button>
             </div>
             <div class="sort-right">
               <span class="products-count"><span id="products-count-desktop">0</span> Products Found</span>
@@ -205,11 +169,11 @@ if (Astro.response) {
 
           <!-- Pagination -->
           <div class="pagination" id="pagination-desktop">
-            <button class="page-btn page-prev" data-page="prev" disabled>
+            <button class="page-btn page-prev" data-page="prev" disabled type="button">
               <i class="fa-solid fa-chevron-left"></i>
             </button>
-            <button class="page-btn active" data-page="1">1</button>
-            <button class="page-btn page-next" data-page="next">
+            <button class="page-btn active" data-page="1" type="button">1</button>
+            <button class="page-btn page-next" data-page="next" type="button">
               <i class="fa-solid fa-chevron-right"></i>
             </button>
           </div>
@@ -245,32 +209,91 @@ if (Astro.response) {
     }
     .mobile-results-count {
       display: block;
+      width: 30%;
+      max-width: 30%;
     }
     .breadcrumb-wrapper {
       width: 65%;
       max-width: 65%;
     }
-    .mobile-results-count {
-      width: 30%;
-      max-width: 30%;
-    }
   }
 
-  /* Mobile Filter Bar */
+  /* =========================================================
+     移动端顶部筛选条与药丸按钮样式
+     ========================================================= */
   .mobile-filter-bar {
     display: none;
     background: #f9f9f9;
-    padding: 6px 16px 10px;
-    gap: 6px;
+    padding: 8px 16px 10px;
+    gap: 8px;
     overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    align-items: center;
   }
   .mobile-filter-bar::-webkit-scrollbar {
     display: none;
   }
 
-  /* 移动端筛选Drawer */
+  .filter-main-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background: #B8860B !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 18px !important;
+    padding: 7px 14px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 2px 6px rgba(184, 134, 11, 0.25) !important;
+    transition: all 0.2s ease !important;
+  }
+  .filter-main-btn:active {
+    transform: scale(0.96) !important;
+  }
+  .filter-main-btn i {
+    font-size: 11px !important;
+  }
+  .filter-count {
+    background: rgba(255, 255, 255, 0.28) !important;
+    border-radius: 10px !important;
+    padding: 1px 6px !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+  }
+
+  .filter-tag-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #ffffff !important;
+    color: #555555 !important;
+    border: 1px solid #ddd8ce !important;
+    border-radius: 18px !important;
+    padding: 6px 14px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    transition: all 0.2s ease !important;
+  }
+  .filter-tag-btn.active {
+    background: #F7F4EE !important;
+    border-color: #B8860B !important;
+    color: #B8860B !important;
+    font-weight: 700 !important;
+  }
+  .filter-tag-btn:active {
+    transform: scale(0.96) !important;
+  }
+
+  /* 移动端筛选抽屉 (Drawer) */
   .mobile-filter-drawer-overlay {
     position: fixed;
     top: 0;
@@ -283,7 +306,6 @@ if (Astro.response) {
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
   }
-
   .mobile-filter-drawer-overlay.active {
     opacity: 1;
     visibility: visible;
@@ -299,11 +321,10 @@ if (Astro.response) {
     background: #fff;
     z-index: 998;
     transform: translateX(100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     flex-direction: column;
   }
-
   .mobile-filter-drawer.active {
     transform: translateX(0);
   }
@@ -312,20 +333,19 @@ if (Astro.response) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
+    padding: 18px 20px;
     border-bottom: 1px solid #e5e5e5;
   }
-
   .mobile-filter-header h3 {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 17px;
+    font-weight: 700;
     margin: 0;
+    color: #1a1a1a;
   }
-
   .mobile-filter-close {
     background: none;
     border: none;
-    font-size: 24px;
+    font-size: 22px;
     color: #666;
     cursor: pointer;
     padding: 0;
@@ -339,123 +359,72 @@ if (Astro.response) {
   .mobile-filter-content {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    padding: 18px 20px;
   }
-
   .mobile-filter-content .filter-section {
     margin-bottom: 20px;
   }
-
   .mobile-filter-content .filter-header {
-    padding: 12px 0;
+    padding: 10px 0;
     cursor: pointer;
   }
-
   .mobile-filter-content .filter-title {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
   }
-
   .mobile-filter-content .filter-content {
-    padding-top: 8px;
+    padding-top: 6px;
   }
-
   .mobile-filter-content .filter-list {
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
-
   .mobile-filter-content .filter-list li {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
   }
-
   .mobile-filter-content label {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     cursor: pointer;
     padding: 6px 0;
     width: 100%;
-    font-size: 16px;
+    font-size: 14px;
     -webkit-tap-highlight-color: transparent;
   }
-
   .mobile-filter-content input[type="checkbox"] {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
     cursor: pointer;
     accent-color: #B8860B;
-  }
-
-  .mobile-filter-content .category-parent {
-    width: 100%;
-  }
-
-  .mobile-filter-content .color-options {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 12px;
-    padding-top: 8px;
-  }
-
-  .mobile-filter-content .color-swatch-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .mobile-filter-content .color-swatch {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: 3px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .mobile-filter-content .color-swatch.selected {
-    border-color: #B8860B;
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #B8860B;
-  }
-
-  .mobile-filter-content .color-label {
-    font-size: 12px;
-    color: #666;
-    text-align: center;
   }
 
   .mobile-filter-footer {
     display: flex;
     gap: 12px;
-    padding: 16px 20px;
+    padding: 14px 20px;
     border-top: 1px solid #e5e5e5;
     background: #fff;
   }
-
   .mobile-filter-reset {
     flex: 0 0 auto;
     padding: 12px 20px;
     background: #fff;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.2s;
   }
-
-  .mobile-filter-reset:active {
-    background: #f5f5f5;
-  }
-
   .mobile-filter-apply {
     flex: 1;
     padding: 12px 20px;
@@ -463,17 +432,12 @@ if (Astro.response) {
     color: #fff;
     border: none;
     border-radius: 4px;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
   }
 
-  .mobile-filter-apply:active {
-    background: #000;
-  }
-
-  /* Quick Order Modal (桌面端) */
+  /* Quick Order Modal */
   .quick-order-overlay {
     position: fixed;
     top: 0;
@@ -486,12 +450,10 @@ if (Astro.response) {
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
   }
-
   .quick-order-overlay.active {
     opacity: 1;
     visibility: visible;
   }
-
   .quick-order-modal {
     position: fixed;
     top: 50%;
@@ -509,13 +471,11 @@ if (Astro.response) {
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   }
-
   .quick-order-modal.active {
     opacity: 1;
     visibility: visible;
     transform: translate(-50%, -50%) scale(1);
   }
-
   .quick-order-close {
     position: absolute;
     top: 16px;
@@ -532,13 +492,6 @@ if (Astro.response) {
     font-size: 18px;
     color: #333;
     z-index: 10;
-    transition: all 0.2s;
-  }
-
-  .quick-order-close:hover {
-    background: #0e0f0f;
-    color: #fff;
-    transform: rotate(90deg);
   }
 
   .quick-order-content {
@@ -547,7 +500,6 @@ if (Astro.response) {
     height: 85vh;
     overflow: hidden;
   }
-
   .quick-order-images {
     background: #fbf9f5;
     padding: 30px;
@@ -557,7 +509,6 @@ if (Astro.response) {
     overflow-y: auto;
     border-right: 1px solid #ede8de;
   }
-
   .quick-order-main-image {
     width: 100%;
     aspect-ratio: 1;
@@ -566,19 +517,16 @@ if (Astro.response) {
     background: #fff;
     border: 1px solid #ddd8ce;
   }
-
   .quick-order-main-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-
   .quick-order-thumbnails {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 8px;
   }
-
   .quick-order-thumb {
     aspect-ratio: 1;
     border-radius: 3px;
@@ -588,18 +536,14 @@ if (Astro.response) {
     transition: all 0.2s;
     background: #fff;
   }
-
-  .quick-order-thumb:hover,
   .quick-order-thumb.active {
     border-color: #0e0f0f;
   }
-
   .quick-order-thumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-
   .quick-order-details {
     padding: 30px;
     overflow-y: auto;
@@ -607,7 +551,6 @@ if (Astro.response) {
     flex-direction: column;
     gap: 16px;
   }
-
   .quick-order-title {
     font-size: 20px;
     font-family: 'Cinzel', serif;
@@ -616,7 +559,6 @@ if (Astro.response) {
     line-height: 1.3;
     margin: 0;
   }
-
   .quick-order-price {
     font-size: 26px;
     font-family: 'Cinzel', serif;
@@ -626,18 +568,15 @@ if (Astro.response) {
     align-items: baseline;
     gap: 10px;
   }
-
   .quick-order-price-current {
     font-size: 26px;
     color: #0e0f0f;
   }
-
   .quick-order-price-regular {
     font-size: 16px;
     color: #8c8c8c;
     text-decoration: line-through;
   }
-
   .quick-order-stock {
     display: inline-flex;
     align-items: center;
@@ -646,17 +585,14 @@ if (Astro.response) {
     font-weight: 600;
     color: #16a34a;
   }
-
   .quick-order-stock.out-of-stock {
     color: #dc2626;
   }
-
   .quick-order-stock-placeholder {
     font-size: 12px;
     color: #888;
   }
 
-  /* 桌面端批发价格表 */
   .quick-order-wholesale {
     background: #fbf9f5;
     border: 1px solid #e2ddd3;
@@ -726,7 +662,6 @@ if (Astro.response) {
   .quick-order-wholesale .tier-badge { color: #8c631a; }
   .quick-order-wholesale .tier-label { color: #8c8c8c; }
 
-  /* 桌面 & 移动通用 Gift Carousel 栏 */
   .quick-gift-carousel {
     background: #fbf9f5;
     border: 1px solid #e2ddd3;
@@ -735,14 +670,11 @@ if (Astro.response) {
     display: flex;
     align-items: center;
     gap: 8px;
-    position: relative;
-    box-sizing: border-box;
     width: 100%;
   }
   .quick-gift-viewport {
     flex: 1;
     overflow: hidden;
-    position: relative;
   }
   .quick-gift-track {
     display: flex;
@@ -812,11 +744,6 @@ if (Astro.response) {
     flex-shrink: 0;
     padding: 0;
   }
-  .quick-gift-btn-arrow:hover {
-    background: #0e0f0f;
-    color: #fff;
-    border-color: #0e0f0f;
-  }
   .btn-add-quick-gift {
     padding: 6px 10px;
     background: #0e0f0f;
@@ -824,59 +751,42 @@ if (Astro.response) {
     color: #fff;
     font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.5px;
     text-transform: uppercase;
     border-radius: 2px;
     cursor: pointer;
     white-space: nowrap;
-    flex-shrink: 0;
-    transition: all 0.2s;
-  }
-  .btn-add-quick-gift:hover {
-    background: #2b2b2b;
   }
 
   .quick-order-section {
     padding-top: 4px;
   }
-
   .quick-order-section-title {
     font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     color: #555;
     margin-bottom: 8px;
-    letter-spacing: 0.5px;
   }
-
   .quick-order-options {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
   }
-
   .quick-order-option {
     padding: 6px 14px;
     border: 1.5px solid #ddd8ce;
     border-radius: 2px;
     background: #fff;
     cursor: pointer;
-    transition: all 0.2s;
     font-size: 13px;
     color: #333;
   }
-
-  .quick-order-option:hover {
-    border-color: #0e0f0f;
-  }
-
   .quick-order-option.selected {
     border-color: #0e0f0f;
     background: #0e0f0f;
     color: #fff;
     font-weight: 600;
   }
-
   .quick-order-quantity {
     display: flex;
     align-items: center;
@@ -886,7 +796,6 @@ if (Astro.response) {
     width: 108px;
     border-radius: 2px;
   }
-
   .quick-order-qty-btn {
     width: 32px;
     height: 100%;
@@ -899,7 +808,6 @@ if (Astro.response) {
     font-size: 14px;
     color: #444;
   }
-
   .quick-order-qty-input {
     flex: 1;
     width: 100%;
@@ -911,8 +819,6 @@ if (Astro.response) {
     font-weight: 600;
     color: #111;
   }
-  .quick-order-qty-input:focus { outline: none; }
-
   .quick-order-add-btn {
     width: 100%;
     height: 46px;
@@ -925,53 +831,18 @@ if (Astro.response) {
     letter-spacing: 1.5px;
     text-transform: uppercase;
     cursor: pointer;
-    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
   }
-
-  .quick-order-add-btn:hover:not(.disabled) {
-    background: #2b2b2b;
-  }
-
-  .quick-order-add-btn.disabled {
+  .quick-order-add-btn:disabled {
     background: #ccc;
     border-color: #ccc;
-    color: #666;
     cursor: not-allowed;
   }
 
-  .quick-order-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 20px;
-    gap: 16px;
-  }
-
-  .loading-spinner {
-    width: 36px;
-    height: 36px;
-    border: 3px solid #f0f0f0;
-    border-top: 3px solid #0e0f0f;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  .quick-order-loading p {
-    color: #666;
-    font-size: 13px;
-  }
-
-  /* Quick Order Mobile Sheet (移动端) */
+  /* Quick Order Mobile Sheet */
   .quick-order-mobile-overlay {
     display: none;
     position: fixed;
@@ -983,14 +854,11 @@ if (Astro.response) {
     z-index: 1001;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
   }
-
   .quick-order-mobile-overlay.active {
     opacity: 1;
     visibility: visible;
   }
-
   .quick-order-mobile-sheet {
     display: none;
     position: fixed;
@@ -1003,13 +871,10 @@ if (Astro.response) {
     z-index: 1002;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   }
-
   .quick-order-mobile-sheet.active {
     transform: translateY(0);
   }
-
   .mobile-sheet-header {
     position: relative;
     padding: 14px 16px;
@@ -1018,7 +883,6 @@ if (Astro.response) {
     align-items: center;
     gap: 12px;
   }
-
   .mobile-sheet-product-image {
     width: 70px;
     height: 70px;
@@ -1028,19 +892,16 @@ if (Astro.response) {
     background: #f5f5f5;
     border: 1px solid #ddd8ce;
   }
-
   .mobile-sheet-product-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-
   .mobile-sheet-header-right {
     flex: 1;
     min-width: 0;
     padding-right: 28px;
   }
-
   .mobile-sheet-title {
     font-size: 14px;
     font-weight: 600;
@@ -1053,13 +914,11 @@ if (Astro.response) {
     -webkit-box-orient: vertical;
     line-height: 1.35;
   }
-
   .mobile-sheet-price {
     font-size: 17px;
     font-weight: 700;
     color: #0e0f0f;
   }
-
   .mobile-sheet-close {
     position: absolute;
     top: 12px;
@@ -1075,212 +934,12 @@ if (Astro.response) {
     justify-content: center;
     font-size: 14px;
     color: #333;
-    z-index: 1;
   }
-
   .mobile-sheet-content {
     overflow-y: auto;
     max-height: calc(85vh - 120px);
     padding: 14px 16px 20px;
   }
-
-  .mobile-quick-price-tiers {
-    background: #fbf9f5;
-    border: 1px solid #e2ddd3;
-    border-radius: 4px;
-    padding: 10px;
-    margin-bottom: 14px;
-  }
-
-  .mobile-tier-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
-
-  .mobile-tier-title {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #1a1a1a;
-    text-transform: uppercase;
-  }
-
-  .mobile-tier-title i {
-    color: #725b29;
-    font-size: 10px;
-  }
-
-  .mobile-tier-badge {
-    font-size: 9px;
-    color: #725b29;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .mobile-pricing-grid {
-    display: flex;
-    gap: 5px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .mobile-pricing-grid::-webkit-scrollbar { display: none; }
-
-  .mobile-price-tier {
-    flex: 1 1 0;
-    min-width: 65px;
-    padding: 6px 3px;
-    border: 1px solid #e0dad0;
-    border-radius: 3px;
-    text-align: center;
-    background: #fff;
-  }
-
-  .mobile-price-tier.best {
-    border-color: #d1a85f;
-    background: #fdf6e9;
-  }
-
-  .mobile-tier-qty {
-    font-size: 9px;
-    color: #666;
-    margin-bottom: 2px;
-  }
-
-  .mobile-tier-price {
-    font-size: 13px;
-    font-weight: 700;
-    color: #1a1a1a;
-  }
-
-  .mobile-tier-save {
-    font-size: 8.5px;
-    color: #16a34a;
-    font-weight: 700;
-  }
-
-  .mobile-tier-label {
-    font-size: 8.5px;
-    color: #8c8c8c;
-  }
-
-  .mobile-tier-best-badge {
-    font-size: 8.5px;
-    color: #8c631a;
-    font-weight: 700;
-  }
-
-  .mobile-attribute-section {
-    margin-bottom: 14px;
-  }
-
-  .mobile-attribute-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin-bottom: 8px;
-  }
-
-  .mobile-attribute-title-label {
-    flex-shrink: 0;
-  }
-
-  .mobile-attribute-title-value {
-    font-size: 12px;
-    font-weight: 600;
-    color: #725b29;
-    margin-left: 8px;
-  }
-
-  .mobile-attribute-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .mobile-attribute-option {
-    padding: 6px 12px;
-    border: 1.5px solid #ddd8ce;
-    background: #fff;
-    border-radius: 3px;
-    font-size: 12.5px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .mobile-attribute-option.selected {
-    border-color: #0e0f0f;
-    background: #0e0f0f;
-    color: #fff;
-    font-weight: 600;
-  }
-
-  .mobile-quantity-section {
-    margin-bottom: 80px;
-  }
-
-  .mobile-quantity-title {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #555;
-    margin-bottom: 8px;
-  }
-
-  .mobile-quantity-selector {
-    display: flex;
-    align-items: center;
-    border: 1px solid #dcd7ce;
-    background: #fbf9f5;
-    height: 34px;
-    width: 100px;
-    border-radius: 2px;
-  }
-
-  .mobile-qty-btn {
-    width: 30px;
-    height: 100%;
-    border: none;
-    background: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    color: #444;
-  }
-
-  .mobile-qty-input {
-    flex: 1;
-    width: 100%;
-    min-width: 0;
-    text-align: center;
-    border: none;
-    background: transparent;
-    font-size: 13px;
-    font-weight: 600;
-    color: #111;
-  }
-  .mobile-qty-input:focus { outline: none; }
-
-  .mobile-stock-status {
-    margin-top: 8px;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 600;
-  }
-  .mobile-stock-status.in-stock { color: #16a34a; }
-  .mobile-stock-status.out-of-stock { color: #dc2626; }
-
   .mobile-quick-footer {
     position: fixed;
     bottom: 0;
@@ -1290,9 +949,7 @@ if (Astro.response) {
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
     background: #fff;
     border-top: 1px solid #e5e5e5;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
   }
-
   .mobile-quick-add-btn {
     width: 100%;
     height: 44px;
@@ -1310,19 +967,12 @@ if (Astro.response) {
     justify-content: center;
     gap: 8px;
   }
-  .mobile-quick-add-btn:disabled {
-    background: #ccc;
-    border-color: #ccc;
-    color: #666;
-    cursor: not-allowed;
-  }
 
   @media (max-width: 768px) {
     .quick-order-overlay,
     .quick-order-modal {
       display: none !important;
     }
-
     .quick-order-mobile-overlay,
     .quick-order-mobile-sheet {
       display: block;
@@ -1334,54 +984,6 @@ if (Astro.response) {
     .quick-order-mobile-sheet {
       display: none !important;
     }
-  }
-
-  .filter-main-btn {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    background: #B8860B;
-    color: white;
-    border: none;
-    border-radius: 16px;
-    padding: 6px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  .filter-main-btn i {
-    font-size: 11px;
-  }
-  .filter-count {
-    background: rgba(255, 255, 255, 0.25);
-    border-radius: 8px;
-    padding: 1px 5px;
-    font-size: 10px;
-    font-weight: 700;
-  }
-  .filter-tag-btn {
-    background: white;
-    color: #666;
-    border: 1px solid #ddd;
-    border-radius: 16px;
-    padding: 6px 12px;
-    font-size: 11px;
-    font-weight: 500;
-    white-space: nowrap;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: all 0.2s;
-  }
-  .filter-tag-btn.active {
-    background: #F7F4EE;
-    border-color: #B8860B;
-    color: #B8860B;
-    font-weight: 600;
-  }
-  .filter-tag-btn:active {
-    transform: scale(0.95);
   }
 
   .mobile-control-bar {
@@ -1405,13 +1007,6 @@ if (Astro.response) {
     color: #333;
     cursor: pointer;
   }
-  .sort-btn i {
-    font-size: 12px;
-    transition: transform 0.2s;
-  }
-  .sort-btn.active i {
-    transform: rotate(180deg);
-  }
   .layout-toggle {
     display: flex;
     gap: 8px;
@@ -1431,22 +1026,16 @@ if (Astro.response) {
     border-radius: 4px;
     color: #999;
     cursor: pointer;
-    transition: all 0.2s;
   }
   .layout-btn.active {
     background: #B8860B;
     color: white;
   }
-  .layout-btn i {
-    font-size: 16px;
-  }
-
   .mobile-sort-dropdown {
     display: none;
     flex-direction: column;
     background: white;
     border-bottom: 1px solid #e5e7eb;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   }
   .mobile-sort-dropdown.show {
     display: flex;
@@ -1460,17 +1049,10 @@ if (Astro.response) {
     font-size: 15px;
     color: #333;
     cursor: pointer;
-    transition: background 0.2s;
-  }
-  .sort-option:last-child {
-    border-bottom: none;
   }
   .sort-option.active {
     color: #9333ea;
     font-weight: 600;
-  }
-  .sort-option:active {
-    background: #f9fafb;
   }
 
   .mobile-products-container {
@@ -1509,18 +1091,9 @@ if (Astro.response) {
     border-radius: 4px;
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.5px;
     z-index: 2;
   }
   .mobile-badge.new {
-    background: #B8860B;
-    color: white;
-  }
-  .mobile-badge.hot {
-    background: #B8860B;
-    color: white;
-  }
-  .mobile-badge.top {
     background: #B8860B;
     color: white;
   }
@@ -1538,9 +1111,6 @@ if (Astro.response) {
     justify-content: center;
     cursor: pointer;
     z-index: 2;
-  }
-  .mobile-wishlist-btn i {
-    font-size: 14px;
   }
   .mobile-product-info {
     padding: 10px;
@@ -1585,6 +1155,14 @@ if (Astro.response) {
     padding: 2px 6px;
     border-radius: 3px;
     color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    display: inline-block;
+  }
+  .mobile-material:hover {
+    background: #B8860B;
+    color: #ffffff;
   }
   .mobile-add-btn {
     width: 100%;
@@ -1601,23 +1179,17 @@ if (Astro.response) {
     color: #1a1a1a;
     cursor: pointer;
   }
-  .mobile-add-btn:active {
-    background: #B8860B;
-    color: white;
-  }
 
   .mobile-products-grid.list-layout {
     grid-template-columns: 1fr;
     gap: 12px;
   }
-
   .mobile-product-card-list {
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     overflow: hidden;
   }
-
   .card-list-link {
     display: flex;
     gap: 12px;
@@ -1625,7 +1197,6 @@ if (Astro.response) {
     text-decoration: none;
     color: inherit;
   }
-
   .card-list-image {
     position: relative;
     width: 100px;
@@ -1635,13 +1206,11 @@ if (Astro.response) {
     overflow: hidden;
     background: #f9f9f9;
   }
-
   .card-list-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-
   .mobile-badge-list {
     position: absolute;
     top: 4px;
@@ -1652,9 +1221,7 @@ if (Astro.response) {
     border-radius: 3px;
     font-size: 9px;
     font-weight: 700;
-    z-index: 2;
   }
-
   .card-list-content {
     flex: 1;
     display: flex;
@@ -1662,14 +1229,12 @@ if (Astro.response) {
     gap: 6px;
     min-width: 0;
   }
-
   .card-list-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 8px;
   }
-
   .card-list-title {
     font-size: 13px;
     font-weight: 500;
@@ -1682,7 +1247,6 @@ if (Astro.response) {
     overflow: hidden;
     flex: 1;
   }
-
   .mobile-wishlist-btn-list {
     width: 28px;
     height: 28px;
@@ -1693,32 +1257,23 @@ if (Astro.response) {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    flex-shrink: 0;
   }
-
-  .mobile-wishlist-btn-list i {
-    font-size: 12px;
-  }
-
   .card-list-price {
     display: flex;
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
   }
-
   .list-price-current {
     font-size: 16px;
     font-weight: 700;
     color: #B8860B;
   }
-
   .list-price-old {
     font-size: 12px;
     color: #999;
     text-decoration: line-through;
   }
-
   .list-discount-badge {
     padding: 2px 6px;
     background: #fef3e2;
@@ -1727,7 +1282,6 @@ if (Astro.response) {
     font-size: 10px;
     font-weight: 600;
   }
-
   .card-list-meta {
     display: flex;
     align-items: center;
@@ -1735,11 +1289,9 @@ if (Astro.response) {
     font-size: 11px;
     color: #666;
   }
-
   .list-divider {
     color: #ddd;
   }
-
   .card-list-footer {
     display: flex;
     justify-content: space-between;
@@ -1747,7 +1299,6 @@ if (Astro.response) {
     gap: 8px;
     margin-top: auto;
   }
-
   .list-rating {
     display: flex;
     align-items: center;
@@ -1755,21 +1306,10 @@ if (Astro.response) {
     font-size: 11px;
     color: #666;
   }
-
-  .list-rating .stars {
-    font-size: 10px;
-    line-height: 1;
-  }
-
   .list-rating .rating-num {
     font-weight: 600;
     color: #1a1a1a;
   }
-
-  .list-rating .sales-count {
-    color: #999;
-  }
-
   .mobile-add-btn-list {
     background: #fef3e2;
     border: none;
@@ -1782,15 +1322,8 @@ if (Astro.response) {
     font-weight: 600;
     color: #1a1a1a;
     cursor: pointer;
-    white-space: nowrap;
   }
 
-  .mobile-add-btn-list:active {
-    background: #B8860B;
-    color: white;
-  }
-
-  /* Mobile Pagination */
   .mobile-pagination {
     display: none;
     justify-content: center;
@@ -1812,95 +1345,22 @@ if (Astro.response) {
     display: flex;
     align-items: center;
     justify-content: center;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  .mobile-page-btn:not(.disabled):active {
-    background: #f5f5f5;
+    cursor: pointer;
   }
   .mobile-page-btn.active {
     background: #B8860B;
     color: white;
     border-color: #B8860B;
   }
-  .mobile-page-btn.disabled {
-    opacity: 0.3;
-    pointer-events: none;
-  }
-  .mobile-page-dots {
-    color: #999;
-    padding: 0 8px;
-    font-size: 14px;
-  }
 
   @media (max-width: 768px) {
-    .mobile-filter-bar {
-      display: flex;
-    }
-    .mobile-control-bar {
-      display: flex;
-    }
-    .mobile-products-container {
-      display: block;
-    }
-    .mobile-pagination {
-      display: flex;
-    }
-    .shop-container {
-      display: none;
-    }
-    .shop-sidebar {
-      display: none;
-    }
-    .shop-layout {
-      grid-template-columns: 1fr;
-    }
-    .sorting-bar {
-      display: none;
-    }
-    .products-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
-    .product-card-shop {
-      border-radius: 8px;
-    }
-    .product-badge {
-      top: 6px;
-      left: 6px;
-      padding: 3px 8px;
-      font-size: 10px;
-    }
-    .wishlist-btn {
-      top: 6px;
-      right: 6px;
-      width: 32px;
-      height: 32px;
-    }
-    .wishlist-btn i {
-      font-size: 14px;
-    }
-    .product-details-shop {
-      padding: 10px;
-    }
-    .product-title-shop {
-      font-size: 13px;
-      margin-bottom: 6px;
-    }
-    .price-current {
-      font-size: 14px;
-    }
-    .product-meta {
-      font-size: 11px;
-      margin-bottom: 10px;
-    }
-    .add-to-cart-btn {
-      padding: 8px;
-      font-size: 13px;
-    }
+    .mobile-filter-bar { display: flex; }
+    .mobile-control-bar { display: flex; }
+    .mobile-products-container { display: block; }
+    .mobile-pagination { display: flex; }
+    .shop-container { display: none; }
   }
 
-  /* Breadcrumb */
   .breadcrumb-section {
     background: #f9f9f9;
     padding: 10px 0;
@@ -1920,77 +1380,52 @@ if (Astro.response) {
     gap: 8px;
     font-size: 13px;
     color: #666;
-    overflow: hidden;
-  }
-  .breadcrumb a,
-  .breadcrumb > span {
-    flex-shrink: 0;
-    white-space: nowrap;
   }
   .breadcrumb a {
     color: #666;
-    transition: color 0.2s;
-  }
-  .breadcrumb a:hover {
-    color: var(--primary);
+    text-decoration: none;
   }
   .mobile-results-count {
     display: none;
     color: #999;
     font-size: 12px;
     font-weight: 500;
-    width: 25%;
     text-align: right;
-    white-space: nowrap;
   }
 
-  @media (max-width: 820px) {
-    .mobile-results-count {
-      display: block;
-    }
-    .breadcrumb-content {
-      width: 100%;
-      max-width: 100%;
-    }
-    .breadcrumb-wrapper {
-      width: 65%;
-      max-width: 65%;
-    }
-    .mobile-results-count {
-      width: 30%;
-      max-width: 30%;
-    }
-  }
-
-  /* Shop Container */
+  /* =========================================================
+     桌面端店铺主容器 (扩宽至 290px，视觉宽敞舒展)
+     ========================================================= */
   .shop-container {
-    width:100%;
-    padding: 40px 0;
+    width: 100%;
+    padding: 36px 0 60px;
     background: #fff;
   }
   .shop-container .container {
-    max-width: 1600px;
+    max-width: 1650px;
+    padding: 0 24px;
   }
   .shop-layout {
     display: grid;
-    grid-template-columns: 240px 1fr;
-    gap: 32px;
+    grid-template-columns: 290px 1fr;
+    gap: 36px;
+    align-items: start;
   }
 
-  /* Sidebar */
   .shop-sidebar {
-    background: #fff;
-    border: 1px solid #e5e5e5;
+    background: #ffffff;
+    border: 1px solid #e8e4dc;
     border-radius: 8px;
-    padding: 24px;
+    padding: 22px 20px;
     height: fit-content;
     position: sticky;
     top: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
   }
   .filter-section {
-    padding-bottom: 24px;
-    margin-bottom: 24px;
-    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #f0ece3;
   }
   .filter-section:last-child {
     border-bottom: none;
@@ -1998,11 +1433,11 @@ if (Astro.response) {
     padding-bottom: 0;
   }
   .filter-title {
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 16px;
+    letter-spacing: 0.8px;
+    margin: 0;
     color: #1a1a1a;
   }
   .filter-list {
@@ -2011,51 +1446,28 @@ if (Astro.response) {
     margin: 0;
   }
   .filter-list li {
-    margin-bottom: 12px;
-  }
-  .filter-list label {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #444;
-    cursor: pointer;
-    transition: color 0.2s;
-  }
-  .filter-list label:hover {
-    color: #000;
-  }
-  .filter-list input[type="checkbox"] {
-    margin-right: 8px;
-    width: 16px;
-    height: 16px;
-    border: 1px solid #ccc;
-    border-radius: 2px;
-  }
-  .filter-list span {
-    color: #999;
-    font-size: 12px;
+    margin-bottom: 0;
+    padding: 3px 0;
   }
 
-  /* Shop Main */
   .shop-main {
     display: flex;
     flex-direction: column;
     gap: 24px;
+    min-width: 0;
   }
 
-  /* Sorting Bar */
   .sorting-bar {
-    background: #fef1e9;
-    padding: 16px 20px;
-    border-radius: 8px;
+    background: #fbf9f5;
+    border: 1px solid #eee8df;
+    padding: 14px 20px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-size: 13px;
   }
   .sort-left {
-    padding:0;
     display: flex;
     align-items: center;
     gap: 16px;
@@ -2070,27 +1482,19 @@ if (Astro.response) {
     color: #747878;
     font-size: 12px;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color 0.2s ease;
   }
-  .sort-btn:hover,
-  .sort-btn.active {
+  .sort-btn.active,
+  .sort-btn:hover {
     color: #000;
     font-weight: 700;
   }
-  .sort-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  .products-count {
-    color: #666;
-  }
 
-  /* Products Grid */
   .products-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 20px;
+    min-height: 480px;
   }
   .product-card-shop {
     background: #fff;
@@ -2123,18 +1527,8 @@ if (Astro.response) {
     border-radius: 4px;
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.5px;
-    z-index: 2;
   }
   .product-badge.new {
-    background: #B8860B;
-    color: white;
-  }
-  .product-badge.hot {
-    background: #B8860B;
-    color: white;
-  }
-  .product-badge.top {
     background: #B8860B;
     color: white;
   }
@@ -2151,16 +1545,6 @@ if (Astro.response) {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
-    z-index: 2;
-  }
-  .wishlist-btn:hover {
-    background: #B8860B;
-    border-color: #B8860B;
-    color: white;
-  }
-  .wishlist-btn i {
-    font-size: 16px;
   }
   .product-details-shop {
     padding: 12px;
@@ -2175,9 +1559,6 @@ if (Astro.response) {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-  .product-price-shop {
-    margin-bottom: 8px;
   }
   .price-current {
     font-size: 16px;
@@ -2198,15 +1579,20 @@ if (Astro.response) {
     font-size: 12px;
     color: #666;
   }
-  .moq {
-    color: #999;
-  }
   .material {
     background: #f5f5f5;
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 11px;
     color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    display: inline-block;
+  }
+  .material:hover {
+    background: #B8860B;
+    color: #ffffff;
   }
   .add-to-cart-btn {
     width: 100%;
@@ -2222,17 +1608,8 @@ if (Astro.response) {
     font-weight: 600;
     color: #1a1a1a;
     cursor: pointer;
-    transition: all 0.2s;
-  }
-  .add-to-cart-btn:hover {
-    background: #B8860B;
-    color: white;
-  }
-  .add-to-cart-btn i {
-    font-size: 16px;
   }
 
-  /* Pagination */
   .pagination {
     display: flex;
     align-items: center;
@@ -2253,350 +1630,116 @@ if (Astro.response) {
     display: flex;
     align-items: center;
     justify-content: center;
-    text-decoration: none;
     cursor: pointer;
-    transition: all 0.2s;
-  }
-  .page-btn:hover:not(.disabled) {
-    border-color: #000;
   }
   .page-btn.active {
     background: #000;
     color: #fff;
     border-color: #000;
   }
-  .page-btn.disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-  .page-dots {
-    color: #999;
-    padding: 0 8px;
-  }
 
-  /* New Footer */
-  .footer-new {
-    background: #fafafa;
-    border-top: 1px solid #e5e5e5;
-    padding: 80px 0 48px;
-  }
-  .footer-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: 48px;
-    margin-bottom: 80px;
-  }
-  .footer-brand {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-  .footer-logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #000;
-  }
-  .footer-logo h2 {
-    font-size: 18px;
-    font-weight: 700;
-    font-family: 'Cinzel', serif;
-  }
-  .footer-desc {
-    font-size: 14px;
-    color: #747878;
-    line-height: 1.6;
-    max-width: 400px;
-  }
-  .footer-social {
-    display: flex;
-    gap: 16px;
-  }
-  .social-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 1px solid #c4c7c7;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #747878;
-    font-size: 12px;
-    font-weight: 700;
-    transition: all 0.3s;
-  }
-  .social-btn:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-  }
-  .footer-links h5 {
-    font-size: 14px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 24px;
-    color: #1a1a1a;
-  }
-  .footer-links ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .footer-links a {
-    font-size: 14px;
-    color: #747878;
-    transition: color 0.2s;
-  }
-  .footer-links a:hover {
-    color: var(--primary);
-  }
-  .footer-bottom {
-    padding-top: 32px;
-    border-top: 1px solid #e5e5e5;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-    color: #747878;
-  }
-  .footer-bottom-links {
-    display: flex;
-    gap: 32px;
-  }
-  .footer-bottom-links a {
-    color: #747878;
-    transition: color 0.2s;
-  }
-  .footer-bottom-links a:hover {
-    color: #1a1a1a;
-  }
-
-  @media (max-width: 1024px) {
-    .shop-layout {
-      grid-template-columns: 1fr;
-    }
-    .shop-sidebar {
-      position: relative;
-      top: 0;
-    }
-    .products-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-    .footer-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 768px) {
-    .container {
-      width: 100% !important;
-      max-width: 100% !important;
-    }
-    .shop-container {
-      display: none;
-    }
-    .products-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    .sorting-bar {
-      flex-direction: column;
-      gap: 16px;
-    }
-    .footer-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* 筛选区域样式 */
-  .filters-loading {
-    padding: 20px;
-  }
-
-  .loading-skeleton {
-    height: 120px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 4px;
-    margin-bottom: 16px;
-  }
-
-  @keyframes shimmer {
+  /* 骨架屏动画与支撑 */
+  @keyframes shimmerAnim {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
   }
+
   .product-skeleton {
-  background: #ffffff;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e5e5e5;
-  box-sizing: border-box;
-}
+    background: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e5e5e5;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: 280px;
+  }
+  .skeleton-image {
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmerAnim 1.5s infinite;
+  }
+  .skeleton-content {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .skeleton-line {
+    height: 12px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmerAnim 1.5s infinite;
+    border-radius: 4px;
+  }
+  .skeleton-line.skeleton-title { width: 85%; height: 14px; }
+  .skeleton-line.skeleton-price { width: 45%; height: 16px; }
+  .skeleton-line.skeleton-meta { width: 60%; height: 10px; }
 
-.skeleton-image {
-  width: 100%;
-  aspect-ratio: 1;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-content {
-  padding: 12px;
-}
-
-.skeleton-line {
-  height: 12px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 4px;
-  margin-bottom: 8px;
-}
-
-.skeleton-line.skeleton-title {
-  width: 85%;
-  height: 14px;
-}
-
-.skeleton-line.skeleton-price {
-  width: 45%;
-  height: 16px;
-}
-
-.skeleton-line.skeleton-meta {
-  width: 60%;
-  height: 10px;
-  margin-bottom: 0;
-}
   .filters-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 0 16px;
-    border-bottom: 1px solid #e5e5e5;
-    margin-bottom: 0;
+    padding: 4px 0 16px;
+    border-bottom: 1px solid #e8e4dc;
+    margin-bottom: 6px;
   }
-
   .filters-header h2 {
     font-size: 16px;
     font-weight: 700;
     color: #1a1a1a;
-    margin: 0;
     letter-spacing: 0.5px;
+    margin: 0;
   }
-
   .filters-reset {
     background: none;
     border: none;
     cursor: pointer;
     padding: 4px;
     color: #666;
-    transition: color 0.2s;
   }
-
-  .filters-reset:hover {
-    color: #1a1a1a;
-  }
-
-  .filters-reset i {
-    font-size: 16px;
-  }
-
-  .filter-section {
-    border-bottom: 1px solid #e5e5e5;
-    padding: 0;
-    margin: 0;
-  }
-
-  .filter-section:last-child {
-    border-bottom: none;
-  }
-
   .filter-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 0;
+    padding: 12px 0 8px;
     cursor: pointer;
-    user-select: none;
   }
-
-  .filter-header:hover .filter-title {
-    color: #000;
-  }
-
-  .filter-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
   .filter-toggle {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0;
-    color: #1a1a1a;
     font-size: 12px;
     transition: transform 0.2s;
-    flex-shrink: 0;
   }
-
   .filter-toggle.collapsed {
     transform: rotate(-180deg);
   }
-
+  .filter-content.collapsed {
+    max-height: 0;
+  }
   .filter-content {
     max-height: 1000px;
     overflow: hidden;
     transition: max-height 0.3s ease-out;
   }
 
-  .filter-content.collapsed {
-    max-height: 0;
-  }
-
   .filter-list {
     list-style: none;
-    padding: 0 0 16px 0;
+    padding: 0 0 10px 0;
     margin: 0;
-    max-height: 260px;
+    max-height: 420px;
     overflow-y: auto;
   }
-
-  .filter-list::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .filter-list::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .filter-list::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 2px;
-    transition: background 0.2s;
-  }
-
-  .filter-section:hover .filter-list::-webkit-scrollbar-thumb {
-    background: #d0d0d0;
-  }
-
-  .filter-section:hover .filter-list::-webkit-scrollbar-thumb:hover {
-    background: #b0b0b0;
-  }
-
   .filter-list li {
     margin-bottom: 0;
-    padding: 6px 0;
+    padding: 4px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
   }
 
   .filter-list label {
@@ -2604,76 +1747,93 @@ if (Astro.response) {
     align-items: center;
     gap: 10px;
     font-size: 13px;
-    color: #666;
+    color: #444;
     cursor: pointer;
-    transition: color 0.2s;
     line-height: 1.4;
     text-align: left;
-    text-transform: none;
-    font-weight: normal;
+    font-weight: 500;
   }
-
   .filter-list label:hover {
-    color: #1a1a1a;
+    color: #0e0f0f;
   }
-
-  .filter-list label span {
-    flex: 1;
-    text-align: left;
-  }
-
   .filter-list input[type="checkbox"] {
     width: 16px;
     height: 16px;
     cursor: pointer;
-    margin: 0;
-    flex-shrink: 0;
     accent-color: #1a1a1a;
   }
 
   .category-parent {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     width: 100%;
     gap: 4px;
   }
-
   .category-parent label {
     flex: 1;
+    font-weight: 600;
+    color: #1a1a1a;
   }
-
   .toggle-children {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
-    color: #999;
-    font-size: 10px;
-    transition: transform 0.2s;
-    flex-shrink: 0;
-    line-height: 1;
+    padding: 4px 8px;
+    color: #888;
+    font-size: 11px;
+    transition: transform 0.2s ease, color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-
-  .toggle-children:hover {
-    color: #666;
-  }
-
   .toggle-children.expanded {
     transform: rotate(180deg);
+    color: #1a1a1a;
   }
 
   .filter-children {
-    padding-left: 26px;
-    margin-top: 4px;
+    list-style: none;
+    padding-left: 20px;
+    margin-top: 3px;
     display: none;
+    width: 100%;
+    border-left: 1.5px solid #eae5db;
+    margin-left: 7px;
   }
-
   .filter-children.show {
-    display: block;
+    display: flex !important;
+    flex-direction: column;
+  }
+  .filter-children li {
+    padding: 3px 0;
+  }
+  .filter-children label {
+    font-size: 12.5px;
+    color: #555;
+    font-weight: 500;
   }
 
-  .filter-children li {
-    padding: 4px 0;
+  .filter-children-level3 {
+    list-style: none;
+    padding-left: 18px;
+    margin-top: 3px;
+    display: none;
+    width: 100%;
+    border-left: 1.5px solid #ded7ca;
+    margin-left: 6px;
+  }
+  .filter-children-level3.show {
+    display: flex !important;
+    flex-direction: column;
+  }
+  .filter-children-level3 li {
+    padding: 2.5px 0;
+  }
+  .filter-children-level3 label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 400;
   }
 
   .color-swatches {
@@ -2682,14 +1842,12 @@ if (Astro.response) {
     gap: 16px;
     padding-bottom: 16px;
   }
-
   .color-swatch-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
   }
-
   .color-swatch {
     position: relative;
     width: 32px;
@@ -2697,75 +1855,250 @@ if (Astro.response) {
     border-radius: 4px;
     border: 1px solid #ddd;
     cursor: pointer;
-    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
   }
-
-  .color-swatch:hover {
-    border-color: #999;
-  }
-
   .color-swatch.selected {
     border-color: #1a1a1a;
     border-width: 2px;
   }
-
   .color-swatch input[type="checkbox"] {
     position: absolute;
     opacity: 0;
     width: 100%;
     height: 100%;
     cursor: pointer;
-    margin: 0;
   }
-
   .color-label {
     font-size: 11px;
     color: #666;
-    text-align: center;
   }
 </style>
 
 <script>
   window.shopQuickOrderInitialized = true;
 
-  // 全局赠品数据（与详情页保持严格一致）
+  // 全局三级分类数据 (与 Header ALL CATEGORIES CSV 完全同步)
+  const ALL_CATEGORIES_MENU = [
+    {
+      name: "WOMEN JEWELRY",
+      slug: "women-jewelry",
+      children: [
+        {
+          name: "RING",
+          slug: "ring",
+          children: [
+            { name: "Stainless Steel Rings", slug: "stainless-steel-rings" },
+            { name: "CZ Rings", slug: "cz-rings" },
+            { name: "Stackable Rings", slug: "stackable-rings" },
+            { name: "Signet Rings", slug: "signet-rings" }
+          ]
+        },
+        {
+          name: "EARRING",
+          slug: "earring",
+          children: [
+            { name: "CZ Earrings", slug: "cz-earrings" },
+            { name: "Stainless Steel Earrings", slug: "stainless-steel-earrings" },
+            { name: "Zircon Earrings", slug: "zircon-earrings" },
+            { name: "Pearl Earrings", slug: "pearl-earrings" },
+            { name: "Enamel Cartoon Earrings", slug: "enamel-cartoon-earrings" },
+            { name: "Hoop Earrings", slug: "hoop-earrings" },
+            { name: "Stud Earrings", slug: "stud-earrings" },
+            { name: "Drop & Dangle Earrings", slug: "drop-dangle-earrings" },
+            { name: "Ear Clips", slug: "ear-clips" }
+          ]
+        },
+        {
+          name: "BRACELET",
+          slug: "bracelet",
+          children: [
+            { name: "Stainless Steel Bracelets", slug: "stainless-steel-bracelets" },
+            { name: "CZ Bracelets", slug: "cz-bracelets" },
+            { name: "Pearl Bracelets", slug: "pearl-bracelets" },
+            { name: "Chain Bracelets", slug: "chain-bracelets" },
+            { name: "Cuff Bangles", slug: "cuff-bangles" }
+          ]
+        },
+        {
+          name: "ANKLETS",
+          slug: "anklets",
+          children: []
+        },
+        {
+          name: "NECKLACE",
+          slug: "necklace",
+          children: [
+            { name: "Dainty Necklaces", slug: "dainty-necklaces" },
+            { name: "Layered Necklaces", slug: "layered-necklaces" },
+            { name: "Initial & Name Necklaces", slug: "initial-name-necklaces" },
+            { name: "Toggle Clasp Necklace", slug: "toggle-clasp-necklace" },
+            { name: "CZ Necklaces", slug: "cz-necklaces" },
+            { name: "Pearl Necklaces", slug: "pearl-necklaces" },
+            { name: "Zodiac Necklaces", slug: "zodiac-necklaces" },
+            { name: "12 Birthstone Necklaces", slug: "12-birthstone-necklaces" },
+            { name: "Moon & Star Necklaces", slug: "moon-star-necklaces" },
+            { name: "Tarot Necklaces", slug: "tarot-necklaces" }
+          ]
+        },
+        {
+          name: "CHAIN TYPE",
+          slug: "chain-type",
+          children: [
+            { name: "Body Chain", slug: "body-chain" },
+            { name: "Snake Chain", slug: "snake-chain" },
+            { name: "Paperclip Chain", slug: "paperclip-chain" },
+            { name: "Cable Chain", slug: "cable-chain" },
+            { name: "Cuban Link", slug: "cuban-link" },
+            { name: "Figaro Chain", slug: "figaro-chain" },
+            { name: "Ball / Bead Chain", slug: "ball-bead-chain" },
+            { name: "Box Chain", slug: "box-chain" },
+            { name: "Curb Chain", slug: "curb-chain" },
+            { name: "Mariner / Anchor Chain", slug: "mariner-anchor-chain" },
+            { name: "Rolo Chain", slug: "rolo-chain" },
+            { name: "Rope Chain", slug: "rope-chain" },
+            { name: "Wheat (Spiga) Chain", slug: "wheat-spiga-chain" }
+          ]
+        }
+      ]
+    },
+    {
+      name: "JEWELRY SET",
+      slug: "jewelry-set",
+      children: [
+        { name: "Zircon Jewelry Sets", slug: "zircon-jewelry-sets", children: [] },
+        { name: "Pearl Jewelry Sets", slug: "pearl-jewelry-sets", children: [] },
+        { name: "Enamel Cartoon Jewelry Sets", slug: "enamel-cartoon-jewelry-sets", children: [] },
+        { name: "Necklace & Earring Sets", slug: "necklace-earring-sets", children: [] },
+        { name: "Ring & Bracelet Sets", slug: "ring-bracelet-sets", children: [] },
+        { name: "All-in-one Jewelry Bundles", slug: "all-in-one-jewelry-bundles", children: [] }
+      ]
+    },
+    {
+      name: "TWO-TONES JEWELRY",
+      slug: "two-tones-jewelry",
+      children: [
+        { name: "Two-Tones Necklaces", slug: "two-tones-necklaces", children: [] },
+        { name: "Two-Tones Earrings", slug: "two-tones-earrings", children: [] },
+        { name: "Two-Tones Rings", slug: "two-tones-rings", children: [] },
+        { name: "Two-Tones Bracelets", slug: "two-tones-bracelets", children: [] },
+        { name: "Two-Tones Jewelry Sets", slug: "two-tones-jewelry-sets", children: [] }
+      ]
+    },
+    {
+      name: "GIFT JEWELRY",
+      slug: "gift-jewelry",
+      children: [
+        { name: "Birthstone Gifts", slug: "birthstone-gifts", children: [] },
+        { name: "Birthday Jewelry Gifts", slug: "birthday-jewelry-gifts", children: [] },
+        { name: "Anniversary Gifts", slug: "anniversary-gifts", children: [] },
+        { name: "Friendship Jewelry Gifts", slug: "friendship-jewelry-gifts", children: [] },
+        {
+          name: "Holiday Gift Sets",
+          slug: "holiday-gift-sets",
+          children: [
+            { name: "Valentine's Day", slug: "valentines-day" },
+            { name: "New Year", slug: "new-year" },
+            { name: "Christmas", slug: "christmas" },
+            { name: "National Day", slug: "national-day" },
+            { name: "Halloween", slug: "halloween" },
+            { name: "Mother's Day", slug: "mothers-day" },
+            { name: "Easter", slug: "easter" },
+            { name: "Thanksgiving", slug: "thanksgiving" },
+            { name: "Mardi Gras", slug: "mardi-gras" },
+            { name: "Super Bowl", slug: "super-bowl" }
+          ]
+        },
+        { name: "Jewelry Gift Sets", slug: "jewelry-gift-sets", children: [] },
+        { name: "Graduation", slug: "graduation", children: [] },
+        { name: "Bridesmaid", slug: "bridesmaid", children: [] },
+        { name: "4th of July", slug: "4th-of-july", children: [] }
+      ]
+    },
+    {
+      name: "ACCESSORIES",
+      slug: "accessories",
+      children: [
+        { name: "BROOCH", slug: "brooch", children: [] },
+        { name: "KEY-CHAIN", slug: "key-chain", children: [] },
+        { name: "HAIR CLIP", slug: "hair-clip", children: [] },
+        { name: "DIY JEWELRY ACCESSORIES", slug: "diy-jewelry-accessories", children: [] }
+      ]
+    },
+    {
+      name: "JEWELRY BOXES & STORAGE",
+      slug: "jewelry-boxes-storage",
+      children: [
+        { name: "Jewelry Gift Boxes", slug: "jewelry-gift-boxes", children: [] },
+        { name: "Ring Boxes", slug: "ring-boxes", children: [] },
+        { name: "Earring Boxes", slug: "earring-boxes", children: [] },
+        { name: "Necklace Boxes", slug: "necklace-boxes", children: [] },
+        { name: "Jewelry Pouches & Bags", slug: "jewelry-pouches-bags", children: [] }
+      ]
+    },
+    {
+      name: "DAINTY MINIMALIST COLLECTION",
+      slug: "dainty-minimalist-collection",
+      children: [
+        { name: "Dainty Minimalist Necklaces", slug: "dainty-minimalist-necklaces", children: [] },
+        { name: "Dainty Minimalist Earrings", slug: "dainty-minimalist-earrings", children: [] },
+        { name: "Dainty Minimalist Rings", slug: "dainty-minimalist-rings", children: [] },
+        { name: "Dainty Minimalist Bracelets", slug: "dainty-minimalist-bracelets", children: [] },
+        { name: "Dainty Minimalist Anklets", slug: "dainty-minimalist-anklets", children: [] },
+        { name: "Dainty Minimalist Ear Clips", slug: "dainty-minimalist-earclips", children: [] },
+        { name: "Dainty Minimalist Jewelry Sets", slug: "dainty-minimalist-jewelry-sets", children: [] },
+        { name: "Thin Stackable Rings", slug: "thin-stackable-rings", children: [] },
+        { name: "Tiny Stud Earrings", slug: "tiny-stud-earrings", children: [] }
+      ]
+    },
+    {
+      name: "HEART COLLECTION",
+      slug: "heart-collection",
+      children: [
+        { name: "Heart Accessories", slug: "heart-accessories", children: [] },
+        { name: "Heart Charm Keychains", slug: "heart-charm-keychains", children: [] },
+        { name: "Heart Earrings", slug: "heart-earrings", children: [] },
+        { name: "Heart Hair Band", slug: "heart-hair-band", children: [] },
+        { name: "Heart Hair Clip", slug: "heart-hair-clip", children: [] },
+        { name: "Heart Pendant Anklets", slug: "heart-pendant-anklets", children: [] },
+        { name: "Heart Pendant Bracelets", slug: "heart-pendant-bracelets", children: [] },
+        { name: "Heart Pendant Necklace", slug: "heart-pendant-necklace", children: [] },
+        { name: "Heart Rings", slug: "heart-rings", children: [] }
+      ]
+    }
+  ];
+
   const QUICK_GIFTS_DATA = [
     {
       id: 56339,
       name: "E.B.belle PVC Zipper Jewelry Packaging Bag Pouch",
       price: "0.00",
-      image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&q=80"
+      image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&q=80",
+      loaded: false
     },
     {
       id: 57994,
       name: "E.B.belle Velvet Anti-Tarnish Jewelry Keepsake Pouch",
       price: "0.00",
-      image: "https://images.unsplash.com/photo-1544816155-12df9643f363?w=200&q=80"
+      image: "https://images.unsplash.com/photo-1544816155-12df9643f363?w=200&q=80",
+      loaded: false
     }
   ];
 
-// 2. 动态异步同步真实商品数据（价格、图片、标题）
   async function fetchAndSyncQuickGiftsData() {
     for (const gift of QUICK_GIFTS_DATA) {
       if (gift.loaded) continue;
       try {
-        // 调用站内现有的产品详情 API 接口
         const res = await fetch(`/api/product-detail?id=${gift.id}`);
         if (!res.ok) continue;
         const data = await res.json();
-        
         if (data && data.name) {
           gift.name = data.name;
-          // 优先取原价 regular_price，保证和后台原价完全对齐
           const regPrice = (data.regular_price !== undefined && data.regular_price !== null && data.regular_price !== '')
             ? data.regular_price
             : (data.price || '0.00');
           gift.price = parseFloat(regPrice).toFixed(2);
-
-          // 取第一张商品图
           if (data.images && data.images[0] && data.images[0].src) {
             gift.image = data.images[0].src;
           }
@@ -2775,26 +2108,20 @@ if (Astro.response) {
         console.warn(`[QuickGift Fetch Error] for ${gift.id}:`, err);
       }
     }
-
-    // 数据获取成功后，若弹窗已经打开，即刻动态刷新 DOM 中的显示内容
     updateQuickGiftsDOM();
   }
 
-  // 3. 动态刷新当前 DOM 中正在展示的赠品标题、价格和图片
   function updateQuickGiftsDOM() {
     ['desktop', 'mobile'].forEach(device => {
       const track = document.getElementById(`${device}QuickGiftTrack`);
       if (!track) return;
-
       const slides = track.querySelectorAll('.quick-gift-slide');
       slides.forEach((slide, index) => {
         const gift = QUICK_GIFTS_DATA[index];
         if (!gift) return;
-
         const imgEl = slide.querySelector('.quick-gift-img');
         const nameEl = slide.querySelector('.quick-gift-name');
         const priceEl = slide.querySelector('.quick-gift-price');
-
         if (imgEl && gift.image) imgEl.src = gift.image;
         if (nameEl && gift.name) {
           nameEl.textContent = gift.name;
@@ -2806,7 +2133,7 @@ if (Astro.response) {
       });
     });
   }
-  // 全局赠品轮播定时器
+
   let quickGiftTimerDesktop = null;
   let quickGiftTimerMobile = null;
   let quickGiftIndexDesktop = 0;
@@ -2849,7 +2176,6 @@ if (Astro.response) {
   let currentPage = 1;
   let totalPages = 1;
   let totalProducts = 0;
-  const perPage = 20;
   let currentFilters = null;
   let pageBeforeFilter = 1;
 
@@ -2861,8 +2187,16 @@ if (Astro.response) {
     toggle.classList.toggle('collapsed');
   };
 
+  // 核心修复：基于当前点击按钮的同级 li 相对查找展开，彻底解决移动与桌面 ID 冲突
   window.toggleChildren = function(button, targetId) {
-    const target = document.getElementById(targetId);
+    const parentLi = button.closest('li');
+    let target = null;
+    if (parentLi) {
+      target = parentLi.querySelector('.filter-children, .filter-children-level3');
+    }
+    if (!target && targetId) {
+      target = document.getElementById(targetId);
+    }
     if (target) {
       target.classList.toggle('show');
       button.classList.toggle('expanded');
@@ -2870,17 +2204,53 @@ if (Astro.response) {
   };
 
   window.resetAllFilters = function() {
-    const allCheckboxes = document.querySelectorAll('#filters-container input[type="checkbox"]');
-    allCheckboxes.forEach(checkbox => {
+    document.querySelectorAll('#filters-container input[type="checkbox"], #mobileFilterContent input[type="checkbox"]').forEach(checkbox => {
       checkbox.checked = false;
     });
-
-    const colorSwatches = document.querySelectorAll('.color-swatch.selected');
-    colorSwatches.forEach(swatch => {
+    document.querySelectorAll('.color-swatch.selected').forEach(swatch => {
       swatch.classList.remove('selected');
     });
-
     handleFilterChange();
+  };
+
+  function getProductMaterialText(product) {
+    if (product.material && typeof product.material === 'string') {
+      return product.material;
+    }
+    if (Array.isArray(product.attributes) && product.attributes.length > 0) {
+      const matAttr = product.attributes.find((attr) => {
+        const n = (attr.name || '').toLowerCase();
+        return n === 'material' || n === 'pa_material';
+      });
+      if (matAttr && Array.isArray(matAttr.options) && matAttr.options.length > 0) {
+        return matAttr.options[0];
+      }
+    }
+    return '316L Steel';
+  }
+
+  window.filterByMaterialTag = function(materialName) {
+    if (!materialName) return;
+    const allMatInputs = document.querySelectorAll('#filters-container input[data-filter="material"]');
+    let matched = false;
+
+    allMatInputs.forEach((input) => {
+      const labelSpan = input.closest('label')?.querySelector('span');
+      const text = labelSpan ? labelSpan.textContent.trim().toLowerCase() : '';
+      if (text === materialName.trim().toLowerCase() || input.dataset.slug === materialName.toLowerCase().replace(/\s+/g, '-')) {
+        input.checked = true;
+        matched = true;
+      }
+    });
+
+    if (matched) {
+      handleFilterChange();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const slug = materialName.toLowerCase().replace(/\s+/g, '-');
+      loadPage(1, { materials: [slug] });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   function generatePagination(current, total) {
@@ -2916,7 +2286,7 @@ if (Astro.response) {
       const dotsClass = isMobile ? 'mobile-page-dots' : 'page-dots';
 
       let html = `
-        <button class="${btnClass}" data-page="prev" ${currentPage === 1 ? 'disabled' : ''}>
+        <button class="${btnClass}" data-page="prev" ${currentPage === 1 ? 'disabled' : ''} type="button">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
       `;
@@ -2925,12 +2295,12 @@ if (Astro.response) {
         if (page === '...') {
           html += `<span class="${dotsClass}">...</span>`;
         } else {
-          html += `<button class="${btnClass} ${currentPage === page ? 'active' : ''}" data-page="${page}">${page}</button>`;
+          html += `<button class="${btnClass} ${currentPage === page ? 'active' : ''}" data-page="${page}" type="button">${page}</button>`;
         }
       });
 
       html += `
-        <button class="${btnClass}" data-page="next" ${currentPage >= totalPages ? 'disabled' : ''}>
+        <button class="${btnClass}" data-page="next" ${currentPage >= totalPages ? 'disabled' : ''} type="button">
           <i class="fa-solid fa-chevron-right"></i>
         </button>
       `;
@@ -2967,6 +2337,7 @@ if (Astro.response) {
     await loadPage(newPage, currentFilters);
   }
 
+  // 保证骨架屏在客户端发起请求时稳定展现
   async function loadPage(page, filters = null) {
     try {
       const desktopGrid = document.getElementById('products-grid-desktop');
@@ -2986,7 +2357,7 @@ if (Astro.response) {
       if (desktopGrid) desktopGrid.innerHTML = skeletonHTML;
       if (mobileGrid) mobileGrid.innerHTML = skeletonHTML;
 
-      const requestBody = { page: page, per_page: perPage };
+      const requestBody = { page: page, per_page: 20 };
       const urlParams = new URLSearchParams(window.location.search);
       const searchQuery = urlParams.get('q');
       if (searchQuery) requestBody.search = searchQuery;
@@ -2996,13 +2367,14 @@ if (Astro.response) {
 
       if (filters) {
         if (filters.categories && filters.categories.length > 0) {
-          requestBody.category = filters.categories.join(',');
+          const uniqueCategories = Array.from(new Set(filters.categories.filter(Boolean)));
+          requestBody.category = uniqueCategories.join(',');
         }
         if (filters.colors && filters.colors.length > 0) {
-          requestBody.color = filters.colors.join(',');
+          requestBody.color = Array.from(new Set(filters.colors.filter(Boolean))).join(',');
         }
         if (filters.materials && filters.materials.length > 0) {
-          requestBody.material = filters.materials.join(',');
+          requestBody.material = Array.from(new Set(filters.materials.filter(Boolean))).join(',');
         }
       }
 
@@ -3063,6 +2435,7 @@ if (Astro.response) {
     const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80';
     const rating = parseFloat(product.average_rating) || 0;
     const totalSales = parseInt(product.total_sales) || 0;
+    const materialText = escapeHtml(getProductMaterialText(product));
 
     if (isMobile && layout === 'list') {
       return `
@@ -3075,7 +2448,7 @@ if (Astro.response) {
             <div class="card-list-content">
               <div class="card-list-header">
                 <h3 class="card-list-title">${productName}</h3>
-                <button class="mobile-wishlist-btn-list" onclick="event.preventDefault();">
+                <button class="mobile-wishlist-btn-list" onclick="event.preventDefault();" type="button">
                   <i class="fa-regular fa-heart"></i>
                 </button>
               </div>
@@ -3087,7 +2460,7 @@ if (Astro.response) {
               <div class="card-list-meta">
                 <span class="list-moq">MOQ: 1 pc</span>
                 <span class="list-divider">|</span>
-                <span class="list-material">316L Steel</span>
+                <span class="mobile-material" onclick="event.preventDefault(); event.stopPropagation(); filterByMaterialTag('${materialText}')">${materialText}</span>
               </div>
               <div class="card-list-footer">
                 <div class="list-rating">
@@ -3095,7 +2468,7 @@ if (Astro.response) {
                   ${rating > 0 ? `<span class="rating-num">${rating}</span>` : ''}
                   ${totalSales > 0 ? `<span class="sales-count">${totalSales} orders</span>` : ''}
                 </div>
-                <button class="mobile-add-btn-list" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}'>
+                <button class="mobile-add-btn-list" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' type="button">
                   <i class="fa-solid fa-cart-shopping"></i>
                   <span>Add</span>
                 </button>
@@ -3110,7 +2483,7 @@ if (Astro.response) {
           <a href="/product/${productSlug}">
             <div class="mobile-product-image">
               ${hasDiscount ? `<span class="mobile-badge new">-${discountPercent}%</span>` : ''}
-              <button class="mobile-wishlist-btn" onclick="event.preventDefault();">
+              <button class="mobile-wishlist-btn" onclick="event.preventDefault();" type="button">
                 <i class="fa-regular fa-heart"></i>
               </button>
               <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
@@ -3123,9 +2496,9 @@ if (Astro.response) {
               </div>
               <div class="mobile-product-meta">
                 <span class="mobile-moq">MOQ: 1 pc</span>
-                <span class="mobile-material">316L Steel</span>
+                <span class="mobile-material" onclick="event.preventDefault(); event.stopPropagation(); filterByMaterialTag('${materialText}')">${materialText}</span>
               </div>
-              <button class="mobile-add-btn" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}'>
+              <button class="mobile-add-btn" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' type="button">
                 <i class="fa-solid fa-cart-shopping"></i>
                 <span>Add</span>
               </button>
@@ -3139,7 +2512,7 @@ if (Astro.response) {
           <a href="/product/${productSlug}">
             <div class="product-image-wrapper">
               ${hasDiscount ? `<span class="product-badge new">-${discountPercent}%</span>` : ''}
-              <button class="wishlist-btn" onclick="event.preventDefault();">
+              <button class="wishlist-btn" onclick="event.preventDefault();" type="button">
                 <i class="fa-regular fa-heart"></i>
               </button>
               <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
@@ -3152,9 +2525,9 @@ if (Astro.response) {
               </div>
               <div class="product-meta">
                 <span class="moq">MOQ: 1 pc</span>
-                <span class="material">316L Steel</span>
+                <span class="material" onclick="event.preventDefault(); event.stopPropagation(); filterByMaterialTag('${materialText}')">${materialText}</span>
               </div>
-              <button class="add-to-cart-btn" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}'>
+              <button class="add-to-cart-btn" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' type="button">
                 <i class="fa-solid fa-cart-shopping"></i>
                 <span>Add</span>
               </button>
@@ -3258,98 +2631,159 @@ if (Astro.response) {
     }
   }
 
+  // 构造并渲染分类与属性筛选器
   function renderFilters(data) {
     const container = document.getElementById('filters-container');
     const mobileContainer = document.getElementById('mobileFilterContent');
     if (!container) return;
 
-    let html = '';
-    html += '<div class="filters-header">';
-    html += '<h2>Filters</h2>';
-    html += '<button class="filters-reset" onclick="resetAllFilters()" title="Reset all filters">';
-    html += '<i class="fa-solid fa-rotate-right"></i>';
-    html += '</button></div>';
-
-    if (data.newArrivals && data.newArrivals.length > 0) {
-      html += '<div class="filter-section">';
-      html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
-      html += '<h3 class="filter-title">NEW ARRIVALS</h3>';
-      html += '<button class="filter-toggle"><i class="fa-solid fa-chevron-up"></i></button></div>';
-      html += '<div class="filter-content"><ul class="filter-list">';
-      data.newArrivals.forEach(cat => {
-        if (cat.children && cat.children.length > 0) {
-          cat.children.forEach(child => {
-            html += `<li><label><input type="checkbox" name="category" value="${child.id}" data-slug="${child.slug}" data-filter="category"><span>${child.name}</span></label></li>`;
-          });
-        }
-      });
-      html += '</ul></div></div>';
+    const categoryIdMap = new Map();
+    function mapCategoryItem(item) {
+      if (!item) return;
+      if (item.slug && item.id) categoryIdMap.set(item.slug.toLowerCase(), item.id);
+      if (item.name && item.id) categoryIdMap.set(item.name.toLowerCase().trim(), item.id);
+      if (Array.isArray(item.children)) {
+        item.children.forEach(mapCategoryItem);
+      }
     }
 
-    if (data.allJewelry && data.allJewelry.length > 0) {
+    if (Array.isArray(data.newArrivals)) data.newArrivals.forEach(mapCategoryItem);
+    if (Array.isArray(data.allJewelry)) data.allJewelry.forEach(mapCategoryItem);
+
+    function getMatchedCategoryId(slug, name) {
+      const cleanSlug = (slug || '').toLowerCase();
+      const cleanName = (name || '').toLowerCase().trim();
+      return categoryIdMap.get(cleanSlug) || categoryIdMap.get(cleanName) || cleanSlug;
+    }
+
+    // 修复：确保 treeHtml 字符串正确闭合，杜绝 ReferenceError
+    function generateCategoryTreeHTML(prefix) {
+      const isMobile = prefix === 'mobile';
+      let treeHtml = '';
+
+      ALL_CATEGORIES_MENU.forEach((l1, idx1) => {
+        const hasL2 = l1.children && l1.children.length > 0;
+        const l2TargetId = `${prefix}_all_jewelry_l1_${idx1}`;
+        const l1Val = getMatchedCategoryId(l1.slug, l1.name);
+
+        treeHtml += '<li>';
+        treeHtml += '<div class="category-parent">';
+        treeHtml += `<label><input type="checkbox" name="category" value="${l1Val}" data-slug="${l1.slug}" data-filter="category"><span>${l1.name}</span></label>`;
+        if (hasL2) {
+          treeHtml += `<button type="button" class="toggle-children" onclick="event.stopPropagation(); toggleChildren(this, '${l2TargetId}')"><i class="fa-solid fa-chevron-down"></i></button>`;
+        }
+        treeHtml += '</div>';
+
+        // 二级分类列表
+        if (hasL2) {
+          treeHtml += `<ul class="filter-children" id="${l2TargetId}">`;
+          l1.children.forEach((l2, idx2) => {
+            const hasL3 = !isMobile && l2.children && l2.children.length > 0;
+            const l3TargetId = `${prefix}_all_jewelry_l2_${idx1}_${idx2}`;
+            const l2Val = getMatchedCategoryId(l2.slug, l2.name);
+
+            treeHtml += '<li>';
+            treeHtml += '<div class="category-parent">';
+            treeHtml += `<label><input type="checkbox" name="category" value="${l2Val}" data-slug="${l2.slug}" data-filter="category"><span>${l2.name}</span></label>`;
+            if (hasL3) {
+              treeHtml += `<button type="button" class="toggle-children" onclick="event.stopPropagation(); toggleChildren(this, '${l3TargetId}')"><i class="fa-solid fa-chevron-down"></i></button>`;
+            }
+            treeHtml += '</div>';
+
+            // 三级分类列表 (仅桌面端显示)
+            if (hasL3) {
+              treeHtml += `<ul class="filter-children-level3" id="${l3TargetId}">`;
+              l2.children.forEach((l3) => {
+                const l3Val = getMatchedCategoryId(l3.slug, l3.name);
+                treeHtml += `<li><label><input type="checkbox" name="category" value="${l3Val}" data-slug="${l3.slug}" data-filter="category"><span>${l3.name}</span></label></li>`;
+              });
+              treeHtml += '</ul>';
+            }
+
+            treeHtml += '</li>';
+          });
+          treeHtml += '</ul>'; // 修复点：正确使用 treeHtml 变量
+        }
+
+        treeHtml += '</li>';
+      });
+      return treeHtml;
+    }
+
+    function buildFullSections(prefix, includeHeader) {
+      let html = '';
+      if (includeHeader) {
+        html += '<div class="filters-header">';
+        html += '<h2>Filters</h2>';
+        html += '<button class="filters-reset" onclick="resetAllFilters()" title="Reset all filters" type="button">';
+        html += '<i class="fa-solid fa-rotate-right"></i>';
+        html += '</button></div>';
+      }
+
+      // 1. NEW ARRIVALS
+      if (data.newArrivals && data.newArrivals.length > 0) {
+        html += '<div class="filter-section">';
+        html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
+        html += '<h3 class="filter-title">NEW ARRIVALS</h3>';
+        html += '<button class="filter-toggle" type="button"><i class="fa-solid fa-chevron-up"></i></button></div>';
+        html += '<div class="filter-content"><ul class="filter-list">';
+        data.newArrivals.forEach(cat => {
+          if (cat.children && cat.children.length > 0) {
+            cat.children.forEach(child => {
+              const val = child.id || child.slug;
+              html += `<li><label><input type="checkbox" name="category" value="${val}" data-slug="${child.slug}" data-filter="category"><span>${child.name}</span></label></li>`;
+            });
+          }
+        });
+        html += '</ul></div></div>';
+      }
+
+      // 2. ALL JEWELRY (桌面端 1-2-3 级，移动端严格仅 1-2 级)
       html += '<div class="filter-section">';
       html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
       html += '<h3 class="filter-title">ALL JEWELRY</h3>';
-      html += '<button class="filter-toggle"><i class="fa-solid fa-chevron-up"></i></button></div>';
+      html += '<button class="filter-toggle" type="button"><i class="fa-solid fa-chevron-up"></i></button></div>';
       html += '<div class="filter-content"><ul class="filter-list">';
-      data.allJewelry.forEach(cat => {
-        const hasChildren = cat.children && cat.children.length > 0;
-        html += `<li><div class="category-parent"><label><input type="checkbox" name="category" value="${cat.id}" data-slug="${cat.slug}" data-filter="category"><span>${cat.name}</span></label>`;
-        if (hasChildren) {
-          html += `<button class="toggle-children" onclick="event.stopPropagation(); toggleChildren(this, 'children-${cat.id}')"><i class="fa-solid fa-chevron-down"></i></button>`;
-        }
-        html += '</div>';
-        if (hasChildren) {
-          html += `<ul class="filter-children" id="children-${cat.id}">`;
-          cat.children.forEach(child => {
-            html += `<li><label><input type="checkbox" name="category" value="${child.id}" data-slug="${child.slug}" data-filter="category"><span>${child.name}</span></label></li>`;
-          });
-          html += '</ul>';
-        }
-        html += '</li>';
-      });
+      html += generateCategoryTreeHTML(prefix);
       html += '</ul></div></div>';
+
+      // 3. MATERIAL
+      if (data.materials && data.materials.length > 0) {
+        html += '<div class="filter-section">';
+        html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
+        html += '<h3 class="filter-title">MATERIAL</h3>';
+        html += '<button class="filter-toggle" type="button"><i class="fa-solid fa-chevron-up"></i></button></div>';
+        html += '<div class="filter-content"><ul class="filter-list">';
+        data.materials.forEach(material => {
+          const val = material.id || material.slug;
+          html += `<li><label><input type="checkbox" name="material" value="${val}" data-slug="${material.slug}" data-filter="material"><span>${material.name}</span></label></li>`;
+        });
+        html += '</ul></div></div>';
+      }
+
+      // 4. COLOR
+      if (data.colors && data.colors.length > 0) {
+        html += '<div class="filter-section">';
+        html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
+        html += '<h3 class="filter-title">COLOR</h3>';
+        html += '<button class="filter-toggle" type="button"><i class="fa-solid fa-chevron-up"></i></button></div>';
+        html += '<div class="filter-content"><div class="color-swatches">';
+        data.colors.forEach(color => {
+          const val = color.id || color.slug;
+          html += `<div class="color-swatch-wrapper"><label class="color-swatch" style="background: ${color.hex};" title="${color.name}"><input type="checkbox" name="color" value="${val}" data-slug="${color.slug}" data-filter="color"></label><span class="color-label">${color.name}</span></div>`;
+        });
+        html += '</div></div></div>';
+      }
+      return html;
     }
 
-    if (data.materials && data.materials.length > 0) {
-      html += '<div class="filter-section">';
-      html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
-      html += '<h3 class="filter-title">MATERIAL</h3>';
-      html += '<button class="filter-toggle"><i class="fa-solid fa-chevron-up"></i></button></div>';
-      html += '<div class="filter-content"><ul class="filter-list">';
-      data.materials.forEach(material => {
-        html += `<li><label><input type="checkbox" name="material" value="${material.id}" data-slug="${material.slug}" data-filter="material"><span>${material.name}</span></label></li>`;
-      });
-      html += '</ul></div></div>';
-    }
-
-    if (data.colors && data.colors.length > 0) {
-      html += '<div class="filter-section">';
-      html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
-      html += '<h3 class="filter-title">COLOR</h3>';
-      html += '<button class="filter-toggle"><i class="fa-solid fa-chevron-up"></i></button></div>';
-      html += '<div class="filter-content"><div class="color-swatches">';
-      data.colors.forEach(color => {
-        html += `<div class="color-swatch-wrapper"><label class="color-swatch" style="background: ${color.hex};" title="${color.name}"><input type="checkbox" name="color" value="${color.id}" data-slug="${color.slug}" data-filter="color"></label><span class="color-label">${color.name}</span></div>`;
-      });
-      html += '</div></div></div>';
-    }
-
-    container.innerHTML = html;
-
+    container.innerHTML = buildFullSections('desktop', true);
     if (mobileContainer) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      const header = tempDiv.querySelector('.filters-header');
-      if (header) header.remove();
-      mobileContainer.innerHTML = tempDiv.innerHTML;
+      mobileContainer.innerHTML = buildFullSections('mobile', false);
     }
 
-    const filterInputs = container.querySelectorAll('input[data-filter]');
-    filterInputs.forEach(input => input.addEventListener('change', handleFilterChange));
-
-    const colorSwatches = container.querySelectorAll('.color-swatch input');
-    colorSwatches.forEach(input => {
+    container.querySelectorAll('input[data-filter]').forEach(input => input.addEventListener('change', handleFilterChange));
+    container.querySelectorAll('.color-swatch input').forEach(input => {
       input.addEventListener('change', function() {
         const swatch = this.closest('.color-swatch');
         if (this.checked) swatch.classList.add('selected');
@@ -3372,9 +2806,18 @@ if (Astro.response) {
 
   function handleFilterChange() {
     const selectedFilters = { categories: [], colors: [], materials: [] };
-    document.querySelectorAll('input[name="category"]:checked').forEach(input => selectedFilters.categories.push(input.value));
-    document.querySelectorAll('input[name="color"]:checked').forEach(input => selectedFilters.colors.push(input.value));
-    document.querySelectorAll('input[name="material"]:checked').forEach(input => selectedFilters.materials.push(input.value));
+    const desktopContainer = document.getElementById('filters-container');
+    if (desktopContainer) {
+      desktopContainer.querySelectorAll('input[name="category"]:checked').forEach(input => {
+        if (input.value) selectedFilters.categories.push(input.value);
+      });
+      desktopContainer.querySelectorAll('input[name="color"]:checked').forEach(input => {
+        if (input.value) selectedFilters.colors.push(input.value);
+      });
+      desktopContainer.querySelectorAll('input[name="material"]:checked').forEach(input => {
+        if (input.value) selectedFilters.materials.push(input.value);
+      });
+    }
 
     currentFilters = selectedFilters;
     loadPage(1, selectedFilters);
@@ -3635,7 +3078,7 @@ if (Astro.response) {
     const price = parseFloat(product.price) || 0;
 
     let headerHTML = '';
-    headerHTML += `<button class="mobile-sheet-close" id="quickOrderMobileClose">
+    headerHTML += `<button class="mobile-sheet-close" id="quickOrderMobileClose" type="button">
       <i class="fa-solid fa-times"></i>
     </button>`;
     headerHTML += '<div class="mobile-sheet-product-image">';
@@ -3659,7 +3102,6 @@ if (Astro.response) {
     quickOrderMobileContent.innerHTML = html;
   }
 
-  // 渲染移动端 Quick Order 内容
   function renderQuickOrderMobileContent(product) {
     const images = product.images || [];
     const mainImage = images[0]?.src || '';
@@ -3675,7 +3117,7 @@ if (Astro.response) {
     window.currentProductAttributes = attributes;
 
     let headerHTML = '';
-    headerHTML += `<button class="mobile-sheet-close" id="quickOrderMobileClose">
+    headerHTML += `<button class="mobile-sheet-close" id="quickOrderMobileClose" type="button">
       <i class="fa-solid fa-times"></i>
     </button>`;
     headerHTML += '<div class="mobile-sheet-product-image">';
@@ -3691,8 +3133,6 @@ if (Astro.response) {
     if (newCloseBtn) newCloseBtn.addEventListener('click', closeQuickOrder);
 
     let html = '';
-
-    // 1. 批发阶梯价格表
     html += '<div class="mobile-quick-price-tiers">';
     html += '<div class="mobile-tier-header">';
     html += '<div class="mobile-tier-title"><i class="fa-solid fa-tag"></i><span>Wholesale Pricing</span></div>';
@@ -3705,7 +3145,6 @@ if (Astro.response) {
     html += '<div class="mobile-price-tier best"><div class="mobile-tier-qty">100+ pcs</div><div class="mobile-tier-price">$' + (price * 0.45).toFixed(2) + '</div><div class="mobile-tier-best-badge">Best Value</div></div>';
     html += '</div></div>';
 
-    // 2. 移动端 Gift Carousel 栏（紧凑设计）
     html += '<div class="quick-gift-carousel" id="mobileQuickGiftCarousel">';
     html += '<button type="button" class="quick-gift-btn-arrow" onclick="prevQuickGift(\'mobile\')"><i class="fa-solid fa-chevron-left"></i></button>';
     html += '<div class="quick-gift-viewport">';
@@ -3727,7 +3166,6 @@ if (Astro.response) {
     html += '<button type="button" class="quick-gift-btn-arrow" onclick="nextQuickGift(\'mobile\')"><i class="fa-solid fa-chevron-right"></i></button>';
     html += '</div>';
 
-    // 3. 变体属性选择
     if (type === 'variable' && attributes.length > 0) {
       attributes.forEach(attr => {
         if (attr.variation && attr.options && attr.options.length > 0) {
@@ -3741,7 +3179,7 @@ if (Astro.response) {
           attr.options.forEach((option, index) => {
             html += `<button class="mobile-attribute-option ${index === 0 ? 'selected' : ''}"
                       data-value="${option}"
-                      onclick="selectMobileAttribute(this, '${attr.name}')">
+                      onclick="selectMobileAttribute(this, '${attr.name}')" type="button">
                       ${option}
                     </button>`;
           });
@@ -3750,13 +3188,12 @@ if (Astro.response) {
       });
     }
 
-    // 4. 数量与库存
     html += '<div class="mobile-quantity-section">';
     html += '<div class="mobile-quantity-title">Quantity</div>';
     html += '<div class="mobile-quantity-selector">';
-    html += '<button class="mobile-qty-btn" onclick="changeMobileQuantity(-1)"><i class="fa-solid fa-minus"></i></button>';
+    html += '<button class="mobile-qty-btn" onclick="changeMobileQuantity(-1)" type="button"><i class="fa-solid fa-minus"></i></button>';
     html += '<input type="number" class="mobile-qty-input" id="mobileQtyInput" value="1" min="1" readonly>';
-    html += '<button class="mobile-qty-btn" onclick="changeMobileQuantity(1)"><i class="fa-solid fa-plus"></i></button>';
+    html += '<button class="mobile-qty-btn" onclick="changeMobileQuantity(1)" type="button"><i class="fa-solid fa-plus"></i></button>';
     html += '</div>';
 
     html += '<div id="mobileStockStatus">';
@@ -3770,11 +3207,10 @@ if (Astro.response) {
     }
     html += '</div></div>';
 
-    // 5. 底部加购按钮
     html += '<div class="mobile-quick-footer">';
     const isOutOfStock = type === 'simple' && product.stock_status === 'outofstock';
     html += `<button class="mobile-quick-add-btn" id="mobileQuickAddBtn"
-              onclick="addMobileQuickOrderToCart()" ${isOutOfStock ? 'disabled' : ''}>`;
+              onclick="addMobileQuickOrderToCart()" ${isOutOfStock ? 'disabled' : ''} type="button">`;
     html += '<i class="fa-solid fa-cart-shopping"></i> ';
     html += isOutOfStock ? 'Out of Stock' : 'Add to Cart';
     html += '</button></div>';
@@ -3790,7 +3226,6 @@ if (Astro.response) {
     startQuickGiftAutoPlay('mobile');
   }
 
-  // 移动端选择属性并联动主图与库存
   window.selectMobileAttribute = function(element, attrName) {
     const container = element.closest('.mobile-attribute-options');
     container.querySelectorAll('.mobile-attribute-option').forEach(opt => opt.classList.remove('selected'));
@@ -3812,7 +3247,6 @@ if (Astro.response) {
     input.value = Math.max(1, currentQty + delta);
   };
 
-  // 移动端变体选择器：同步价格、库存及 Header 主图切换
   function updateMobileVariationStock() {
     const variationsData = window.currentProductVariationsData;
     if (!variationsData || variationsData.length === 0) return;
@@ -3837,8 +3271,6 @@ if (Astro.response) {
       if (matchedVariation.price && priceDisplay) {
         priceDisplay.textContent = `$${parseFloat(matchedVariation.price).toFixed(2)}`;
       }
-
-      // 核心联动：移动端主图切换
       if (matchedVariation.image?.src && mobileMainImg) {
         mobileMainImg.src = matchedVariation.image.src;
       }
@@ -3858,7 +3290,6 @@ if (Astro.response) {
     }
   }
 
-  // 渲染桌面端 Quick Order 内容
   function renderQuickOrderContent(product) {
     const images = product.images || [];
     const mainImage = images[0]?.src || '';
@@ -3876,8 +3307,6 @@ if (Astro.response) {
     window.currentProductType = type;
 
     let html = '';
-
-    // 左侧：主图 + 缩略图
     html += '<div class="quick-order-images">';
     html += '<div class="quick-order-main-image">';
     html += `<img src="${mainImage}" alt="${name}" id="quickOrderMainImg">`;
@@ -3894,7 +3323,6 @@ if (Astro.response) {
     }
     html += '</div>';
 
-    // 右侧：详情 + 批发阶梯价 + 赠品栏 + 属性 + 数量
     html += '<div class="quick-order-details">';
     html += `<h2 class="quick-order-title">${name}</h2>`;
 
@@ -3918,7 +3346,6 @@ if (Astro.response) {
     }
     html += '</div>';
 
-    // 1. 桌面端同步详情页批发阶梯价格表
     html += '<div class="quick-order-wholesale">';
     html += '<div class="table-header">';
     html += '<div class="header-left"><i class="fa-solid fa-tag"></i><span>Wholesale & Volume Pricing</span></div>';
@@ -3931,7 +3358,6 @@ if (Astro.response) {
     html += '<div class="price-tier best"><span class="tier-qty">100+ pcs</span><span class="tier-price">$' + (price * 0.45).toFixed(2) + '</span><span class="tier-badge">Best Value</span></div>';
     html += '</div></div>';
 
-    // 2. 桌面端同步 Gift Carousel 栏
     html += '<div class="quick-gift-carousel" id="desktopQuickGiftCarousel">';
     html += '<button type="button" class="quick-gift-btn-arrow" onclick="prevQuickGift(\'desktop\')"><i class="fa-solid fa-chevron-left"></i></button>';
     html += '<div class="quick-gift-viewport">';
@@ -3953,7 +3379,6 @@ if (Astro.response) {
     html += '<button type="button" class="quick-gift-btn-arrow" onclick="nextQuickGift(\'desktop\')"><i class="fa-solid fa-chevron-right"></i></button>';
     html += '</div>';
 
-    // 3. 属性选择
     if (type === 'variable' && attributes.length > 0) {
       attributes.forEach(attr => {
         if (attr.variation && attr.options && attr.options.length > 0) {
@@ -3963,7 +3388,7 @@ if (Astro.response) {
           attr.options.forEach((option, index) => {
             html += `<button class="quick-order-option ${index === 0 ? 'selected' : ''}"
                       data-value="${option}"
-                      onclick="selectQuickOrderOption(this, '${attr.name}')">
+                      onclick="selectQuickOrderOption(this, '${attr.name}')" type="button">
                       ${option}
                     </button>`;
           });
@@ -3972,21 +3397,19 @@ if (Astro.response) {
       });
     }
 
-    // 4. 数量调整
     html += '<div class="quick-order-section">';
     html += '<div class="quick-order-section-title">Quantity</div>';
     html += '<div class="quick-order-quantity">';
-    html += '<button class="quick-order-qty-btn" onclick="changeQuickOrderQty(-1)"><i class="fa-solid fa-minus"></i></button>';
+    html += '<button class="quick-order-qty-btn" onclick="changeQuickOrderQty(-1)" type="button"><i class="fa-solid fa-minus"></i></button>';
     html += '<input type="number" class="quick-order-qty-input" id="quickOrderQty" value="1" min="1">';
-    html += '<button class="quick-order-qty-btn" onclick="changeQuickOrderQty(1)"><i class="fa-solid fa-plus"></i></button>';
+    html += '<button class="quick-order-qty-btn" onclick="changeQuickOrderQty(1)" type="button"><i class="fa-solid fa-plus"></i></button>';
     html += '</div></div>';
 
-    // 5. 加购按钮
     const isOutOfStock = type === 'simple' && stockStatus === 'outofstock';
     html += `<button class="quick-order-add-btn ${isOutOfStock ? 'disabled' : ''}"
               id="quickOrderAddBtn"
               onclick="addQuickOrderToCart(${product.id}, '${type}')"
-              ${isOutOfStock ? 'disabled' : ''}>`;
+              ${isOutOfStock ? 'disabled' : ''} type="button">`;
     html += '<i class="fa-solid fa-cart-shopping"></i> ';
     html += isOutOfStock ? 'Out of Stock' : 'Add to Cart';
     html += '</button>';
@@ -4004,7 +3427,6 @@ if (Astro.response) {
     startQuickGiftAutoPlay('desktop');
   }
 
-  // 桌面端缩略图切换
   window.changeQuickOrderImage = function(src, element) {
     const mainImg = document.getElementById('quickOrderMainImg');
     if (mainImg) mainImg.src = src;
@@ -4012,7 +3434,6 @@ if (Astro.response) {
     if (element) element.classList.add('active');
   };
 
-  // 桌面端选择属性并联动主图与库存
   window.selectQuickOrderOption = function(element, attrName) {
     const container = element.closest('.quick-order-options');
     container.querySelectorAll('.quick-order-option').forEach(opt => opt.classList.remove('selected'));
@@ -4023,7 +3444,6 @@ if (Astro.response) {
     }
   };
 
-  // 桌面端变体选择器：同步价格、库存及主图切换
   function updateQuickOrderVariationStock() {
     const variationsData = window.currentProductVariationsData;
     if (!variationsData || variationsData.length === 0) return;
@@ -4056,10 +3476,8 @@ if (Astro.response) {
       }
       priceContainer.innerHTML = priceHTML;
 
-      // 核心联动：桌面端主图与缩略图切换
       if (matchedVariation.image?.src && mainImg) {
         mainImg.src = matchedVariation.image.src;
-        // 查找缩略图高亮
         document.querySelectorAll('.quick-order-thumb').forEach(thumb => {
           const thumbImg = thumb.querySelector('img');
           if (thumbImg && thumbImg.src.split('?')[0] === matchedVariation.image.src.split('?')[0]) {
@@ -4099,9 +3517,6 @@ if (Astro.response) {
     input.value = Math.max(1, qty + change);
   };
 
-  // =========================================================
-  // Quick Order Gift Carousel 驱动与自动播放机制
-  // =========================================================
   window.nextQuickGift = function(device) {
     const track = document.getElementById(`${device}QuickGiftTrack`);
     if (!track) return;
@@ -4144,7 +3559,6 @@ if (Astro.response) {
     }
   }
 
-  // 直接加购 Gift 产品到购物车
   window.addGiftDirectlyToCart = function(giftId, giftName, giftPrice, giftImage, btnEl) {
     try {
       let cart = [];
@@ -4200,7 +3614,6 @@ if (Astro.response) {
     }
   };
 
-  // 移动端加购
   window.addMobileQuickOrderToCart = function() {
     try {
       const productData = window.currentProductData || {};
@@ -4294,7 +3707,6 @@ if (Astro.response) {
     }
   };
 
-  // 桌面端加购
   window.addQuickOrderToCart = async function(productId, productType) {
     const qty = parseInt(document.getElementById('quickOrderQty').value) || 1;
 
