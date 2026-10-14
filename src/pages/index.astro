@@ -397,13 +397,13 @@ const staticProducts = [
     <div class="container">
       <div class="section-header-row">
         <div class="flash-title-area">
-          <h2 class="section-title">FLASH SALES</h2>
-          <div class="countdown-timer">
-            <span class="time-block">00</span>
+          <h2 class="section-title">⚡ FLASH SALES</h2>
+          <div class="countdown-timer" id="desktopCountdown">
+            <span class="time-block hours">00</span>
             <span class="time-separator">:</span>
-            <span class="time-block">07</span>
+            <span class="time-block minutes">07</span>
             <span class="time-separator">:</span>
-            <span class="time-block">21</span>
+            <span class="time-block seconds">21</span>
           </div>
         </div>
         <a href="#" class="view-more">View More <i class="fa-solid fa-chevron-right"></i></a>
@@ -1001,13 +1001,13 @@ const staticProducts = [
     <section class="mobile-flash-sale">
       <div class="mobile-flash-header">
         <h2>⚡ Flash Sales</h2>
-        <div class="mobile-countdown">
+        <div class="mobile-countdown" id="mobileCountdown">
           <span>Ends in</span>
-          <div class="mobile-timer-box">23</div>
+          <div class="mobile-timer-box hours">23</div>
           <span>:</span>
-          <div class="mobile-timer-box">59</div>
+          <div class="mobile-timer-box minutes">59</div>
           <span>:</span>
-          <div class="mobile-timer-box">45</div>
+          <div class="mobile-timer-box seconds">45</div>
         </div>
       </div>
 
@@ -1338,7 +1338,6 @@ const staticProducts = [
     <!-- Decorative Divider -->
     <div class="mobile-divider"></div>
 
-    <!-- Mobile Reviews Section -->
     <!-- Mobile Reviews Section -->
     <section class="mobile-reviews">
       <div class="reviews-header">
@@ -2015,27 +2014,41 @@ const staticProducts = [
     text-transform: uppercase;
     font-family: 'Cinzel', serif;
   }
+  /* 活动氛围倒计时 - 桌面端 */
   .countdown-timer {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    background: #fff5f5;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #ffe3e3;
+    box-shadow: 0 2px 8px rgba(229, 57, 53, 0.08);
   }
   .time-block {
-    background: #1a1a1a;
+    background: linear-gradient(145deg, #1f1f1f, #0d0d0d);
     color: #fff;
-    font-size: 12px;
-    font-weight: 700;
-    width: 28px;
-    height: 28px;
+    font-size: 13px;
+    font-weight: 800;
+    font-family: 'Courier New', Courier, monospace;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 2px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+    letter-spacing: 0.5px;
   }
   .time-separator {
-    color: #1a1a1a;
-    font-weight: 700;
+    color: #e53935;
+    font-weight: 800;
     font-size: 14px;
+    animation: flashColon 1s infinite;
+  }
+  @keyframes flashColon {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
   }
   .view-more {
     font-size: 14px;
@@ -2419,39 +2432,47 @@ const staticProducts = [
   .campaign-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
+    gap: 16px;
   }
   .campaign-banner-card {
     display: flex;
-    background: #fafafa;
+    background: #fff;
     border: 1px solid #eaeaea;
-    border-radius: 3px;
+    border-radius: 6px;
     overflow: hidden;
-    height: 130px;
+    height: 180px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .campaign-banner-card:hover {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
   }
   .campaign-left-poster {
-    width: 45%;
+    width: 44%;
     position: relative;
+    overflow: hidden;
   }
   .campaign-left-poster img {
     width: 100%;
     height: 100%;
+    object-fit: cover;
   }
   .poster-text {
     position: absolute;
     inset: 0;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0,0,0,0.42);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     color: #fff;
     text-align: center;
+    padding: 10px;
   }
-  .poster-text span { font-size: 8px; letter-spacing: 1px; }
-  .poster-text h4 { font-size: 13px; font-weight: 700; }
+  .poster-text span { font-size: 9px; letter-spacing: 1.5px; }
+  .poster-text h4 { font-size: 15px; font-weight: 700; font-family: 'Cinzel', serif; }
   .campaign-right-items {
-    width: 55%;
+    width: 56%;
     display: flex;
     flex-direction: column;
   }
@@ -2459,26 +2480,42 @@ const staticProducts = [
     flex: 1;
     display: flex;
     align-items: center;
-    padding: 6px 10px;
-    gap: 8px;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 10px 14px;
+    gap: 12px;
+    border-bottom: 1px solid #f3f3f3;
     background: #fff;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+  }
+  .camp-mini-item:hover {
+    background-color: #fafafa;
   }
   .camp-mini-item:last-child { border-bottom: none; }
   .camp-mini-item img {
-    width: 40px;
-    height: 40px;
-    border-radius: 2px;
+    width: 54px;
+    height: 54px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .camp-mini-info {
+    min-width: 0;
+    flex: 1;
   }
   .camp-mini-info h6 {
-    font-size: 10px;
-    color: #444;
+    font-size: 11px;
+    color: #333;
     font-weight: 500;
-    line-height: 1.2;
-    margin-bottom: 2px;
+    line-height: 1.35;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
   .camp-mini-info span {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     color: #111;
   }
@@ -2603,24 +2640,33 @@ const staticProducts = [
   .feed-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    gap: 16px;
+    align-items: stretch;
   }
   .feed-card {
     background: #fff;
     border: 1px solid #eaeaea;
-    border-radius: 3px;
+    border-radius: 4px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
   .feed-img-box {
     width: 100%;
-    height: 220px;
+    aspect-ratio: 1 / 1.15;
+    height: auto;
     position: relative;
+    overflow: hidden;
+    background: #f4f4f4;
   }
   .feed-img-box img,
   .feed-video {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
   }
   .feed-video {
     display: block;
@@ -2669,10 +2715,14 @@ const staticProducts = [
     transform: scale(1.1);
   }
   .feed-caption {
-    padding: 10px;
-    font-size: 10px;
+    padding: 12px 14px;
+    font-size: 11px;
     color: #666;
-    line-height: 1.4;
+    line-height: 1.5;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
   }
   .feed-caption strong { color: #111; }
 
@@ -3870,15 +3920,25 @@ const staticProducts = [
       gap: 4px;
       font-size: 10px;
       font-weight: 700;
+      background: #fff5f5;
+      padding: 4px 8px;
+      border-radius: 16px;
+      border: 1px solid #ffe3e3;
+    }
+    .mobile-countdown span {
+      color: #e53935;
     }
     .mobile-timer-box {
-      background: #000;
+      background: #111;
       color: #fff;
-      padding: 4px 6px;
-      border-radius: 2px;
-      min-width: 24px;
+      padding: 3px 5px;
+      border-radius: 3px;
+      min-width: 22px;
       text-align: center;
       font-size: 10px;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 800;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
 
     /* Mobile Products Scroll */
@@ -4194,6 +4254,49 @@ const staticProducts = [
 </style>
 
 <script define:vars={{ autoplayEnabled, autoplayInterval }}>
+// 统一活动倒计时功能（桌面端与移动端同步自启动倒数）
+function initFlashSalesCountdown() {
+  // 设定8小时倒计时（循环保持活动热度）
+  let totalSeconds = 8 * 3600 - 150;
+
+  function update() {
+    if (totalSeconds < 0) {
+      totalSeconds = 8 * 3600; // 重置继续循环
+    }
+
+    const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+    const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+    const s = String(totalSeconds % 60).padStart(2, '0');
+
+    // 更新桌面端
+    const dt = document.getElementById('desktopCountdown');
+    if (dt) {
+      const hEl = dt.querySelector('.hours');
+      const mEl = dt.querySelector('.minutes');
+      const sEl = dt.querySelector('.seconds');
+      if (hEl) hEl.textContent = h;
+      if (mEl) mEl.textContent = m;
+      if (sEl) sEl.textContent = s;
+    }
+
+    // 更新移动端
+    const mb = document.getElementById('mobileCountdown');
+    if (mb) {
+      const hEl = mb.querySelector('.hours');
+      const mEl = mb.querySelector('.minutes');
+      const sEl = mb.querySelector('.seconds');
+      if (hEl) hEl.textContent = h;
+      if (mEl) mEl.textContent = m;
+      if (sEl) sEl.textContent = s;
+    }
+
+    totalSeconds--;
+  }
+
+  update();
+  setInterval(update, 1000);
+}
+
 // Reviews Slider - 桌面端（显示3张，每次滑动1张）
 function initReviewsSlider() {
   const slider = document.querySelector('.reviews-slider');
@@ -4454,6 +4557,7 @@ function initMobileReviewsSlider() {
 
 // 页面加载后初始化
 document.addEventListener('DOMContentLoaded', () => {
+  initFlashSalesCountdown();
   initReviewsSlider();
   initMobileReviewsSlider();
 
