@@ -28,6 +28,31 @@ async function getACFFields() {
   }
 }
 
+// 解析 ACF 图片字段（兼容 Image URL, Image Array, Image ID）
+async function resolveImageUrl(imageField: any): Promise<string> {
+  if (!imageField) return '';
+  if (typeof imageField === 'string' && (imageField.startsWith('http://') || imageField.startsWith('https://'))) {
+    return imageField;
+  }
+  if (typeof imageField === 'object' && imageField.url) {
+    return imageField.url;
+  }
+  const mediaId = Number(imageField);
+  if (!isNaN(mediaId) && mediaId > 0) {
+    try {
+      const WC_STORE_URL = import.meta.env.WC_STORE_URL || '';
+      const res = await fetch(`${WC_STORE_URL}/wp-json/wp/v2/media/${mediaId}`);
+      if (res.ok) {
+        const media = await res.json();
+        return media.source_url || media.guid?.rendered || '';
+      }
+    } catch (err) {
+      console.error(`解析媒体 ID ${mediaId} 失败:`, err);
+    }
+  }
+  return '';
+}
+
 // 从产品 ID 获取 WooCommerce 产品数据
 async function getProductData(productId: number | null) {
   if (!productId) return null;
@@ -42,6 +67,9 @@ async function getProductData(productId: number | null) {
 
 // 获取 ACF 数据
 const acfData = await getACFFields();
+
+// 解析 Hero 图像真实链接（处理 ID: 59281 等情况）
+const resolvedHeroImage = await resolveImageUrl(acfData?.hero_image);
 
 // ========================================
 // 数据层配置（ACF 数据 + Fallback 默认值）
@@ -71,7 +99,7 @@ const heroData = {
     { title: 'REACH CERTIFIED', subtitle: 'Conflict-Free Pavé' },
     { title: '48 HRS', subtitle: 'Vault Reserve' }
   ],
-  heroImage: acfData?.hero_image || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBOIISihhg43B-qyenK6ep4LY75g_sJHlsWYufPQcSO_PgFudufFmhRDp2NnPe0nmdZ6r_x8KwEYgocFjWrh0NzWrBtNL9masvHFYgFUro99nt-oyatcFc69315_0naNwLRfs7yb9oq9V_Qu_ZE9dg5TeS0Jq7H6PfIHf-iDMe8cA6UNklRHjBQtlKqpkvgkGdCvjARXqhVe5BzQfORzdAcoKb8hPSEKqD36m9oYHXDOyeV266RM48S0Q',
+  heroImage: resolvedHeroImage || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBOIISihhg43B-qyenK6ep4LY75g_sJHlsWYufPQcSO_PgFudufFmhRDp2NnPe0nmdZ6r_x8KwEYgocFjWrh0NzWrBtNL9masvHFYgFUro99nt-oyatcFc69315_0naNwLRfs7yb9oq9V_Qu_ZE9dg5TeS0Jq7H6PfIHf-iDMe8cA6UNklRHjBQtlKqpkvgkGdCvjARXqhVe5BzQfORzdAcoKb8hPSEKqD36m9oYHXDOyeV266RM48S0Q',
   productPin: {
     top: acfData?.hero_product_pin?.top || '36%',
     right: acfData?.hero_product_pin?.right || '32%',
@@ -431,7 +459,6 @@ const ctaData = {
       <!-- 桌面端 4 列（共 2 行 8 个），移动端 2 列（共 4 行 8 个） -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {(() => {
-          // 优先取 ACF 产品，若不足 8 个则自动由 fallback 补足到 8 个
           const displayProducts = favoritesData.products.length >= 8
             ? favoritesData.products.slice(0, 8)
             : favoritesData.products.length > 0
