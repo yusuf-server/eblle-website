@@ -1,0 +1,1559 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CartDrawer from '../components/CartDrawer.astro';
+
+// 1. 统计数据
+const stats = [
+  { target: 4000, suffix: ' m²', label: 'Floor Space' },
+  { target: 88,  label: 'Employees' },
+  { target: 80, prefix: '$', suffix: ' M', label: 'Annual Export Revenue' },
+  { target: 70, suffix: '%', label: 'North America Market' }
+];
+
+// 2. 证书数据（固定展示）
+const certificates = [
+  { title: 'ISO 9001 Quality System', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774417906666.webp' },
+  { title: 'SGS Environmental Certificate', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418086050.webp' },
+  { title: 'Sedex SMETA Compliance', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418164822.webp' },
+  { title: 'Business Social Compliance', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418308964.webp' },
+  { title: 'RJC Code of Practices', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418381688.webp' },
+  { title: 'Conflict-Free Minerals', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418474420.webp' }
+];
+
+// 3. REACH 报告数据（无缝头尾相连滚动）
+const reachReports = [
+  { title: 'Nickel Release Test Pass', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534625267.webp' },
+  { title: 'Lead Content Detection Pass', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534744118.webp' },
+  { title: 'Cadmium Total Assay Pass', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534814137.webp' },
+  { title: 'Phthalates Screening', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534881435.webp' },
+  { title: 'PVD Durability Stress Test', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534942647.webp' },
+];
+
+// 4. 展会 5 张图（全屏纯图无文字展示）
+const exhibitionImages = [
+  'https://ebbellejewelry.com/wp-content/uploads/2026/07/beauty_1772944925060-scaled.webp',
+  'https://ebbellejewelry.com/wp-content/uploads/2026/07/beauty_1772864607113-scaled.webp',
+  'https://ebbellejewelry.com/wp-content/uploads/2026/07/beauty_1772862229285-scaled.webp',
+  'https://ebbellejewelry.com/wp-content/uploads/2026/07/beauty_1772790933534-scaled.webp',
+  'https://ebbellejewelry.com/wp-content/uploads/2026/07/beauty_1772789410329-scaled.webp'
+];
+
+// 5. 工艺流程步骤（按照截图 1~9 顺序与文本排版精准更新）
+const craftSteps = [
+  {
+    step: '01',
+    title: 'Our Craftsmanship',
+    lead: 'We maintain a dedicated procurement team that can quickly locate a wide variety of jewelry materials — including natural gemstones, lab-grown stones, freshwater pearls, cords, and metal components.',
+    secondaryLead: 'This means you have the freedom to bring almost any design idea to life. No need to worry about where to find specific materials. We’ll handle the search, so you can focus on being creative.',
+    points: [],
+    image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/Materials-Sourcing-scaled.webp'
+  },
+  {
+    step: '02',
+    title: 'Design & Digital Engineering',
+    lead: 'Every custom order starts as a concept. Our goal is to turn that idea into a manufacturable blueprint.',
+    points: [
+      {
+        label: '3D Modeling & Technical Detailing',
+        text: 'Our CAD engineers use specialized software to build an exact 3D model of your jewelry. We define every dimension: inner diameter, thickness, clasp type, and surface texture. This digital file serves as the complete technical specification for the entire production.'
+      }
+    ],
+    image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/Design-Digital-Engineering-scaled.webp'
+  },
+  {
+    step: '03',
+    title: 'Prototype & Mold Creation',
+    lead: 'Once the 3D model is approved, we create a physical prototype. We use a high-resolution 3D printer to produce a wax pattern. For repeat orders, we create a durable silicone or metal mold from the wax master. This mold ensures every future cast piece is identical to the prototype.',
+    points: [],
+    image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/Prototype-Mold-Creation.webp'
+  },
+  {
+    step: '04',
+    title: 'Lost-Wax Casting — The Core Process',
+    lead: 'This centuries-old method allows us to mass-produce complex metal shapes with incredible accuracy.',
+    points: [
+      {
+        label: 'Wax Tree Assembly',
+        text: 'Multiple wax patterns are attached to a central wax rod, forming a “wax tree” for efficient batch casting.'
+      },
+      {
+        label: 'Investment Coating',
+        text: 'The wax tree is dipped into ceramic slurry and sand, creating a heat-resistant shell.'
+      },
+      {
+        label: 'Burnout & Dewaxing',
+        text: 'The shell is placed in a kiln. The wax melts and flows out, leaving a perfect hollow cavity.'
+      },
+      {
+        label: 'Metal Pouring',
+        text: 'Molten metal is poured into the hot cavity. After cooling, the ceramic shell is broken away, revealing a cast metal tree.'
+      }
+    ],
+    image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/Lost-Wax-Casting-%E2%80%94-The-Core-Process-scaled.webp'
+  },
+  {
+    step: '05',
+    title: 'Raw Processing & Initial Shaping',
+    points: [
+      {
+        label: 'De-spruing & Cutting',
+        text: 'Workers snip each rough piece from the metal tree, removing “sprues.”'
+      },
+      {
+        label: 'Filing & Smoothing',
+        text: 'Artisans use hand files and rotary tools to remove sprues, flatten surfaces, and correct minor issues.'
+      },
+      {
+        label: 'Rough Sanding & Grinding',
+        text: 'Industrial sanders remove casting textures, creating a smooth foundation for high-gloss finishing.'
+      }
+    ],
+    image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/Raw-Processing-Initial-Shaping-scaled.webp'
+  },
+  {
+    step: '06',
+    title: 'Assembly & Joining',
+    points: [
+      {
+        label: 'Laser & Hand Soldering',
+        text: 'Laser welding for delicate parts like earring posts; hand soldering for stronger joins like clasps and hinges.'
+      },
+      {
+        label: 'Component Fitting',
+        text: 'Technicians manually assemble moving parts — securing clasps, adjusting safety catches, and installing jump rings.'
+      }
+    ],
+    image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/Assembly-Joining.webp'
+  },
+  {
+    step: '07',
+    title: 'Surface Finishing & Coloration',
+    points: [
+      {
+        label: 'High-Polishing',
+        text: 'Automated and hand polishing for mirror finish or matte texture.'
+      },
+      {
+        label: 'Electroplating',
+        text: 'Bonds a thin layer of 18K gold, silver, or rhodium to enhance color and prevent tarnish.'
+      },
+      {
+        label: 'Color Filling (Enamel & Epoxy)',
+        text: 'Colored resin injected into recessed areas, then baked for a durable, glossy finish.'
+      }
+    ],
+    image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/Surface-Finishing-Coloration.webp'
+  },
+  {
+    step: '08',
+    title: 'Stone Setting & Final Assembly',
+    points: [
+      {
+        label: 'Stone Mounting',
+        text: 'Precision setting of CZ, crystals, or synthetic gems using Prong, Bezel, or Micro-Pavé techniques.'
+      },
+      {
+        label: 'Ring Sizing & Calibration',
+        text: 'Every ring is measured against standard US sizes; pieces off by 0.5mm are rejected.'
+      },
+      {
+        label: 'Chain & Component Assembly',
+        text: 'Final hand assembly — attaching pendants to chains, clasps to necklaces, and assembling multi-part earrings.'
+      }
+    ],
+    image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/6cec4830-c86e-4777-bb45-9baef2ac897a.webp'
+  },
+  {
+    step: '09',
+    title: 'Cleaning, Inspection & Packaging',
+    points: [
+      {
+        label: 'Ultrasonic Cleaning',
+        text: 'High-frequency sound waves remove polishing compound, oil, and dust.'
+      },
+      {
+        label: 'Multi-Point QC',
+        text: 'Every piece is inspected for plating consistency, stone security, solder strength, and symmetry. Defective pieces are rejected.'
+      },
+      {
+        label: 'Sorting & Packaging',
+        text: 'Approved pieces are sorted by SKU and packed according to your requirements — velvet pouches, custom boxes, or bulk orders.'
+      }
+    ],
+    image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/Cleaning-Inspection-Packaging-scaled.webp'
+  }
+];
+
+// 6. 常见问题
+const faqs = [
+  { 
+    q: `HOW'S YOUR PRICE AND QUALITY?`, 
+    a: `Our price is mid-range, but our quality is top-notch. Many regular customers sell our products really well.` 
+  },
+  { 
+    q: `WHAT MATERIALS AND SAFETY STANDARDS DO YOU FOLLOW?`, 
+    a: `We use 316L stainless steel with 18K gold PVD plating. It’s waterproof, tarnish-free, and hypoallergenic. All products meet EU REACH and US CA65 safety standards.` 
+  },
+  { 
+    q: `WHAT'S YOUR MOQ FOR CUSTOM ORDERS?`, 
+    a: `Full custom design: 100 pieces. Just changing the color: 50 pieces. We also offer low MOQ based on our existing molds. We can add logos, do laser engraving, change colors, or add charms for your DIY ideas.` 
+  },
+  { 
+    q: `HOW FAST IS SHIPPING AND DELIVERY?`, 
+    a: `Dispatch: Most items are ready to ship within 24 hours. Delivery: Usually takes 5 to 25 days, depending on the shipping method you choose.` 
+  },
+  { 
+    q: `WHAT IF SOME ITEMS ARE OUT OF STOCK?`, 
+    a: `We can: Ship what’s ready first, Refund the out-of-stock items, or Send them together with your next order.` 
+  },
+  { 
+    q: `WHAT'S YOUR MONTHLY PRODUCTION CAPACITY?`, 
+    a: `We produce 500,000 pieces of stainless steel jewelry per month. That means we can handle bulk orders and keep up with peak seasons.` 
+  },
+  { 
+    q: `WHAT PAYMENT METHODS DO YOU ACCEPT FOR LARGE ORDERS?`, 
+    a: `For single orders under $2,000, full payment is required. You can pay via TT, credit card, Western Union, or other convenient methods. For orders over $2,000, we require a 50% deposit, with the remaining 50% due before shipment. Additionally, for orders over $1,000, we offer OA 60 days (Open Account with 60-day payment terms).` 
+  }
+];
+---
+
+<Layout title="Factory & Craftsmanship - E.B.Belle">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" slot="head" />
+
+  <Header />
+
+  <main class="factory-page">
+    <!-- 1. HERO SECTION -->
+    <section class="factory-hero">
+      <div class="hero-bg-wrap">
+        <img src="https://ebbellejewelry.com/wp-content/uploads/2026/05/IMG_344211-scaled.webp" alt="E.B.Belle Factory Workshop" class="hero-bg" />
+        <div class="hero-overlay"></div>
+      </div>
+      <div class="hero-content">
+        
+        <h1 class="hero-title">Behind the Scenes at E.B.belle</h1>
+        <p class="hero-desc">Over 4,000 m² modern high-precision jewelry atelier delivering OEM/ODM excellence to prestigious brands worldwide.</p>
+        <a href="#craft-steps" class="hero-cta-btn">Explore Craftsmanship</a>
+      </div>
+    </section>
+
+    <!-- 2. STATS SECTION (页面加载数字逐步递增动画) -->
+    <section class="factory-stats-section">
+      <div class="container-fluid">
+        <div class="stats-grid">
+          {stats.map((s) => (
+            <div class="stat-card">
+              <div class="stat-number">
+                {s.prefix && <span class="prefix">{s.prefix}</span>}
+                <span class="counter" data-target={s.target}>0</span>
+                {s.suffix && <span class="suffix">{s.suffix}</span>}
+              </div>
+              <p class="stat-label">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. QUALITY CONTROL & CUSTOMIZATION PILLARS -->
+    <section class="pillars-section">
+      <div class="container">
+        <h2 class="section-title">Quality Control & Customization</h2>
+        <div class="pillars-grid">
+          <div class="pillar-box">
+            <h3><i class="fa-solid fa-shield-halved"></i> QC Process</h3>
+            <ul>
+              <li><i class="fa-solid fa-check"></i>  6 dedicated QC inspectors</li>
+              <li><i class="fa-solid fa-check"></i> 5 Years of QC Experience</li>
+              <li><i class="fa-solid fa-check"></i> Raw material → In-production → Pre-packing → Post-packing checks</li>
+              <li><i class="fa-solid fa-check"></i> RoHS & REACH certified</li>
+              <li><i class="fa-solid fa-check"></i> Quality Assured: Every stone is perfectly bonded with precision adhesive for a flawless finish.</li>
+            </ul>
+          </div>
+          <div class="pillar-box">
+            <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Customization Options</h3>
+            <ul>
+              <li><i class="fa-solid fa-check"></i>  Logo, label, packaging, color, size, material, and graphics.</li>
+              <li><i class="fa-solid fa-check"></i> Sample-based or graphic-based design.</li>
+              <li><i class="fa-solid fa-check"></i> 1-year warranty on all products.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. CERTIFICATES & QUALITY STANDARDS (改和Exhibitions同等宽度，满宽平铺展示) -->
+    <section class="certificates-static-section">
+      <div class="container-fluid">
+        <div class="section-header-center">
+          <h2 class="section-title">Certificates & Quality Standards</h2>
+          <p class="section-desc">Our management systems and workplace standards are verified by world-leading inspection, verification, testing, and certification bodies.</p>
+        </div>
+        <div class="certificates-grid">
+          {certificates.map((item) => (
+            <div class="cert-card lightbox-trigger" data-title={item.title} data-src={item.image}>
+              <div class="cert-img-wrap">
+                <img src={item.image} alt={item.title} loading="lazy" />
+                <div class="zoom-hint"><i class="fa-solid fa-magnifying-glass-plus"></i> View Certificate</div>
+              </div>
+              <p class="cert-caption">{item.title}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. REACH & HEAVY METAL TEST REPORTS (双循环绝对连续滚动，杜绝尾部白边断开) -->
+    <section class="marquee-section bg-alt">
+      <div class="container-fluid">
+        <div class="section-header-center">
+          <h2 class="section-title">REACH & Heavy Metal Test Reports</h2>
+          <p class="section-desc">Zero harmful substances. Fully compliant with EU REACH Regulation (EC) No 1907/2006 and US California Proposition 65.</p>
+        </div>
+      </div>
+      <div class="continuous-marquee-container">
+        <div class="continuous-marquee-rail">
+          <!-- 跑马灯A组 -->
+          <div class="report-group-flex">
+            {[...reachReports, ...reachReports].map((item) => (
+              <div class="report-card lightbox-trigger" data-title={item.title} data-src={item.image}>
+                <div class="img-wrap">
+                  <img src={item.image} alt={item.title} loading="lazy" />
+                  <div class="zoom-hint"><i class="fa-solid fa-magnifying-glass-plus"></i> View Report</div>
+                </div>
+                <p class="card-caption">{item.title}</p>
+              </div>
+            ))}
+          </div>
+          <!-- 跑马灯B组（与A组完全一致，形成首尾闭环） -->
+          <div class="report-group-flex" aria-hidden="true">
+            {[...reachReports, ...reachReports].map((item) => (
+              <div class="report-card lightbox-trigger" data-title={item.title} data-src={item.image}>
+                <div class="img-wrap">
+                  <img src={item.image} alt={item.title} loading="lazy" />
+                  <div class="zoom-hint"><i class="fa-solid fa-magnifying-glass-plus"></i> View Report</div>
+                </div>
+                <p class="card-caption">{item.title}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. MEET US ON EXHIBITIONS (全屏满宽，纯图片无文字，桌面端5图并排，移动端一张半) -->
+    <section class="exhibitions-fullbleed-section">
+      <div class="exhibitions-title-area">
+        <h2 class="section-title">Meet Us On Exhibitions</h2>
+        <p class="section-desc">Connecting with over 1,200 fine jewelry brand owners and international designers across global trade fairs.</p>
+      </div>
+      <div class="exhibition-fullbleed-strip">
+        {exhibitionImages.map((imgUrl) => (
+          <div class="exhibition-pure-img-box">
+            <img src={imgUrl} alt="E.B.Belle Exhibition" loading="lazy" />
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- 7. OUR CRAFTSMANSHIP (全屏大宽屏设计 + 滚动到视口图文两侧进入动画) -->
+    <section class="craftsmanship-fullwidth-section" id="craft-steps">
+      <div class="container-wide">
+        <div class="section-header-center">
+          <h2 class="section-title">Our Craftsmanship</h2>
+          <p class="section-desc">From raw ingots to fine luxury pieces — precision industrial automation seamlessly fused with master artisanal finishing.</p>
+        </div>
+
+        <div class="steps-flow-wide">
+          {craftSteps.map((item, index) => {
+            const isReversed = index % 2 !== 0;
+            return (
+              <div class={`step-row-wide ${isReversed ? 'row-reversed' : ''} scroll-reveal-wrap`}>
+                <div class={`step-col-img reveal-from-${isReversed ? 'right' : 'left'}`}>
+                  <div class="craft-img-box">
+                    <img src={item.image} alt={item.title} loading="lazy" />
+                    <span class="step-badge">{item.step}</span>
+                  </div>
+                </div>
+                <div class={`step-col-text reveal-from-${isReversed ? 'left' : 'right'}`}>
+                  <span class="step-num-text">PROCESS {item.step}</span>
+                  <h3 class="step-title">{item.title}</h3>
+                  <div class="step-text-body">
+                    {item.lead && <p class="step-lead-paragraph">{item.lead}</p>}
+                    {item.secondaryLead && <p class="step-lead-paragraph">{item.secondaryLead}</p>}
+                    {item.points && item.points.length > 0 && (
+                      <div class="step-bullet-group">
+                        {item.points.map((pt) => (
+                          <p class="step-bullet-line">
+                            <strong>{pt.label}:</strong> {pt.text}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. FAQ ACCORDION -->
+    <section class="factory-faq-section">
+      <div class="container">
+        <h2 class="section-title">THINGS YOU MIGHT WANT TO KNOW</h2>
+        <div class="faq-accordion-list">
+          {faqs.map((faq) => (
+            <div class="faq-acc-item">
+              <button type="button" class="faq-acc-header">
+                <span>{faq.q}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="faq-acc-content">
+                <p>{faq.a}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. BOTTOM ATELIER CONTACT CTA -->
+    <section class="atelier-cta-section">
+      <div class="container">
+        <div class="cta-inner-box">
+          <span class="cta-kicker">COLLABORATE WITH E.B.BELLE</span>
+          <h2>Ready to start your custom jewelry line?</h2>
+          <p>Get in touch with our manufacturing team for a free consultation.</p>
+          <div class="cta-btns">
+            <a href="mailto:contact@ebbellejewelry.com" class="btn-primary">Request a Quote</a>
+            <a href="https://api.whatsapp.com/send/?phone=8618458005614&text=I+am+from+E.B.belle+website.+I+am+interested+in+your+wholesale+business+or+OEM%2FODM&type=phone_number&app_absent=0" class="btn-secondary">Chat on WhatsApp</a>
+          </div>
+          <span class="cta1-kicker">📧 sales01@ebbellejewelry.com  |  📍 Yiwu, China</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10. LIGHTBOX 弹窗组件 -->
+    <div class="lightbox-overlay" id="lightboxModal" aria-hidden="true">
+      <div class="lightbox-dialog">
+        <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Close Lightbox">&times;</button>
+        <div class="lightbox-body">
+          <img src="" alt="" id="lightboxImg" />
+          <p class="lightbox-caption" id="lightboxCaption"></p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  /* 全局基础定义与严格防溢出 */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  :root, html, body {
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
+  .factory-page {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    background: #ffffff;
+    color: #1a1a1a;
+    position: relative;
+  }
+  .container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  .container-wide {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+  .container-fluid {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 24px;
+    margin: 0 auto;
+  }
+
+  .section-header-center {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto 36px;
+    padding: 0 10px;
+  }
+  .section-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 28px;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    color: #111;
+    word-break: break-word;
+  }
+  .section-desc {
+    font-size: 13.5px;
+    color: #666;
+    text-align: center;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* 1. HERO SECTION */
+  .factory-hero {
+    position: relative;
+    height: 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+    overflow: hidden;
+    width: 100%;
+  }
+  .hero-bg-wrap {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .hero-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.03);
+    animation: zoomHero 18s ease-in-out infinite alternate;
+  }
+  @keyframes zoomHero {
+    from { transform: scale(1.02); }
+    to { transform: scale(1.08); }
+  }
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(15,15,15,0.65) 0%, rgba(15,15,15,0.75) 100%);
+  }
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 0 20px;
+    max-width: 800px;
+  }
+  .hero-subtitle {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #d4a04d;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 12px;
+  }
+  .hero-title {
+    font-family: 'Cinzel', 'Bodoni Moda', serif;
+    font-size: 40px;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .hero-desc {
+    font-size: 14px;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .hero-cta-btn {
+    display: inline-block;
+    background: #d4a04d;
+    color: #fff;
+    padding: 12px 32px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-decoration: none;
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+  .hero-cta-btn:hover {
+    background: #b8822e;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(212, 160, 77, 0.3);
+  }
+
+  /* 2. STATS SECTION */
+  .factory-stats-section {
+    background: #fafafa;
+    border-bottom: 1px solid #ebebeb;
+    padding: 40px 0;
+    width: 100%;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    text-align: center;
+    width: 100%;
+  }
+  .stat-card {
+    padding: 10px;
+  }
+  .stat-number {
+    font-family: 'Cinzel', serif;
+    font-size: 38px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+  .stat-number .prefix,
+  .stat-number .suffix {
+    font-family: 'Cinzel', serif;
+    color: #1a1a1a;
+    font-weight: 700;
+    font-size: 38px;
+  }
+  .stat-label {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #777;
+    font-weight: 600;
+  }
+
+  /* 3. QUALITY CONTROL & CUSTOMIZATION PILLARS */
+  .pillars-section {
+    padding: 60px 0;
+    background: #fff;
+    width: 100%;
+  }
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 32px;
+  }
+  .pillar-box {
+    background: #fdfdfd;
+    border: 1px solid #eaeaea;
+    border-radius: 6px;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    transition: border-color 0.3s;
+  }
+  .pillar-box:hover {
+    border-color: #d4a04d;
+  }
+  .pillar-box h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #111;
+  }
+  .pillar-box h3 i {
+    color: #d4a04d;
+    font-size: 20px;
+  }
+  .pillar-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .pillar-box li {
+    font-size: 13px;
+    color: #555;
+    padding: 8px 0;
+    border-bottom: 1px dashed #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pillar-box li:last-child { border-bottom: none; }
+  .pillar-box li i {
+    color: #2e7d32;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* 4. CERTIFICATES 固定展示网格（满宽对齐） */
+  .certificates-static-section {
+    padding: 60px 0;
+    background: #fff;
+    width: 100%;
+  }
+  .certificates-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+    width: 100%;
+  }
+  .cert-card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .cert-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  }
+  .cert-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    background: #fbfbfb;
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cert-img-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.4s;
+  }
+  .cert-card:hover .cert-img-wrap img {
+    transform: scale(1.05);
+  }
+  .cert-caption {
+    font-size: 11px;
+    font-weight: 600;
+    color: #444;
+    margin-top: 10px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 5. REACH 报告无缝连续跑马灯 */
+  .marquee-section {
+    padding: 60px 0;
+    overflow: hidden;
+    width: 100%;
+  }
+  .marquee-section.bg-alt {
+    background: #fafafa;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .continuous-marquee-container {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    padding: 10px 0;
+    contain: paint;
+    mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+  }
+  .continuous-marquee-rail {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+    animation: marqueeSlideContinuous 40s linear infinite;
+  }
+  .continuous-marquee-rail:hover {
+    animation-play-state: paused;
+  }
+  .report-group-flex {
+    display: flex;
+    gap: 18px;
+    padding-right: 18px;
+    flex-shrink: 0;
+  }
+  @keyframes marqueeSlideContinuous {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-50%, 0, 0); }
+  }
+  .report-card {
+    flex-shrink: 0;
+    width: 210px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .report-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  }
+  .report-card .img-wrap {
+    position: relative;
+    width: 100%;
+    height: 250px;
+    background: #fbfbfb;
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .report-card .img-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.4s;
+  }
+  .report-card:hover .img-wrap img {
+    transform: scale(1.05);
+  }
+  .zoom-hint {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .cert-card:hover .zoom-hint,
+  .report-card:hover .zoom-hint {
+    opacity: 1;
+  }
+  .card-caption {
+    font-size: 11px;
+    font-weight: 600;
+    color: #444;
+    margin-top: 10px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 6. MEET US ON EXHIBITIONS（严谨防溢出的 100% 满宽纯图展示） */
+  .exhibitions-fullbleed-section {
+    padding: 70px 0 60px;
+    background: #fff;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .exhibitions-title-area {
+    max-width: 800px;
+    margin: 0 auto 36px;
+    padding: 0 20px;
+    text-align: center;
+  }
+  .exhibition-fullbleed-strip {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+  }
+  .exhibition-pure-img-box {
+    flex: 1;
+    min-width: 0;
+    height: 290px;
+    overflow: hidden;
+    background: #f5f5f5;
+  }
+  .exhibition-pure-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.6s ease;
+  }
+  .exhibition-pure-img-box:hover img {
+    transform: scale(1.07);
+  }
+
+  /* 7. OUR CRAFTSMANSHIP（文本高质感排版） */
+  .craftsmanship-fullwidth-section {
+    padding: 80px 0;
+    background: #fafafa;
+    width: 100%;
+  }
+  .steps-flow-wide {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    margin-top: 36px;
+  }
+  .step-row-wide {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    background: #fff;
+    border: 1px solid #ebebeb;
+    border-radius: 10px;
+    padding: 36px 48px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.02);
+    overflow: hidden;
+  }
+  .step-row-wide.row-reversed {
+    flex-direction: row-reverse;
+  }
+  .step-col-img {
+    flex: 1.2;
+    min-width: 0;
+  }
+  .craft-img-box {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+  .craft-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s;
+  }
+  .step-row-wide:hover .craft-img-box img {
+    transform: scale(1.04);
+  }
+  .step-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: #111;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    border-radius: 4px;
+  }
+  .step-col-text {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 20px;
+  }
+  .step-num-text {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #d4a04d;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 10px;
+  }
+  .step-title {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: #1a3038;
+    margin-bottom: 22px;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+  .step-text-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .step-lead-paragraph {
+    font-size: 15px;
+    color: #3e5058;
+    line-height: 1.65;
+    margin: 0;
+    font-weight: 400;
+  }
+  .step-bullet-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .step-bullet-line {
+    font-size: 15px;
+    color: #3e5058;
+    line-height: 1.65;
+    margin: 0;
+  }
+  .step-bullet-line strong {
+    font-weight: 700;
+    color: #1a3038;
+    margin-right: 2px;
+  }
+
+  /* 视口双侧滑入动画 */
+  .reveal-from-left {
+    opacity: 0;
+    transform: translateX(-50px);
+    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal-from-right {
+    opacity: 0;
+    transform: translateX(50px);
+    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .scroll-reveal-wrap.is-visible .reveal-from-left,
+  .scroll-reveal-wrap.is-visible .reveal-from-right {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* 8. FAQ ACCORDION */
+  .factory-faq-section {
+    padding: 60px 0;
+    background: #fff;
+    width: 100%;
+  }
+  .faq-accordion-list {
+    max-width: 900px;
+    margin: 30px auto 0;
+    border-top: 1px solid #e8e8e8;
+  }
+  .faq-acc-item {
+    border-bottom: 1px solid #e8e8e8;
+  }
+  .faq-acc-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 18px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .faq-acc-header:hover { color: #d4a04d; }
+  .faq-acc-header i {
+    font-size: 12px;
+    color: #888;
+    transition: transform 0.3s;
+    flex-shrink: 0;
+    margin-left: 10px;
+  }
+  .faq-acc-item.active .faq-acc-header i {
+    transform: rotate(180deg);
+  }
+  .faq-acc-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+  }
+  .faq-acc-content p {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.7;
+    padding-bottom: 18px;
+    margin: 0;
+  }
+
+  /* 9. ATELIER CTA */
+  .atelier-cta-section {
+    padding: 60px 0 80px;
+    background: #fff;
+    width: 100%;
+  }
+  .cta-inner-box {
+    background: #fdfaf6;
+    border: 2px dashed rgba(212, 160, 77, 0.4);
+    border-radius: 8px;
+    padding: 50px 30px;
+    text-align: center;
+    max-width: 850px;
+    margin: 0 auto;
+  }
+  .cta-kicker {
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    color: #d4a04d;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .cta1-kicker {
+    font-size: 13px;
+    letter-spacing: 2.5px;
+    color: #d4a04d;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: block;
+    margin-top: 12px;
+  }
+  .cta-inner-box h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .cta-inner-box p {
+    font-size: 13.5px;
+    color: #666;
+    max-width: 580px;
+    margin: 0 auto 24px;
+    line-height: 1.6;
+  }
+  .cta-btns {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .btn-primary, .btn-secondary {
+    padding: 12px 28px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 3px;
+    text-decoration: none;
+    transition: all 0.25s;
+  }
+  .btn-primary {
+    background: #111;
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background: #d4a04d;
+  }
+  .btn-secondary {
+    background: #fff;
+    color: #333;
+    border: 1px solid #dcdcdc;
+  }
+  .btn-secondary:hover {
+    background: #f5f5f5;
+  }
+
+  /* 10. LIGHTBOX 弹窗 */
+  .lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(4px);
+  }
+  .lightbox-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .lightbox-dialog {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .lightbox-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 36px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .lightbox-body {
+    background: #fff;
+    padding: 12px;
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .lightbox-body img {
+    max-width: 85vw;
+    max-height: 75vh;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+  .lightbox-caption {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #222;
+    text-align: center;
+  }
+
+  /* ===== 移动端响应式全面强化 ===== */
+  @media (max-width: 1024px) {
+    .certificates-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .container-wide {
+      padding: 0 20px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .container,
+    .container-fluid,
+    .container-wide {
+      padding: 0 16px !important;
+      max-width: 100% !important;
+    }
+
+    /* Hero */
+    .factory-hero {
+      height: 380px;
+    }
+    .hero-title {
+      font-size: 26px;
+    }
+    .hero-desc {
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .hero-cta-btn {
+      padding: 10px 24px;
+      font-size: 11px;
+    }
+
+    /* Stats 数字卡片 */
+    .factory-stats-section {
+      padding: 24px 0;
+    }
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .stat-card {
+      padding: 6px 4px;
+    }
+    .stat-number {
+      font-size: 26px;
+    }
+    .stat-number .prefix,
+    .stat-number .suffix {
+      font-size: 18px;
+    }
+    .stat-label {
+      font-size: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Pillars */
+    .pillars-section {
+      padding: 36px 0;
+    }
+    .section-title {
+      font-size: 22px;
+    }
+    .section-desc {
+      font-size: 12px;
+      margin-bottom: 24px;
+    }
+    .pillars-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .pillar-box {
+      padding: 20px 16px;
+    }
+    .pillar-box h3 {
+      font-size: 16px;
+    }
+    .pillar-box li {
+      font-size: 12px;
+    }
+
+    /* Certificates */
+    .certificates-static-section {
+      padding: 36px 0;
+    }
+    .certificates-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .cert-img-wrap {
+      height: 180px;
+    }
+
+    /* REACH 跑马灯移动端优化 */
+    .marquee-section {
+      padding: 36px 0;
+    }
+    .report-card {
+      width: 160px;
+      padding: 8px;
+    }
+    .report-card .img-wrap {
+      height: 190px;
+    }
+
+    /* Exhibitions 一张半滑屏，严防右侧撑爆 */
+    .exhibitions-fullbleed-section {
+      padding: 36px 0;
+    }
+    .exhibitions-title-area {
+      padding: 0 16px;
+      margin-bottom: 20px;
+    }
+    .exhibition-fullbleed-strip {
+      display: flex;
+      gap: 10px;
+      padding: 0 16px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .exhibition-fullbleed-strip::-webkit-scrollbar {
+      display: none;
+    }
+    .exhibition-pure-img-box {
+      flex: 0 0 75%;
+      height: 200px;
+      border-radius: 6px;
+      scroll-snap-align: start;
+    }
+
+    /* Craftsmanship */
+    .craftsmanship-fullwidth-section {
+      padding: 40px 0;
+    }
+    .steps-flow-wide {
+      gap: 24px;
+      margin-top: 24px;
+    }
+    .step-row-wide,
+    .step-row-wide.row-reversed {
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px;
+    }
+    .craft-img-box {
+      height: 220px;
+    }
+    .step-col-text {
+      padding: 0;
+    }
+    .step-title {
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+    .step-lead-paragraph,
+    .step-bullet-line {
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+    .step-text-body,
+    .step-bullet-group {
+      gap: 12px;
+    }
+
+    /* 移动端入场位移幅度收紧，避免横向抖动撑破 */
+    .reveal-from-left {
+      transform: translateY(20px);
+    }
+    .reveal-from-right {
+      transform: translateY(20px);
+    }
+    .scroll-reveal-wrap.is-visible .reveal-from-left,
+    .scroll-reveal-wrap.is-visible .reveal-from-right {
+      transform: translateY(0);
+    }
+
+    /* FAQ */
+    .factory-faq-section {
+      padding: 36px 0;
+    }
+    .faq-acc-header {
+      font-size: 13px;
+      padding: 14px 0;
+    }
+
+    /* CTA */
+    .atelier-cta-section {
+      padding: 40px 0;
+    }
+    .cta-inner-box {
+      padding: 24px 16px;
+    }
+    .cta-inner-box h2 {
+      font-size: 20px;
+    }
+    .btn-primary, .btn-secondary {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
+
+<script>
+  // 1. 数字递增滚动动画 (Counter Animation)
+  function initCounters() {
+    const counters = document.querySelectorAll('.counter');
+    const speed = 1200;
+
+    const observer = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const counterEl = entry.target as HTMLElement;
+          const target = +counterEl.getAttribute('data-target')!;
+          let startTime: number | null = null;
+
+          function updateCounter(currentTime: number) {
+            if (!startTime) startTime = currentTime;
+            const progress = Math.min((currentTime - startTime) / speed, 1);
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            counterEl.textContent = Math.floor(easeProgress * target).toLocaleString();
+
+            if (progress < 1) {
+              requestAnimationFrame(updateCounter);
+            } else {
+              counterEl.textContent = target.toLocaleString();
+            }
+          }
+
+          requestAnimationFrame(updateCounter);
+          obs.unobserve(counterEl);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    counters.forEach(c => observer.observe(c));
+  }
+
+  // 2. 工艺步骤图文从两侧进入视口动画 (Scroll Reveal)
+  function initScrollReveal() {
+    const revealWraps = document.querySelectorAll('.scroll-reveal-wrap');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+        } else {
+          entry.target.classList.remove('is-visible');
+        }
+      });
+    }, {
+      threshold: 0.15,
+      rootMargin: '0px 0px -30px 0px'
+    });
+
+    revealWraps.forEach(w => observer.observe(w));
+  }
+
+  // 3. Lightbox 弹窗查看证书与检测报告
+  function initLightbox() {
+    const modal = document.getElementById('lightboxModal');
+    const closeBtn = document.getElementById('lightboxClose');
+    const imgEl = document.getElementById('lightboxImg') as HTMLImageElement;
+    const captionEl = document.getElementById('lightboxCaption');
+    const triggers = document.querySelectorAll('.lightbox-trigger');
+
+    if (!modal || !closeBtn || !imgEl || !captionEl) return;
+
+    function openModal(src: string, title: string) {
+      imgEl.src = src;
+      imgEl.alt = title;
+      captionEl.textContent = title;
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      setTimeout(() => {
+        imgEl.src = '';
+      }, 200);
+    }
+
+    triggers.forEach(t => {
+      t.addEventListener('click', () => {
+        const src = t.getAttribute('data-src') || '';
+        const title = t.getAttribute('data-title') || '';
+        if (src) openModal(src, title);
+      });
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('active')) {
+        closeModal();
+      }
+    });
+  }
+
+  // 4. FAQ 手风琴展开与收起
+  function initFAQ() {
+    const items = document.querySelectorAll('.faq-acc-item');
+    items.forEach(item => {
+      const header = item.querySelector('.faq-acc-header');
+      const content = item.querySelector('.faq-acc-content') as HTMLElement;
+      if (!header || !content) return;
+
+      header.addEventListener('click', () => {
+        const isOpen = item.classList.contains('active');
+
+        // 关闭其他
+        items.forEach(other => {
+          if (other !== item && other.classList.contains('active')) {
+            other.classList.remove('active');
+            const otherContent = other.querySelector('.faq-acc-content') as HTMLElement;
+            if (otherContent) otherContent.style.maxHeight = '0';
+          }
+        });
+
+        if (isOpen) {
+          item.classList.remove('active');
+          content.style.maxHeight = '0';
+        } else {
+          item.classList.add('active');
+          content.style.maxHeight = content.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  // DOM 就绪后挂载
+  document.addEventListener('DOMContentLoaded', () => {
+    initCounters();
+    initScrollReveal();
+    initLightbox();
+    initFAQ();
+  });
+</script>
