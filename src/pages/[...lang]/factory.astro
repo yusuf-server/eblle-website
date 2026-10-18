@@ -1,34 +1,84 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import CartDrawer from '../components/CartDrawer.astro';
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 获取缓存和上下文
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'factory'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// 批量翻译 craftSteps
+async function translateCraftSteps(steps: any[]): Promise<any[]> {
+  if (currentLocale === 'en') return steps;
+
+  const translatedSteps = [];
+  for (const step of steps) {
+    const translatedStep = {
+      ...step,
+      title: await tr(step.title),
+      lead: step.lead ? await tr(step.lead) : undefined,
+      secondaryLead: step.secondaryLead ? await tr(step.secondaryLead) : undefined,
+      points: await Promise.all(
+        (step.points || []).map(async (point: any) => ({
+          label: await tr(point.label),
+          text: await tr(point.text)
+        }))
+      )
+    };
+    translatedSteps.push(translatedStep);
+  }
+  return translatedSteps;
+}
 
 // 1. 统计数据
 const stats = [
-  { target: 4000, suffix: ' m²', label: 'Floor Space' },
-  { target: 88,  label: 'Employees' },
-  { target: 80, prefix: '$', suffix: ' M', label: 'Annual Export Revenue' },
-  { target: 70, suffix: '%', label: 'North America Market' }
+  { target: 4000, suffix: ' m²', label: await tr('Floor Space') },
+  { target: 88, label: await tr('Employees') },
+  { target: 80, prefix: '$', suffix: ' M', label: await tr('Annual Export Revenue') },
+  { target: 70, suffix: '%', label: await tr('North America Market') }
 ];
 
 // 2. 证书数据（固定展示）
 const certificates = [
-  { title: 'ISO 9001 Quality System', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774417906666.webp' },
-  { title: 'SGS Environmental Certificate', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418086050.webp' },
-  { title: 'Sedex SMETA Compliance', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418164822.webp' },
-  { title: 'Business Social Compliance', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418308964.webp' },
-  { title: 'RJC Code of Practices', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418381688.webp' },
-  { title: 'Conflict-Free Minerals', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418474420.webp' }
+  { title: await tr('ISO 9001 Quality System'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774417906666.webp' },
+  { title: await tr('SGS Environmental Certificate'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418086050.webp' },
+  { title: await tr('Sedex SMETA Compliance'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418164822.webp' },
+  { title: await tr('Business Social Compliance'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418308964.webp' },
+  { title: await tr('RJC Code of Practices'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418381688.webp' },
+  { title: await tr('Conflict-Free Minerals'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774418474420.webp' }
 ];
 
 // 3. REACH 报告数据（无缝头尾相连滚动）
 const reachReports = [
-  { title: 'Nickel Release Test Pass', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534625267.webp' },
-  { title: 'Lead Content Detection Pass', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534744118.webp' },
-  { title: 'Cadmium Total Assay Pass', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534814137.webp' },
-  { title: 'Phthalates Screening', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534881435.webp' },
-  { title: 'PVD Durability Stress Test', image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534942647.webp' },
+  { title: await tr('Nickel Release Test Pass'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534625267.webp' },
+  { title: await tr('Lead Content Detection Pass'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534744118.webp' },
+  { title: await tr('Cadmium Total Assay Pass'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534814137.webp' },
+  { title: await tr('Phthalates Screening'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534881435.webp' },
+  { title: await tr('PVD Durability Stress Test'), image: 'https://ebbellejewelry.com/wp-content/uploads/2026/05/%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_17774534942647.webp' },
 ];
 
 // 4. 展会 5 张图（全屏纯图无文字展示）
@@ -186,37 +236,53 @@ const craftSteps = [
   }
 ];
 
+// 翻译工艺流程步骤
+const translatedCraftSteps = await translateCraftSteps(craftSteps);
+
 // 6. 常见问题
-const faqs = [
-  { 
-    q: `HOW'S YOUR PRICE AND QUALITY?`, 
-    a: `Our price is mid-range, but our quality is top-notch. Many regular customers sell our products really well.` 
+const faqsRaw = [
+  {
+    q: `HOW’S YOUR PRICE AND QUALITY?`,
+    a: `Our price is mid-range, but our quality is top-notch. Many regular customers sell our products really well.`
   },
-  { 
-    q: `WHAT MATERIALS AND SAFETY STANDARDS DO YOU FOLLOW?`, 
-    a: `We use 316L stainless steel with 18K gold PVD plating. It’s waterproof, tarnish-free, and hypoallergenic. All products meet EU REACH and US CA65 safety standards.` 
+  {
+    q: `WHAT MATERIALS AND SAFETY STANDARDS DO YOU FOLLOW?`,
+    a: `We use 316L stainless steel with 18K gold PVD plating. It’s waterproof, tarnish-free, and hypoallergenic. All products meet EU REACH and US CA65 safety standards.`
   },
-  { 
-    q: `WHAT'S YOUR MOQ FOR CUSTOM ORDERS?`, 
-    a: `Full custom design: 100 pieces. Just changing the color: 50 pieces. We also offer low MOQ based on our existing molds. We can add logos, do laser engraving, change colors, or add charms for your DIY ideas.` 
+  {
+    q: `WHAT’S YOUR MOQ FOR CUSTOM ORDERS?`,
+    a: `Full custom design: 100 pieces. Just changing the color: 50 pieces. We also offer low MOQ based on our existing molds. We can add logos, do laser engraving, change colors, or add charms for your DIY ideas.`
   },
-  { 
-    q: `HOW FAST IS SHIPPING AND DELIVERY?`, 
-    a: `Dispatch: Most items are ready to ship within 24 hours. Delivery: Usually takes 5 to 25 days, depending on the shipping method you choose.` 
+  {
+    q: `HOW FAST IS SHIPPING AND DELIVERY?`,
+    a: `Dispatch: Most items are ready to ship within 24 hours. Delivery: Usually takes 5 to 25 days, depending on the shipping method you choose.`
   },
-  { 
-    q: `WHAT IF SOME ITEMS ARE OUT OF STOCK?`, 
-    a: `We can: Ship what’s ready first, Refund the out-of-stock items, or Send them together with your next order.` 
+  {
+    q: `WHAT IF SOME ITEMS ARE OUT OF STOCK?`,
+    a: `We can: Ship what’s ready first, Refund the out-of-stock items, or Send them together with your next order.`
   },
-  { 
-    q: `WHAT'S YOUR MONTHLY PRODUCTION CAPACITY?`, 
-    a: `We produce 500,000 pieces of stainless steel jewelry per month. That means we can handle bulk orders and keep up with peak seasons.` 
+  {
+    q: `WHAT’S YOUR MONTHLY PRODUCTION CAPACITY?`,
+    a: `We produce 500,000 pieces of stainless steel jewelry per month. That means we can handle bulk orders and keep up with peak seasons.`
   },
-  { 
-    q: `WHAT PAYMENT METHODS DO YOU ACCEPT FOR LARGE ORDERS?`, 
+  {
+    q: `WHAT PAYMENT METHODS DO YOU ACCEPT FOR LARGE ORDERS?`,
     a: `For single orders under $2,000, full payment is required. You can pay via TT, credit card, Western Union, or other convenient methods. For orders over $2,000, we require a 50% deposit, with the remaining 50% due before shipment. Additionally, for orders over $1,000, we offer OA 60 days (Open Account with 60-day payment terms).` 
   }
 ];
+
+// 翻译FAQs
+const faqs = await Promise.all(
+  faqsRaw.map(async (faq) => ({
+    q: await tr(faq.q),
+    a: await tr(faq.a)
+  }))
+);
+
+// 翻译Hero文本
+const heroTitle = await tr('Behind the Scenes at E.B.belle');
+const heroDesc = await tr('Over 4,000 m² modern high-precision jewelry atelier delivering OEM/ODM excellence to prestigious brands worldwide.');
+const heroCtaBtn = await tr('Explore Craftsmanship');
 ---
 
 <Layout title="Factory & Craftsmanship - E.B.Belle">
@@ -232,10 +298,10 @@ const faqs = [
         <div class="hero-overlay"></div>
       </div>
       <div class="hero-content">
-        
-        <h1 class="hero-title">Behind the Scenes at E.B.belle</h1>
-        <p class="hero-desc">Over 4,000 m² modern high-precision jewelry atelier delivering OEM/ODM excellence to prestigious brands worldwide.</p>
-        <a href="#craft-steps" class="hero-cta-btn">Explore Craftsmanship</a>
+
+        <h1 class="hero-title">{heroTitle}</h1>
+        <p class="hero-desc">{heroDesc}</p>
+        <a href="#craft-steps" class="hero-cta-btn">{heroCtaBtn}</a>
       </div>
     </section>
 
@@ -367,7 +433,7 @@ const faqs = [
         </div>
 
         <div class="steps-flow-wide">
-          {craftSteps.map((item, index) => {
+          {translatedCraftSteps.map((item, index) => {
             const isReversed = index % 2 !== 0;
             return (
               <div class={`step-row-wide ${isReversed ? 'row-reversed' : ''} scroll-reveal-wrap`}>

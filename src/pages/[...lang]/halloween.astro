@@ -1,8 +1,35 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import { getProduct } from '../lib/woocommerce';
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { getProduct } from '../../lib/woocommerce';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 翻译配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'halloween'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
 
 // ========================================
 // ACF 数据获取逻辑
@@ -72,44 +99,47 @@ const acfData = await getACFFields();
 const resolvedHeroImage = await resolveImageUrl(acfData?.hero_image);
 
 // ========================================
-// 数据层配置（ACF 数据 + Fallback 默认值）
+// 数据层配置（ACF 数据 + Fallback 默认值 + 翻译）
 // ========================================
 
 const announcementData = {
-  text: acfData?.announcement_text || 'HALLOWEEN MAGIC IS HERE • VELVET POUCH ON $300+ • CODE: NOCTURNE15',
+  text: await tr(acfData?.announcement_text || 'HALLOWEEN MAGIC IS HERE • VELVET POUCH ON $300+ • CODE: NOCTURNE15'),
   code: acfData?.announcement_code || 'NOCTURNE15'
 };
 
 const heroData = {
-  badge: acfData?.hero_badge || 'Nocturne Édition • October 2026',
-  title: acfData?.hero_title_main || 'Halloween',
-  titleItalic: acfData?.hero_title_italic || 'Jewelry',
-  titleEnd: acfData?.hero_title_end || 'Edit',
-  description: acfData?.hero_desc || 'A little dark. A little daring. Made to shine. Discover fine heirloom gold, deep obsidian serpent motifs, and diamond starburst talismans crafted for nocturnal glamour.',
+  badge: await tr(acfData?.hero_badge || 'Nocturne Édition • October 2026'),
+  title: await tr(acfData?.hero_title_main || 'Halloween'),
+  titleItalic: await tr(acfData?.hero_title_italic || 'Jewelry'),
+  titleEnd: await tr(acfData?.hero_title_end || 'Edit'),
+  description: await tr(acfData?.hero_desc || 'A little dark. A little daring. Made to shine. Discover fine heirloom gold, deep obsidian serpent motifs, and diamond starburst talismans crafted for nocturnal glamour.'),
   primaryButton: {
-    text: acfData?.hero_btn_primary_text || 'Shop The Collection',
+    text: await tr(acfData?.hero_btn_primary_text || 'Shop The Collection'),
     link: acfData?.hero_btn_primary_url || '#vault-favorites'
   },
   secondaryButton: {
-    text: acfData?.hero_btn_secondary_text || 'Explore Editorial',
+    text: await tr(acfData?.hero_btn_secondary_text || 'Explore Editorial'),
     link: acfData?.hero_btn_secondary_url || '#atelier-manifesto'
   },
-  valuePillars: acfData?.hero_pillars || [
+  valuePillars: await Promise.all((acfData?.hero_pillars || [
     { title: '18K Gold', subtitle: 'Recycled Solid Gold' },
     { title: 'REACH CERTIFIED', subtitle: 'Conflict-Free Pavé' },
     { title: '48 HRS', subtitle: 'Vault Reserve' }
-  ],
+  ]).map(async (pillar: any) => ({
+    title: await tr(pillar.title),
+    subtitle: await tr(pillar.subtitle)
+  }))),
   heroImage: resolvedHeroImage || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBOIISihhg43B-qyenK6ep4LY75g_sJHlsWYufPQcSO_PgFudufFmhRDp2NnPe0nmdZ6r_x8KwEYgocFjWrh0NzWrBtNL9masvHFYgFUro99nt-oyatcFc69315_0naNwLRfs7yb9oq9V_Qu_ZE9dg5TeS0Jq7H6PfIHf-iDMe8cA6UNklRHjBQtlKqpkvgkGdCvjARXqhVe5BzQfORzdAcoKb8hPSEKqD36m9oYHXDOyeV266RM48S0Q',
   productPin: {
     top: acfData?.hero_product_pin?.top || '36%',
     right: acfData?.hero_product_pin?.right || '32%',
-    category: acfData?.hero_product_pin?.category || 'Ear Architecture',
-    name: acfData?.hero_product_pin?.custom_name || 'Starburst Drop Earrings',
-    price: acfData?.hero_product_pin?.custom_price_text || '$245 • Diamond Pavé'
+    category: await tr(acfData?.hero_product_pin?.category || 'Ear Architecture'),
+    name: await tr(acfData?.hero_product_pin?.custom_name || 'Starburst Drop Earrings'),
+    price: await tr(acfData?.hero_product_pin?.custom_price_text || '$245 • Diamond Pavé')
   },
   featuredCard: {
-    title: acfData?.hero_featured_pill?.title || 'Featured Muse: Nocturne Talisman Suite',
-    subtitle: acfData?.hero_featured_pill?.subtitle || 'Limited allocation of 80 bespoke sets',
+    title: await tr(acfData?.hero_featured_pill?.title || 'Featured Muse: Nocturne Talisman Suite'),
+    subtitle: await tr(acfData?.hero_featured_pill?.subtitle || 'Limited allocation of 80 bespoke sets'),
     link: acfData?.hero_featured_pill?.link || '#vault-favorites'
   }
 };

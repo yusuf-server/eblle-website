@@ -1,5 +1,17 @@
 ---
 // Footer 组件 - 新版设计
+import { SUPPORTED_LOCALES, type SupportedLocale, addLocalePrefix } from '../lib/i18n/utils';
+import { t } from '../lib/i18n/translations';
+
+// 检测当前语言
+const currentPath = Astro.url.pathname;
+let currentLocale: SupportedLocale = 'en';
+for (const locale of SUPPORTED_LOCALES) {
+  if (currentPath.startsWith(`/${locale}/`) || currentPath === `/${locale}`) {
+    currentLocale = locale as SupportedLocale;
+    break;
+  }
+}
 ---
 
 <!-- Footer 主组件 -->
@@ -11,17 +23,17 @@
 
       <!-- 左侧：订阅邀请 -->
       <div class="footer-newsletter">
-        <h2 class="newsletter-heading">GET 10% OFF YOUR FIRST ORDER</h2>
+        <h2 class="newsletter-heading">{t(currentLocale, 'footer.newsletterHeading')}</h2>
         <form class="newsletter-form" id="newsletter-form">
           <div class="newsletter-form-line">
-            <input type="email" class="newsletter-input" placeholder="Enter your email address" required />
+            <input type="email" class="newsletter-input" placeholder={t(currentLocale, 'footer.emailPlaceholder')} required />
             <button type="submit" class="newsletter-submit-btn" aria-label="Subscribe">
               <i class="fa-solid fa-arrow-right"></i>
             </button>
           </div>
           <label class="newsletter-privacy">
             <input type="checkbox" required />
-            <span>By get 10% off, you agree to our <a href="/privacy" class="privacy-link">Security & Privacy</a>.*</span>
+            <span>{t(currentLocale, 'footer.privacyAgreement')} <a href={addLocalePrefix('/privacy', currentLocale)} class="privacy-link">{t(currentLocale, 'footer.securityPrivacy')}</a>.*</span>
           </label>
         </form>
       </div>
@@ -30,41 +42,41 @@
       <div class="footer-nav-columns">
         <!-- Column 1: HELP -->
         <div class="footer-nav-col">
-          <h4 class="nav-col-title">HELP</h4>
+          <h4 class="nav-col-title">{t(currentLocale, 'footer.help')}</h4>
           <ul class="nav-links-list">
-            <li><a href="/faqs">FAQs</a></li>
-            <li><a href="/shipping">Shipping</a></li>
-            <li><a href="/returns">Returns</a></li>
-            <li><a href="/materials-care">Materials & Care</a></li>
-            <li><a href="/ring-size-guide">Ring Size Guide</a></li>
-            <li><a href="/size-guide">Size Guide</a></li>
-            <li><a href="/contact">Contact Us</a></li>
+            <li><a href={addLocalePrefix('/faqs', currentLocale)}>{t(currentLocale, 'footer.faqs')}</a></li>
+            <li><a href={addLocalePrefix('/shipping', currentLocale)}>{t(currentLocale, 'footer.shipping')}</a></li>
+            <li><a href={addLocalePrefix('/returns', currentLocale)}>{t(currentLocale, 'footer.returns')}</a></li>
+            <li><a href={addLocalePrefix('/materials-care', currentLocale)}>{t(currentLocale, 'footer.materialsCare')}</a></li>
+            <li><a href={addLocalePrefix('/ring-size-guide', currentLocale)}>{t(currentLocale, 'footer.ringSizeGuide')}</a></li>
+            <li><a href={addLocalePrefix('/size-guide', currentLocale)}>{t(currentLocale, 'footer.sizeGuide')}</a></li>
+            <li><a href={addLocalePrefix('/contact', currentLocale)}>{t(currentLocale, 'footer.contactUs')}</a></li>
           </ul>
         </div>
 
         <!-- Column 2: ABOUT US -->
         <div class="footer-nav-col">
-          <h4 class="nav-col-title">ABOUT US</h4>
+          <h4 class="nav-col-title">{t(currentLocale, 'footer.aboutUs')}</h4>
           <ul class="nav-links-list">
-            <li><a href="/about">About E.B.belle</a></li>
-            <li><a href="/showroom">Our Showroom</a></li>
-            <li><a href="/wholesale">Wholesale</a></li>
-            <li><a href="/dropshipping">Dropshipping</a></li>
-            <li><a href="/oem-odm">OEM & ODM</a></li>
-            <li><a href="/blog">Blog</a></li>
+            <li><a href={addLocalePrefix('/about', currentLocale)}>{t(currentLocale, 'footer.about')}</a></li>
+            <li><a href={addLocalePrefix('/showroom', currentLocale)}>{t(currentLocale, 'footer.showroom')}</a></li>
+            <li><a href={addLocalePrefix('/wholesale', currentLocale)}>{t(currentLocale, 'footer.wholesale')}</a></li>
+            <li><a href={addLocalePrefix('/dropshipping', currentLocale)}>{t(currentLocale, 'footer.dropshipping')}</a></li>
+            <li><a href={addLocalePrefix('/oem-odm', currentLocale)}>{t(currentLocale, 'footer.oemOdm')}</a></li>
+            <li><a href={addLocalePrefix('/blog', currentLocale)}>{t(currentLocale, 'footer.blog')}</a></li>
           </ul>
         </div>
 
         <!-- Column 3: MORE INFO -->
         <div class="footer-nav-col">
-          <h4 class="nav-col-title">MORE INFO</h4>
+          <h4 class="nav-col-title">{t(currentLocale, 'footer.moreInfo')}</h4>
           <ul class="nav-links-list">
-            <li><a href="/offers">Offers & Promos</a></li>
-            <li><a href="/terms">Terms & Conditions</a></li>
-            <li><a href="/privacy">Privacy & Security</a></li>
-            <li><a href="/collection">Collection</a></li>
-            <li><a href="/product">Product</a></li>
-            <li><a href="/order-tracking">Tracking order</a></li>
+            <li><a href={addLocalePrefix('/offers', currentLocale)}>{t(currentLocale, 'footer.offers')}</a></li>
+            <li><a href={addLocalePrefix('/terms', currentLocale)}>{t(currentLocale, 'footer.terms')}</a></li>
+            <li><a href={addLocalePrefix('/privacy', currentLocale)}>{t(currentLocale, 'footer.privacy')}</a></li>
+            <li><a href={addLocalePrefix('/collection', currentLocale)}>{t(currentLocale, 'footer.collection')}</a></li>
+            <li><a href={addLocalePrefix('/product', currentLocale)}>{t(currentLocale, 'footer.product')}</a></li>
+            <li><a href={addLocalePrefix('/order-tracking', currentLocale)}>{t(currentLocale, 'footer.trackingOrder')}</a></li>
           </ul>
         </div>
       </div>
@@ -118,7 +130,7 @@
         </svg>
       </div>
 
-      <p class="copyright-txt">© 2026 E.B.belle Limited. All rights reserved.</p>
+      <p class="copyright-txt">{t(currentLocale, 'footer.copyright')}</p>
     </div>
 
   </div>

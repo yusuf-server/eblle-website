@@ -1,27 +1,42 @@
+---
+import { SUPPORTED_LOCALES, type SupportedLocale, addLocalePrefix } from '../lib/i18n/utils';
+import { t } from '../lib/i18n/translations';
+
+// 检测当前语言
+const currentPath = Astro.url.pathname;
+let currentLocale: SupportedLocale = 'en';
+for (const locale of SUPPORTED_LOCALES) {
+  if (currentPath.startsWith(`/${locale}/`) || currentPath === `/${locale}`) {
+    currentLocale = locale as SupportedLocale;
+    break;
+  }
+}
+---
+
 <!-- Mobile Bottom Sticky Menu -->
 <nav class="mobile-bottom-menu" id="mobileBottomMenu">
-  <a href="/" class="bottom-menu-item" data-page="home">
+  <a href={addLocalePrefix('/', currentLocale)} class="bottom-menu-item" data-page="home">
     <i class="fa-solid fa-house"></i>
-    <span>Home</span>
+    <span>{t(currentLocale, 'mobileMenu.home')}</span>
   </a>
-  <a href="/shop" class="bottom-menu-item" data-page="category">
+  <a href={addLocalePrefix('/shop', currentLocale)} class="bottom-menu-item" data-page="category">
     <i class="fa-solid fa-border-all"></i>
-    <span>Category</span>
+    <span>{t(currentLocale, 'mobileMenu.category')}</span>
   </a>
   <button type="button" class="bottom-menu-item" id="bottomWishlistBtn" onclick="handleBottomWishlist()">
     <i class="fa-regular fa-heart"></i>
-    <span>Wishlist</span>
+    <span>{t(currentLocale, 'mobileMenu.wishlist')}</span>
   </button>
   <button type="button" class="bottom-menu-item" onclick="window.toggleCart?.(true)">
     <div class="bottom-cart-wrapper">
       <i class="fa-solid fa-bag-shopping"></i>
       <span class="bottom-cart-badge">0</span>
     </div>
-    <span>Cart</span>
+    <span>{t(currentLocale, 'mobileMenu.cart')}</span>
   </button>
   <button type="button" class="bottom-menu-item" id="bottomAccountBtn" onclick="handleBottomAccount()">
     <i class="fa-regular fa-user"></i>
-    <span>Account</span>
+    <span>{t(currentLocale, 'mobileMenu.account')}</span>
   </button>
 </nav>
 
@@ -118,6 +133,41 @@
 </style>
 
 <script>
+  // ============================================================
+  // 客户端多语言工具函数
+  // ============================================================
+  const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
+
+  function getCurrentLocale() {
+    const pathname = window.location.pathname;
+    for (const locale of SUPPORTED_LOCALES) {
+      if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+        return locale;
+      }
+    }
+    return 'en';
+  }
+
+  function addLocalePrefix(url) {
+    const currentLocale = getCurrentLocale();
+    if (currentLocale === 'en') {
+      return url;
+    }
+    // 如果URL已经有语言前缀，先移除
+    let cleanUrl = url;
+    for (const loc of SUPPORTED_LOCALES) {
+      if (cleanUrl.startsWith(`/${loc}/`)) {
+        cleanUrl = cleanUrl.substring(loc.length + 1);
+        break;
+      }
+    }
+    return `/${currentLocale}${cleanUrl}`;
+  }
+
+  // ============================================================
+  // 底部菜单逻辑
+  // ============================================================
+
   // 高亮当前页面对应的菜单项
   function updateActiveMenuItem() {
     const currentPath = window.location.pathname;
@@ -177,14 +227,14 @@
 
     if (isAuthenticated) {
       // 已登录，跳转到账户页的 wishlist tab
-      window.location.href = '/account?tab=wishlist';
+      window.location.href = addLocalePrefix('/account?tab=wishlist');
     } else {
       // 未登录，打开登录弹窗
       if (typeof window.openAuthModal === 'function') {
         window.openAuthModal('login');
       } else {
         // 如果登录弹窗不可用，直接跳转到登录页
-        window.location.href = '/login';
+        window.location.href = addLocalePrefix('/login');
       }
     }
   }
@@ -195,14 +245,14 @@
 
     if (isAuthenticated) {
       // 已登录，跳转到账户页
-      window.location.href = '/account';
+      window.location.href = addLocalePrefix('/account');
     } else {
       // 未登录，打开登录弹窗
       if (typeof window.openAuthModal === 'function') {
         window.openAuthModal('login');
       } else {
         // 如果登录弹窗不可用，直接跳转到登录页
-        window.location.href = '/login';
+        window.location.href = addLocalePrefix('/login');
       }
     }
   }

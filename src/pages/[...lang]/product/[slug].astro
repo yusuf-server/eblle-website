@@ -1,19 +1,33 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
-import CartDrawer from '../../components/CartDrawer.astro';
-import { getProductBySlug, getProductVariations, getRelatedProducts } from '../../lib/woocommerce';
+import Layout from '../../../layouts/Layout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import CartDrawer from '../../../components/CartDrawer.astro';
+import { getProductBySlug, getProductVariations, getRelatedProducts } from '../../../lib/woocommerce';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../../lib/i18n/utils';
+import { translateProduct, translateVariation } from '../../../lib/i18n/product-translator';
+import { t } from '../../../lib/i18n/translations';
 
 export const prerender = false;
 
-const { slug } = Astro.params;
+// 获取语言参数和slug
+const { lang, slug } = Astro.params;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
 
 // 获取当前主产品数据
-const product = await getProductBySlug(slug);
+let product = await getProductBySlug(slug);
 
 if (!product) {
   return Astro.redirect('/404');
+}
+
+// 翻译产品数据（如果不是英语）
+if (currentLocale !== 'en') {
+  console.log('[Debug] 正在翻译商品:', product.name, '目标语言:', currentLocale);
+  product = await translateProduct(product, currentLocale, Astro.locals);
+  console.log('[Debug] 翻译后:', product.name);
 }
 
 // 计算折扣百分比
@@ -49,13 +63,26 @@ let variations = [];
 let attributes = [];
 if (product.type === 'variable' && product.variations && product.variations.length > 0) {
   variations = await getProductVariations(product.id);
+  // 翻译变体（如果不是英语）
+  if (currentLocale !== 'en') {
+    variations = await Promise.all(
+      variations.map(v => translateVariation(v, currentLocale, Astro.locals))
+    );
+  }
   attributes = product.attributes || [];
 }
 
 const categoryIds = product.categories ? product.categories.map((cat) => cat.id) : [];
 const tagIds = product.tags ? product.tags.map((tag) => tag.id) : [];
 // 获取 10 个相关产品
-const relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds, 10);
+let relatedProducts = await getRelatedProducts(product.id, categoryIds, tagIds, 10);
+
+// 翻译相关产品（如果不是英语）
+if (currentLocale !== 'en' && relatedProducts.length > 0) {
+  relatedProducts = await Promise.all(
+    relatedProducts.map(p => translateProduct(p, currentLocale, Astro.locals))
+  );
+}
 
 // =========================================================
 // 纯原生 JavaScript 获取 56339 & 57994 真实数据
@@ -151,12 +178,12 @@ const giftProducts = giftProductIds.map((id, index) => {
     <div class="product-container">
       <!-- Breadcrumb -->
       <nav class="breadcrumb" aria-label="Breadcrumb">
-        <a href="/">Home</a>
+        <a href={currentLocale === 'en' ? '/' : `/${currentLocale}/`}>{t(currentLocale, 'product.home')}</a>
         <i class="fa-solid fa-chevron-right"></i>
-        <a href="/shop">Shop</a>
+        <a href={currentLocale === 'en' ? '/shop' : `/${currentLocale}/shop`}>{t(currentLocale, 'nav.shop')}</a>
         <i class="fa-solid fa-chevron-right"></i>
         {categorySlug ? (
-          <a href={`/shop?category=${categorySlug}`}>{category}</a>
+          <a href={currentLocale === 'en' ? `/shop?category=${categorySlug}` : `/${currentLocale}/shop?category=${categorySlug}`}>{category}</a>
         ) : (
           <span>{category}</span>
         )}
@@ -406,7 +433,7 @@ const giftProducts = giftProductIds.map((id, index) => {
           <!-- Quantity & Actions -->
           <div class="actions-section" id="actionsSection">
             <div class="quantity-row">
-              <span class="qty-label">Quantity</span>
+              <span class="qty-label">{t(currentLocale, 'product.quantity')}</span>
               <div class="quantity-selector">
                 <button type="button" onclick="changeQty(-1)"><i class="fa-solid fa-minus"></i></button>
                 <input type="number" id="qtyInput" value="1" min="1" readonly>
@@ -414,8 +441,8 @@ const giftProducts = giftProductIds.map((id, index) => {
               </div>
             </div>
             <div class="button-group">
-              <button type="button" class="btn-add-cart">Add to Cart</button>
-              <button type="button" class="btn-buy-now">Buy Now</button>
+              <button type="button" class="btn-add-cart">{t(currentLocale, 'product.addToCart')}</button>
+              <button type="button" class="btn-buy-now">{t(currentLocale, 'product.buyNow')}</button>
             </div>
             <button type="button" class="btn-wholesale">Inquire for Wholesale / Customization</button>
           </div>
@@ -462,7 +489,7 @@ const giftProducts = giftProductIds.map((id, index) => {
           <div class="accordions">
             <div class="accordion-item">
               <button type="button" class="accordion-header" onclick="toggleAccordion('desc')">
-                <span>Description</span>
+                <span>{t(currentLocale, 'product.description')}</span>
                 <i class="fa-solid fa-chevron-down" id="icon-desc"></i>
               </button>
               <div class="accordion-content active" id="content-desc">
@@ -2415,6 +2442,54 @@ const giftProducts = giftProductIds.map((id, index) => {
   window.productId = productId;
   window.productSlug = productSlug;
 
+  // ============================================================
+  // 货币工具函数（客户端版本）
+  // ============================================================
+  const CURRENCY_SYMBOLS = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    CAD: 'C$'
+  };
+
+  const CURRENCY_RATES = {
+    USD: 1.0,
+    EUR: 0.92,
+    GBP: 0.79,
+    CAD: 1.36
+  };
+
+  function getCurrentCurrency() {
+    return localStorage.getItem('ebbelle_currency') || 'USD';
+  }
+
+  function getCurrencySymbol(currency) {
+    return CURRENCY_SYMBOLS[currency || getCurrentCurrency()] || '$';
+  }
+
+  function convertPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const rate = CURRENCY_RATES[currency] || 1.0;
+    return priceUSD * rate;
+  }
+
+  function formatPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const converted = convertPrice(priceUSD, currency);
+    const symbol = getCurrencySymbol(currency);
+    const formatted = converted.toFixed(2);
+
+    // EUR 符号通常放在后面
+    if (currency === 'EUR') {
+      return `${formatted}${symbol}`;
+    }
+    return `${symbol}${formatted}`;
+  }
+
+  // ============================================================
+  // 产品详情页逻辑
+  // ============================================================
+
   let currentSlide = 0;
   let totalSlides = 0;
   let autoPlayTimer = null;
@@ -2819,14 +2894,26 @@ const giftProducts = giftProductIds.map((id, index) => {
     const stickyPriceVal = document.getElementById('stickyPriceVal');
 
     if (variation.price && currentPrice) {
-      const priceText = currentPrice.querySelector('.dollar') ?
-        `<span class="dollar">$</span>${variation.price}` :
-        `$${variation.price}`;
-      currentPrice.innerHTML = priceText;
+      const priceUSD = parseFloat(variation.price);
+      const formattedPrice = formatPrice(priceUSD);
+      const currency = getCurrentCurrency();
+
+      if (currentPrice.querySelector('.dollar')) {
+        if (currency === 'EUR') {
+          currentPrice.innerHTML = `<span class="dollar"></span>${formattedPrice}`;
+        } else {
+          currentPrice.innerHTML = `<span class="dollar">${getCurrencySymbol()}</span>${convertPrice(priceUSD).toFixed(2)}`;
+        }
+      } else {
+        currentPrice.textContent = formattedPrice;
+      }
+      currentPrice.setAttribute('data-usd-price', priceUSD);
     }
 
     if (stickyPriceVal && variation.price) {
-      stickyPriceVal.textContent = `$${variation.price}`;
+      const priceUSD = parseFloat(variation.price);
+      stickyPriceVal.textContent = formatPrice(priceUSD);
+      stickyPriceVal.setAttribute('data-usd-price', priceUSD);
     }
 
     // 2. 同步图片：主图悄悄同步切过去，同时给底部 48px 大缩略图换图（绝不乱滚页面）
@@ -3293,6 +3380,88 @@ const giftProducts = giftProductIds.map((id, index) => {
     });
   }
 
+  // 初始化和更新所有价格显示
+  function updateAllPrices() {
+    // 获取存储的原始价格（USD）
+    const currentPriceEl = document.querySelector('.current-price');
+    const originalPriceEl = document.querySelector('.original-price');
+    const stickyPriceEl = document.getElementById('stickyPriceVal');
+    const stickyOriginalEl = document.querySelector('.sticky-original');
+
+    // 从 data 属性获取原始 USD 价格（如果没有，从文本解析）
+    if (currentPriceEl) {
+      const priceText = currentPriceEl.textContent.replace(/[^0-9.]/g, '');
+      const priceUSD = parseFloat(priceText);
+      if (!isNaN(priceUSD)) {
+        currentPriceEl.setAttribute('data-usd-price', priceUSD);
+        const dollarSpan = currentPriceEl.querySelector('.dollar');
+        const formattedPrice = formatPrice(priceUSD);
+        if (dollarSpan) {
+          // 分离货币符号和价格
+          const currency = getCurrentCurrency();
+          if (currency === 'EUR') {
+            dollarSpan.textContent = '';
+            currentPriceEl.innerHTML = `<span class="dollar"></span>${formattedPrice}`;
+          } else {
+            dollarSpan.textContent = getCurrencySymbol();
+            currentPriceEl.childNodes[1].textContent = convertPrice(priceUSD).toFixed(2);
+          }
+        } else {
+          currentPriceEl.textContent = formattedPrice;
+        }
+      }
+    }
+
+    if (originalPriceEl) {
+      const priceText = originalPriceEl.textContent.replace(/[^0-9.]/g, '');
+      const priceUSD = parseFloat(priceText);
+      if (!isNaN(priceUSD)) {
+        originalPriceEl.setAttribute('data-usd-price', priceUSD);
+        originalPriceEl.textContent = formatPrice(priceUSD);
+      }
+    }
+
+    if (stickyPriceEl) {
+      const priceText = stickyPriceEl.textContent.replace(/[^0-9.]/g, '');
+      const priceUSD = parseFloat(priceText);
+      if (!isNaN(priceUSD)) {
+        stickyPriceEl.setAttribute('data-usd-price', priceUSD);
+        stickyPriceEl.textContent = formatPrice(priceUSD);
+      }
+    }
+
+    if (stickyOriginalEl) {
+      const priceText = stickyOriginalEl.textContent.replace(/[^0-9.]/g, '');
+      const priceUSD = parseFloat(priceText);
+      if (!isNaN(priceUSD)) {
+        stickyOriginalEl.setAttribute('data-usd-price', priceUSD);
+        stickyOriginalEl.textContent = formatPrice(priceUSD);
+      }
+    }
+
+    // 更新批发价格表
+    const tierPrices = document.querySelectorAll('.tier-price');
+    tierPrices.forEach(el => {
+      const priceText = el.textContent.replace(/[^0-9.]/g, '');
+      const priceUSD = parseFloat(priceText);
+      if (!isNaN(priceUSD)) {
+        el.setAttribute('data-usd-price', priceUSD);
+        el.textContent = formatPrice(priceUSD);
+      }
+    });
+
+    // 更新礼品价格
+    const giftPrices = document.querySelectorAll('.gift-price-el');
+    giftPrices.forEach(el => {
+      const priceText = el.textContent.replace(/[^0-9.]/g, '');
+      const priceUSD = parseFloat(priceText);
+      if (!isNaN(priceUSD)) {
+        el.setAttribute('data-usd-price', priceUSD);
+        el.textContent = formatPrice(priceUSD);
+      }
+    });
+  }
+
   function initAll() {
     initSlider();
     initVariants();
@@ -3300,7 +3469,13 @@ const giftProducts = giftProductIds.map((id, index) => {
     initRelatedSlider();
     initGiftCarousel();
     initDescToggle();
+    updateAllPrices(); // 初始化价格显示
   }
+
+  // 监听货币切换事件
+  window.addEventListener('currencyChanged', () => {
+    updateAllPrices();
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAll);

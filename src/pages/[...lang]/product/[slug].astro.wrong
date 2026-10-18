@@ -1,21 +1,86 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import CartDrawer from '../components/CartDrawer.astro';
-import AuthModal from '../components/AuthModal.astro';
-import ProductSkeleton from '../components/ProductSkeleton.astro';
-import OptimizedImage from '../components/OptimizedImage.astro';
-import { getCategories } from '../lib/woocommerce';
-import { getProductsWithPrices } from '../lib/productCache';
-import { getHomepageData, parseACFLink, parseACFImage } from '../lib/wordpress';
-import { optimizeACFImage } from '../lib/imageOptimizer';
+import Layout from '../../../layouts/Layout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import CartDrawer from '../../../components/CartDrawer.astro';
+import AuthModal from '../../../components/AuthModal.astro';
+import ProductSkeleton from '../../../components/ProductSkeleton.astro';
+import OptimizedImage from '../../../components/OptimizedImage.astro';
+import { getProductsWithPrices } from '../../../lib/productCache';
+import { getHomepageData, parseACFLink, parseACFImage } from '../../../lib/wordpress';
+import { optimizeACFImage } from '../../../lib/imageOptimizer';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../../lib/i18n/utils';
+import { translateProduct, translateVariation } from '../../../lib/i18n/product-translator';
+import { t } from '../../../lib/i18n/translations';
 
-// 获取首页动态数据
-const heroData = await getHomepageData();
+// 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
 
-// 解析 Hero Main Banner 数据（带默认值回退）
-// 注意：根据实际 API 返回的扁平结构进行调整
+// 1. 边缘缓存控制：首屏瞬发，后台异步静默刷新，消除白屏
+if (Astro.response) {
+  Astro.response.headers.set(
+    'Cache-Control',
+    'public, max-age=60, s-maxage=600, stale-while-revalidate=86400'
+  );
+}
+
+// 2. 超时熔断请求辅助函数（防止接口网络波动死等）
+async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    return res;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return null;
+  }
+}
+
+const INSTAGRAM_ACCESS_TOKEN = 'IGAAHKoYxeZA3JBZAGI5eVltcy1zSzRPWEJfVXJMWnZAMU25DWkI5eEh0clViQjF0THJ6a20wSWdaM1hQRlp0ZAFVvSE9ScC1KT3VFUzU4T3ZAXbzZAGOFlYbkZAweFA4Ul90MVlBU3Jza3NZATjhDdldIOWYyUXVn';
+const INSTAGRAM_API_URL = `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink&access_token=${INSTAGRAM_ACCESS_TOKEN}&limit=4`;
+
+// 3. 并发执行所有数据请求，将多次等待合并为一次等待
+const [heroDataRes, flashSaleRes, instagramRes] = await Promise.allSettled([
+  getHomepageData(),
+  getProductsWithPrices({
+    per_page: 10,
+    category: 942,
+    orderby: 'date',
+    order: 'desc'
+  }),
+  fetchWithTimeout(INSTAGRAM_API_URL, {}, 2500)
+]);
+
+const heroData = heroDataRes.status === 'fulfilled' ? heroDataRes.value : null;
+const flashSaleProducts = flashSaleRes.status === 'fulfilled' ? (flashSaleRes.value || []) : [];
+
+// 解析 Instagram 帖子
+let instagramPosts = [];
+if (instagramRes.status === 'fulfilled' && instagramRes.value && instagramRes.value.ok) {
+  try {
+    const data = await instagramRes.value.json();
+    if (data && data.data) {
+      instagramPosts = data.data.map((post) => ({
+        id: post.id,
+        caption: post.caption || '',
+        media_type: post.media_type,
+        media_url: post.media_url,
+        thumbnail_url: post.thumbnail_url || post.media_url,
+        permalink: post.permalink,
+        is_video: post.media_type === 'VIDEO'
+      }));
+    }
+  } catch (e) {
+    console.warn('Instagram data parse error:', e);
+  }
+}
+
+// 解析 Hero Main Banner 数据
 const mainBanner = heroData ? {
   image: parseACFImage(heroData.main_image),
   title: heroData.main_title || 'Timeless Elegance',
@@ -23,7 +88,6 @@ const mainBanner = heroData ? {
   buttonText: heroData.button_text || 'Shop Now',
   buttonLink: parseACFLink(heroData.button_link),
 } : {
-  // 默认值
   image: {
     url: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&q=80',
     alt: 'Main Jewelry Collection',
@@ -41,7 +105,6 @@ const midCard1 = heroData ? {
   title: heroData.mid1_title || 'New Collections',
   link: parseACFLink(heroData.mid1_link),
 } : {
-  // 默认值
   image: {
     url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&q=80',
     alt: 'New Collections',
@@ -58,7 +121,6 @@ const midCard2 = heroData ? {
   title: heroData.mid2_title || 'Now Collections',
   link: parseACFLink(heroData.mid2_link),
 } : {
-  // 默认值
   image: {
     url: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80',
     alt: 'Trending',
@@ -77,7 +139,6 @@ const mobileHeroBanner = heroData ? {
   buttonText: heroData.mobile_hero_button_text || 'Shop Now',
   buttonLink: parseACFLink(heroData.mobile_hero_button_link),
 } : {
-  // 默认值
   image: {
     url: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80',
     alt: 'Hero',
@@ -96,7 +157,6 @@ const mobileSubCard1 = heroData ? {
   title: heroData.mobile_sub1_title || 'New Collections',
   link: parseACFLink(heroData.mobile_sub1_link),
 } : {
-  // 默认值
   image: {
     url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&q=80',
     alt: 'New Collections',
@@ -113,7 +173,6 @@ const mobileSubCard2 = heroData ? {
   title: heroData.mobile_sub2_title || 'Now Collections',
   link: parseACFLink(heroData.mobile_sub2_link),
 } : {
-  // 默认值
   image: {
     url: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80',
     alt: 'Trending',
@@ -131,140 +190,24 @@ const mobileArrivalsColumns = heroData?.mobile_arrivals_columns || [];
 // 解析 Campaign Section 数据
 const campaignTitle = heroData?.campaign_title || 'CAMPAIGN ZONE';
 const campaignCards = heroData?.campaign_cards || [];
-const useSameCampaignData = heroData?.mobile_campaign_cards !== false; // 默认为 true
+const useSameCampaignData = heroData?.mobile_campaign_cards !== false;
 
 // 解析 Reviews Section 数据
 const reviewsTitle = heroData?.reviews_title || 'What Our Clients Say';
 const reviewImages = heroData?.review_images || [];
-const autoplayEnabled = heroData?.autoplay_enabled !== false; // 默认为 true
+const autoplayEnabled = heroData?.autoplay_enabled !== false;
 const autoplayInterval = heroData?.autoplay_interval || 5;
-const mobileUseSameImages = heroData?.mobile_use_same_images !== false; // 默认为 true
-
-// 调试：查看 reviews 数据
-console.log('=== Reviews Debug ===');
-console.log('reviewImages length:', reviewImages.length);
-console.log('reviewImages:', JSON.stringify(reviewImages, null, 2));
-
-// 获取 Instagram 帖子
-const INSTAGRAM_ACCESS_TOKEN = 'IGAAHKoYxeZA3JBZAGI5eVltcy1zSzRPWEJfVXJMWnZAMU25DWkI5eEh0clViQjF0THJ6a20wSWdaM1hQRlp0ZAFVvSE9ScC1KT3VFUzU4T3ZAXbzZAGOFlYbkZAweFA4Ul90MVlBU3Jza3NZATjhDdldIOWYyUXVn';
-const INSTAGRAM_API_URL = `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink&access_token=${INSTAGRAM_ACCESS_TOKEN}&limit=4`;
-
-let instagramPosts = [];
-try {
-  const response = await fetch(INSTAGRAM_API_URL);
-  const data = await response.json();
-
-  if (data.data) {
-    instagramPosts = data.data.map((post) => ({
-      id: post.id,
-      caption: post.caption || '',
-      media_type: post.media_type, // IMAGE, VIDEO, CAROUSEL_ALBUM
-      media_url: post.media_url, // 图片或视频的 URL
-      thumbnail_url: post.thumbnail_url || post.media_url, // 视频缩略图
-      permalink: post.permalink,
-      is_video: post.media_type === 'VIDEO'
-    }));
-  }
-
-  console.log('=== Instagram Posts Debug ===');
-  console.log('Posts loaded:', instagramPosts.length);
-  console.log('First post:', instagramPosts[0]);
-} catch (error) {
-  console.error('Failed to fetch Instagram posts:', error);
-}
+const mobileUseSameImages = heroData?.mobile_use_same_images !== false;
 
 // 解析 FAQ Gallery Section 数据
 const faqSectionTitle = heroData?.faq_section_title || 'E.B.Belle: 316L Stainless Steel & PVD Plating Excellence';
 const galleryImages = heroData?.gallery_images || [];
 const faqItems = heroData?.faq_items || [];
 const mobileFaqTitle = heroData?.mobile_faq_title || 'E.B.Belle: 316L Stainless Steel Excellence';
-const mobileUseSameFaqData = heroData?.mobile_use_same_data !== false; // 默认为 true
-
-// 调试：查看 FAQ 数据
-console.log('=== FAQ Gallery Debug ===');
-console.log('galleryImages length:', galleryImages.length);
-console.log('faqItems length:', faqItems.length);
-
-// 调试：查看 campaign 数据结构
-console.log('=== Campaign Cards Debug ===');
-console.log('campaignCards length:', campaignCards.length);
-if (campaignCards.length > 0) {
-  console.log('First card:', JSON.stringify(campaignCards[0], null, 2));
-}
-
-// 调试：查看 mobile arrivals 数据
-console.log('=== Mobile Arrivals Debug ===');
-console.log('mobileArrivalsColumns length:', mobileArrivalsColumns.length);
-if (mobileArrivalsColumns.length > 0) {
-  console.log('First mobile column:', JSON.stringify(mobileArrivalsColumns[0], null, 2));
-}
-
-// 获取产品数据 - 使用优化的缓存系统
-let flashSaleProducts = [];
-try {
-  console.log('正在获取 enamel-cuff-bangles 分类的产品...');
-  flashSaleProducts = await getProductsWithPrices({
-    per_page: 10,
-    category: 942, // enamel-cuff-bangles
-    orderby: 'date',
-    order: 'desc'
-  });
-  console.log(`✓ 成功获取 ${flashSaleProducts.length} 个产品`);
-} catch (error) {
-  console.error('获取Flash Sale产品失败:', error);
-}
-
-const categories = await getCategories({ per_page: 10 });
-
-// 静态产品数据（用于展示）
-const staticProducts = [
-  {
-    name: 'Gold Fam Gold Earrings & Pearl',
-    image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?w=300&q=80',
-    price: '11.50',
-    oldPrice: '29.90',
-    discount: 32
-  },
-  {
-    name: 'Gold Sam Bracelet Stainless...',
-    image: 'https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=300&q=80',
-    price: '15.50',
-    oldPrice: '28.00',
-    discount: 50
-  },
-  {
-    name: 'Gold Fam Bracelet Special...',
-    image: 'https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=300&q=80',
-    price: '11.00',
-    oldPrice: '16.00',
-    discount: 50
-  },
-  {
-    name: 'Gold Stud Earrings With Dr...',
-    image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=300&q=80',
-    price: '14.00',
-    oldPrice: '10.00',
-    discount: 50
-  },
-  {
-    name: 'Gold Stainless Gold Bot...',
-    image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=300&q=80',
-    price: '17.00',
-    oldPrice: '19.00',
-    discount: 50
-  },
-  {
-    name: 'Gold Bracelet Sound Set...',
-    image: 'https://images.unsplash.com/photo-1598560917505-59a3ad559071?w=300&q=80',
-    price: '21.00',
-    oldPrice: '11.00',
-    discount: 50
-  }
-];
+const mobileUseSameFaqData = heroData?.mobile_use_same_data !== false;
 ---
 
 <Layout title="E.B.Belle - Jewelry Store">
-  <!-- 预加载关键图片（优化后的版本） -->
   <link rel="preload" as="image" href={mainBanner.image.url || mainBanner.image.src} slot="head" />
   {mobileHeroBanner.image.url && (
     <link rel="preload" as="image" href={mobileHeroBanner.image.url} slot="head" media="(max-width: 768px)" />
@@ -276,7 +219,6 @@ const staticProducts = [
   <section class="hero-section">
     <div class="container">
       <div class="hero-grid">
-        <!-- Main Large Banner -->
         <div class="hero-main-card">
           <OptimizedImage
             src={mainBanner.image.url || mainBanner.image.src}
@@ -302,7 +244,6 @@ const staticProducts = [
           </div>
         </div>
 
-        <!-- Mid Sub Banners -->
         <div class="hero-mid-card">
           <a
             href={midCard1.link.url}
@@ -348,9 +289,7 @@ const staticProducts = [
           </a>
         </div>
 
-        <!-- Right Side Login & Coupon -->
         <div class="hero-right-card">
-          <!-- 未登录状态 -->
           <div class="user-auth-box" id="authBoxGuest">
             <div class="avatar-icon">
               <i class="fa-regular fa-user"></i>
@@ -362,7 +301,6 @@ const staticProducts = [
             </div>
           </div>
 
-          <!-- 已登录状态 -->
           <div class="user-auth-box user-auth-logged-in" id="authBoxLoggedIn" style="display: none;">
             <div class="avatar-icon logged-in">
               <i class="fa-solid fa-user"></i>
@@ -392,18 +330,18 @@ const staticProducts = [
     </div>
   </section>
 
-  <!-- 5. FLASH SALES -->
+  <!-- 5. FLASH SALES (保持桌面端两行每行 5 个) -->
   <section class="flash-sales-section">
     <div class="container">
       <div class="section-header-row">
         <div class="flash-title-area">
-          <h2 class="section-title">⚡ FLASH SALES</h2>
-          <div class="countdown-timer" id="desktopCountdown">
-            <span class="time-block hours">00</span>
+          <h2 class="section-title">FLASH SALES</h2>
+          <div class="countdown-timer">
+            <span class="time-block">00</span>
             <span class="time-separator">:</span>
-            <span class="time-block minutes">07</span>
+            <span class="time-block">07</span>
             <span class="time-separator">:</span>
-            <span class="time-block seconds">21</span>
+            <span class="time-block">21</span>
           </div>
         </div>
         <a href="#" class="view-more">View More <i class="fa-solid fa-chevron-right"></i></a>
@@ -411,8 +349,7 @@ const staticProducts = [
       <div class="product-grid-6">
         {flashSaleProducts.length > 0 ? (
           flashSaleProducts.map((product) => {
-            // 计算折扣百分比
-            const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
+            const hasDiscount = Boolean(product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price));
             const discountPercent = hasDiscount
               ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
               : 0;
@@ -554,58 +491,31 @@ const staticProducts = [
             </div>
           ))
         ) : (
-          // 默认内容（如果没有配置）
-          <>
-            <div class="arrivals-column">
-              <h3 class="column-title">8.1st - 8.7th</h3>
-              <div class="product-group">
-                <div class="group-images">
-                  <div class="images-row">
-                    <OptimizedImage
-                      src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80"
-                      alt="Halloween"
-                      width={400}
-                      height={400}
-                      loading="lazy"
-                      class="large-img"
-                    />
-                    <div class="small-imgs">
-                      <OptimizedImage
-                        src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80"
-                        alt=""
-                        width={200}
-                        height={200}
-                        loading="lazy"
-                      />
-                      <OptimizedImage
-                        src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80"
-                        alt=""
-                        width={200}
-                        height={200}
-                        loading="lazy"
-                      />
-                      <OptimizedImage
-                        src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80"
-                        alt=""
-                        width={200}
-                        height={200}
-                        loading="lazy"
-                      />
-                      <OptimizedImage
-                        src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80"
-                        alt=""
-                        width={200}
-                        height={200}
-                        loading="lazy"
-                      />
-                    </div>
+          <div class="arrivals-column">
+            <h3 class="column-title">8.1st - 8.7th</h3>
+            <div class="product-group">
+              <div class="group-images">
+                <div class="images-row">
+                  <OptimizedImage
+                    src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80"
+                    alt="Halloween"
+                    width={400}
+                    height={400}
+                    loading="lazy"
+                    class="large-img"
+                  />
+                  <div class="small-imgs">
+                    <OptimizedImage src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80" alt="" width={200} height={200} loading="lazy" />
+                    <OptimizedImage src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80" alt="" width={200} height={200} loading="lazy" />
+                    <OptimizedImage src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80" alt="" width={200} height={200} loading="lazy" />
+                    <OptimizedImage src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80" alt="" width={200} height={200} loading="lazy" />
                   </div>
                 </div>
-                <p class="group-name">Halloween</p>
-                <p class="group-count">10k+ Products</p>
               </div>
+              <p class="group-name">Halloween</p>
+              <p class="group-count">10k+ Products</p>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
@@ -648,7 +558,7 @@ const staticProducts = [
     </div>
   </section>
 
-  <!-- 9. CAMPAIGN ZONE -->
+  <!-- 9. CAMPAIGN ZONE (纵向拉宽拉大) -->
   <section class="campaign-section">
     <div class="container">
       <div class="campaign-title-bar">
@@ -658,14 +568,13 @@ const staticProducts = [
         {campaignCards.length > 0 ? (
           campaignCards.map((card) => {
             const cardLink = parseACFLink(card.card_link);
-            const hasCardLink = !!cardLink.url;
+            const hasCardLink = Boolean(cardLink.url);
             const products = Array.isArray(card.products) ? card.products : [];
 
-            // 预处理产品数据
             const productItems = products.slice(0, 2).map((product) => {
               const productTitle = product.post_title || product.title?.rendered || 'Product';
               const productSlug = product.post_name || product.slug || '';
-              const productImage = product.featured_image || 'https://via.placeholder.com/100?text=' + encodeURIComponent(productTitle.substring(0, 10));
+              const productImage = product.featured_image || 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=100&q=80';
               const productPrice = product.price || product.regular_price || '0.00';
 
               return { productTitle, productSlug, productImage, productPrice };
@@ -705,7 +614,6 @@ const staticProducts = [
             );
           })
         ) : (
-          // 默认内容
           <div class="campaign-banner-card">
             <div class="campaign-left-poster">
               <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80" alt="" loading="lazy">
@@ -757,7 +665,6 @@ const staticProducts = [
           </button>
         </div>
       ) : (
-        // 默认内容
         <div class="review-grid">
           <div class="review-card">
             <div class="stars">★★★★★</div>
@@ -772,12 +679,12 @@ const staticProducts = [
     </div>
   </section>
 
-  <!-- 11. SOCIAL INSTAGRAM FEED -->
+  <!-- 11. SOCIAL INSTAGRAM FEED (纵向拉大拉深) -->
   <section class="social-feed-section">
     <div class="container">
-      <div style="text-align: center; margin-bottom: 20px;">
-        <span style="font-size: 11px; letter-spacing: 1px; color: #999; text-transform: uppercase;">EVERYTHING YOU NEED & MORE</span>
-        <div class="stars" style="margin-top: 4px; color: #f5a623; font-size: 10px;">★★★★☆</div>
+      <div style="text-align: center; margin-bottom: 24px;">
+        <span style="font-size: 11px; letter-spacing: 1.5px; color: #999; text-transform: uppercase;">EVERYTHING YOU NEED & MORE</span>
+        <div class="stars" style="margin-top: 6px; color: #f5a623; font-size: 11px;">★★★★☆</div>
       </div>
       <div class="feed-grid">
         {instagramPosts.length > 0 ? (
@@ -804,7 +711,6 @@ const staticProducts = [
             </div>
           ))
         ) : (
-          // 默认内容
           <>
             <div class="feed-card">
               <div class="feed-img-box">
@@ -845,7 +751,7 @@ const staticProducts = [
     </div>
   </section>
 
-  <!-- 12. BRAND FAQ & FACTORY GALLERY -->
+  <!-- 12. BRAND FAQ & FACTORY GALLERY (纵向拉宽拉大) -->
   <section class="faq-gallery-section">
     <div class="container">
       <div class="faq-grid-layout">
@@ -855,7 +761,6 @@ const staticProducts = [
               <img src={img.url || img} alt={img.alt || 'Factory'} loading="lazy" />
             ))
           ) : (
-            // 默认图片
             <>
               <img src="https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&q=80" alt="Workshop">
               <img src="https://images.unsplash.com/photo-1504198458649-3128b932f49e?w=400&q=80" alt="Craft">
@@ -869,7 +774,7 @@ const staticProducts = [
           <h3 class="serif-title">{faqSectionTitle}</h3>
           <div class="accordion-list">
             {faqItems.length > 0 ? (
-              faqItems.map((faq, index) => (
+              faqItems.map((faq) => (
                 <div class="accordion-item">
                   <div class="accordion-header">
                     <span>{faq.question}</span>
@@ -879,7 +784,6 @@ const staticProducts = [
                 </div>
               ))
             ) : (
-              // 默认 FAQ
               <>
                 <div class="accordion-item">
                   <div class="accordion-header">
@@ -910,9 +814,8 @@ const staticProducts = [
     </div>
   </section>
 
-  <!-- ========== MOBILE ONLY CONTENT ========== -->
+  <!-- ========== MOBILE ONLY CONTENT (保持 100% 原始结构与样式不变) ========== -->
   <div class="mobile-only">
-    <!-- Mobile Hero Banner -->
     <section class="mobile-hero">
       <div class="mobile-hero-banner">
         <OptimizedImage
@@ -940,7 +843,6 @@ const staticProducts = [
         </div>
       </div>
 
-      <!-- Mobile Hero Sub Cards (5:5 layout) -->
       <div class="mobile-hero-subcards">
         <a
           href={mobileSubCard1.link.url}
@@ -982,7 +884,6 @@ const staticProducts = [
         </a>
       </div>
 
-      <!-- New User Benefits Bar -->
       <div class="mobile-benefits-bar-new">
         <div class="benefits-left">
           <span class="mobile-vip-badge">VIP</span>
@@ -995,28 +896,24 @@ const staticProducts = [
       </div>
     </section>
 
-    <!-- Mobile Category Icons -->
-
     <!-- Mobile Flash Sale -->
     <section class="mobile-flash-sale">
       <div class="mobile-flash-header">
         <h2>⚡ Flash Sales</h2>
-        <div class="mobile-countdown" id="mobileCountdown">
+        <div class="mobile-countdown">
           <span>Ends in</span>
-          <div class="mobile-timer-box hours">23</div>
+          <div class="mobile-timer-box">23</div>
           <span>:</span>
-          <div class="mobile-timer-box minutes">59</div>
+          <div class="mobile-timer-box">59</div>
           <span>:</span>
-          <div class="mobile-timer-box seconds">45</div>
+          <div class="mobile-timer-box">45</div>
         </div>
       </div>
 
-      <!-- Horizontal Scroll Products -->
       <div class="mobile-products-scroll">
         {flashSaleProducts.length > 0 ? (
           flashSaleProducts.map((product) => {
-            // 计算折扣百分比
-            const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
+            const hasDiscount = Boolean(product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price));
             const discountPercent = hasDiscount
               ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
               : 0;
@@ -1153,7 +1050,6 @@ const staticProducts = [
             </div>
           ))
         ) : (
-          // 默认内容
           <div class="mobile-arrival-card">
             <div class="mobile-arrival-header">
               <h3>8.1st - 8.7th</h3>
@@ -1169,34 +1065,10 @@ const staticProducts = [
                 class="main-img"
               />
               <div class="side-imgs">
-                <OptimizedImage
-                  src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80"
-                  alt=""
-                  width={200}
-                  height={200}
-                  loading="lazy"
-                />
-                <OptimizedImage
-                  src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80"
-                  alt=""
-                  width={200}
-                  height={200}
-                  loading="lazy"
-                />
-                <OptimizedImage
-                  src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80"
-                  alt=""
-                  width={200}
-                  height={200}
-                  loading="lazy"
-                />
-                <OptimizedImage
-                  src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80"
-                  alt=""
-                  width={200}
-                  height={200}
-                  loading="lazy"
-                />
+                <OptimizedImage src="https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=200&q=80" alt="" width={200} height={200} loading="lazy" />
+                <OptimizedImage src="https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=200&q=80" alt="" width={200} height={200} loading="lazy" />
+                <OptimizedImage src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&q=80" alt="" width={200} height={200} loading="lazy" />
+                <OptimizedImage src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=200&q=80" alt="" width={200} height={200} loading="lazy" />
               </div>
             </div>
             <p class="mobile-arrival-name">Halloween</p>
@@ -1210,45 +1082,32 @@ const staticProducts = [
       <h2 class="category-title">SHOP BY CATEGORY</h2>
       <div class="category-scroll">
         <div class="category-item">
-          <div class="category-circle">
-            <i class="fa-regular fa-circle-dot"></i>
-          </div>
+          <div class="category-circle"><i class="fa-regular fa-circle-dot"></i></div>
           <span class="category-label">Rings</span>
         </div>
         <div class="category-item">
-          <div class="category-circle">
-            <i class="fa-solid fa-link"></i>
-          </div>
+          <div class="category-circle"><i class="fa-solid fa-link"></i></div>
           <span class="category-label">Bracelets</span>
         </div>
         <div class="category-item">
-          <div class="category-circle">
-            <i class="fa-regular fa-gem"></i>
-          </div>
+          <div class="category-circle"><i class="fa-regular fa-gem"></i></div>
           <span class="category-label">Necklaces</span>
         </div>
         <div class="category-item">
-          <div class="category-circle">
-            <i class="fa-solid fa-ring"></i>
-          </div>
+          <div class="category-circle"><i class="fa-solid fa-ring"></i></div>
           <span class="category-label">Anklets</span>
         </div>
         <div class="category-item">
-          <div class="category-circle">
-            <i class="fa-solid fa-shield-halved"></i>
-          </div>
+          <div class="category-circle"><i class="fa-solid fa-shield-halved"></i></div>
           <span class="category-label">Body Chains</span>
         </div>
         <div class="category-item">
-          <div class="category-circle">
-            <i class="fa-regular fa-snowflake"></i>
-          </div>
+          <div class="category-circle"><i class="fa-regular fa-snowflake"></i></div>
           <span class="category-label">Earrings</span>
         </div>
       </div>
     </section>
 
-    <!-- Decorative Divider -->
     <div class="mobile-divider"></div>
 
     <!-- Mobile Campaign Zone -->
@@ -1258,10 +1117,9 @@ const staticProducts = [
         {(useSameCampaignData ? campaignCards : []).length > 0 ? (
           (useSameCampaignData ? campaignCards : []).map((card) => {
             const cardLink = parseACFLink(card.card_link);
-            const hasCardLink = !!cardLink.url;
+            const hasCardLink = Boolean(cardLink.url);
             const products = Array.isArray(card.products) ? card.products : [];
 
-            // 预处理产品数据
             const productItems = products.slice(0, 2).map((product) => {
               const productTitle = product.post_title || product.title?.rendered || 'Product';
               const productSlug = product.post_name || product.slug || '';
@@ -1305,7 +1163,6 @@ const staticProducts = [
             );
           })
         ) : (
-          // 默认内容
           <div class="campaign-card">
             <div class="campaign-left">
               <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80" alt="Huge Sale" loading="lazy">
@@ -1335,7 +1192,6 @@ const staticProducts = [
       </div>
     </section>
 
-    <!-- Decorative Divider -->
     <div class="mobile-divider"></div>
 
     <!-- Mobile Reviews Section -->
@@ -1361,7 +1217,6 @@ const staticProducts = [
           </button>
         </div>
       ) : (
-        // 默认内容
         <div class="reviews-scroll">
           <div class="review-card">
             <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80" class="review-avatar" alt="">
@@ -1374,7 +1229,6 @@ const staticProducts = [
       )}
     </section>
 
-    <!-- Decorative Divider -->
     <div class="mobile-divider"></div>
 
     <!-- Mobile Instagram Section -->
@@ -1408,7 +1262,6 @@ const staticProducts = [
             </div>
           ))
         ) : (
-          // 默认内容
           <>
             <div class="instagram-post">
               <div class="instagram-image">
@@ -1428,7 +1281,6 @@ const staticProducts = [
       </div>
     </section>
 
-    <!-- Decorative Divider -->
     <div class="mobile-divider"></div>
 
     <!-- Mobile FAQ Section -->
@@ -1441,7 +1293,6 @@ const staticProducts = [
             <img src={img.url || img} alt={img.alt || 'Factory'} loading="lazy" />
           ))
         ) : (
-          // 默认图片
           <>
             <img src="https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&q=80" alt="">
             <img src="https://images.unsplash.com/photo-1504198458649-3128b932f49e?w=400&q=80" alt="">
@@ -1453,7 +1304,7 @@ const staticProducts = [
 
       <div class="faq-list">
         {(mobileUseSameFaqData ? faqItems : []).length > 0 ? (
-          (mobileUseSameFaqData ? faqItems : []).map((faq, index) => (
+          (mobileUseSameFaqData ? faqItems : []).map((faq) => (
             <div class="faq-item">
               <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
                 <span>{faq.question}</span>
@@ -1463,7 +1314,6 @@ const staticProducts = [
             </div>
           ))
         ) : (
-          // 默认 FAQ
           <>
             <div class="faq-item">
               <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
@@ -1504,7 +1354,6 @@ const staticProducts = [
 </Layout>
 
 <style>
-  /* Prevent horizontal scroll on mobile */
   * {
     box-sizing: border-box;
   }
@@ -1528,7 +1377,6 @@ const staticProducts = [
       overflow-x: hidden !important;
     }
 
-    /* 限死所有横向滚动容器的边界 */
     .mobile-products-scroll,
     .mobile-arrivals-grid,
     .category-scroll,
@@ -1539,7 +1387,6 @@ const staticProducts = [
       box-sizing: border-box !important;
     }
 
-    /* 确保包裹它们的父级切断溢出 */
     .mobile-flash-sale,
     .mobile-arrivals,
     .mobile-categories-new,
@@ -1557,7 +1404,6 @@ const staticProducts = [
     }
   }
 
-  /* 穿透修复Header组件中的ribbon-container */
   :global(.ribbon-container) {
     width: 100% !important;
     max-width: 100% !important;
@@ -1565,7 +1411,6 @@ const staticProducts = [
     box-sizing: border-box !important;
   }
 
-  /* TOP NOTIFICATION BAR */
   .top-bar {
     background-color: #c62828;
     color: #fff;
@@ -1576,7 +1421,6 @@ const staticProducts = [
     letter-spacing: 0.5px;
   }
 
-  /* HEADER MAIN */
   .header-main {
     padding: 16px 0;
     border-bottom: 1px solid var(--border-color);
@@ -1638,7 +1482,6 @@ const staticProducts = [
     line-height: 1;
   }
 
-  /* NAVIGATION */
   .nav-bar {
     border-bottom: 1px solid var(--border-color);
     font-size: 11px;
@@ -1676,7 +1519,6 @@ const staticProducts = [
     cursor: pointer;
   }
 
-  /* HERO SECTION */
   .hero-section {
     padding: 24px 0;
     position: relative;
@@ -1864,7 +1706,6 @@ const staticProducts = [
     background: #f9f9f9;
   }
 
-  /* 已登录状态样式 */
   .user-auth-logged-in .avatar-icon.logged-in {
     background: linear-gradient(135deg, #c9933f 0%, #d4a556 100%);
     color: #fff;
@@ -1990,7 +1831,7 @@ const staticProducts = [
     box-shadow: 0 6px 16px rgba(201, 147, 63, 0.3);
   }
 
-  /* FLASH SALES */
+  /* FLASH SALES (每行 5 个，共两行展示 10 个) */
   .flash-sales-section {
     padding: 64px 0;
     position: relative;
@@ -2014,41 +1855,27 @@ const staticProducts = [
     text-transform: uppercase;
     font-family: 'Cinzel', serif;
   }
-  /* 活动氛围倒计时 - 桌面端 */
   .countdown-timer {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: #fff5f5;
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1px solid #ffe3e3;
-    box-shadow: 0 2px 8px rgba(229, 57, 53, 0.08);
+    gap: 8px;
   }
   .time-block {
-    background: linear-gradient(145deg, #1f1f1f, #0d0d0d);
+    background: #1a1a1a;
     color: #fff;
-    font-size: 13px;
-    font-weight: 800;
-    font-family: 'Courier New', Courier, monospace;
-    width: 30px;
-    height: 30px;
+    font-size: 12px;
+    font-weight: 700;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
-    letter-spacing: 0.5px;
+    border-radius: 2px;
   }
   .time-separator {
-    color: #e53935;
-    font-weight: 800;
+    color: #1a1a1a;
+    font-weight: 700;
     font-size: 14px;
-    animation: flashColon 1s infinite;
-  }
-  @keyframes flashColon {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
   }
   .view-more {
     font-size: 14px;
@@ -2069,7 +1896,7 @@ const staticProducts = [
   .product-grid-6 {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
+    gap: 20px 16px;
   }
   .product-card {
     cursor: pointer;
@@ -2095,7 +1922,7 @@ const staticProducts = [
     transition: transform 0.5s ease;
   }
   .product-card:hover .product-img-wrap img {
-    transform: scale(1.1);
+    transform: scale(1.08);
   }
   .product-badge {
     position: absolute;
@@ -2142,19 +1969,18 @@ const staticProducts = [
     text-decoration: line-through;
   }
 
-  @media (max-width: 1024px) {
+  @media (max-width: 1200px) and (min-width: 769px) {
     .product-grid-6 {
       grid-template-columns: repeat(4, 1fr);
     }
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) and (min-width: 769px) {
     .product-grid-6 {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 
-  /* TRUST BADGES */
   .trust-badges {
     padding: 25px 0;
     border-top: 1px solid #f0f0f0;
@@ -2183,7 +2009,6 @@ const staticProducts = [
     color: var(--gray-text);
   }
 
-  /* NEW ARRIVALS / WATERPROOF */
   .new-arrivals-section {
     padding: 40px 0;
   }
@@ -2223,6 +2048,8 @@ const staticProducts = [
   .product-group {
     display: flex;
     flex-direction: column;
+    text-decoration: none;
+    color: inherit;
   }
   .group-images {
     margin-bottom: 8px;
@@ -2281,6 +2108,7 @@ const staticProducts = [
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-decoration: none;
   }
   .quick-links a:hover {
     background: #f0f0f0;
@@ -2292,6 +2120,7 @@ const staticProducts = [
     background: transparent !important;
     border: none !important;
     margin-top: 8px;
+    text-decoration: none;
   }
   .view-more-link:hover {
     text-decoration: underline;
@@ -2310,63 +2139,6 @@ const staticProducts = [
     }
   }
 
-  /* QUAD CATEGORY BLOCKS */
-  .section-title-bar {
-    margin-bottom: 16px;
-  }
-  .quad-category-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    margin-bottom: 35px;
-  }
-  .quad-block {
-    background: #fafafa;
-    border: 1px solid #ececec;
-    border-radius: 3px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .quad-header {
-    font-size: 12px;
-    font-weight: 700;
-    color: #222;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 6px;
-  }
-  .quad-sub-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-  .quad-item-card {
-    background: #fff;
-    border: 1px solid #f0f0f0;
-    border-radius: 2px;
-    padding: 6px;
-    text-align: center;
-  }
-  .quad-item-card img {
-    width: 100%;
-    height: 80px;
-    border-radius: 2px;
-    margin-bottom: 4px;
-  }
-  .quad-item-card h6 {
-    font-size: 10px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .quad-item-card span {
-    font-size: 9px;
-    color: #999;
-  }
-
-  /* SHOP BY CATEGORY */
   .shop-by-cat-section {
     padding: 40px 0;
   }
@@ -2388,6 +2160,7 @@ const staticProducts = [
     align-items: center;
     gap: 12px;
     cursor: pointer;
+    text-decoration: none;
   }
   .cat-icon-circle {
     width: 80px;
@@ -2419,15 +2192,17 @@ const staticProducts = [
     color: #444;
   }
 
-  /* CAMPAIGN ZONE */
+  /* =========================================================
+     9. CAMPAIGN ZONE: 桌面端纵向拉宽拉大 (高度从 130px 增至 195px)
+     ========================================================= */
   .campaign-section {
-    padding-bottom: 35px;
+    padding-bottom: 42px;
     position: relative;
     z-index: 2;
   }
   .campaign-title-bar {
     text-align: center;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
   }
   .campaign-grid {
     display: grid;
@@ -2436,21 +2211,18 @@ const staticProducts = [
   }
   .campaign-banner-card {
     display: flex;
-    background: #fff;
+    background: #fafafa;
     border: 1px solid #eaeaea;
-    border-radius: 6px;
+    border-radius: 4px;
     overflow: hidden;
-    height: 180px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-  }
-  .campaign-banner-card:hover {
-    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    height: 195px; /* 纵向拉大 */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
   .campaign-left-poster {
     width: 44%;
     position: relative;
-    overflow: hidden;
+    display: block;
+    height: 100%;
   }
   .campaign-left-poster img {
     width: 100%;
@@ -2460,59 +2232,60 @@ const staticProducts = [
   .poster-text {
     position: absolute;
     inset: 0;
-    background: rgba(0,0,0,0.42);
+    background: rgba(0,0,0,0.45);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     color: #fff;
     text-align: center;
-    padding: 10px;
+    padding: 8px;
   }
-  .poster-text span { font-size: 9px; letter-spacing: 1.5px; }
-  .poster-text h4 { font-size: 15px; font-weight: 700; font-family: 'Cinzel', serif; }
+  .poster-text span { font-size: 9px; letter-spacing: 1.5px; margin-bottom: 4px; }
+  .poster-text h4 { font-size: 16px; font-weight: 700; }
   .campaign-right-items {
     width: 56%;
     display: flex;
     flex-direction: column;
+    height: 100%;
   }
   .camp-mini-item {
     flex: 1;
     display: flex;
     align-items: center;
-    padding: 10px 14px;
+    padding: 8px 14px;
     gap: 12px;
-    border-bottom: 1px solid #f3f3f3;
+    border-bottom: 1px solid #f0f0f0;
     background: #fff;
     text-decoration: none;
-    transition: background-color 0.2s ease;
+    transition: background 0.2s;
   }
   .camp-mini-item:hover {
-    background-color: #fafafa;
+    background: #faf8f5;
   }
   .camp-mini-item:last-child { border-bottom: none; }
   .camp-mini-item img {
-    width: 54px;
-    height: 54px;
-    border-radius: 4px;
+    width: 68px; /* 纵向放大图片 */
+    height: 68px;
+    border-radius: 3px;
     object-fit: cover;
     flex-shrink: 0;
+    background: #f5f5f5;
   }
   .camp-mini-info {
     min-width: 0;
     flex: 1;
   }
   .camp-mini-info h6 {
-    font-size: 11px;
+    font-size: 11.5px;
     color: #333;
     font-weight: 500;
     line-height: 1.35;
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin: 0 0 4px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   .camp-mini-info span {
     font-size: 13px;
@@ -2532,8 +2305,6 @@ const staticProducts = [
     font-weight: 700;
     margin-bottom: 20px;
   }
-
-  /* Reviews Slider */
   .reviews-slider {
     position: relative;
     max-width: 1400px;
@@ -2575,14 +2346,9 @@ const staticProducts = [
     background: white;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
-  .slider-prev {
-    left: 10px;
-  }
-  .slider-next {
-    right: 10px;
-  }
+  .slider-prev { left: 10px; }
+  .slider-next { right: 10px; }
 
-  /* Old review grid (fallback) */
   .review-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -2633,40 +2399,35 @@ const staticProducts = [
     color: #999;
   }
 
-  /* SOCIAL INSTAGRAM FEED */
+  /* =========================================================
+     11. SOCIAL INSTAGRAM FEED: 桌面端纵向拉宽拉大 (高度从 220px 增至 320px)
+     ========================================================= */
   .social-feed-section {
-    padding-bottom: 35px;
+    padding-bottom: 48px;
   }
   .feed-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    align-items: stretch;
+    gap: 18px;
   }
   .feed-card {
     background: #fff;
     border: 1px solid #eaeaea;
     border-radius: 4px;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
   .feed-img-box {
     width: 100%;
-    aspect-ratio: 1 / 1.15;
-    height: auto;
+    height: 320px; /* 纵向拉大 */
     position: relative;
     overflow: hidden;
-    background: #f4f4f4;
   }
   .feed-img-box img,
   .feed-video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
   }
   .feed-video {
     display: block;
@@ -2680,12 +2441,12 @@ const staticProducts = [
     background: rgba(0,0,0,0.7);
     color: #fff;
     border-radius: 50%;
-    width: 50px;
-    height: 50px;
+    width: 54px;
+    height: 54px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 20px;
     cursor: pointer;
     transition: all 0.3s;
   }
@@ -2695,19 +2456,20 @@ const staticProducts = [
   }
   .instagram-link-icon {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 10px;
+    right: 10px;
     background: rgba(255,255,255,0.9);
     color: #E4405F;
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 16px;
     transition: all 0.3s;
     z-index: 5;
+    text-decoration: none;
   }
   .instagram-link-icon:hover {
     background: #E4405F;
@@ -2715,70 +2477,71 @@ const staticProducts = [
     transform: scale(1.1);
   }
   .feed-caption {
-    padding: 12px 14px;
+    padding: 14px 12px;
     font-size: 11px;
-    color: #666;
+    color: #555;
     line-height: 1.5;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
   }
-  .feed-caption strong { color: #111; }
+  .feed-caption strong { color: #111; margin-right: 4px; }
 
-  /* BRAND FAQ & WORKSHOP */
+  /* =========================================================
+     12. BRAND FAQ & FACTORY GALLERY: 桌面端纵向拉宽拉大 (高度从 130px 增至 195px)
+     ========================================================= */
   .faq-gallery-section {
-    padding: 20px 0 50px;
+    padding: 24px 0 60px;
   }
   .faq-grid-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 18px;
+    gap: 24px;
+    align-items: start;
   }
   .gallery-quad {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 12px;
   }
   .gallery-quad img {
     width: 100%;
-    height: 130px;
-    border-radius: 3px;
+    height: 195px; /* 纵向拉大 */
+    border-radius: 4px;
+    object-fit: cover;
   }
   .faq-col {
     display: flex;
     flex-direction: column;
   }
   .faq-col h3 {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     font-family: 'Cinzel', serif;
+    line-height: 1.4;
   }
   .accordion-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
   .accordion-item {
     border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 6px;
   }
   .accordion-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 11px;
+    font-size: 13px; /* 字体更清晰 */
     font-weight: 600;
-    color: #333;
+    color: #222;
     cursor: pointer;
-    padding: 8px 0;
+    padding: 12px 0;
   }
   .accordion-header:hover { color: var(--primary); }
   .accordion-header i {
     transition: transform 0.25s ease;
-    font-size: 10px;
+    font-size: 11px;
   }
   .accordion-item.active .accordion-header i {
     transform: rotate(180deg);
@@ -2787,361 +2550,39 @@ const staticProducts = [
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.25s ease;
-    font-size: 10px;
+    font-size: 11.5px;
     color: #666;
-    line-height: 1.6;
+    line-height: 1.65;
   }
   .accordion-item.active .accordion-body {
-    padding-top: 8px;
+    padding-top: 6px;
+    padding-bottom: 8px;
   }
 
-  /* ===== MOBILE RESPONSIVE STYLES ===== */
+  /* =========================================================
+     移动端独立完全隔离区域（绝不改动任何 1 像素，保持原汁原味）
+     ========================================================= */
+  .mobile-only {
+    display: none;
+  }
+
   @media (max-width: 768px) {
-    /* Container */
-    .container {
-      padding: 0 16px;
-      max-width: 100%;
-    }
-
-    /* Hero Section - Mobile Redesign */
-    .hero-section {
-      padding: 12px 16px;
-    }
-    .hero-grid {
-      display: block;
-    }
-
-    /* Hero Main - Full Width Single Banner */
-    .hero-main-banner {
-      width: 100%;
-      height: 240px;
-      margin-bottom: 8px;
-      border-radius: 8px;
-    }
-    .hero-overlay {
-      padding: 16px;
-      background: linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .hero-overlay > div {
-      max-width: 65%;
-    }
-    .hero-overlay .hero-subtitle {
-      font-size: 8px;
-      letter-spacing: 0.2em;
-      margin-bottom: 4px;
-    }
-    .hero-overlay h2 {
-      font-size: 18px;
-      line-height: 1.2;
-      margin-bottom: 4px;
-    }
-    .hero-overlay .hero-description {
-      font-size: 10px;
-      margin-bottom: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .hero-cta {
-      position: static;
-      padding: 8px 14px;
-      font-size: 9px;
-      letter-spacing: 0.15em;
-      white-space: nowrap;
-    }
-
-    /* Hide Mid Cards and Right Cards on Mobile */
-    .hero-mid-card,
-    .hero-right-card {
-      display: none;
-    }
-
-    /* New User Benefits Bar (Replace Hero Right Card) */
-    .hero-section::after {
-      content: '';
-      display: block;
-      background: rgba(238, 232, 221, 0.7);
-      border: 1px dashed rgba(212, 160, 77, 0.5);
-      border-radius: 4px;
-      padding: 8px 12px;
-      margin-top: 8px;
-    }
-
-    /* Categories Ribbon - Horizontal Scroll */
-    .categories-ribbon {
-      padding: 16px 0;
-      background: #fff;
-    }
-    .categories-ribbon h2 {
-      font-size: 14px;
-      padding: 0 16px;
-      margin-bottom: 12px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-    .categories-grid {
-      display: flex;
-      gap: 16px;
-      padding: 0 16px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-    .categories-grid::-webkit-scrollbar {
-      display: none;
-    }
-    .category-item {
-      flex: 0 0 auto;
-      scroll-snap-align: start;
-    }
-    .category-icon {
-      width: 72px;
-      height: 72px;
-    }
-    .category-item p {
-      font-size: 10px;
-      margin-top: 6px;
-    }
-
-    /* Flash Sale - Horizontal Scroll Cards */
-    .flash-sale-section {
-      padding: 16px 0;
-      background: #fff;
-      border-top: 1px solid #ddd8ce;
-      border-bottom: 1px solid #ddd8ce;
-    }
-    .flash-header {
-      padding: 0 16px;
-      margin-bottom: 12px;
-    }
-    .flash-header h2 {
-      font-size: 16px;
-      font-weight: 500;
-      letter-spacing: 0.05em;
-    }
-    .countdown-timer {
-      font-size: 10px;
-      gap: 2px;
-    }
-    .timer-box {
-      min-width: 24px;
-      height: 24px;
-      font-size: 10px;
-      padding: 4px;
-    }
-    .view-all-link {
-      font-size: 12px;
-    }
-
-    /* Product Grid - Horizontal Scroll */
-    .product-grid-6 {
-      display: flex;
-      gap: 12px;
-      padding: 0 16px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      grid-template-columns: none;
-    }
-    .product-grid-6::-webkit-scrollbar {
-      display: none;
-    }
-    .product-card {
-      flex: 0 0 144px;
-      width: 144px;
-      scroll-snap-align: start;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .product-image {
-      border-radius: 4px 4px 0 0;
-    }
-    .discount-badge {
-      font-size: 9px;
-      padding: 2px 6px;
-      top: 6px;
-      left: 6px;
-    }
-    .product-info {
-      padding: 10px;
-    }
-    .product-name {
-      font-size: 11px;
-      line-height: 1.3;
-    }
-    .product-price {
-      font-size: 12px;
-    }
-    .product-old-price {
-      font-size: 10px;
-    }
-
-    /* Trust Badges - 2x2 Grid */
-    .trust-badges {
-      padding: 12px 16px;
-      background: #f7f4ee;
-      border: 1px solid #ddd8ce;
-      border-left: none;
-      border-right: none;
-      margin: 0;
-    }
-    .trust-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      text-align: center;
-    }
-    .trust-item {
-      padding: 8px 0;
-    }
-    .trust-item:nth-child(3),
-    .trust-item:nth-child(4) {
-      padding-top: 16px;
-      border-top: 1px solid rgba(221, 216, 206, 0.6);
-    }
-    .trust-item i {
-      font-size: 14px;
-      margin-bottom: 4px;
-    }
-    .trust-item h5 {
-      font-size: 9.5px;
-      letter-spacing: 0.05em;
-    }
-    .trust-item p {
-      font-size: 8.5px;
-    }
-
-    /* New Arrivals Section - Mobile Cards */
-    .new-arrivals-section {
-      padding: 24px 16px;
-    }
-    .arrivals-title {
-      font-size: 16px;
-      font-weight: 500;
-      letter-spacing: 0.05em;
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #ddd8ce;
-    }
-
-    /* Category Groups - Mobile Optimized */
-    .category-groups-section {
-      padding: 0 16px 24px;
-    }
-    .category-groups-section h2 {
-      font-size: 16px;
-      margin-bottom: 16px;
-    }
-    .category-groups-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .category-group-card {
-      background: #fff;
-      border: 1px solid #ddd8ce;
-      border-radius: 4px;
-      padding: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    }
-    .category-group-card .category-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 8px;
-    }
-    .category-group-card h3 {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-    .category-group-card .product-count {
-      font-size: 10px;
-      font-weight: 600;
-      color: #d4a04d;
-    }
-
-    /* Category Images Grid - 3+4 Layout */
-    .category-images-grid {
-      display: grid;
-      grid-template-columns: 3fr 2fr;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-    .category-images-grid .main-image {
-      grid-row: span 2;
-    }
-    .category-images-grid .side-images {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
-    .category-images-grid img {
-      width: 100%;
-      aspect-ratio: 1;
-      object-fit: cover;
-      border-radius: 4px;
-    }
-    .category-group-card .category-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-top: 8px;
-    }
-    .quick-links {
-      display: none; /* Hide quick links on mobile for cleaner look */
-    }
-
-    /* Section Spacing */
-    section {
-      margin-bottom: 0;
-    }
-
-    /* Hide desktop-only elements */
-    .desktop-only {
-      display: none;
-    }
-  }
-
-  @media (max-width: 480px) {
-    /* Extra Small Screens */
-    .hero-main-banner {
-      height: 200px;
-    }
-    .hero-overlay h2 {
-      font-size: 16px;
-    }
-    .category-icon {
-      width: 64px;
-      height: 64px;
-    }
-    .product-card {
-      flex: 0 0 130px;
-      width: 130px;
-    }
-
-    /* Hide desktop content on mobile */
-    body > .hero-section,
-    body > .categories-ribbon,
-    body > .flash-sale-section,
-    body > .trust-badges,
-    body > .new-arrivals-section,
-    body > .category-groups-section {
+    .hero-section,
+    .flash-sales-section,
+    .trust-badges,
+    .new-arrivals-section,
+    .shop-by-cat-section,
+    .campaign-section,
+    .reviews-section,
+    .social-feed-section,
+    .faq-gallery-section {
       display: none !important;
     }
 
-    /* Show mobile-only content */
     .mobile-only {
       display: block !important;
     }
 
-    /* ========== MOBILE ONLY STYLES ========== */
-
-    /* Mobile Hero */
     .mobile-hero {
       padding: 12px 16px;
     }
@@ -3181,7 +2622,6 @@ const staticProducts = [
     .mobile-hero-title {
       font-family: 'Bodoni Moda', serif;
       font-size: 18px;
-      font-weight: 400;
       color: #fff;
       line-height: 1.2;
       margin-bottom: 4px;
@@ -3202,11 +2642,9 @@ const staticProducts = [
       letter-spacing: 0.15em;
       padding: 8px 14px;
       border-radius: 4px;
-      white-space: nowrap;
       text-decoration: none;
     }
 
-    /* Mobile Hero Sub Cards */
     .mobile-hero-subcards {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -3218,12 +2656,12 @@ const staticProducts = [
       border-radius: 4px;
       overflow: hidden;
       aspect-ratio: 1;
+      text-decoration: none;
     }
     .mobile-subcard img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
     }
     .mobile-subcard-overlay {
       position: absolute;
@@ -3239,18 +2677,14 @@ const staticProducts = [
       text-transform: uppercase;
       color: rgba(255,255,255,0.8);
       letter-spacing: 1px;
-      margin-bottom: 2px;
     }
     .mobile-subcard-title {
       font-family: 'Cinzel', serif;
       font-size: 14px;
-      font-weight: 600;
       color: white;
       margin: 0;
-      letter-spacing: 0.5px;
     }
 
-    /* Benefits Bar */
     .mobile-benefits-bar-new {
       background: rgba(238, 232, 221, 0.7);
       border: 1px dashed rgba(202, 138, 4, 0.5);
@@ -3260,13 +2694,6 @@ const staticProducts = [
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-    }
-    .benefits-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex: 1;
     }
     .mobile-vip-badge {
       background: #1A1A1A;
@@ -3274,28 +2701,16 @@ const staticProducts = [
       font-size: 9px;
       font-weight: 700;
       padding: 4px 8px;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
       border-radius: 3px;
-      flex-shrink: 0;
-      display: inline-block;
-      line-height: 1;
-    }
-    .benefits-text {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
     }
     .benefits-title {
       font-size: 11px;
       font-weight: 700;
       color: #333;
-      letter-spacing: 0.3px;
     }
     .benefits-desc {
       font-size: 9px;
       color: #666;
-      line-height: 1.2;
     }
     .claim-btn {
       background: #B8860B;
@@ -3304,108 +2719,216 @@ const staticProducts = [
       font-weight: 700;
       padding: 6px 12px;
       border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
       text-decoration: none;
-      white-space: nowrap;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-      flex-shrink: 0;
-    }
-    .claim-btn:hover {
-      background: #9A7309;
     }
 
-    .mobile-benefits-bar {
-      background: rgba(254, 243, 199, 0.7);
-      border: 1px dashed rgba(202, 138, 4, 0.5);
-      border-radius: 4px;
-      padding: 8px 12px;
+    .mobile-flash-sale {
+      padding: 16px 0;
+      background: #fff;
+    }
+    .mobile-flash-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 0 16px;
+      margin-bottom: 12px;
     }
-    .benefits-content {
+    .mobile-flash-header h2 {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 16px;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    .mobile-countdown {
       display: flex;
       align-items: center;
-      gap: 8px;
-    }
-    .benefits-content i {
-      color: #ca8a04;
-      font-size: 14px;
-    }
-    .benefits-content span {
+      gap: 4px;
       font-size: 10px;
       font-weight: 700;
     }
-    .benefits-link {
-      font-size: 9px;
-      font-weight: 700;
-      color: #a16207;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      text-decoration: none;
+    .mobile-timer-box {
+      background: #000;
+      color: #fff;
+      padding: 4px 6px;
+      border-radius: 2px;
+      min-width: 24px;
+      text-align: center;
     }
 
-    /* Mobile Categories */
-    .mobile-categories {
-      padding: 16px 0;
+    .mobile-products-scroll {
+      display: flex;
+      gap: 12px;
+      padding: 0 16px;
+      overflow-x: auto;
+    }
+    .mobile-product-card {
+      flex-shrink: 0;
+      width: 144px;
+      border: 1px solid #e5e7eb;
       background: #fff;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .mobile-product-card a {
+      text-decoration: none;
+      color: inherit;
+    }
+    .mobile-product-image {
+      position: relative;
+      aspect-ratio: 1;
+    }
+    .mobile-product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .mobile-discount-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: #dc2626;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 2px;
+    }
+    .mobile-product-info {
+      padding: 10px;
+    }
+    .mobile-product-info h3 {
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+    }
+    .mobile-product-price {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .mobile-price {
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .mobile-old-price {
+      font-size: 10px;
+      color: #9ca3af;
+      text-decoration: line-through;
+    }
+
+    .mobile-trust-badges {
+      padding: 12px 16px;
+      background: #fef9f1;
       border-top: 1px solid #e5e7eb;
       border-bottom: 1px solid #e5e7eb;
     }
-    .mobile-categories h3 {
+    .mobile-trust-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
       text-align: center;
-      font-size: 14px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 12px;
-      padding: 0 16px;
     }
-    .mobile-category-scroll {
-      display: flex;
-      gap: 16px;
-      padding: 0 16px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-    .mobile-category-scroll::-webkit-scrollbar {
-      display: none;
-    }
-    .mobile-category-item {
+    .mobile-trust-item {
       display: flex;
       flex-direction: column;
       align-items: center;
-      flex-shrink: 0;
+      padding: 8px 0;
     }
-    .mobile-category-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .mobile-trust-item i {
+      font-size: 14px;
+      color: #ca8a04;
       margin-bottom: 4px;
     }
-    .mobile-category-icon i {
-      font-size: 16px;
+    .mobile-trust-item h5 {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .mobile-trust-item p {
+      font-size: 8.5px;
       color: #6b7280;
     }
-    .mobile-category-item span {
-      font-size: 10px;
+
+    .mobile-arrivals {
+      padding: 24px 0;
+    }
+    .mobile-arrivals h2 {
+      font-family: 'Bodoni Moda', serif;
+      font-size: 16px;
       font-weight: 500;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      padding: 0 16px 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .mobile-arrivals-grid {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 0 16px 8px;
+    }
+    .mobile-arrival-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      padding: 12px;
+      min-width: 320px;
+      max-width: 320px;
+      flex-shrink: 0;
+    }
+    .mobile-arrival-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .mobile-arrival-header h3 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .mobile-arrival-images {
+      display: grid;
+      grid-template-columns: 150px auto;
+      gap: 6px;
+      margin-bottom: 8px;
+      height: 140px;
+    }
+    .mobile-arrival-images .main-img {
+      grid-row: span 2;
+      width: 150px;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .mobile-arrival-images .side-imgs {
+      display: grid;
+      grid-template-columns: repeat(2, 67px);
+      gap: 6px;
+      height: 140px;
+    }
+    .mobile-arrival-images .side-imgs img {
+      width: 67px;
+      height: 67px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .mobile-arrival-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-top: 8px;
     }
 
-    /* Mobile Shop by Category - New Style */
     .mobile-categories-new {
       padding: 24px 0 20px;
       background: white;
-      width: 100%;
-      max-width: 100%;
-      overflow: hidden;
     }
     .category-title {
       text-align: center;
@@ -3414,7 +2937,6 @@ const staticProducts = [
       font-weight: 500;
       letter-spacing: 3px;
       margin-bottom: 18px;
-      color: #1a1a1a;
       text-transform: uppercase;
     }
     .category-scroll {
@@ -3422,15 +2944,6 @@ const staticProducts = [
       gap: 20px;
       padding: 0 20px;
       overflow-x: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
-    }
-    .category-scroll::-webkit-scrollbar {
-      display: none;
     }
     .category-item {
       display: flex;
@@ -3438,6 +2951,7 @@ const staticProducts = [
       align-items: center;
       gap: 8px;
       flex-shrink: 0;
+      text-decoration: none;
     }
     .category-circle {
       width: 72px;
@@ -3448,11 +2962,6 @@ const staticProducts = [
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.3s ease;
-    }
-    .category-circle:active {
-      background: #eeeeee;
-      transform: scale(0.95);
     }
     .category-circle i {
       font-size: 28px;
@@ -3462,11 +2971,8 @@ const staticProducts = [
       font-size: 11px;
       font-weight: 500;
       color: #333;
-      text-align: center;
-      max-width: 80px;
     }
 
-    /* Mobile Decorative Divider */
     .mobile-divider {
       height: 1px;
       background: linear-gradient(to right, transparent, #d4af37 20%, #d4af37 80%, transparent);
@@ -3475,7 +2981,6 @@ const staticProducts = [
       opacity: 0.4;
     }
 
-    /* Mobile Campaign Zone */
     .mobile-campaign-zone {
       padding: 20px 16px 24px;
       background: white;
@@ -3488,7 +2993,6 @@ const staticProducts = [
       letter-spacing: 3px;
       text-transform: uppercase;
       margin-bottom: 18px;
-      color: #1a1a1a;
     }
     .campaign-cards {
       display: flex;
@@ -3502,12 +3006,10 @@ const staticProducts = [
       border-radius: 4px;
       overflow: hidden;
       height: 112px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .campaign-left {
       width: 41.666%;
       position: relative;
-      flex-shrink: 0;
     }
     .campaign-left img {
       width: 100%;
@@ -3530,7 +3032,6 @@ const staticProducts = [
       letter-spacing: 2px;
       text-transform: uppercase;
       color: #D4AF37;
-      margin-bottom: 2px;
     }
     .campaign-title {
       font-family: 'Bodoni Moda', serif;
@@ -3552,6 +3053,7 @@ const staticProducts = [
       gap: 8px;
       padding: 4px 10px;
       border-bottom: 1px solid rgba(229,229,229,0.5);
+      text-decoration: none;
     }
     .campaign-product:last-child {
       border-bottom: none;
@@ -3561,11 +3063,6 @@ const staticProducts = [
       height: 36px;
       border-radius: 4px;
       object-fit: cover;
-      flex-shrink: 0;
-    }
-    .campaign-product-info {
-      min-width: 0;
-      flex: 1;
     }
     .campaign-product-info h6 {
       font-size: 10.5px;
@@ -3582,13 +3079,8 @@ const staticProducts = [
       color: #1a1a1a;
     }
 
-    /* Mobile Reviews Section */
     .mobile-reviews {
       padding: 20px 0 24px;
-      background: transparent;
-      width: 100%;
-      max-width: 100%;
-      overflow: hidden;
     }
     .reviews-header {
       text-align: center;
@@ -3601,34 +3093,25 @@ const staticProducts = [
       font-weight: 500;
       letter-spacing: 3px;
       text-transform: uppercase;
-      color: #1a1a1a;
-      margin: 0 0 4px 0;
     }
-
-    /* Mobile Reviews Slider */
     .mobile-reviews-slider {
       position: relative;
       padding: 0 50px;
-      margin: 0 auto;
-      overflow: visible;
     }
     .mobile-reviews-track {
       display: flex;
       transition: transform 0.5s ease-in-out;
-      overflow: visible;
     }
     .mobile-review-slide {
       min-width: 85%;
       flex-shrink: 0;
       padding: 0 10px;
-      box-sizing: border-box;
     }
     .mobile-review-slide img {
       width: 100%;
       height: 350px;
       object-fit: cover;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .mobile-slider-btn {
       position: absolute;
@@ -3644,84 +3127,10 @@ const staticProducts = [
       align-items: center;
       justify-content: center;
       z-index: 10;
-      font-size: 14px;
     }
-    .mobile-slider-prev {
-      left: 8px;
-    }
-    .mobile-slider-next {
-      right: 8px;
-    }
+    .mobile-slider-prev { left: 8px; }
+    .mobile-slider-next { right: 8px; }
 
-    /* Old reviews scroll (fallback) */
-    .reviews-stars {
-      color: #D4AF37;
-      font-size: 12px;
-      letter-spacing: 2px;
-    }
-    .reviews-scroll {
-      display: flex;
-      gap: 12px;
-      overflow-x: auto;
-      padding: 0 16px;
-      scroll-snap-type: x mandatory;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
-    }
-    .reviews-scroll::-webkit-scrollbar {
-      display: none;
-    }
-    .review-card {
-      flex-shrink: 0;
-      width: 240px;
-      scroll-snap-align: center;
-      background: white;
-      border: 1px solid #e5e5e5;
-      padding: 12px;
-      border-radius: 4px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    .review-avatar {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 8px;
-      border: 1px solid #e5e5e5;
-    }
-    .review-quote {
-      font-size: 12px;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-bottom: 6px;
-    }
-    .review-text {
-      font-size: 10px;
-      color: #666;
-      line-height: 1.5;
-      margin: 0 0 8px 0;
-    }
-    .review-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      display: block;
-      margin-bottom: 2px;
-    }
-    .review-meta {
-      font-size: 8.5px;
-      color: #999;
-    }
-
-    /* Mobile Instagram Section */
     .mobile-instagram {
       padding: 20px 0 24px;
       background: transparent;
@@ -3828,7 +3237,6 @@ const staticProducts = [
       color: #1a1a1a;
     }
 
-    /* Mobile FAQ Section */
     .mobile-faq {
       padding: 20px 16px 24px;
       background: white;
@@ -3854,14 +3262,10 @@ const staticProducts = [
     }
     .faq-list {
       border-top: 1px solid #e5e5e5;
-      border-bottom: 1px solid #e5e5e5;
     }
     .faq-item {
       border-bottom: 1px solid #e5e5e5;
       padding: 10px 0;
-    }
-    .faq-item:last-child {
-      border-bottom: none;
     }
     .faq-question {
       display: flex;
@@ -3871,14 +3275,6 @@ const staticProducts = [
       font-weight: 500;
       color: #1a1a1a;
       cursor: pointer;
-    }
-    .faq-question i {
-      font-size: 9px;
-      color: #666;
-      transition: transform 0.3s ease;
-    }
-    .faq-item.active .faq-question i {
-      transform: rotate(180deg);
     }
     .faq-answer {
       font-size: 10.5px;
@@ -3890,328 +3286,6 @@ const staticProducts = [
     .faq-item.active .faq-answer {
       display: block;
     }
-
-    /* Mobile Flash Sale */
-    .mobile-flash-sale {
-      padding: 16px 0;
-      background: #fff;
-      border-bottom: 1px solid #e5e7eb;
-      width: 100%;
-      max-width: 100%;
-      overflow: hidden;
-    }
-    .mobile-flash-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      margin-bottom: 12px;
-    }
-    .mobile-flash-header h2 {
-      font-family: 'Bodoni Moda', serif;
-      font-size: 16px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .mobile-countdown {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 10px;
-      font-weight: 700;
-      background: #fff5f5;
-      padding: 4px 8px;
-      border-radius: 16px;
-      border: 1px solid #ffe3e3;
-    }
-    .mobile-countdown span {
-      color: #e53935;
-    }
-    .mobile-timer-box {
-      background: #111;
-      color: #fff;
-      padding: 3px 5px;
-      border-radius: 3px;
-      min-width: 22px;
-      text-align: center;
-      font-size: 10px;
-      font-family: 'Courier New', Courier, monospace;
-      font-weight: 800;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-
-    /* Mobile Products Scroll */
-    .mobile-products-scroll {
-      display: flex;
-      gap: 12px;
-      padding: 0 16px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
-    }
-    .mobile-products-scroll::-webkit-scrollbar {
-      display: none;
-    }
-    .mobile-product-card {
-      flex-shrink: 0;
-      width: 144px;
-      border: 1px solid #e5e7eb;
-      background: #fff;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .mobile-product-image {
-      position: relative;
-      aspect-ratio: 1;
-      background: #f9fafb;
-    }
-    .mobile-product-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .mobile-discount-badge {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      background: #dc2626;
-      color: #fff;
-      font-size: 9px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 2px;
-      z-index: 1;
-    }
-    .mobile-product-info {
-      padding: 10px;
-    }
-    .mobile-product-info h3 {
-      font-size: 11px;
-      font-weight: 500;
-      line-height: 1.3;
-      margin-bottom: 6px;
-      display: -webkit-box;
-      -webkit-line-clamp: 1;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    .mobile-product-price {
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-    }
-    .mobile-price {
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .mobile-old-price {
-      font-size: 10px;
-      color: #9ca3af;
-      text-decoration: line-through;
-    }
-
-    /* Mobile Trust Badges */
-    .mobile-trust-badges {
-      padding: 12px 16px;
-      background: #fef9f1;
-      border-top: 1px solid #e5e7eb;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .mobile-trust-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      text-align: center;
-    }
-    .mobile-trust-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 8px 0;
-    }
-    .mobile-trust-item.border-top {
-      padding-top: 16px;
-      border-top: 1px solid rgba(229, 231, 235, 0.6);
-    }
-    .mobile-trust-item i {
-      font-size: 14px;
-      color: #ca8a04;
-      margin-bottom: 4px;
-    }
-    .mobile-trust-item h5 {
-      font-size: 9.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 2px;
-    }
-    .mobile-trust-item p {
-      font-size: 8.5px;
-      color: #6b7280;
-    }
-
-    /* Mobile Arrivals */
-    .mobile-arrivals {
-      padding: 24px 0;
-      overflow: hidden;
-      width: 100%;
-      max-width: 100%;
-    }
-    .mobile-arrivals h2 {
-      font-family: 'Bodoni Moda', serif;
-      font-size: 16px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 16px;
-      padding: 0 16px 8px;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .mobile-arrivals-grid {
-      display: flex;
-      gap: 12px;
-      overflow-x: auto;
-      overflow-y: hidden;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      padding: 0 16px 8px;
-    }
-    .mobile-arrivals-grid::-webkit-scrollbar {
-      display: none;
-    }
-    .mobile-arrival-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 4px;
-      padding: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      min-width: 320px;
-      max-width: 320px;
-      flex-shrink: 0;
-      scroll-snap-align: start;
-    }
-    .mobile-arrival-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 8px;
-    }
-    .mobile-arrival-header h3 {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-    .mobile-arrival-header span {
-      font-size: 10px;
-      font-weight: 600;
-      color: #ca8a04;
-    }
-    .mobile-arrival-images {
-      display: grid;
-      grid-template-columns: 150px auto;
-      gap: 6px;
-      margin-bottom: 8px;
-      height: 140px;
-    }
-    .mobile-arrival-images .main-img {
-      grid-row: span 2;
-      width: 150px;
-      height: 140px;
-      object-fit: cover;
-      border-radius: 4px;
-    }
-    .mobile-arrival-images .side-imgs {
-      display: grid;
-      grid-template-columns: repeat(2, 67px);
-      grid-template-rows: repeat(2, 67px);
-      gap: 6px;
-      height: 140px;
-    }
-    .mobile-arrival-images .side-imgs img {
-      width: 67px;
-      height: 67px;
-      object-fit: cover;
-      border-radius: 4px;
-    }
-    .mobile-arrival-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: #1f2937;
-    }
-    .mobile-quick-links {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-top: 10px;
-    }
-    .mobile-quick-links a {
-      text-align: center;
-      padding: 8px 4px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 4px;
-      font-size: 10px;
-      text-decoration: none;
-      color: #1f2937;
-    }
-    .mobile-quick-links .view-more {
-      grid-column: span 2;
-      color: #ca8a04;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      font-size: 10.5px;
-    }
-    .mobile-view-more-link {
-      display: block;
-      text-align: center;
-      padding: 10px;
-      margin-top: 10px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 4px;
-      color: #ca8a04;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      font-size: 10.5px;
-      text-decoration: none;
-    }
-    .mobile-arrival-name {
-      font-size: 11px;
-      font-weight: 600;
-      color: #1f2937;
-      margin-top: 8px;
-    }
-    .mobile-arrival-group {
-      display: block;
-      text-decoration: none;
-      color: inherit;
-      margin-bottom: 12px;
-    }
-    .mobile-large-img {
-      grid-row: span 2;
-      width: 150px;
-      height: 140px;
-      object-fit: cover;
-      border-radius: 4px;
-    }
-    .mobile-small-imgs {
-      display: grid;
-      grid-template-columns: repeat(2, 67px);
-      gap: 6px;
-    }
-    .mobile-small-imgs img {
-      width: 67px;
-      height: 67px;
-      object-fit: cover;
-      border-radius: 4px;
-    }
   }
 
   @media (max-width: 480px) {
@@ -4221,83 +3295,19 @@ const staticProducts = [
     .mobile-hero-title {
       font-size: 16px;
     }
-    .mobile-category-icon {
-      width: 42px;
-      height: 42px;
-    }
     .mobile-product-card {
       width: 130px;
     }
   }
 
-  /* Desktop: Hide mobile content */
   @media (min-width: 769px) {
     .mobile-only {
-      display: none !important;
-    }
-  }
-
-  /* ========== 移动端隐藏桌面端sections ========== */
-  @media (max-width: 768px) {
-    .hero-section,
-    .flash-sales-section,
-    .trust-badges,
-    .new-arrivals-section,
-    .shop-by-cat-section,
-    .campaign-section,
-    .reviews-section,
-    .social-feed-section,
-    .faq-gallery-section {
       display: none !important;
     }
   }
 </style>
 
 <script define:vars={{ autoplayEnabled, autoplayInterval }}>
-// 统一活动倒计时功能（桌面端与移动端同步自启动倒数）
-function initFlashSalesCountdown() {
-  // 设定8小时倒计时（循环保持活动热度）
-  let totalSeconds = 8 * 3600 - 150;
-
-  function update() {
-    if (totalSeconds < 0) {
-      totalSeconds = 8 * 3600; // 重置继续循环
-    }
-
-    const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-    const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-    const s = String(totalSeconds % 60).padStart(2, '0');
-
-    // 更新桌面端
-    const dt = document.getElementById('desktopCountdown');
-    if (dt) {
-      const hEl = dt.querySelector('.hours');
-      const mEl = dt.querySelector('.minutes');
-      const sEl = dt.querySelector('.seconds');
-      if (hEl) hEl.textContent = h;
-      if (mEl) mEl.textContent = m;
-      if (sEl) sEl.textContent = s;
-    }
-
-    // 更新移动端
-    const mb = document.getElementById('mobileCountdown');
-    if (mb) {
-      const hEl = mb.querySelector('.hours');
-      const mEl = mb.querySelector('.minutes');
-      const sEl = mb.querySelector('.seconds');
-      if (hEl) hEl.textContent = h;
-      if (mEl) mEl.textContent = m;
-      if (sEl) sEl.textContent = s;
-    }
-
-    totalSeconds--;
-  }
-
-  update();
-  setInterval(update, 1000);
-}
-
-// Reviews Slider - 桌面端（显示3张，每次滑动1张）
 function initReviewsSlider() {
   const slider = document.querySelector('.reviews-slider');
   if (!slider) return;
@@ -4308,7 +3318,6 @@ function initReviewsSlider() {
   const nextBtn = slider.querySelector('.slider-next');
 
   if (slides.length <= 3) {
-    // 如果图片数量 <= 3，隐藏按钮，不需要滑动
     prevBtn?.style.setProperty('display', 'none');
     nextBtn?.style.setProperty('display', 'none');
     return;
@@ -4321,16 +3330,18 @@ function initReviewsSlider() {
 
   function updateSlider() {
     const slideWidth = slides[0].offsetWidth;
-    const gap = 16; // CSS gap
+    const gap = 16;
     const offset = -(currentIndex * (slideWidth + gap));
     track.style.transform = `translateX(${offset}px)`;
 
-    // 禁用按钮在边界
-    prevBtn.disabled = currentIndex === 0;
-    nextBtn.disabled = currentIndex >= maxIndex;
-
-    prevBtn.style.opacity = currentIndex === 0 ? '0.5' : '1';
-    nextBtn.style.opacity = currentIndex >= maxIndex ? '0.5' : '1';
+    if (prevBtn) {
+      prevBtn.disabled = currentIndex === 0;
+      prevBtn.style.opacity = currentIndex === 0 ? '0.5' : '1';
+    }
+    if (nextBtn) {
+      nextBtn.disabled = currentIndex >= maxIndex;
+      nextBtn.style.opacity = currentIndex >= maxIndex ? '0.5' : '1';
+    }
   }
 
   function nextSlide() {
@@ -4338,7 +3349,6 @@ function initReviewsSlider() {
       currentIndex++;
       updateSlider();
     } else {
-      // 循环到开头
       currentIndex = 0;
       updateSlider();
     }
@@ -4376,12 +3386,10 @@ function initReviewsSlider() {
     startAutoplay();
   });
 
-  // 初始化
   updateSlider();
   startAutoplay();
 }
 
-// Reviews Slider - 移动端（无缝无限循环 + 手势支持）
 function initMobileReviewsSlider() {
   const slider = document.querySelector('.mobile-reviews-slider');
   if (!slider) return;
@@ -4393,7 +3401,6 @@ function initMobileReviewsSlider() {
 
   if (originalSlides.length <= 1) return;
 
-  // 克隆首尾图片实现无缝循环
   const firstClone = originalSlides[0].cloneNode(true);
   const lastClone = originalSlides[originalSlides.length - 1].cloneNode(true);
 
@@ -4401,18 +3408,14 @@ function initMobileReviewsSlider() {
   track.insertBefore(lastClone, originalSlides[0]);
 
   const slides = track.querySelectorAll('.mobile-review-slide');
-  let currentIndex = 1; // 从第一个真实slide开始（因为前面有一个克隆）
+  let currentIndex = 1;
   let autoplayTimer = null;
   let startX = 0;
   let currentX = 0;
   let isDragging = false;
 
   function updateSlider(animate = true) {
-    if (animate) {
-      track.style.transition = 'transform 0.5s ease-in-out';
-    } else {
-      track.style.transition = 'none';
-    }
+    track.style.transition = animate ? 'transform 0.5s ease-in-out' : 'none';
     const slideWidth = slides[0].offsetWidth;
     const offset = -currentIndex * slideWidth;
     track.style.transform = `translateX(${offset}px)`;
@@ -4420,7 +3423,6 @@ function initMobileReviewsSlider() {
 
   function handleTransitionEnd() {
     const slideWidth = slides[0].offsetWidth;
-    // 无缝循环：到达克隆位置时立即跳转到真实位置
     if (currentIndex === 0) {
       track.style.transition = 'none';
       currentIndex = originalSlides.length;
@@ -4457,7 +3459,6 @@ function initMobileReviewsSlider() {
     }
   }
 
-  // 触摸事件
   track.addEventListener('touchstart', (e) => {
     startX = e.touches[0].clientX;
     currentX = startX;
@@ -4493,51 +3494,6 @@ function initMobileReviewsSlider() {
     startAutoplay();
   });
 
-  // 鼠标事件
-  track.addEventListener('mousedown', (e) => {
-    startX = e.clientX;
-    currentX = startX;
-    isDragging = true;
-    stopAutoplay();
-    track.style.transition = 'none';
-    e.preventDefault();
-  });
-
-  track.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    currentX = e.clientX;
-    const diff = currentX - startX;
-    const slideWidth = slides[0].offsetWidth;
-    const offset = -currentIndex * slideWidth + diff;
-    track.style.transform = `translateX(${offset}px)`;
-  });
-
-  track.addEventListener('mouseup', () => {
-    if (!isDragging) return;
-    isDragging = false;
-    const diff = currentX - startX;
-    const threshold = track.offsetWidth * 0.2;
-
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0) {
-        prevSlide();
-      } else {
-        nextSlide();
-      }
-    } else {
-      updateSlider();
-    }
-    startAutoplay();
-  });
-
-  track.addEventListener('mouseleave', () => {
-    if (isDragging) {
-      isDragging = false;
-      updateSlider();
-      startAutoplay();
-    }
-  });
-
   prevBtn?.addEventListener('click', () => {
     stopAutoplay();
     prevSlide();
@@ -4550,36 +3506,27 @@ function initMobileReviewsSlider() {
     startAutoplay();
   });
 
-  // 初始化
   updateSlider(false);
   startAutoplay();
 }
 
-// 页面加载后初始化
 document.addEventListener('DOMContentLoaded', () => {
-  initFlashSalesCountdown();
   initReviewsSlider();
   initMobileReviewsSlider();
 
-  // Instagram 视频播放功能
   document.querySelectorAll('.play-btn, .instagram-play-icon').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
 
-      // 找到对应的视频元素
       const container = btn.closest('.feed-img-box, .instagram-image');
       const video = container.querySelector('video');
 
       if (video) {
-        // 隐藏播放按钮
         btn.style.display = 'none';
-
-        // 播放视频
         video.controls = true;
         video.play();
 
-        // 视频暂停时重新显示播放按钮
         video.addEventListener('pause', () => {
           if (video.currentTime < video.duration) {
             btn.style.display = 'flex';
@@ -4587,7 +3534,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
 
-        // 视频结束时重新显示播放按钮
         video.addEventListener('ended', () => {
           btn.style.display = 'flex';
           video.controls = false;
@@ -4597,7 +3543,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 桌面端 FAQ 手风琴
   document.querySelectorAll('.faq-gallery-section .accordion-header').forEach((header) => {
     header.addEventListener('click', () => {
       const item = header.parentElement;
@@ -4605,18 +3550,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const isActive = item.classList.contains('active');
 
       if (isActive) {
-        // 收起
         body.style.maxHeight = body.scrollHeight + 'px';
         requestAnimationFrame(() => {
           body.style.maxHeight = '0';
         });
         item.classList.remove('active');
       } else {
-        // 展开
         item.classList.add('active');
         body.style.maxHeight = body.scrollHeight + 'px';
-
-        // 动画结束后移除固定高度，允许内容自适应
         body.addEventListener('transitionend', function handler() {
           if (item.classList.contains('active')) {
             body.style.maxHeight = 'none';
@@ -4627,70 +3568,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 移动端 FAQ 手风琴（使用 onclick 属性已经处理）
-
-  // ============================================
-  // 用户登录状态检测与切换
-  // ============================================
   function checkUserLoginStatus() {
     const authBoxGuest = document.getElementById('authBoxGuest');
     const authBoxLoggedIn = document.getElementById('authBoxLoggedIn');
     const userNameEl = document.getElementById('userName');
 
-    // 从 localStorage 读取用户信息
     const userDataStr = localStorage.getItem('user');
 
     if (userDataStr) {
       try {
         const userData = JSON.parse(userDataStr);
 
-        // 显示已登录状态
         if (authBoxGuest) authBoxGuest.style.display = 'none';
         if (authBoxLoggedIn) authBoxLoggedIn.style.display = 'block';
 
-        // 设置用户名显示
         if (userNameEl && userData.firstName) {
           userNameEl.textContent = userData.firstName;
         } else if (userNameEl && userData.email) {
-          // 如果没有名字，显示邮箱前缀
           const emailPrefix = userData.email.split('@')[0];
           userNameEl.textContent = emailPrefix;
         }
       } catch (error) {
-        console.error('Failed to parse user data:', error);
-        // 解析失败，显示未登录状态
         if (authBoxGuest) authBoxGuest.style.display = 'block';
         if (authBoxLoggedIn) authBoxLoggedIn.style.display = 'none';
       }
     } else {
-      // 未登录，显示登录/注册按钮
       if (authBoxGuest) authBoxGuest.style.display = 'block';
       if (authBoxLoggedIn) authBoxLoggedIn.style.display = 'none';
     }
   }
 
-  // 注销处理函数
   window.handleLogout = function() {
-    // 确认注销
     if (confirm('Are you sure you want to logout?')) {
-      // 清除用户数据
       localStorage.removeItem('user');
-
-      // 触发自定义事件通知其他组件
       window.dispatchEvent(new CustomEvent('userLoggedOut'));
-
-      // 刷新页面
       window.location.reload();
     }
   };
 
-  // 监听登录事件
-  window.addEventListener('userLoggedIn', function(event) {
-    console.log('User logged in:', event.detail);
-    checkUserLoginStatus();
-  });
-
-  // 页面加载时检查登录状态
+  window.addEventListener('userLoggedIn', checkUserLoginStatus);
   checkUserLoginStatus();
 });
 </script>
