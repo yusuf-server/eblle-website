@@ -6,8 +6,9 @@ import CartDrawer from '../../components/CartDrawer.astro';
 import ProductSkeleton from '../../components/ProductSkeleton.astro';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
 import { t } from '../../lib/i18n/translations';
+import { translateProducts } from '../../lib/i18n/product-translator';
 
-// 1. 获取语言参数
+// 获取语言参数
 const lang = Astro.params.lang as SupportedLocale | undefined;
 const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
   ? (lang as SupportedLocale)
@@ -29,7 +30,7 @@ if (Astro.response) {
       <div class="breadcrumb-content">
         <div class="breadcrumb-wrapper">
           <div class="breadcrumb">
-            <a href={currentLocale === 'en' ? '/' : `/${currentLocale}/`}>Home</a>
+            <a href="/">Home</a>
             <span>/</span>
             <span>Shop</span>
           </div>
@@ -39,7 +40,7 @@ if (Astro.response) {
     </div>
   </div>
 
-  <!-- Mobile Filter Bar -->
+  <!-- Mobile Filter Bar (保留完整药丸圆角按钮样式) -->
   <div class="mobile-filter-bar">
     <button class="filter-main-btn" id="mobileFilterBtn" type="button">
       <i class="fa-solid fa-sliders"></i>
@@ -444,7 +445,9 @@ if (Astro.response) {
     cursor: pointer;
   }
 
-  /* Quick Order Modal (桌面端 原版样式) */
+  /* =========================================================
+     [原封不动恢复] Quick Order Modal (桌面端 原版样式)
+     ========================================================= */
   .quick-order-overlay {
     position: fixed;
     top: 0;
@@ -697,7 +700,7 @@ if (Astro.response) {
   .quick-order-wholesale .tier-badge { color: #8c631a; }
   .quick-order-wholesale .tier-label { color: #8c8c8c; }
 
-  /* Gift Carousel 栏 (原版) */
+  /* 桌面 & 移动通用 Gift Carousel 栏 (原版) */
   .quick-gift-carousel {
     background: #fbf9f5;
     border: 1px solid #e2ddd3;
@@ -942,7 +945,9 @@ if (Astro.response) {
     font-size: 13px;
   }
 
-  /* Quick Order Mobile Sheet (移动端 原版样式) */
+  /* =========================================================
+     [原封不动恢复] Quick Order Mobile Sheet (移动端 原版样式)
+     ========================================================= */
   .quick-order-mobile-overlay {
     display: none;
     position: fixed;
@@ -1714,7 +1719,7 @@ if (Astro.response) {
     text-align: right;
   }
 
-  /* 桌面端店铺主容器 */
+  /* 桌面端店铺主容器 (扩宽至 290px，视觉宽敞舒展) */
   .shop-container {
     width: 100%;
     padding: 36px 0 60px;
@@ -1957,7 +1962,7 @@ if (Astro.response) {
     border-color: #000;
   }
 
-  /* 骨架屏样式与动画 */
+  /* 骨架屏动画与支撑 */
   @keyframes shimmerAnim {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
@@ -2207,7 +2212,7 @@ if (Astro.response) {
 
 <script>
   // ============================================================
-  // 客户端多语言与货币工具
+  // 客户端多语言工具函数
   // ============================================================
   const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
 
@@ -2226,6 +2231,7 @@ if (Astro.response) {
     if (currentLocale === 'en') {
       return url;
     }
+    // 如果URL已经有语言前缀，先移除
     let cleanUrl = url;
     for (const loc of SUPPORTED_LOCALES) {
       if (cleanUrl.startsWith(`/${loc}/`)) {
@@ -2236,6 +2242,9 @@ if (Astro.response) {
     return `/${currentLocale}${cleanUrl}`;
   }
 
+  // ============================================================
+  // 货币工具函数（客户端版本）
+  // ============================================================
   const CURRENCY_SYMBOLS = {
     USD: '$',
     EUR: '€',
@@ -2254,21 +2263,36 @@ if (Astro.response) {
     return localStorage.getItem('ebbelle_currency') || 'USD';
   }
 
-  function formatPrice(priceUSD) {
-    const currency = getCurrentCurrency();
-    const rate = CURRENCY_RATES[currency] || 1.0;
-    const symbol = CURRENCY_SYMBOLS[currency] || '$';
-    const converted = (priceUSD * rate).toFixed(2);
-    return currency === 'EUR' ? `${converted}${symbol}` : `${symbol}${formattedPrice(converted)}`;
+  function getCurrencySymbol(currency) {
+    return CURRENCY_SYMBOLS[currency || getCurrentCurrency()] || '$';
   }
 
-  function formattedPrice(val) {
-    return val;
+  function convertPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const rate = CURRENCY_RATES[currency] || 1.0;
+    return priceUSD * rate;
   }
+
+  function formatPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const converted = convertPrice(priceUSD, currency);
+    const symbol = getCurrencySymbol(currency);
+    const formatted = converted.toFixed(2);
+
+    // EUR 符号通常放在后面
+    if (currency === 'EUR') {
+      return `${formatted}${symbol}`;
+    }
+    return `${symbol}${formatted}`;
+  }
+
+  // ============================================================
+  // Shop 页面逻辑
+  // ============================================================
 
   window.shopQuickOrderInitialized = true;
 
-  // 全量恢复原版完整分类数据
+  // 全局三级分类数据 (与 Header ALL CATEGORIES CSV 完全同步)
   const ALL_CATEGORIES_MENU = [
     {
       name: "WOMEN JEWELRY",
@@ -2493,7 +2517,9 @@ if (Astro.response) {
           }
           gift.loaded = true;
         }
-      } catch (err) {}
+      } catch (err) {
+        console.warn(`[QuickGift Fetch Error] for ${gift.id}:`, err);
+      }
     }
     updateQuickGiftsDOM();
   }
@@ -2521,17 +2547,49 @@ if (Astro.response) {
     });
   }
 
-  let quickGiftIndexDesktop = 0;
-  let quickGiftIndexMobile = 0;
   let quickGiftTimerDesktop = null;
   let quickGiftTimerMobile = null;
+  let quickGiftIndexDesktop = 0;
+  let quickGiftIndexMobile = 0;
+
+  function updateBreadcrumb() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQuery = urlParams.get('q');
+    const category = urlParams.get('category');
+    const breadcrumb = document.querySelector('.breadcrumb');
+
+    if (breadcrumb) {
+      if (searchQuery) {
+        breadcrumb.innerHTML = `
+          <a href="/">Home</a>
+          <span>/</span>
+          <a href="/shop">Shop</a>
+          <span>/</span>
+          <span>Search: "${searchQuery}"</span>
+        `;
+      } else if (category) {
+        const categoryName = category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        breadcrumb.innerHTML = `
+          <a href="/">Home</a>
+          <span>/</span>
+          <a href="/shop">Shop</a>
+          <span>/</span>
+          <span>${categoryName}</span>
+        `;
+      } else {
+        breadcrumb.innerHTML = `
+          <a href="/">Home</a>
+          <span>/</span>
+          <span>Shop</span>
+        `;
+      }
+    }
+  }
 
   let currentPage = 1;
   let totalPages = 1;
   let totalProducts = 0;
   let currentFilters = null;
-  let currentProducts = [];
-  let currentSort = 'menu_order';
   let pageBeforeFilter = 1;
 
   window.toggleFilterSection = function(header) {
@@ -2568,7 +2626,9 @@ if (Astro.response) {
   };
 
   function getProductMaterialText(product) {
-    if (product.material && typeof product.material === 'string') return product.material;
+    if (product.material && typeof product.material === 'string') {
+      return product.material;
+    }
     if (Array.isArray(product.attributes) && product.attributes.length > 0) {
       const matAttr = product.attributes.find((attr) => {
         const n = (attr.name || '').toLowerCase();
@@ -2608,13 +2668,17 @@ if (Astro.response) {
   function generatePagination(current, total) {
     const pages = [];
     if (total <= 7) {
-      for (let i = 1; i <= total; i++) pages.push(i);
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
     } else {
       pages.push(1);
       if (current > 3) pages.push('...');
       const start = Math.max(2, current - 1);
       const end = Math.min(total - 1, current + 1);
-      for (let i = start; i <= end; i++) pages.push(i);
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
       if (current < total - 2) pages.push('...');
       pages.push(total);
     }
@@ -2628,11 +2692,17 @@ if (Astro.response) {
 
     [desktopPagination, mobilePagination].forEach(container => {
       if (!container) return;
+
       const isMobile = container.id.includes('mobile');
       const btnClass = isMobile ? 'mobile-page-btn' : 'page-btn';
       const dotsClass = isMobile ? 'mobile-page-dots' : 'page-dots';
 
-      let html = `<button class="${btnClass}" data-page="prev" ${currentPage === 1 ? 'disabled' : ''} type="button"><i class="fa-solid fa-chevron-left"></i></button>`;
+      let html = `
+        <button class="${btnClass}" data-page="prev" ${currentPage === 1 ? 'disabled' : ''} type="button">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+      `;
+
       pages.forEach(page => {
         if (page === '...') {
           html += `<span class="${dotsClass}">...</span>`;
@@ -2640,7 +2710,13 @@ if (Astro.response) {
           html += `<button class="${btnClass} ${currentPage === page ? 'active' : ''}" data-page="${page}" type="button">${page}</button>`;
         }
       });
-      html += `<button class="${btnClass}" data-page="next" ${currentPage >= totalPages ? 'disabled' : ''} type="button"><i class="fa-solid fa-chevron-right"></i></button>`;
+
+      html += `
+        <button class="${btnClass}" data-page="next" ${currentPage >= totalPages ? 'disabled' : ''} type="button">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      `;
+
       container.innerHTML = html;
     });
 
@@ -2652,19 +2728,141 @@ if (Astro.response) {
   async function handlePageClick(e) {
     const pageValue = e.currentTarget.dataset.page;
     let newPage = currentPage;
-    if (pageValue === 'prev') newPage = Math.max(1, currentPage - 1);
-    else if (pageValue === 'next') newPage = Math.min(totalPages, currentPage + 1);
-    else newPage = parseInt(pageValue);
+
+    if (pageValue === 'prev') {
+      newPage = Math.max(1, currentPage - 1);
+    } else if (pageValue === 'next') {
+      newPage = Math.min(totalPages, currentPage + 1);
+    } else {
+      newPage = parseInt(pageValue);
+    }
 
     if (newPage === currentPage) return;
+
     currentPage = newPage;
+    const url = new URL(window.location);
+    url.searchParams.set('page', newPage);
+    window.history.pushState({}, '', url);
+    renderPagination();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
     await loadPage(newPage, currentFilters);
+  }
+
+  // 保证骨架屏在客户端发起请求时稳定展现
+  async function loadPage(page, filters = null) {
+    try {
+      const desktopGrid = document.getElementById('products-grid-desktop');
+      const mobileGrid = document.getElementById('products-grid-mobile');
+
+      const skeletonHTML = Array.from({ length: 20 }, () => `
+        <div class="product-skeleton">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-content">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-price"></div>
+            <div class="skeleton-line skeleton-meta"></div>
+          </div>
+        </div>
+      `).join('');
+
+      if (desktopGrid) desktopGrid.innerHTML = skeletonHTML;
+      if (mobileGrid) mobileGrid.innerHTML = skeletonHTML;
+
+      const requestBody = { page: page, per_page: 20 };
+      const urlParams = new URLSearchParams(window.location.search);
+      const searchQuery = urlParams.get('q');
+      if (searchQuery) requestBody.search = searchQuery;
+
+      const categoryParam = urlParams.get('category');
+      if (categoryParam) requestBody.category = categoryParam;
+
+      if (filters) {
+        if (filters.categories && filters.categories.length > 0) {
+          const uniqueCategories = Array.from(new Set(filters.categories.filter(Boolean)));
+          requestBody.category = uniqueCategories.join(',');
+        }
+        if (filters.colors && filters.colors.length > 0) {
+          requestBody.color = Array.from(new Set(filters.colors.filter(Boolean))).join(',');
+        }
+        if (filters.materials && filters.materials.length > 0) {
+          requestBody.material = Array.from(new Set(filters.materials.filter(Boolean))).join(',');
+        }
+      }
+
+      const response = await fetch(`/api/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
+
+      const data = await response.json();
+      totalProducts = data.total || 0;
+      totalPages = data.totalPages || 1;
+
+      const totalProductsSpan = document.getElementById('total-products');
+      const productsCountDesktop = document.getElementById('products-count-desktop');
+      if (totalProductsSpan) totalProductsSpan.textContent = totalProducts;
+      if (productsCountDesktop) productsCountDesktop.textContent = totalProducts;
+
+      if (!data.products || data.products.length === 0) {
+        const emptyHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 80px 20px; color: #666;">
+            <i class="fa-solid fa-box-open" style="font-size: 64px; margin-bottom: 20px; color: #ddd;"></i>
+            <p style="font-size: 18px; margin-bottom: 12px; font-weight: 600; color: #333;">No products found</p>
+            <p style="font-size: 14px; color: #999; margin-bottom: 20px;">Try adjusting your filters</p>
+          </div>
+        `;
+        if (desktopGrid) desktopGrid.innerHTML = emptyHTML;
+        if (mobileGrid) mobileGrid.innerHTML = emptyHTML;
+        return;
+      }
+
+      // 翻译产品数据（如果不是英语）- 优化为批量请求
+      let products = data.products;
+      const currentLocale = getCurrentLocale();
+      if (currentLocale !== 'en') {
+        console.log('[Debug] 正在批量翻译商店列表产品，语言:', currentLocale, '产品数量:', products.length);
+        const startTime = Date.now();
+
+        try {
+          // 批量翻译所有产品（一次请求）
+          const response = await fetch('/api/translate-products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              products,
+              targetLang: currentLocale
+            })
+          });
+
+          if (response.ok) {
+            products = await response.json();
+            const elapsed = Date.now() - startTime;
+            console.log('[Debug] 批量翻译完成，耗时:', elapsed, 'ms');
+          } else {
+            console.error('[Debug] 批量翻译API失败:', response.status);
+          }
+        } catch (e) {
+          console.error('[Debug] 批量翻译请求失败:', e);
+        }
+      }
+
+      currentProducts = products;
+      renderProducts(products);
+      currentPage = page;
+      renderPagination();
+
+    } catch (error) {
+      console.error('加载产品失败:', error);
+    }
   }
 
   const escapeHtml = (text) => {
     const div = document.createElement('div');
-    div.textContent = text || '';
+    div.textContent = text;
     return div.innerHTML;
   };
 
@@ -2676,16 +2874,60 @@ if (Astro.response) {
 
     const productName = escapeHtml(product.name);
     const productSlug = encodeURIComponent(product.slug);
-    const imageUrl = product.images?.[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80';
+    const imageUrl = product.images && product.images[0] ? product.images[0].src : 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80';
+    const rating = parseFloat(product.average_rating) || 0;
+    const totalSales = parseInt(product.total_sales) || 0;
     const materialText = escapeHtml(getProductMaterialText(product));
 
-    if (isMobile) {
+    if (isMobile && layout === 'list') {
+      return `
+        <div class="mobile-product-card-list">
+          <a href="${addLocalePrefix(`/product/${productSlug}`)}" class="card-list-link">
+            <div class="card-list-image">
+              ${hasDiscount ? `<span class="mobile-badge-list">-${discountPercent}%</span>` : ''}
+              <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
+            </div>
+            <div class="card-list-content">
+              <div class="card-list-header">
+                <h3 class="card-list-title">${productName}</h3>
+                <button class="mobile-wishlist-btn-list" onclick="event.preventDefault();" type="button">
+                  <i class="fa-regular fa-heart"></i>
+                </button>
+              </div>
+              <div class="card-list-price">
+                <span class="list-price-current">${formatPrice(parseFloat(product.price))}</span>
+                ${hasDiscount ? `<span class="list-price-old">${formatPrice(parseFloat(product.regular_price))}</span>` : ''}
+                ${hasDiscount ? `<span class="list-discount-badge">-${discountPercent}%</span>` : ''}
+              </div>
+              <div class="card-list-meta">
+                <span class="list-moq">MOQ: 1 pc</span>
+                <span class="list-divider">|</span>
+                <span class="mobile-material" onclick="event.preventDefault(); event.stopPropagation(); filterByMaterialTag('${materialText}')">${materialText}</span>
+              </div>
+              <div class="card-list-footer">
+                <div class="list-rating">
+                  ${rating > 0 ? `<span class="stars">${"⭐".repeat(Math.round(rating))}</span>` : ''}
+                  ${rating > 0 ? `<span class="rating-num">${rating}</span>` : ''}
+                  ${totalSales > 0 ? `<span class="sales-count">${totalSales} orders</span>` : ''}
+                </div>
+                <button class="mobile-add-btn-list" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' type="button">
+                  <i class="fa-solid fa-cart-shopping"></i>
+                  <span>Add</span>
+                </button>
+              </div>
+            </div>
+          </a>
+        </div>
+      `;
+    } else if (isMobile) {
       return `
         <div class="mobile-product-card">
           <a href="${addLocalePrefix(`/product/${productSlug}`)}">
             <div class="mobile-product-image">
               ${hasDiscount ? `<span class="mobile-badge new">-${discountPercent}%</span>` : ''}
-              <button class="mobile-wishlist-btn" onclick="event.preventDefault();" type="button"><i class="fa-regular fa-heart"></i></button>
+              <button class="mobile-wishlist-btn" onclick="event.preventDefault();" type="button">
+                <i class="fa-regular fa-heart"></i>
+              </button>
               <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
             </div>
             <div class="mobile-product-info">
@@ -2699,7 +2941,8 @@ if (Astro.response) {
                 <span class="mobile-material" onclick="event.preventDefault(); event.stopPropagation(); filterByMaterialTag('${materialText}')">${materialText}</span>
               </div>
               <button class="mobile-add-btn" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' type="button">
-                <i class="fa-solid fa-cart-shopping"></i><span>Add</span>
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Add</span>
               </button>
             </div>
           </a>
@@ -2711,7 +2954,9 @@ if (Astro.response) {
           <a href="${addLocalePrefix(`/product/${productSlug}`)}">
             <div class="product-image-wrapper">
               ${hasDiscount ? `<span class="product-badge new">-${discountPercent}%</span>` : ''}
-              <button class="wishlist-btn" onclick="event.preventDefault();" type="button"><i class="fa-regular fa-heart"></i></button>
+              <button class="wishlist-btn" onclick="event.preventDefault();" type="button">
+                <i class="fa-regular fa-heart"></i>
+              </button>
               <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
             </div>
             <div class="product-details-shop">
@@ -2725,7 +2970,8 @@ if (Astro.response) {
                 <span class="material" onclick="event.preventDefault(); event.stopPropagation(); filterByMaterialTag('${materialText}')">${materialText}</span>
               </div>
               <button class="add-to-cart-btn" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' type="button">
-                <i class="fa-solid fa-cart-shopping"></i><span>Add</span>
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Add</span>
               </button>
             </div>
           </a>
@@ -2737,86 +2983,88 @@ if (Astro.response) {
   function renderProducts(products) {
     const desktopGrid = document.getElementById('products-grid-desktop');
     const mobileGrid = document.getElementById('products-grid-mobile');
+
     if (!products || products.length === 0) return;
 
+    // 保存到全局变量，供货币切换时重新渲染
     window.currentProducts = products;
-    if (desktopGrid) desktopGrid.innerHTML = products.map(p => renderProductCard(p, false)).join('');
-    if (mobileGrid) mobileGrid.innerHTML = products.map(p => renderProductCard(p, true)).join('');
-  }
 
-  // 核心：异步请求并稳定批量翻译
-  async function loadPage(page, filters = null) {
-    try {
-      const desktopGrid = document.getElementById('products-grid-desktop');
-      const mobileGrid = document.getElementById('products-grid-mobile');
+    if (desktopGrid) {
+      desktopGrid.innerHTML = products.map(p => renderProductCard(p, false)).join('');
+    }
+    if (mobileGrid) {
+      const currentLayout = mobileGrid.classList.contains('list-layout') ? 'list' : 'grid';
+      mobileGrid.innerHTML = products.map(p => renderProductCard(p, true, currentLayout)).join('');
+    }
 
-      const skeletonHTML = Array.from({ length: 20 }, () => `
-        <div class="product-skeleton">
-          <div class="skeleton-image"></div>
-          <div class="skeleton-content"><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-price"></div></div>
-        </div>
-      `).join('');
-
-      if (desktopGrid) desktopGrid.innerHTML = skeletonHTML;
-      if (mobileGrid) mobileGrid.innerHTML = skeletonHTML;
-
-      const requestBody = { page: page, per_page: 20 };
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('q')) requestBody.search = urlParams.get('q');
-      if (urlParams.get('category')) requestBody.category = urlParams.get('category');
-
-      if (filters) {
-        if (filters.categories?.length > 0) requestBody.category = filters.categories.join(',');
-        if (filters.colors?.length > 0) requestBody.color = filters.colors.join(',');
-        if (filters.materials?.length > 0) requestBody.material = filters.materials.join(',');
-      }
-
-      const response = await fetch(`/api/products`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) throw new Error('API request failed');
-      const data = await response.json();
-
-      let products = data.products || [];
-      const currentLocale = getCurrentLocale();
-
-      // 非英语环境下进行批量翻译处理
-      if (currentLocale !== 'en' && products.length > 0) {
-        try {
-          const transRes = await fetch('/api/translate-products', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ products, targetLang: currentLocale })
-          });
-          if (transRes.ok) {
-            products = await transRes.json();
+    if (desktopGrid) {
+      desktopGrid.addEventListener('click', function(e) {
+        const addBtn = e.target.closest('.add-to-cart-btn');
+        if (addBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            const product = JSON.parse(addBtn.dataset.product);
+            openQuickOrderWithData(product);
+          } catch (error) {
+            console.error('解析产品失败:', error);
           }
-        } catch (e) {
-          console.warn('[Translate Fallback]', e);
         }
-      }
+      });
+    }
 
-      renderProducts(products);
-      currentPage = page;
-      totalProducts = data.total || products.length;
-      totalPages = data.totalPages || 1;
-
-      const totalSpan = document.getElementById('total-products');
-      const countDesktop = document.getElementById('products-count-desktop');
-      if (totalSpan) totalSpan.textContent = totalProducts.toString();
-      if (countDesktop) countDesktop.textContent = totalProducts.toString();
-
-      renderPagination();
-
-    } catch (err) {
-      console.error('加载产品数据失败:', err);
+    if (mobileGrid) {
+      mobileGrid.addEventListener('click', function(e) {
+        const addBtn = e.target.closest('.mobile-add-btn, .mobile-add-btn-list');
+        if (addBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            const product = JSON.parse(addBtn.dataset.product);
+            openQuickOrderWithData(product);
+          } catch (error) {
+            console.error('解析移动产品失败:', error);
+          }
+        }
+      });
     }
   }
 
-  // 恢复完整的 Filters 加载与生成逻辑
+  function applySorting(sortType) {
+    if (!currentProducts || currentProducts.length === 0) return;
+    let sortedProducts = [...currentProducts];
+
+    switch (sortType) {
+      case 'popularity':
+        sortedProducts.sort((a, b) => (parseInt(b.total_sales) || 0) - (parseInt(a.total_sales) || 0));
+        break;
+      case 'rating':
+        sortedProducts.sort((a, b) => (parseFloat(b.average_rating) || 0) - (parseFloat(a.average_rating) || 0));
+        break;
+      case 'date':
+        sortedProducts.sort((a, b) => new Date(b.date_created || 0) - new Date(a.date_created || 0));
+        break;
+      case 'price':
+        sortedProducts.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
+        break;
+      case 'price-desc':
+        sortedProducts.sort((a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0));
+        break;
+      default:
+        break;
+    }
+    renderProducts(sortedProducts);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    updateBreadcrumb();
+    loadFilters();
+    fetchAndSyncQuickGiftsData();
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('page');
+    loadPage(pageParam ? parseInt(pageParam) : 1);
+  });
+
   async function loadFilters() {
     try {
       const response = await fetch('/api/filters');
@@ -2828,6 +3076,7 @@ if (Astro.response) {
     }
   }
 
+  // 构造并渲染分类与属性筛选器
   function renderFilters(data) {
     const container = document.getElementById('filters-container');
     const mobileContainer = document.getElementById('mobileFilterContent');
@@ -2838,7 +3087,9 @@ if (Astro.response) {
       if (!item) return;
       if (item.slug && item.id) categoryIdMap.set(item.slug.toLowerCase(), item.id);
       if (item.name && item.id) categoryIdMap.set(item.name.toLowerCase().trim(), item.id);
-      if (Array.isArray(item.children)) item.children.forEach(mapCategoryItem);
+      if (Array.isArray(item.children)) {
+        item.children.forEach(mapCategoryItem);
+      }
     }
 
     if (Array.isArray(data.newArrivals)) data.newArrivals.forEach(mapCategoryItem);
@@ -2867,6 +3118,7 @@ if (Astro.response) {
         }
         treeHtml += '</div>';
 
+        // 二级分类列表
         if (hasL2) {
           treeHtml += `<ul class="filter-children" id="${l2TargetId}">`;
           l1.children.forEach((l2, idx2) => {
@@ -2882,6 +3134,7 @@ if (Astro.response) {
             }
             treeHtml += '</div>';
 
+            // 三级分类列表 (仅桌面端显示)
             if (hasL3) {
               treeHtml += `<ul class="filter-children-level3" id="${l3TargetId}">`;
               l2.children.forEach((l3) => {
@@ -2911,6 +3164,7 @@ if (Astro.response) {
         html += '</button></div>';
       }
 
+      // 1. NEW ARRIVALS
       if (data.newArrivals && data.newArrivals.length > 0) {
         html += '<div class="filter-section">';
         html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
@@ -2928,6 +3182,7 @@ if (Astro.response) {
         html += '</ul></div></div>';
       }
 
+      // 2. ALL JEWELRY (桌面端 1-2-3 级，移动端严格仅 1-2 级)
       html += '<div class="filter-section">';
       html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
       html += '<h3 class="filter-title">ALL JEWELRY</h3>';
@@ -2936,6 +3191,7 @@ if (Astro.response) {
       html += generateCategoryTreeHTML(prefix);
       html += '</ul></div></div>';
 
+      // 3. MATERIAL
       if (data.materials && data.materials.length > 0) {
         html += '<div class="filter-section">';
         html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
@@ -2949,6 +3205,7 @@ if (Astro.response) {
         html += '</ul></div></div>';
       }
 
+      // 4. COLOR
       if (data.colors && data.colors.length > 0) {
         html += '<div class="filter-section">';
         html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
@@ -3010,43 +3267,11 @@ if (Astro.response) {
     loadPage(1, selectedFilters);
   }
 
-  function updateBreadcrumb() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const searchQuery = urlParams.get('q');
-    const category = urlParams.get('category');
-    const breadcrumb = document.querySelector('.breadcrumb');
-
-    if (breadcrumb) {
-      if (searchQuery) {
-        breadcrumb.innerHTML = `
-          <a href="/">Home</a>
-          <span>/</span>
-          <a href="/shop">Shop</a>
-          <span>/</span>
-          <span>Search: "${searchQuery}"</span>
-        `;
-      } else if (category) {
-        const categoryName = category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        breadcrumb.innerHTML = `
-          <a href="/">Home</a>
-          <span>/</span>
-          <a href="/shop">Shop</a>
-          <span>/</span>
-          <span>${categoryName}</span>
-        `;
-      } else {
-        breadcrumb.innerHTML = `
-          <a href="/">Home</a>
-          <span>/</span>
-          <span>Shop</span>
-        `;
-      }
-    }
-  }
-
   const sortBtn = document.getElementById('mobileSortBtn');
   const sortDropdown = document.getElementById('mobileSortDropdown');
   const sortOptions = document.querySelectorAll('.sort-option');
+  let currentSort = 'menu_order';
+  let currentProducts = [];
 
   if (sortBtn && sortDropdown) {
     sortBtn.addEventListener('click', () => {
@@ -3086,32 +3311,6 @@ if (Astro.response) {
     });
   });
 
-  function applySorting(sortType) {
-    if (!currentProducts || currentProducts.length === 0) return;
-    let sortedProducts = [...currentProducts];
-
-    switch (sortType) {
-      case 'popularity':
-        sortedProducts.sort((a, b) => (parseInt(b.total_sales) || 0) - (parseInt(a.total_sales) || 0));
-        break;
-      case 'rating':
-        sortedProducts.sort((a, b) => (parseFloat(b.average_rating) || 0) - (parseFloat(a.average_rating) || 0));
-        break;
-      case 'date':
-        sortedProducts.sort((a, b) => new Date(b.date_created || 0) - new Date(a.date_created || 0));
-        break;
-      case 'price':
-        sortedProducts.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
-        break;
-      case 'price-desc':
-        sortedProducts.sort((a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0));
-        break;
-      default:
-        break;
-    }
-    renderProducts(sortedProducts);
-  }
-
   const layoutBtns = document.querySelectorAll('.layout-btn');
   const mobileProductsGrid = document.getElementById('products-grid-mobile');
   layoutBtns.forEach(btn => {
@@ -3138,14 +3337,14 @@ if (Astro.response) {
   const mobileFilterReset = document.getElementById('mobileFilterReset');
 
   function openMobileFilterDrawer() {
-    mobileFilterOverlay?.classList.add('active');
-    mobileFilterDrawer?.classList.add('active');
+    mobileFilterOverlay.classList.add('active');
+    mobileFilterDrawer.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
 
   function closeMobileFilterDrawer() {
-    mobileFilterOverlay?.classList.remove('active');
-    mobileFilterDrawer?.classList.remove('active');
+    mobileFilterOverlay.classList.remove('active');
+    mobileFilterDrawer.classList.remove('active');
     document.body.style.overflow = '';
   }
 
@@ -3225,11 +3424,12 @@ if (Astro.response) {
   if (mobileFilterApply) mobileFilterApply.addEventListener('click', applyMobileFilters);
   if (mobileFilterReset) mobileFilterReset.addEventListener('click', resetMobileFilters);
 
-  // Quick Order 模态框逻辑
+  // Quick Order 控制
   const quickOrderOverlay = document.getElementById('quickOrderOverlay');
   const quickOrderModal = document.getElementById('quickOrderModal');
   const quickOrderClose = document.getElementById('quickOrderClose');
   const quickOrderContent = document.getElementById('quickOrderContent');
+
   const quickOrderMobileOverlay = document.getElementById('quickOrderMobileOverlay');
   const quickOrderMobileSheet = document.getElementById('quickOrderMobileSheet');
   const quickOrderMobileClose = document.getElementById('quickOrderMobileClose');
@@ -3277,17 +3477,21 @@ if (Astro.response) {
       } else {
         renderQuickOrderContent(product);
       }
+
     } catch (error) {
+      console.error('打开Quick Order失败:', error);
       closeQuickOrder();
+      alert('打开Quick Order失败，请稍后重试');
     }
   };
 
   function closeQuickOrder() {
-    quickOrderOverlay?.classList.remove('active');
-    quickOrderModal?.classList.remove('active');
-    quickOrderMobileOverlay?.classList.remove('active');
-    quickOrderMobileSheet?.classList.remove('active');
+    quickOrderOverlay.classList.remove('active');
+    quickOrderModal.classList.remove('active');
+    quickOrderMobileOverlay.classList.remove('active');
+    quickOrderMobileSheet.classList.remove('active');
     document.body.style.overflow = '';
+    stopQuickGiftAutoPlay();
   }
 
   function renderQuickOrderLoading(product) {
@@ -3295,15 +3499,20 @@ if (Astro.response) {
     const mainImage = images[0]?.src || '';
     const name = product.name || '';
 
-    quickOrderContent.innerHTML = `
-      <div class="quick-order-images">
-        <div class="quick-order-main-image"><img src="${mainImage}" alt="${name}"></div>
-      </div>
-      <div class="quick-order-details">
-        <h2 class="quick-order-title">${name}</h2>
-        <div class="quick-order-loading"><div class="loading-spinner"></div><p>Loading...</p></div>
-      </div>
-    `;
+    let html = '';
+    html += '<div class="quick-order-images">';
+    html += '<div class="quick-order-main-image">';
+    html += `<img src="${mainImage}" alt="${name}">`;
+    html += '</div></div>';
+
+    html += '<div class="quick-order-details">';
+    html += `<h2 class="quick-order-title">${name}</h2>`;
+    html += '<div class="quick-order-loading">';
+    html += '<div class="loading-spinner"></div>';
+    html += '<p>Loading product details...</p>';
+    html += '</div></div>';
+
+    quickOrderContent.innerHTML = html;
   }
 
   function renderQuickOrderMobileLoading(product) {
@@ -3312,16 +3521,29 @@ if (Astro.response) {
     const mainImage = images[0]?.src || '';
     const price = parseFloat(product.price) || 0;
 
-    mobileSheetHeader.innerHTML = `
-      <button class="mobile-sheet-close" id="quickOrderMobileClose" type="button"><i class="fa-solid fa-times"></i></button>
-      <div class="mobile-sheet-product-image"><img src="${mainImage}" alt="${name}" id="mobileSheetMainImg"></div>
-      <div class="mobile-sheet-header-right">
-        <div class="mobile-sheet-title">${name}</div>
-        <div class="mobile-sheet-price" id="mobileSheetPrice">${formatPrice(price)}</div>
-      </div>
-    `;
-    document.getElementById('quickOrderMobileClose')?.addEventListener('click', closeQuickOrder);
-    quickOrderMobileContent.innerHTML = `<div class="quick-order-loading"><div class="loading-spinner"></div><p>Loading...</p></div>`;
+    let headerHTML = '';
+    headerHTML += `<button class="mobile-sheet-close" id="quickOrderMobileClose" type="button">
+      <i class="fa-solid fa-times"></i>
+    </button>`;
+    headerHTML += '<div class="mobile-sheet-product-image">';
+    headerHTML += `<img src="${mainImage}" alt="${name}" id="mobileSheetMainImg">`;
+    headerHTML += '</div>';
+    headerHTML += '<div class="mobile-sheet-header-right">';
+    headerHTML += `<div class="mobile-sheet-title">${name}</div>`;
+    headerHTML += `<div class="mobile-sheet-price" id="mobileSheetPrice">${formatPrice(price)}</div>`;
+    headerHTML += '</div>';
+    mobileSheetHeader.innerHTML = headerHTML;
+
+    const newCloseBtn = document.getElementById('quickOrderMobileClose');
+    if (newCloseBtn) newCloseBtn.addEventListener('click', closeQuickOrder);
+
+    let html = '';
+    html += '<div class="quick-order-loading">';
+    html += '<div class="loading-spinner"></div>';
+    html += '<p>Loading product details...</p>';
+    html += '</div>';
+
+    quickOrderMobileContent.innerHTML = html;
   }
 
   function renderQuickOrderMobileContent(product) {
@@ -3338,192 +3560,691 @@ if (Astro.response) {
     window.currentProductType = type;
     window.currentProductAttributes = attributes;
 
-    mobileSheetHeader.innerHTML = `
-      <button class="mobile-sheet-close" id="quickOrderMobileClose" type="button"><i class="fa-solid fa-times"></i></button>
-      <div class="mobile-sheet-product-image"><img src="${mainImage}" alt="${name}" id="mobileSheetMainImg"></div>
-      <div class="mobile-sheet-header-right">
-        <div class="mobile-sheet-title">${name}</div>
-        <div class="mobile-sheet-price" id="mobileSheetPrice">${formatPrice(price)}</div>
-      </div>
-    `;
-    document.getElementById('quickOrderMobileClose')?.addEventListener('click', closeQuickOrder);
+    let headerHTML = '';
+    headerHTML += `<button class="mobile-sheet-close" id="quickOrderMobileClose" type="button">
+      <i class="fa-solid fa-times"></i>
+    </button>`;
+    headerHTML += '<div class="mobile-sheet-product-image">';
+    headerHTML += `<img src="${mainImage}" alt="${name}" id="mobileSheetMainImg">`;
+    headerHTML += '</div>';
+    headerHTML += '<div class="mobile-sheet-header-right">';
+    headerHTML += `<div class="mobile-sheet-title">${name}</div>`;
+    headerHTML += `<div class="mobile-sheet-price" id="mobileSheetPrice">${formatPrice(price)}</div>`;
+    headerHTML += '</div>';
+    mobileSheetHeader.innerHTML = headerHTML;
 
-    let html = `
-      <div class="mobile-quick-price-tiers">
-        <div class="mobile-tier-header"><div class="mobile-tier-title"><i class="fa-solid fa-tag"></i><span>Wholesale Pricing</span></div><span class="mobile-tier-badge">Tiered Discounts</span></div>
-        <div class="mobile-pricing-grid">
-          <div class="mobile-price-tier"><div class="mobile-tier-qty">1–9 pcs</div><div class="mobile-tier-price">${formatPrice(price)}</div><div class="mobile-tier-label">Retail</div></div>
-          <div class="mobile-price-tier"><div class="mobile-tier-qty">10–49 pcs</div><div class="mobile-tier-price">${formatPrice(price * 0.79)}</div><div class="mobile-tier-save">Save 21%</div></div>
-          <div class="mobile-price-tier"><div class="mobile-tier-qty">50–99 pcs</div><div class="mobile-tier-price">${formatPrice(price * 0.62)}</div><div class="mobile-tier-save">Save 38%</div></div>
-          <div class="mobile-price-tier best"><div class="mobile-tier-qty">100+ pcs</div><div class="mobile-tier-price">${formatPrice(price * 0.45)}</div><div class="mobile-tier-best-badge">Best Value</div></div>
+    const newCloseBtn = document.getElementById('quickOrderMobileClose');
+    if (newCloseBtn) newCloseBtn.addEventListener('click', closeQuickOrder);
+
+    let html = '';
+    html += '<div class="mobile-quick-price-tiers">';
+    html += '<div class="mobile-tier-header">';
+    html += '<div class="mobile-tier-title"><i class="fa-solid fa-tag"></i><span>Wholesale Pricing</span></div>';
+    html += '<span class="mobile-tier-badge">Tiered Discounts</span>';
+    html += '</div>';
+    html += '<div class="mobile-pricing-grid">';
+    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">1–9 pcs</div><div class="mobile-tier-price">' + formatPrice(price) + '</div><div class="mobile-tier-label">Retail</div></div>';
+    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">10–49 pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.79) + '</div><div class="mobile-tier-save">Save 21%</div></div>';
+    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">50–99 pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.62) + '</div><div class="mobile-tier-save">Save 38%</div></div>';
+    html += '<div class="mobile-price-tier best"><div class="mobile-tier-qty">100+ pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.45) + '</div><div class="mobile-tier-best-badge">Best Value</div></div>';
+    html += '</div></div>';
+
+    html += '<div class="quick-gift-carousel" id="mobileQuickGiftCarousel">';
+    html += '<button type="button" class="quick-gift-btn-arrow" onclick="prevQuickGift(\'mobile\')"><i class="fa-solid fa-chevron-left"></i></button>';
+    html += '<div class="quick-gift-viewport">';
+    html += '<div class="quick-gift-track" id="mobileQuickGiftTrack">';
+    QUICK_GIFTS_DATA.forEach(gift => {
+      html += `<div class="quick-gift-slide">
+        <img class="quick-gift-img" src="${gift.image}" alt="${gift.name}">
+        <div class="quick-gift-info">
+          <h4 class="quick-gift-name" title="${gift.name}">${gift.name}</h4>
+          <div class="quick-gift-pricing">
+            <span class="quick-gift-price">${formatPrice(parseFloat(gift.price))}</span>
+            <span class="quick-gift-tag">Complimentary</span>
+          </div>
         </div>
-      </div>
-    `;
+        <button type="button" class="btn-add-quick-gift" onclick="addGiftDirectlyToCart(${gift.id}, '${gift.name.replace(/'/g, "\\'")}', '${gift.price}', '${gift.image}', this)">+ ADD</button>
+      </div>`;
+    });
+    html += '</div></div>';
+    html += '<button type="button" class="quick-gift-btn-arrow" onclick="nextQuickGift(\'mobile\')"><i class="fa-solid fa-chevron-right"></i></button>';
+    html += '</div>';
 
     if (type === 'variable' && attributes.length > 0) {
       attributes.forEach(attr => {
-        if (attr.variation && attr.options?.length > 0) {
-          html += `
-            <div class="mobile-attribute-section">
-              <div class="mobile-attribute-title">
-                <span class="mobile-attribute-title-label">${attr.name}:</span>
-                <span class="mobile-attribute-title-value" id="mobileAttrValue_${attr.name.replace(/\s+/g, '_')}">${attr.options[0]}</span>
-              </div>
-              <div class="mobile-attribute-options" data-attribute="${attr.name}">
-                ${attr.options.map((opt, i) => `
-                  <button class="mobile-attribute-option ${i === 0 ? 'selected' : ''}" data-value="${opt}" onclick="selectMobileAttribute(this, '${attr.name}')" type="button">${opt}</button>
-                `).join('')}
-              </div>
-            </div>
-          `;
+        if (attr.variation && attr.options && attr.options.length > 0) {
+          const firstOption = attr.options[0];
+          html += '<div class="mobile-attribute-section">';
+          html += `<div class="mobile-attribute-title">`;
+          html += `<span class="mobile-attribute-title-label">${attr.name}:</span>`;
+          html += `<span class="mobile-attribute-title-value" id="mobileAttrValue_${attr.name.replace(/\s+/g, '_')}">${firstOption}</span>`;
+          html += `</div>`;
+          html += `<div class="mobile-attribute-options" data-attribute="${attr.name}">`;
+          attr.options.forEach((option, index) => {
+            html += `<button class="mobile-attribute-option ${index === 0 ? 'selected' : ''}"
+                      data-value="${option}"
+                      onclick="selectMobileAttribute(this, '${attr.name}')" type="button">
+                      ${option}
+                    </button>`;
+          });
+          html += '</div></div>';
         }
       });
     }
 
-    html += `
-      <div class="mobile-quantity-section">
-        <div class="mobile-quantity-title">Quantity</div>
-        <div class="mobile-quantity-selector">
-          <button class="mobile-qty-btn" onclick="changeMobileQuantity(-1)" type="button"><i class="fa-solid fa-minus"></i></button>
-          <input type="number" class="mobile-qty-input" id="mobileQtyInput" value="1" min="1" readonly>
-          <button class="mobile-qty-btn" onclick="changeMobileQuantity(1)" type="button"><i class="fa-solid fa-plus"></i></button>
-        </div>
-        <div id="mobileStockStatus"></div>
-      </div>
-      <div class="mobile-quick-footer">
-        <button class="mobile-quick-add-btn" id="mobileQuickAddBtn" onclick="addMobileQuickOrderToCart()" type="button">
-          <i class="fa-solid fa-cart-shopping"></i> Add to Cart
-        </button>
-      </div>
-    `;
+    html += '<div class="mobile-quantity-section">';
+    html += '<div class="mobile-quantity-title">Quantity</div>';
+    html += '<div class="mobile-quantity-selector">';
+    html += '<button class="mobile-qty-btn" onclick="changeMobileQuantity(-1)" type="button"><i class="fa-solid fa-minus"></i></button>';
+    html += '<input type="number" class="mobile-qty-input" id="mobileQtyInput" value="1" min="1" readonly>';
+    html += '<button class="mobile-qty-btn" onclick="changeMobileQuantity(1)" type="button"><i class="fa-solid fa-plus"></i></button>';
+    html += '</div>';
+
+    html += '<div id="mobileStockStatus">';
+    if (type === 'simple') {
+      const stockStatus = product.stock_status;
+      if (stockStatus === 'outofstock') {
+        html += '<div class="mobile-stock-status out-of-stock"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</div>';
+      } else {
+        html += '<div class="mobile-stock-status in-stock"><i class="fa-solid fa-circle-check"></i> In Stock</div>';
+      }
+    }
+    html += '</div></div>';
+
+    html += '<div class="mobile-quick-footer">';
+    const isOutOfStock = type === 'simple' && product.stock_status === 'outofstock';
+    html += `<button class="mobile-quick-add-btn" id="mobileQuickAddBtn"
+              onclick="addMobileQuickOrderToCart()" ${isOutOfStock ? 'disabled' : ''} type="button">`;
+    html += '<i class="fa-solid fa-cart-shopping"></i> ';
+    html += isOutOfStock ? 'Out of Stock' : 'Add to Cart';
+    html += '</button></div>';
 
     quickOrderMobileContent.innerHTML = html;
-  }
 
-  function renderQuickOrderContent(product) {
-    const images = product.images || [];
-    const mainImage = images[0]?.src || '';
-    const price = parseFloat(product.price) || 0;
-    const name = product.name || '';
-    const attributes = product.attributes || [];
-    const type = product.type;
+    if (type === 'variable') {
+      setTimeout(() => {
+        updateMobileVariationStock();
+      }, 100);
+    }
 
-    window.currentProductData = product;
-    window.currentProductType = type;
-
-    quickOrderContent.innerHTML = `
-      <div class="quick-order-images">
-        <div class="quick-order-main-image"><img src="${mainImage}" alt="${name}" id="quickOrderMainImg"></div>
-      </div>
-      <div class="quick-order-details">
-        <h2 class="quick-order-title">${name}</h2>
-        <div class="quick-order-price">${formatPrice(price)}</div>
-        <div class="quick-order-quantity">
-          <button class="quick-order-qty-btn" onclick="changeQuickOrderQty(-1)" type="button"><i class="fa-solid fa-minus"></i></button>
-          <input type="number" class="quick-order-qty-input" id="quickOrderQty" value="1" min="1">
-          <button class="quick-order-qty-btn" onclick="changeQuickOrderQty(1)" type="button"><i class="fa-solid fa-plus"></i></button>
-        </div>
-        <button class="quick-order-add-btn" id="quickOrderAddBtn" onclick="addQuickOrderToCart(${product.id}, '${type}')" type="button">
-          <i class="fa-solid fa-cart-shopping"></i> Add to Cart
-        </button>
-      </div>
-    `;
+    startQuickGiftAutoPlay('mobile');
   }
 
   window.selectMobileAttribute = function(element, attrName) {
     const container = element.closest('.mobile-attribute-options');
     container.querySelectorAll('.mobile-attribute-option').forEach(opt => opt.classList.remove('selected'));
     element.classList.add('selected');
+
+    const selectedValue = element.dataset.value;
     const valueDisplay = document.getElementById(`mobileAttrValue_${attrName.replace(/\s+/g, '_')}`);
-    if (valueDisplay) valueDisplay.textContent = element.dataset.value;
+    if (valueDisplay) valueDisplay.textContent = selectedValue;
+
+    if (window.currentProductType === 'variable') {
+      updateMobileVariationStock();
+    }
   };
 
   window.changeMobileQuantity = function(delta) {
     const input = document.getElementById('mobileQtyInput');
     if (!input) return;
-    input.value = Math.max(1, (parseInt(input.value) || 1) + delta);
+    const currentQty = parseInt(input.value) || 1;
+    input.value = Math.max(1, currentQty + delta);
   };
 
-  window.changeQuickOrderQty = function(delta) {
+  function updateMobileVariationStock() {
+    const variationsData = window.currentProductVariationsData;
+    if (!variationsData || variationsData.length === 0) return;
+
+    const selectedAttributes = {};
+    document.querySelectorAll('.mobile-attribute-options').forEach(optionsGroup => {
+      const attrName = optionsGroup.dataset.attribute;
+      const selected = optionsGroup.querySelector('.mobile-attribute-option.selected');
+      if (attrName && selected) selectedAttributes[attrName] = selected.dataset.value;
+    });
+
+    const matchedVariation = variationsData.find(variation => {
+      return variation.attributes.every(attr => selectedAttributes[attr.name] === attr.option);
+    });
+
+    const stockContainer = document.getElementById('mobileStockStatus');
+    const addBtn = document.getElementById('mobileQuickAddBtn');
+    const priceDisplay = document.getElementById('mobileSheetPrice');
+    const mobileMainImg = document.getElementById('mobileSheetMainImg');
+
+    if (matchedVariation) {
+      if (matchedVariation.price && priceDisplay) {
+        priceDisplay.textContent = formatPrice(parseFloat(matchedVariation.price));
+      }
+      if (matchedVariation.image?.src && mobileMainImg) {
+        mobileMainImg.src = matchedVariation.image.src;
+      }
+
+      const stockStatus = matchedVariation.stock_status;
+      const stockQuantity = matchedVariation.stock_quantity;
+
+      if (stockStatus === 'outofstock') {
+        stockContainer.innerHTML = '<div class="mobile-stock-status out-of-stock"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</div>';
+        addBtn.disabled = true;
+        addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Out of Stock';
+      } else {
+        stockContainer.innerHTML = `<div class="mobile-stock-status in-stock"><i class="fa-solid fa-circle-check"></i> In Stock ${stockQuantity ? '(' + stockQuantity + ' available)' : ''}</div>`;
+        addBtn.disabled = false;
+        addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Add to Cart';
+      }
+    }
+  }
+
+  function renderQuickOrderContent(product) {
+    const images = product.images || [];
+    const mainImage = images[0]?.src || '';
+    const price = parseFloat(product.price) || 0;
+    const regularPrice = parseFloat(product.regular_price) || 0;
+    const name = product.name || '';
+    const attributes = product.attributes || [];
+    const variationsData = product.variationsData || [];
+    const type = product.type;
+    const stockStatus = product.stock_status;
+    const stockQuantity = product.stock_quantity;
+
+    window.currentProductData = product;
+    window.currentProductVariationsData = variationsData;
+    window.currentProductType = type;
+
+    let html = '';
+
+    html += '<div class="quick-order-images">';
+    html += '<div class="quick-order-main-image">';
+    html += `<img src="${mainImage}" alt="${name}" id="quickOrderMainImg">`;
+    html += '</div>';
+
+    if (images.length > 1) {
+      html += '<div class="quick-order-thumbnails">';
+      images.slice(0, 5).forEach((img, index) => {
+        html += `<div class="quick-order-thumb ${index === 0 ? 'active' : ''}" onclick="changeQuickOrderImage('${img.src}', this)">`;
+        html += `<img src="${img.src}" alt="${name}">`;
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    html += '<div class="quick-order-details">';
+    html += `<h2 class="quick-order-title">${name}</h2>`;
+
+    html += '<div id="quickOrderPriceContainer">';
+    if (regularPrice > price) {
+      html += `<div class="quick-order-price"><span class="quick-order-price-current">${formatPrice(price)}</span><span class="quick-order-price-regular">${formatPrice(regularPrice)}</span></div>`;
+    } else {
+      html += `<div class="quick-order-price">${formatPrice(price)}</div>`;
+    }
+    html += '</div>';
+
+    html += '<div id="quickOrderStockContainer">';
+    if (type === 'variable') {
+      html += '<div class="quick-order-stock-placeholder">Please select options</div>';
+    } else {
+      if (stockStatus === 'outofstock') {
+        html += '<div class="quick-order-stock out-of-stock"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</div>';
+      } else {
+        html += `<div class="quick-order-stock in-stock"><i class="fa-solid fa-circle-check"></i> In Stock ${stockQuantity ? '(' + stockQuantity + ' available)' : ''}</div>`;
+      }
+    }
+    html += '</div>';
+
+    html += '<div class="quick-order-wholesale">';
+    html += '<div class="table-header">';
+    html += '<div class="header-left"><i class="fa-solid fa-tag"></i><span>Wholesale & Volume Pricing</span></div>';
+    html += '<span class="header-badge">Tiered Discounts</span>';
+    html += '</div>';
+    html += '<div class="pricing-grid">';
+    html += '<div class="price-tier"><span class="tier-qty">1 – 9 pcs</span><span class="tier-price">' + formatPrice(price) + '</span><span class="tier-label">Retail</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">10 – 49 pcs</span><span class="tier-price">' + formatPrice(price * 0.79) + '</span><span class="tier-save">Save 21%</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">50 – 99 pcs</span><span class="tier-price">' + formatPrice(price * 0.62) + '</span><span class="tier-save">Save 38%</span></div>';
+    html += '<div class="price-tier best"><span class="tier-qty">100+ pcs</span><span class="tier-price">' + formatPrice(price * 0.45) + '</span><span class="tier-badge">Best Value</span></div>';
+    html += '</div></div>';
+
+    html += '<div class="quick-gift-carousel" id="desktopQuickGiftCarousel">';
+    html += '<button type="button" class="quick-gift-btn-arrow" onclick="prevQuickGift(\'desktop\')"><i class="fa-solid fa-chevron-left"></i></button>';
+    html += '<div class="quick-gift-viewport">';
+    html += '<div class="quick-gift-track" id="desktopQuickGiftTrack">';
+    QUICK_GIFTS_DATA.forEach(gift => {
+      html += `<div class="quick-gift-slide">
+        <img class="quick-gift-img" src="${gift.image}" alt="${gift.name}">
+        <div class="quick-gift-info">
+          <h4 class="quick-gift-name" title="${gift.name}">${gift.name}</h4>
+          <div class="quick-gift-pricing">
+            <span class="quick-gift-price">${formatPrice(parseFloat(gift.price))}</span>
+            <span class="quick-gift-tag">Complimentary Gift</span>
+          </div>
+        </div>
+        <button type="button" class="btn-add-quick-gift" onclick="addGiftDirectlyToCart(${gift.id}, '${gift.name.replace(/'/g, "\\'")}', '${gift.price}', '${gift.image}', this)">+ ADD FREE GIFT</button>
+      </div>`;
+    });
+    html += '</div></div>';
+    html += '<button type="button" class="quick-gift-btn-arrow" onclick="nextQuickGift(\'desktop\')"><i class="fa-solid fa-chevron-right"></i></button>';
+    html += '</div>';
+
+    if (type === 'variable' && attributes.length > 0) {
+      attributes.forEach(attr => {
+        if (attr.variation && attr.options && attr.options.length > 0) {
+          html += '<div class="quick-order-section">';
+          html += `<div class="quick-order-section-title">${attr.name}</div>`;
+          html += `<div class="quick-order-options" data-attribute="${attr.name}">`;
+          attr.options.forEach((option, index) => {
+            html += `<button class="quick-order-option ${index === 0 ? 'selected' : ''}"
+                      data-value="${option}"
+                      onclick="selectQuickOrderOption(this, '${attr.name}')" type="button">
+                      ${option}
+                    </button>`;
+          });
+          html += '</div></div>';
+        }
+      });
+    }
+
+    html += '<div class="quick-order-section">';
+    html += '<div class="quick-order-section-title">Quantity</div>';
+    html += '<div class="quick-order-quantity">';
+    html += '<button class="quick-order-qty-btn" onclick="changeQuickOrderQty(-1)" type="button"><i class="fa-solid fa-minus"></i></button>';
+    html += '<input type="number" class="quick-order-qty-input" id="quickOrderQty" value="1" min="1">';
+    html += '<button class="quick-order-qty-btn" onclick="changeQuickOrderQty(1)" type="button"><i class="fa-solid fa-plus"></i></button>';
+    html += '</div></div>';
+
+    const isOutOfStock = type === 'simple' && stockStatus === 'outofstock';
+    html += `<button class="quick-order-add-btn ${isOutOfStock ? 'disabled' : ''}"
+              id="quickOrderAddBtn"
+              onclick="addQuickOrderToCart(${product.id}, '${type}')"
+              ${isOutOfStock ? 'disabled' : ''} type="button">`;
+    html += '<i class="fa-solid fa-cart-shopping"></i> ';
+    html += isOutOfStock ? 'Out of Stock' : 'Add to Cart';
+    html += '</button>';
+
+    html += '</div>';
+
+    quickOrderContent.innerHTML = html;
+
+    if (type === 'variable') {
+      setTimeout(() => {
+        updateQuickOrderVariationStock();
+      }, 100);
+    }
+
+    startQuickGiftAutoPlay('desktop');
+  }
+
+  window.changeQuickOrderImage = function(src, element) {
+    const mainImg = document.getElementById('quickOrderMainImg');
+    if (mainImg) mainImg.src = src;
+    document.querySelectorAll('.quick-order-thumb').forEach(thumb => thumb.classList.remove('active'));
+    if (element) element.classList.add('active');
+  };
+
+  window.selectQuickOrderOption = function(element, attrName) {
+    const container = element.closest('.quick-order-options');
+    container.querySelectorAll('.quick-order-option').forEach(opt => opt.classList.remove('selected'));
+    element.classList.add('selected');
+
+    if (window.currentProductType === 'variable') {
+      updateQuickOrderVariationStock();
+    }
+  };
+
+  function updateQuickOrderVariationStock() {
+    const variationsData = window.currentProductVariationsData;
+    if (!variationsData || variationsData.length === 0) return;
+
+    const selectedAttributes = {};
+    document.querySelectorAll('.quick-order-options').forEach(optionsGroup => {
+      const attrName = optionsGroup.dataset.attribute;
+      const selected = optionsGroup.querySelector('.quick-order-option.selected');
+      if (attrName && selected) selectedAttributes[attrName] = selected.dataset.value;
+    });
+
+    const matchedVariation = variationsData.find(variation => {
+      return variation.attributes.every(attr => selectedAttributes[attr.name] === attr.option);
+    });
+
+    const stockContainer = document.getElementById('quickOrderStockContainer');
+    const priceContainer = document.getElementById('quickOrderPriceContainer');
+    const addBtn = document.getElementById('quickOrderAddBtn');
+    const mainImg = document.getElementById('quickOrderMainImg');
+
+    if (matchedVariation) {
+      const price = parseFloat(matchedVariation.price) || 0;
+      const regularPrice = parseFloat(matchedVariation.regular_price) || 0;
+
+      let priceHTML = '';
+      if (regularPrice > price) {
+        priceHTML = `<div class="quick-order-price"><span class="quick-order-price-current">${formatPrice(price)}</span><span class="quick-order-price-regular">${formatPrice(regularPrice)}</span></div>`;
+      } else {
+        priceHTML = `<div class="quick-order-price">${formatPrice(price)}</div>`;
+      }
+      priceContainer.innerHTML = priceHTML;
+
+      if (matchedVariation.image?.src && mainImg) {
+        mainImg.src = matchedVariation.image.src;
+        document.querySelectorAll('.quick-order-thumb').forEach(thumb => {
+          const thumbImg = thumb.querySelector('img');
+          if (thumbImg && thumbImg.src.split('?')[0] === matchedVariation.image.src.split('?')[0]) {
+            thumb.classList.add('active');
+          } else {
+            thumb.classList.remove('active');
+          }
+        });
+      }
+
+      const stockStatus = matchedVariation.stock_status;
+      const stockQuantity = matchedVariation.stock_quantity;
+
+      if (stockStatus === 'outofstock') {
+        stockContainer.innerHTML = '<div class="quick-order-stock out-of-stock"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</div>';
+        addBtn.classList.add('disabled');
+        addBtn.disabled = true;
+        addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Out of Stock';
+      } else {
+        stockContainer.innerHTML = `<div class="quick-order-stock in-stock"><i class="fa-solid fa-circle-check"></i> In Stock ${stockQuantity ? '(' + stockQuantity + ' available)' : ''}</div>`;
+        addBtn.classList.remove('disabled');
+        addBtn.disabled = false;
+        addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Add to Cart';
+      }
+    } else {
+      stockContainer.innerHTML = '<div class="quick-order-stock-placeholder">Please select all options</div>';
+      addBtn.classList.add('disabled');
+      addBtn.disabled = true;
+      addBtn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Add to Cart';
+    }
+  }
+
+  window.changeQuickOrderQty = function(change) {
     const input = document.getElementById('quickOrderQty');
     if (!input) return;
-    input.value = Math.max(1, (parseInt(input.value) || 1) + delta);
+    let qty = parseInt(input.value) || 1;
+    input.value = Math.max(1, qty + change);
+  };
+
+  window.nextQuickGift = function(device) {
+    const track = document.getElementById(`${device}QuickGiftTrack`);
+    if (!track) return;
+    if (device === 'desktop') {
+      quickGiftIndexDesktop = (quickGiftIndexDesktop + 1) % QUICK_GIFTS_DATA.length;
+      track.style.transform = `translateX(-${quickGiftIndexDesktop * 100}%)`;
+    } else {
+      quickGiftIndexMobile = (quickGiftIndexMobile + 1) % QUICK_GIFTS_DATA.length;
+      track.style.transform = `translateX(-${quickGiftIndexMobile * 100}%)`;
+    }
+  };
+
+  window.prevQuickGift = function(device) {
+    const track = document.getElementById(`${device}QuickGiftTrack`);
+    if (!track) return;
+    if (device === 'desktop') {
+      quickGiftIndexDesktop = (quickGiftIndexDesktop - 1 + QUICK_GIFTS_DATA.length) % QUICK_GIFTS_DATA.length;
+      track.style.transform = `translateX(-${quickGiftIndexDesktop * 100}%)`;
+    } else {
+      quickGiftIndexMobile = (quickGiftIndexMobile - 1 + QUICK_GIFTS_DATA.length) % QUICK_GIFTS_DATA.length;
+      track.style.transform = `translateX(-${quickGiftIndexMobile * 100}%)`;
+    }
+  };
+
+  function startQuickGiftAutoPlay(device) {
+    stopQuickGiftAutoPlay(device);
+    if (device === 'desktop') {
+      quickGiftTimerDesktop = setInterval(() => nextQuickGift('desktop'), 4000);
+    } else {
+      quickGiftTimerMobile = setInterval(() => nextQuickGift('mobile'), 4000);
+    }
+  }
+
+  function stopQuickGiftAutoPlay(device) {
+    if (!device || device === 'desktop') {
+      if (quickGiftTimerDesktop) { clearInterval(quickGiftTimerDesktop); quickGiftTimerDesktop = null; }
+    }
+    if (!device || device === 'mobile') {
+      if (quickGiftTimerMobile) { clearInterval(quickGiftTimerMobile); quickGiftTimerMobile = null; }
+    }
+  }
+
+  window.addGiftDirectlyToCart = function(giftId, giftName, giftPrice, giftImage, btnEl) {
+    try {
+      let cart = [];
+      try {
+        const cartData = localStorage.getItem('ebbelle_cart');
+        if (cartData) cart = JSON.parse(cartData);
+      } catch (e) {
+        console.error('读取购物车失败:', e);
+      }
+
+      const cartItemId = `${giftId}_gift`;
+      const existingIndex = cart.findIndex(item => item.cartItemId === cartItemId);
+
+      if (existingIndex > -1) {
+        cart[existingIndex].quantity += 1;
+      } else {
+        cart.push({
+          cartItemId: cartItemId,
+          id: giftId,
+          name: giftName,
+          price: parseFloat(giftPrice).toFixed(2),
+          quantity: 1,
+          image: giftImage,
+          selectedVariants: { Gift: 'Complimentary' },
+          variationId: null
+        });
+      }
+
+      localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
+      window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+
+      if (btnEl) {
+        const originalText = btnEl.textContent;
+        btnEl.textContent = 'ADDED ✓';
+        btnEl.style.background = '#16a34a';
+        btnEl.style.borderColor = '#16a34a';
+        setTimeout(() => {
+          btnEl.textContent = originalText;
+          btnEl.style.background = '';
+          btnEl.style.borderColor = '';
+        }, 1200);
+      }
+
+      const cartDrawer = document.getElementById('cartDrawer');
+      const cartOverlay = document.getElementById('cartOverlay');
+      if (cartDrawer && cartOverlay) {
+        cartDrawer.classList.add('active');
+        cartOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    } catch (err) {
+      console.error('加购赠品失败:', err);
+    }
   };
 
   window.addMobileQuickOrderToCart = function() {
-    const product = window.currentProductData;
-    if (!product) return;
-    const qty = parseInt(document.getElementById('mobileQtyInput')?.value) || 1;
-    saveToCart(product, qty);
-    closeQuickOrder();
-  };
-
-  window.addQuickOrderToCart = function(productId, type) {
-    const product = window.currentProductData;
-    if (!product) return;
-    const qty = parseInt(document.getElementById('quickOrderQty')?.value) || 1;
-    saveToCart(product, qty);
-    closeQuickOrder();
-  };
-
-  function saveToCart(product, qty) {
     try {
-      let cart = JSON.parse(localStorage.getItem('ebbelle_cart') || '[]');
-      const cartItemId = `${product.id}_simple`;
-      const idx = cart.findIndex(item => item.cartItemId === cartItemId);
-      if (idx > -1) {
-        cart[idx].quantity += qty;
-      } else {
-        cart.push({
-          cartItemId,
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          quantity: qty,
-          image: product.images?.[0]?.src || '',
-          selectedVariants: {}
-        });
+      const productData = window.currentProductData || {};
+      const variationsData = window.currentProductVariationsData || [];
+      const type = window.currentProductType || 'simple';
+      const qty = parseInt(document.getElementById('mobileQtyInput')?.value) || 1;
+
+      const selectedAttributes = {};
+      document.querySelectorAll('.mobile-attribute-options').forEach(optionsGroup => {
+        const attrName = optionsGroup.dataset.attribute;
+        const selected = optionsGroup.querySelector('.mobile-attribute-option.selected');
+        if (attrName && selected) selectedAttributes[attrName] = selected.dataset.value;
+      });
+
+      let cart = [];
+      try {
+        const cartData = localStorage.getItem('ebbelle_cart');
+        if (cartData) cart = JSON.parse(cartData);
+      } catch (e) {
+        console.error('读取购物车失败:', e);
       }
+
+      let cartItem;
+      let cartItemId;
+
+      if (type === 'variable' && variationsData.length > 0) {
+        const matchedVariation = variationsData.find(variation => {
+          return variation.attributes.every(attr => selectedAttributes[attr.name] === attr.option);
+        });
+
+        if (!matchedVariation) {
+          alert('Please select all available options');
+          return;
+        }
+
+        const variantName = matchedVariation.attributes.map(attr => attr.option).join(', ');
+        const variationKey = Object.entries(selectedAttributes)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([k, v]) => `${k}:${String(v).trim().replace(/\s+/g, '_')}`)
+          .join('|');
+        cartItemId = `${productData.id}_${variationKey}`;
+
+        cartItem = {
+          cartItemId: cartItemId,
+          id: productData.id,
+          name: `${productData.name} - ${variantName}`,
+          price: matchedVariation.price,
+          quantity: qty,
+          image: matchedVariation.image?.src || productData.images?.[0]?.src || '',
+          selectedVariants: selectedAttributes,
+          variationId: matchedVariation.id
+        };
+      } else {
+        cartItemId = `${productData.id}_simple`;
+        cartItem = {
+          cartItemId: cartItemId,
+          id: productData.id,
+          name: productData.name,
+          price: productData.price,
+          quantity: qty,
+          image: productData.images?.[0]?.src || '',
+          selectedVariants: {},
+          variationId: null
+        };
+      }
+
+      const existingIndex = cart.findIndex(item => item.cartItemId === cartItemId);
+      if (existingIndex > -1) {
+        cart[existingIndex].quantity += qty;
+      } else {
+        cart.push(cartItem);
+      }
+
       localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
       window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
-      if (typeof (window as any).toggleCart === 'function') {
-        (window as any).toggleCart(true);
+
+      closeQuickOrder();
+
+      setTimeout(() => {
+        const cartDrawer = document.getElementById('cartDrawer');
+        const cartOverlay = document.getElementById('cartOverlay');
+        if (cartDrawer && cartOverlay) {
+          cartDrawer.classList.add('active');
+          cartOverlay.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        }
+      }, 300);
+
+    } catch (e) {
+      console.error('添加到购物车失败:', e);
+    }
+  };
+
+  window.addQuickOrderToCart = async function(productId, productType) {
+    const qty = parseInt(document.getElementById('quickOrderQty').value) || 1;
+
+    const selectedVariations = {};
+    document.querySelectorAll('.quick-order-section').forEach(section => {
+      const title = section.querySelector('.quick-order-section-title')?.textContent;
+      const selected = section.querySelector('.quick-order-option.selected');
+      if (title && selected && title !== 'Quantity') {
+        selectedVariations[title] = selected.textContent;
       }
-    } catch (e) {}
-  }
+    });
+
+    try {
+      const productData = window.currentProductData || {};
+      const variationsData = window.currentProductVariationsData || [];
+
+      let selectedVariation = null;
+      let price = productData.price || '0';
+      let productName = productData.name || '';
+      let productImage = productData.images?.[0]?.src || '';
+
+      if (productType === 'variable' && variationsData.length > 0) {
+        selectedVariation = variationsData.find(variation => {
+          return variation.attributes.every(attr => selectedVariations[attr.name] === attr.option);
+        });
+
+        if (selectedVariation) {
+          price = selectedVariation.price;
+          if (selectedVariation.image?.src) {
+            productImage = selectedVariation.image.src;
+          }
+        }
+      }
+
+      let cart = [];
+      try {
+        const cartData = localStorage.getItem('ebbelle_cart');
+        if (cartData) cart = JSON.parse(cartData);
+      } catch (e) {
+        console.error('读取购物车失败:', e);
+      }
+
+      const variationKey = Object.entries(selectedVariations)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k}:${v}`)
+        .join('|');
+      const cartItemId = `${productId}_${variationKey || 'simple'}`;
+
+      const existingIndex = cart.findIndex(item => item.cartItemId === cartItemId);
+      if (existingIndex > -1) {
+        cart[existingIndex].quantity += qty;
+      } else {
+        cart.push({
+          cartItemId: cartItemId,
+          id: productId,
+          name: productName,
+          price: price,
+          quantity: qty,
+          image: productImage,
+          selectedVariants: selectedVariations,
+          variationId: selectedVariation?.id || null
+        });
+      }
+
+      localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
+      window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+
+      closeQuickOrder();
+
+      setTimeout(() => {
+        const cartDrawer = document.getElementById('cartDrawer');
+        const cartOverlay = document.getElementById('cartOverlay');
+        if (cartDrawer && cartOverlay) {
+          cartDrawer.classList.add('active');
+          cartOverlay.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        }
+      }, 300);
+
+    } catch (e) {
+      console.error('添加到购物车失败:', e);
+    }
+  };
 
   if (quickOrderClose) quickOrderClose.addEventListener('click', closeQuickOrder);
   if (quickOrderOverlay) quickOrderOverlay.addEventListener('click', closeQuickOrder);
   if (quickOrderMobileClose) quickOrderMobileClose.addEventListener('click', closeQuickOrder);
   if (quickOrderMobileOverlay) quickOrderMobileOverlay.addEventListener('click', closeQuickOrder);
 
-  // 绑定加购按钮委托
-  document.addEventListener('click', (e) => {
-    const addBtn = e.target.closest('.add-to-cart-btn, .mobile-add-btn');
-    if (addBtn && addBtn.dataset.product) {
-      e.preventDefault();
-      e.stopPropagation();
-      try {
-        const product = JSON.parse(addBtn.dataset.product);
-        openQuickOrderWithData(product);
-      } catch (err) {}
-    }
-  });
-
-  // 页面加载入口
-  document.addEventListener('DOMContentLoaded', () => {
-    updateBreadcrumb();
-    loadFilters();
-    fetchAndSyncQuickGiftsData();
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const pageParam = urlParams.get('page');
-    loadPage(pageParam ? parseInt(pageParam) : 1);
-  });
-
-  // 货币切换重新格式化
+  // 监听货币切换事件，重新渲染产品列表
   window.addEventListener('currencyChanged', () => {
-    if (window.currentProducts && window.currentProducts.length > 0) {
+    const productsGrid = document.getElementById('productsGrid');
+    if (productsGrid && window.currentProducts) {
       renderProducts(window.currentProducts);
     }
   });
