@@ -17,7 +17,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
 const perPage = 20;
 
-// 2. 服务端直接获取第 1 页的产品数据（解决客户端等待 14 秒空白问题）
+// 2. 服务端直接获取首屏产品（Page 1）
 const pageParam = Astro.url.searchParams.get('page');
 const initialPage = pageParam ? parseInt(pageParam) : 1;
 const categoryParam = Astro.url.searchParams.get('category') || undefined;
@@ -35,7 +35,7 @@ try {
   console.error('[Shop SSR] 获取初始产品失败:', e);
 }
 
-// 3. 服务端直接完成首屏翻译（走 Cloudflare Workers AI + KV 缓存，毫秒级直出）
+// 3. 服务端直接完成首屏翻译（走 Cloudflare Workers AI + KV 缓存直出）
 let initialProducts = initialRawProducts;
 if (currentLocale !== 'en' && initialRawProducts.length > 0) {
   try {
@@ -60,7 +60,7 @@ if (Astro.response) {
       <div class="breadcrumb-content">
         <div class="breadcrumb-wrapper">
           <div class="breadcrumb">
-            <a href="/">Home</a>
+            <a href={currentLocale === 'en' ? '/' : `/${currentLocale}/`}>Home</a>
             <span>/</span>
             <span>Shop</span>
           </div>
@@ -150,7 +150,7 @@ if (Astro.response) {
     <button class="sort-option" data-sort="price-desc" type="button">{t(currentLocale, 'shop.sortPriceDesc')}</button>
   </div>
 
-  <!-- Mobile Products Grid -->
+  <!-- Mobile Products Grid: 服务端直出初始商品 -->
   <div class="mobile-products-container">
     <div class="mobile-products-grid" id="products-grid-mobile">
       {initialProducts.length > 0 ? (
@@ -236,7 +236,7 @@ if (Astro.response) {
             </div>
           </div>
 
-          <!-- Product Grid: 服务端直出初始多语言商品 -->
+          <!-- Product Grid: 桌面端服务端直出多语言商品列表 -->
           <div class="products-grid" id="products-grid-desktop">
             {initialProducts.length > 0 ? (
               initialProducts.map((product) => {
@@ -836,8 +836,12 @@ if (Astro.response) {
   .page-btn.active { background: #000; color: #fff; border-color: #000; }
 </style>
 
+<!-- 将服务端已翻译的数据直接挂载到客户端全局变量，供快速加购与货币转换使用 -->
+<script is:inline define:vars={{ initialProducts }}>
+  window.currentProducts = initialProducts || [];
+</script>
+
 <script>
-  // 保持客户端后续的筛选、排序、QuickOrder 等原有功能稳定运行
   const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
 
   function getCurrentLocale() {
@@ -863,29 +867,232 @@ if (Astro.response) {
     return `/${currentLocale}${cleanUrl}`;
   }
 
-  function formatPrice(priceUSD) {
-    const currency = localStorage.getItem('ebbelle_currency') || 'USD';
-    const rateMap = { USD: 1.0, EUR: 0.92, GBP: 0.79, CAD: 1.36 };
-    const symbolMap = { USD: '$', EUR: '€', GBP: '£', CAD: 'C$' };
-    const rate = rateMap[currency] || 1.0;
-    const symbol = symbolMap[currency] || '$';
-    const converted = (priceUSD * rate).toFixed(2);
-    return currency === 'EUR' ? `${converted}${symbol}` : `${symbol}${converted}`;
+  const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', CAD: 'C$' };
+  const CURRENCY_RATES = { USD: 1.0, EUR: 0.92, GBP: 0.79, CAD: 1.36 };
+
+  function getCurrentCurrency() {
+    return localStorage.getItem('ebbelle_currency') || 'USD';
   }
 
-  // 绑定客户端快速加购事件
+  function formatPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const rate = CURRENCY_RATES[currency] || 1.0;
+    const symbol = CURRENCY_SYMBOLS[currency] || '$';
+    const formatted = (priceUSD * rate).toFixed(2);
+    return currency === 'EUR' ? `${formatted}${symbol}` : `${symbol}${formatted}`;
+  }
+
+  window.shopQuickOrderInitialized = true;
+
+  const ALL_CATEGORIES_MENU = [
+    {
+      name: "WOMEN JEWELRY",
+      slug: "women-jewelry",
+      children: [
+        {
+          name: "RING",
+          slug: "ring",
+          children: [
+            { name: "Stainless Steel Rings", slug: "stainless-steel-rings" },
+            { name: "CZ Rings", slug: "cz-rings" },
+            { name: "Stackable Rings", slug: "stackable-rings" },
+            { name: "Signet Rings", slug: "signet-rings" }
+          ]
+        },
+        {
+          name: "EARRING",
+          slug: "earring",
+          children: [
+            { name: "CZ Earrings", slug: "cz-earrings" },
+            { name: "Stainless Steel Earrings", slug: "stainless-steel-rings" },
+            { name: "Zircon Earrings", slug: "zircon-earrings" },
+            { name: "Pearl Earrings", slug: "pearl-earrings" }
+          ]
+        }
+      ]
+    }
+  ];
+
+  let currentPage = 1;
+  let totalPages = 1;
+  let totalProducts = 0;
+  let currentFilters = null;
+  let currentSort = 'menu_order';
+
+  const escapeHtml = (text) => {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  };
+
+  function getProductMaterialText(product) {
+    if (product.material && typeof product.material === 'string') return product.material;
+    return '316L Steel';
+  }
+
+  function renderProductCard(product, isMobile, layout = 'grid') {
+    const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
+    const discountPercent = hasDiscount
+      ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
+      : 0;
+
+    const productName = escapeHtml(product.name);
+    const productSlug = encodeURIComponent(product.slug);
+    const imageUrl = product.images?.[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80';
+    const materialText = escapeHtml(getProductMaterialText(product));
+
+    if (isMobile) {
+      return `
+        <div class="mobile-product-card">
+          <a href="${addLocalePrefix(`/product/${productSlug}`)}">
+            <div class="mobile-product-image">
+              ${hasDiscount ? `<span class="mobile-badge new">-${discountPercent}%</span>` : ''}
+              <button class="mobile-wishlist-btn" onclick="event.preventDefault();" type="button"><i class="fa-regular fa-heart"></i></button>
+              <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
+            </div>
+            <div class="mobile-product-info">
+              <h3 class="mobile-product-title">${productName}</h3>
+              <div class="mobile-product-price">
+                <span class="mobile-price">${formatPrice(parseFloat(product.price))}</span>
+                ${hasDiscount ? `<span class="mobile-old-price">${formatPrice(parseFloat(product.regular_price))}</span>` : ''}
+              </div>
+              <div class="mobile-product-meta">
+                <span class="mobile-moq">MOQ: 1 pc</span>
+                <span class="mobile-material">${materialText}</span>
+              </div>
+              <button class="mobile-add-btn" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' type="button">
+                <i class="fa-solid fa-cart-shopping"></i><span>Add</span>
+              </button>
+            </div>
+          </a>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="product-card-shop">
+          <a href="${addLocalePrefix(`/product/${productSlug}`)}">
+            <div class="product-image-wrapper">
+              ${hasDiscount ? `<span class="product-badge new">-${discountPercent}%</span>` : ''}
+              <button class="wishlist-btn" onclick="event.preventDefault();" type="button"><i class="fa-regular fa-heart"></i></button>
+              <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
+            </div>
+            <div class="product-details-shop">
+              <h3 class="product-title-shop">${productName}</h3>
+              <div class="product-price-shop">
+                <span class="price-current">${formatPrice(parseFloat(product.price))}</span>
+                ${hasDiscount ? `<span class="price-old">${formatPrice(parseFloat(product.regular_price))}</span>` : ''}
+              </div>
+              <div class="product-meta">
+                <span class="moq">MOQ: 1 pc</span>
+                <span class="material">${materialText}</span>
+              </div>
+              <button class="add-to-cart-btn" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' type="button">
+                <i class="fa-solid fa-cart-shopping"></i><span>Add</span>
+              </button>
+            </div>
+          </a>
+        </div>
+      `;
+    }
+  }
+
+  function renderProducts(products) {
+    const desktopGrid = document.getElementById('products-grid-desktop');
+    const mobileGrid = document.getElementById('products-grid-mobile');
+    if (!products || products.length === 0) return;
+
+    window.currentProducts = products;
+    if (desktopGrid) desktopGrid.innerHTML = products.map(p => renderProductCard(p, false)).join('');
+    if (mobileGrid) mobileGrid.innerHTML = products.map(p => renderProductCard(p, true)).join('');
+  }
+
+  // 仅在用户主动分页/筛选时才异步发请求
+  async function loadPage(page, filters = null) {
+    try {
+      const desktopGrid = document.getElementById('products-grid-desktop');
+      const mobileGrid = document.getElementById('products-grid-mobile');
+      const skeletonHTML = Array.from({ length: 20 }, () => `
+        <div class="product-skeleton">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-content"><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-price"></div></div>
+        </div>
+      `).join('');
+
+      if (desktopGrid) desktopGrid.innerHTML = skeletonHTML;
+      if (mobileGrid) mobileGrid.innerHTML = skeletonHTML;
+
+      const requestBody: any = { page: page, per_page: 20 };
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('q')) requestBody.search = urlParams.get('q');
+      if (urlParams.get('category')) requestBody.category = urlParams.get('category');
+
+      if (filters) {
+        if (filters.categories?.length > 0) requestBody.category = filters.categories.join(',');
+        if (filters.colors?.length > 0) requestBody.color = filters.colors.join(',');
+        if (filters.materials?.length > 0) requestBody.material = filters.materials.join(',');
+      }
+
+      const response = await fetch(`/api/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) throw new Error('API request failed');
+      const data = await response.json();
+
+      let products = data.products || [];
+      const currentLocale = getCurrentLocale();
+
+      // 如果当前是多语言环境且非英语，批量翻译异步结果
+      if (currentLocale !== 'en' && products.length > 0) {
+        try {
+          const transRes = await fetch('/api/translate-products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ products, targetLang: currentLocale })
+          });
+          if (transRes.ok) products = await transRes.json();
+        } catch (e) {}
+      }
+
+      renderProducts(products);
+      currentPage = page;
+      totalProducts = data.total || products.length;
+      totalPages = data.totalPages || 1;
+
+      const totalSpan = document.getElementById('total-products');
+      const countDesktop = document.getElementById('products-count-desktop');
+      if (totalSpan) totalSpan.textContent = totalProducts.toString();
+      if (countDesktop) countDesktop.textContent = totalProducts.toString();
+
+    } catch (err) {
+      console.error('异步加载产品失败:', err);
+    }
+  }
+
+  // 页面就绪后：绝不再次调用 loadPage(1) 清空首屏！
   document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.add-to-cart-btn, .mobile-add-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    // 绑定加购点击事件
+    document.body.addEventListener('click', (e: any) => {
+      const addBtn = e.target.closest('.add-to-cart-btn, .mobile-add-btn');
+      if (addBtn && addBtn.dataset.product) {
         e.preventDefault();
         e.stopPropagation();
         try {
-          const product = JSON.parse(btn.dataset.product);
-          if (typeof window.openQuickOrderWithData === 'function') {
-            window.openQuickOrderWithData(product);
+          const product = JSON.parse(addBtn.dataset.product);
+          if (typeof (window as any).openQuickOrderWithData === 'function') {
+            (window as any).openQuickOrderWithData(product);
           }
         } catch (err) {}
-      });
+      }
+    });
+
+    // 货币变更时原地刷新价格
+    window.addEventListener('currencyChanged', () => {
+      if (window.currentProducts && window.currentProducts.length > 0) {
+        renderProducts(window.currentProducts);
+      }
     });
   });
 </script>
