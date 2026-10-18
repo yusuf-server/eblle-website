@@ -6,45 +6,12 @@ import CartDrawer from '../../components/CartDrawer.astro';
 import ProductSkeleton from '../../components/ProductSkeleton.astro';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
 import { t } from '../../lib/i18n/translations';
-import { translateProducts } from '../../lib/i18n/product-translator';
-import { getProductsWithPrices } from '../../lib/productCache';
 
 // 1. 获取语言参数
 const lang = Astro.params.lang as SupportedLocale | undefined;
 const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
   ? (lang as SupportedLocale)
   : 'en';
-
-const perPage = 20;
-
-// 2. 服务端直接获取首屏产品（Page 1）
-const pageParam = Astro.url.searchParams.get('page');
-const initialPage = pageParam ? parseInt(pageParam) : 1;
-const categoryParam = Astro.url.searchParams.get('category') || undefined;
-const searchParam = Astro.url.searchParams.get('q') || undefined;
-
-let initialRawProducts: any[] = [];
-try {
-  initialRawProducts = await getProductsWithPrices({
-    page: initialPage,
-    per_page: perPage,
-    category: categoryParam,
-    search: searchParam
-  });
-} catch (e) {
-  console.error('[Shop SSR] 获取初始产品失败:', e);
-}
-
-// 3. 服务端直接完成首屏翻译（走 Cloudflare Workers AI + KV 缓存直出）
-let initialProducts = initialRawProducts;
-if (currentLocale !== 'en' && initialRawProducts.length > 0) {
-  try {
-    initialProducts = await translateProducts(initialRawProducts, currentLocale, Astro.locals);
-  } catch (err) {
-    console.warn('[Shop SSR] 首屏翻译异常，降级显示英文:', err);
-    initialProducts = initialRawProducts;
-  }
-}
 
 if (Astro.response) {
   Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -65,7 +32,7 @@ if (Astro.response) {
             <span>Shop</span>
           </div>
         </div>
-        <div class="mobile-results-count">(<span id="total-products">{initialProducts.length}</span>)</div>
+        <div class="mobile-results-count">(<span id="total-products">0</span>)</div>
       </div>
     </div>
   </div>
@@ -150,48 +117,10 @@ if (Astro.response) {
     <button class="sort-option" data-sort="price-desc" type="button">{t(currentLocale, 'shop.sortPriceDesc')}</button>
   </div>
 
-  <!-- Mobile Products Grid: 服务端直出初始商品 -->
+  <!-- Mobile Products Grid -->
   <div class="mobile-products-container">
     <div class="mobile-products-grid" id="products-grid-mobile">
-      {initialProducts.length > 0 ? (
-        initialProducts.map((product) => {
-          const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
-          const discountPercent = hasDiscount
-            ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
-            : 0;
-          const imageUrl = product.images?.[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80';
-          return (
-            <div class="mobile-product-card">
-              <a href={currentLocale === 'en' ? `/product/${product.slug}` : `/${currentLocale}/product/${product.slug}`}>
-                <div class="mobile-product-image">
-                  {hasDiscount && <span class="mobile-badge new">-{discountPercent}%</span>}
-                  <button class="mobile-wishlist-btn" onclick="event.preventDefault();" type="button">
-                    <i class="fa-regular fa-heart"></i>
-                  </button>
-                  <img src={imageUrl} alt={product.name} loading="lazy" />
-                </div>
-                <div class="mobile-product-info">
-                  <h3 class="mobile-product-title">{product.name}</h3>
-                  <div class="mobile-product-price">
-                    <span class="mobile-price">${parseFloat(product.price).toFixed(2)}</span>
-                    {hasDiscount && <span class="mobile-old-price">${parseFloat(product.regular_price).toFixed(2)}</span>}
-                  </div>
-                  <div class="mobile-product-meta">
-                    <span class="mobile-moq">MOQ: 1 pc</span>
-                    <span class="mobile-material">316L Steel</span>
-                  </div>
-                  <button class="mobile-add-btn" data-product={JSON.stringify(product)} type="button">
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Add</span>
-                  </button>
-                </div>
-              </a>
-            </div>
-          );
-        })
-      ) : (
-        <ProductSkeleton count={20} />
-      )}
+      <ProductSkeleton count={20} />
     </div>
 
     <!-- Mobile Pagination -->
@@ -210,6 +139,7 @@ if (Astro.response) {
   <div class="shop-container">
     <div class="container">
       <div class="shop-layout">
+        <!-- 左侧 Sidebar Filters (恢复完整容器) -->
         <aside class="shop-sidebar">
           <div id="filters-container">
             <div class="filters-loading">
@@ -220,6 +150,7 @@ if (Astro.response) {
           </div>
         </aside>
 
+        <!-- 主商品展示区 -->
         <main class="shop-main">
           <div class="sorting-bar">
             <div class="sort-left">
@@ -232,51 +163,13 @@ if (Astro.response) {
               <button class="sort-btn" data-sort="price-desc" type="button">{t(currentLocale, 'shop.sortPriceDesc')}</button>
             </div>
             <div class="sort-right">
-              <span class="products-count"><span id="products-count-desktop">{initialProducts.length}</span> {t(currentLocale, 'shop.products')}</span>
+              <span class="products-count"><span id="products-count-desktop">0</span> {t(currentLocale, 'shop.products')}</span>
             </div>
           </div>
 
-          <!-- Product Grid: 桌面端服务端直出多语言商品列表 -->
+          <!-- Product Grid -->
           <div class="products-grid" id="products-grid-desktop">
-            {initialProducts.length > 0 ? (
-              initialProducts.map((product) => {
-                const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
-                const discountPercent = hasDiscount
-                  ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
-                  : 0;
-                const imageUrl = product.images?.[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80';
-                return (
-                  <div class="product-card-shop">
-                    <a href={currentLocale === 'en' ? `/product/${product.slug}` : `/${currentLocale}/product/${product.slug}`}>
-                      <div class="product-image-wrapper">
-                        {hasDiscount && <span class="product-badge new">-{discountPercent}%</span>}
-                        <button class="wishlist-btn" onclick="event.preventDefault();" type="button">
-                          <i class="fa-regular fa-heart"></i>
-                        </button>
-                        <img src={imageUrl} alt={product.name} loading="lazy" />
-                      </div>
-                      <div class="product-details-shop">
-                        <h3 class="product-title-shop">{product.name}</h3>
-                        <div class="product-price-shop">
-                          <span class="price-current">${parseFloat(product.price).toFixed(2)}</span>
-                          {hasDiscount && <span class="price-old">${parseFloat(product.regular_price).toFixed(2)}</span>}
-                        </div>
-                        <div class="product-meta">
-                          <span class="moq">MOQ: 1 pc</span>
-                          <span class="material">316L Steel</span>
-                        </div>
-                        <button class="add-to-cart-btn" data-product={JSON.stringify(product)} type="button">
-                          <i class="fa-solid fa-cart-shopping"></i>
-                          <span>Add</span>
-                        </button>
-                      </div>
-                    </a>
-                  </div>
-                );
-              })
-            ) : (
-              <ProductSkeleton count={20} />
-            )}
+            <ProductSkeleton count={20} />
           </div>
 
           <!-- Pagination -->
@@ -371,7 +264,6 @@ if (Astro.response) {
     color: #B8860B !important;
     font-weight: 700 !important;
   }
-  .filter-tag-btn:active { transform: scale(0.96) !important; }
 
   .mobile-filter-drawer-overlay {
     position: fixed;
@@ -834,14 +726,24 @@ if (Astro.response) {
   .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 40px; }
   .page-btn { min-width: 36px; height: 36px; padding: 0 12px; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; }
   .page-btn.active { background: #000; color: #fff; border-color: #000; }
+
+  /* 骨架屏动画 */
+  .loading-skeleton {
+    height: 38px;
+    background: #f0f0f0;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+  }
 </style>
 
-<!-- 将服务端已翻译的数据直接挂载到客户端全局变量，供快速加购与货币转换使用 -->
-<script is:inline define:vars={{ initialProducts }}>
-  window.currentProducts = initialProducts || [];
-</script>
-
 <script>
+  // 客户端多语言与工具
   const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
 
   function getCurrentLocale() {
@@ -874,8 +776,8 @@ if (Astro.response) {
     return localStorage.getItem('ebbelle_currency') || 'USD';
   }
 
-  function formatPrice(priceUSD, targetCurrency) {
-    const currency = targetCurrency || getCurrentCurrency();
+  function formatPrice(priceUSD) {
+    const currency = getCurrentCurrency();
     const rate = CURRENCY_RATES[currency] || 1.0;
     const symbol = CURRENCY_SYMBOLS[currency] || '$';
     const formatted = (priceUSD * rate).toFixed(2);
@@ -884,40 +786,11 @@ if (Astro.response) {
 
   window.shopQuickOrderInitialized = true;
 
-  const ALL_CATEGORIES_MENU = [
-    {
-      name: "WOMEN JEWELRY",
-      slug: "women-jewelry",
-      children: [
-        {
-          name: "RING",
-          slug: "ring",
-          children: [
-            { name: "Stainless Steel Rings", slug: "stainless-steel-rings" },
-            { name: "CZ Rings", slug: "cz-rings" },
-            { name: "Stackable Rings", slug: "stackable-rings" },
-            { name: "Signet Rings", slug: "signet-rings" }
-          ]
-        },
-        {
-          name: "EARRING",
-          slug: "earring",
-          children: [
-            { name: "CZ Earrings", slug: "cz-earrings" },
-            { name: "Stainless Steel Earrings", slug: "stainless-steel-rings" },
-            { name: "Zircon Earrings", slug: "zircon-earrings" },
-            { name: "Pearl Earrings", slug: "pearl-earrings" }
-          ]
-        }
-      ]
-    }
-  ];
-
   let currentPage = 1;
   let totalPages = 1;
   let totalProducts = 0;
   let currentFilters = null;
-  let currentSort = 'menu_order';
+  let currentProducts = [];
 
   const escapeHtml = (text) => {
     const div = document.createElement('div');
@@ -1006,15 +879,73 @@ if (Astro.response) {
     if (mobileGrid) mobileGrid.innerHTML = products.map(p => renderProductCard(p, true)).join('');
   }
 
-  // 仅在用户主动分页/筛选时才异步发请求
+  function generatePagination(current, total) {
+    const pages = [];
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (current > 3) pages.push('...');
+      const start = Math.max(2, current - 1);
+      const end = Math.min(total - 1, current + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (current < total - 2) pages.push('...');
+      pages.push(total);
+    }
+    return pages;
+  }
+
+  function renderPagination() {
+    const pages = generatePagination(currentPage, totalPages);
+    const desktopPagination = document.getElementById('pagination-desktop');
+    const mobilePagination = document.getElementById('pagination-mobile');
+
+    [desktopPagination, mobilePagination].forEach(container => {
+      if (!container) return;
+      const isMobile = container.id.includes('mobile');
+      const btnClass = isMobile ? 'mobile-page-btn' : 'page-btn';
+      const dotsClass = isMobile ? 'mobile-page-dots' : 'page-dots';
+
+      let html = `<button class="${btnClass}" data-page="prev" ${currentPage === 1 ? 'disabled' : ''} type="button"><i class="fa-solid fa-chevron-left"></i></button>`;
+      pages.forEach(page => {
+        if (page === '...') {
+          html += `<span class="${dotsClass}">...</span>`;
+        } else {
+          html += `<button class="${btnClass} ${currentPage === page ? 'active' : ''}" data-page="${page}" type="button">${page}</button>`;
+        }
+      });
+      html += `<button class="${btnClass}" data-page="next" ${currentPage >= totalPages ? 'disabled' : ''} type="button"><i class="fa-solid fa-chevron-right"></i></button>`;
+      container.innerHTML = html;
+    });
+
+    document.querySelectorAll('[data-page]').forEach(btn => {
+      btn.addEventListener('click', handlePageClick);
+    });
+  }
+
+  async function handlePageClick(e) {
+    const pageValue = e.currentTarget.dataset.page;
+    let newPage = currentPage;
+    if (pageValue === 'prev') newPage = Math.max(1, currentPage - 1);
+    else if (pageValue === 'next') newPage = Math.min(totalPages, currentPage + 1);
+    else newPage = parseInt(pageValue);
+
+    if (newPage === currentPage) return;
+    currentPage = newPage;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    await loadPage(newPage, currentFilters);
+  }
+
+  // 客户端统一获取商品数据（处理多语言与分页总数）
   async function loadPage(page, filters = null) {
     try {
       const desktopGrid = document.getElementById('products-grid-desktop');
       const mobileGrid = document.getElementById('products-grid-mobile');
       const skeletonHTML = Array.from({ length: 20 }, () => `
-        <div class="product-skeleton">
-          <div class="skeleton-image"></div>
-          <div class="skeleton-content"><div class="skeleton-line skeleton-title"></div><div class="skeleton-line skeleton-price"></div></div>
+        <div class="product-skeleton" style="background:#fff;border-radius:8px;padding:12px;border:1px solid #eee;min-height:260px;">
+          <div style="width:100%;aspect-ratio:1;background:#f0f0f0;margin-bottom:8px;"></div>
+          <div style="height:14px;background:#f0f0f0;margin-bottom:6px;width:80%;"></div>
+          <div style="height:14px;background:#f0f0f0;width:40%;"></div>
         </div>
       `).join('');
 
@@ -1044,7 +975,7 @@ if (Astro.response) {
       let products = data.products || [];
       const currentLocale = getCurrentLocale();
 
-      // 如果当前是多语言环境且非英语，批量翻译异步结果
+      // 仅在非英语环境下，单次请求批量翻译
       if (currentLocale !== 'en' && products.length > 0) {
         try {
           const transRes = await fetch('/api/translate-products', {
@@ -1061,18 +992,148 @@ if (Astro.response) {
       totalProducts = data.total || products.length;
       totalPages = data.totalPages || 1;
 
+      // 更新真实总商品数与总页数
       const totalSpan = document.getElementById('total-products');
       const countDesktop = document.getElementById('products-count-desktop');
       if (totalSpan) totalSpan.textContent = totalProducts.toString();
       if (countDesktop) countDesktop.textContent = totalProducts.toString();
 
+      renderPagination();
+
     } catch (err) {
-      console.error('异步加载产品失败:', err);
+      console.error('加载产品失败:', err);
     }
   }
 
-  // 页面就绪后：绝不再次调用 loadPage(1) 清空首屏！
+  // 恢复异步加载与渲染侧边栏筛选器
+  async function loadFilters() {
+    try {
+      const response = await fetch('/api/filters');
+      if (!response.ok) throw new Error('Failed to load filters');
+      const data = await response.json();
+      renderFilters(data);
+    } catch (error) {
+      console.error('加载筛选失败:', error);
+    }
+  }
+
+  function renderFilters(data) {
+    const container = document.getElementById('filters-container');
+    const mobileContainer = document.getElementById('mobileFilterContent');
+    if (!container) return;
+
+    let html = `
+      <div class="filters-header" style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid #eee;margin-bottom:14px;">
+        <h2 style="font-size:15px;font-weight:700;margin:0;">Filters</h2>
+        <button onclick="resetAllFilters()" style="background:none;border:none;cursor:pointer;color:#666;" type="button">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+    `;
+
+    // 1. ALL JEWELRY 分类
+    if (data.allJewelry && data.allJewelry.length > 0) {
+      html += `
+        <div class="filter-section">
+          <h3 class="filter-title" style="margin-bottom:10px;">CATEGORIES</h3>
+          <ul class="filter-list">
+            ${data.allJewelry.map((cat: any) => `
+              <li>
+                <label>
+                  <input type="checkbox" name="category" value="${cat.id || cat.slug}" data-filter="category" />
+                  <span>${cat.name} (${cat.count || 0})</span>
+                </label>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    // 2. MATERIAL 材质
+    if (data.materials && data.materials.length > 0) {
+      html += `
+        <div class="filter-section">
+          <h3 class="filter-title" style="margin-bottom:10px;">MATERIAL</h3>
+          <ul class="filter-list">
+            ${data.materials.map((m: any) => `
+              <li>
+                <label>
+                  <input type="checkbox" name="material" value="${m.id || m.slug}" data-filter="material" />
+                  <span>${m.name}</span>
+                </label>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+    if (mobileContainer) mobileContainer.innerHTML = html;
+
+    // 绑定筛选变化监听
+    container.querySelectorAll('input[type="checkbox"]').forEach(input => {
+      input.addEventListener('change', handleFilterChange);
+    });
+    if (mobileContainer) {
+      mobileContainer.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener('change', handleFilterChange);
+      });
+    }
+  }
+
+  function handleFilterChange() {
+    const selected = { categories: [], colors: [], materials: [] };
+    document.querySelectorAll('#filters-container input[name="category"]:checked, #mobileFilterContent input[name="category"]:checked').forEach((input: any) => {
+      selected.categories.push(input.value);
+    });
+    document.querySelectorAll('#filters-container input[name="material"]:checked, #mobileFilterContent input[name="material"]:checked').forEach((input: any) => {
+      selected.materials.push(input.value);
+    });
+
+    currentFilters = selected;
+    loadPage(1, selected);
+  }
+
+  (window as any).resetAllFilters = function() {
+    document.querySelectorAll('#filters-container input[type="checkbox"], #mobileFilterContent input[type="checkbox"]').forEach((input: any) => {
+      input.checked = false;
+    });
+    currentFilters = null;
+    loadPage(1, null);
+  };
+
+  // 移动端筛选抽屉开关控制
+  const mobileFilterBtn = document.getElementById('mobileFilterBtn');
+  const mobileFilterOverlay = document.getElementById('mobileFilterOverlay');
+  const mobileFilterDrawer = document.getElementById('mobileFilterDrawer');
+  const mobileFilterClose = document.getElementById('mobileFilterClose');
+  const mobileFilterApply = document.getElementById('mobileFilterApply');
+  const mobileFilterReset = document.getElementById('mobileFilterReset');
+
+  function openMobileFilterDrawer() {
+    mobileFilterOverlay?.classList.add('active');
+    mobileFilterDrawer?.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeMobileFilterDrawer() {
+    mobileFilterOverlay?.classList.remove('active');
+    mobileFilterDrawer?.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (mobileFilterBtn) mobileFilterBtn.addEventListener('click', openMobileFilterDrawer);
+  if (mobileFilterClose) mobileFilterClose.addEventListener('click', closeMobileFilterDrawer);
+  if (mobileFilterOverlay) mobileFilterOverlay.addEventListener('click', closeMobileFilterDrawer);
+  if (mobileFilterApply) mobileFilterApply.addEventListener('click', closeMobileFilterDrawer);
+  if (mobileFilterReset) mobileFilterReset.addEventListener('click', () => { (window as any).resetAllFilters(); closeMobileFilterDrawer(); });
+
+  // 页面就绪后：正确执行数据获取与筛选加载
   document.addEventListener('DOMContentLoaded', () => {
+    loadFilters();
+    loadPage(1);
+
     // 绑定加购点击事件
     document.body.addEventListener('click', (e: any) => {
       const addBtn = e.target.closest('.add-to-cart-btn, .mobile-add-btn');
@@ -1088,7 +1149,7 @@ if (Astro.response) {
       }
     });
 
-    // 货币变更时原地刷新价格
+    // 货币变更监听
     window.addEventListener('currencyChanged', () => {
       if (window.currentProducts && window.currentProducts.length > 0) {
         renderProducts(window.currentProducts);
