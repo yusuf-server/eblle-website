@@ -12,17 +12,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    // 诊断：检查绑定状态
-    const bindingCheck = {
-      'locals.AI': !!locals.AI,
-      'locals.TRANSLATION_CACHE': !!locals.TRANSLATION_CACHE,
-      'locals.runtime.env.AI': !!(locals as any).runtime?.env?.AI,
-      'locals_keys': Object.keys(locals),
-      'runtime_env_keys': (locals as any).runtime?.env ? Object.keys((locals as any).runtime.env) : []
-    };
-
     console.log(`[API] 批量翻译 ${products.length} 个产品到 ${targetLang}`);
-    console.log(`[API] 绑定诊断:`, JSON.stringify(bindingCheck, null, 2));
+    console.log(`[API] AI 绑定可用: ${!!locals.AI}`);
 
     const startTime = Date.now();
 
@@ -38,7 +29,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   } catch (error) {
     console.error('Batch translation API error:', error);
-    return new Response(JSON.stringify({ error: 'Batch translation failed' }), {
+    return new Response(JSON.stringify({
+      error: 'Batch translation failed',
+      details: error instanceof Error ? error.message : String(error)
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
