@@ -49,14 +49,19 @@ export async function translate(
     return text;
   }
 
+  console.log(`[Translator] 翻译请求: "${text.substring(0, 50)}..." → ${targetLang}`);
+
   const cache = config.cache || env?.TRANSLATION_CACHE;
   const cacheKey = generateCacheKey(text, targetLang, config.cachePrefix);
+
+  console.log(`[Translator] 缓存键: ${cacheKey.substring(0, 60)}...`);
 
   // 1. 优先查 KV 缓存（毫秒级命中）
   if (cache) {
     try {
       const cached = await cache.get(cacheKey);
       if (cached) {
+        console.log(`[Translator] ✓ 缓存命中，返回: "${cached.substring(0, 50)}..."`);
         return cached;
       }
     } catch (error) {
@@ -67,11 +72,14 @@ export async function translate(
   // 2. 缓存未命中，调用 Cloudflare Workers AI 进行翻译
   const ai = env?.AI || context?.AI;
   if (!ai) {
+    console.log('[Translator] AI 不可用，返回原文');
     return text;
   }
 
   try {
     const targetLangCode = LANG_MAP[targetLang] || targetLang;
+    console.log(`[Translator] 调用 AI 翻译: en → ${targetLangCode}`);
+
     const response = await ai.run('@cf/meta/m2m100-1.2b', {
       text,
       source_lang: 'en',
@@ -82,6 +90,7 @@ export async function translate(
 
     // 翻译成功，异步写入 KV，有效期 90 天
     if (translated && translated !== text) {
+      console.log(`[Translator] ✓ 翻译成功: "${translated.substring(0, 50)}..."`);
       if (cache) {
         await cache.put(cacheKey, translated, { expirationTtl: 90 * 24 * 60 * 60 });
         console.log(`✓ [KV 自动写入]: ${cacheKey.substring(0, 45)}...`);
