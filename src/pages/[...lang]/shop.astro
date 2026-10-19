@@ -2820,19 +2820,24 @@ if (Astro.response) {
       // 翻译产品数据（如果不是英语）- 优化为批量请求
       let products = data.products;
       const currentLocale = getCurrentLocale();
+      console.log('[Debug loadProducts] currentLocale =', currentLocale, '类型:', typeof currentLocale);
+
       if (currentLocale !== 'en') {
         console.log('[Debug] 正在批量翻译商店列表产品，语言:', currentLocale, '产品数量:', products.length);
         const startTime = Date.now();
 
         try {
+          const payload = {
+            products,
+            targetLang: currentLocale
+          };
+          console.log('[Debug] 即将发送 payload.targetLang:', payload.targetLang);
+
           // 批量翻译所有产品（一次请求）
           const response = await fetch('/api/translate-products', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              products,
-              targetLang: currentLocale
-            })
+            body: JSON.stringify(payload)
           });
 
           if (response.ok) {
