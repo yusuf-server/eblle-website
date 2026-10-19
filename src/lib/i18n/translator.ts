@@ -4,6 +4,7 @@
  * 降级到 Google Translate API
  */
 
+import { env } from 'cloudflare:workers';
 import type { SupportedLocale } from './utils';
 
 // 语言代码映射：@cf/meta/m2m100-1.2b 模型必须使用 ISO 639-1 两位代码
@@ -14,25 +15,18 @@ const LANG_MAP: Record<SupportedLocale, string> = {
   es: 'es'
 };
 
-// 翻译配置
 export interface TranslateConfig {
   engine?: 'cloudflare-ai' | 'google';
-  cache?: any; // KVNamespace
+  cache?: any;
   cachePrefix?: string;
   targetLanguage?: SupportedLocale;
 }
 
-/**
- * 生成缓存键
- */
 function generateCacheKey(text: string, targetLang: SupportedLocale, prefix?: string): string {
   const hash = simpleHash(text);
   return prefix ? `${prefix}:${targetLang}:${hash}` : `trans:${targetLang}:${hash}`;
 }
 
-/**
- * 简单哈希函数
- */
 function simpleHash(text: string): string {
   let hash = 0;
   for (let i = 0; i < text.length; i++) {
@@ -43,9 +37,6 @@ function simpleHash(text: string): string {
   return Math.abs(hash).toString(36);
 }
 
-/**
- * Cloudflare Workers AI 翻译（使用 m2m100-1.2b 模型）
- */
 async function translateWithCloudflareAI(
   text: string,
   targetLang: SupportedLocale,
@@ -69,13 +60,10 @@ async function translateWithCloudflareAI(
     return text;
   } catch (error: any) {
     console.error('[Translator] Cloudflare AI 失败:', error?.message || error);
-    return text; // 返回原文，由调用方降级
+    return text;
   }
 }
 
-/**
- * Google Translate API 翻译（降级方案）
- */
 async function translateWithGoogle(
   text: string,
   targetLang: SupportedLocale
@@ -90,7 +78,6 @@ async function translateWithGoogle(
         }
       });
 
-      // 处理 429 Too Many Requests
       if (response.status === 429) {
         if (retryCount === 0) {
           console.warn(`[Translator] 遇到 429 频率限制，等待 1000ms 后重试...`);
@@ -128,34 +115,24 @@ async function translateWithGoogle(
   return attemptTranslation();
 }
 
-/**
- * 主翻译函数 - 优先使用 Cloudflare AI，降级到 Google
- */
 export async function translate(
   text: string,
   targetLang: SupportedLocale,
   config: TranslateConfig,
   context?: any
 ): Promise<string> {
-  // 如果是英语或空文本，直接返回
   if (!text || targetLang === 'en') {
     return text;
   }
 
-  // 严格解析不同层级下的 Cloudflare AI 绑定实例
-  const ai =
-    context?.AI ||
-    context?.locals?.runtime?.env?.AI ||
-    context?.locals?.AI ||
-    context?.env?.AI;
-
-  // 生成缓存键
+  // 优先从 cloudflare:workers 获取 AI 实例
+  const ai = env?.AI || context?.AI;
+  const cache = config.cache || env?.TRANSLATION_CACHE;
   const cacheKey = generateCacheKey(text, targetLang, config.cachePrefix);
 
-  // 尝试从 KV 缓存读取
-  if (config.cache) {
+  if (cache) {
     try {
-      const cached = await config.cache.get(cacheKey);
+      const cached = await cache.get(cacheKey);
       if (cached) {
         console.log(`✓ KV 缓存命中: ${cacheKey.substring(0, 50)}...`);
         return cached;
@@ -167,31 +144,22 @@ export async function translate(
 
   let translated = text;
 
-  // 优先尝试 Cloudflare Workers AI
   if (ai) {
     console.log(`→ 使用 Cloudflare Workers AI 翻译: ${text.substring(0, 50)}...`);
     translated = await translateWithCloudflareAI(text, targetLang, ai);
 
-    // 如果 AI 翻译失败（返回原文），降级到 Google
     if (translated === text) {
       console.log(`→ 降级到 Google Translate`);
       translated = await translateWithGoogle(text, targetLang);
     }
   } else {
-    // 打印调试信息，便于在 Cloudflare 实时日志中排查上下文结构
-    console.warn(
-      `[Translator] 未找到 AI Binding，请检查上下文传参。当前 runtime keys:`,
-      Object.keys(context?.locals?.runtime?.env || {})
-    );
-    console.log(`→ 使用 Google Translate 翻译: ${text.substring(0, 50)}...`);
+    console.log(`→ 未检测到 AI 实例，使用 Google Translate: ${text.substring(0, 50)}...`);
     translated = await translateWithGoogle(text, targetLang);
   }
 
-  // 写入 KV 缓存
-  if (config.cache && translated && translated !== text) {
+  if (cache && translated && translated !== text) {
     try {
-      // KV 缓存 30 天
-      await config.cache.put(cacheKey, translated, { expirationTtl: 30 * 24 * 60 * 60 });
+      await cache.put(cacheKey, translated, { expirationTtl: 30 * 24 * 60 * 60 });
       console.log(`✓ KV 缓存写入: ${cacheKey.substring(0, 50)}...`);
     } catch (error) {
       console.warn('[Translator] KV 缓存写入失败:', error);
@@ -201,9 +169,6 @@ export async function translate(
   return translated;
 }
 
-/**
- * 批量翻译 - 用于翻译多个文本
- */
 export async function translateBatch(
   texts: string[],
   targetLang: SupportedLocale,
