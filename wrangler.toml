@@ -1,0 +1,13 @@
+name = "eblle-website"
+compatibility_date = "2024-01-01"
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "TRANSLATION_CACHE"
+id = "83437de917314d47bccf78cceee12833"
+
+[[kv_namespaces]]
+binding = "SESSION"
+id = "c2a578d7e9da412684f805b842f7228e"
