@@ -2218,11 +2218,14 @@ if (Astro.response) {
 
   function getCurrentLocale() {
     const pathname = window.location.pathname;
+    console.log('[Debug getCurrentLocale] pathname:', pathname);
     for (const locale of SUPPORTED_LOCALES) {
       if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+        console.log('[Debug getCurrentLocale] 检测到语言:', locale);
         return locale;
       }
     }
+    console.log('[Debug getCurrentLocale] 未检测到语言，默认: en');
     return 'en';
   }
 
