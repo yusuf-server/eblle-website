@@ -9,7 +9,10 @@ export const POST: APIRoute = async ({ request }) => {
     
     // 兼容入参：可能传的是 { products: [...] } 或直接传了数组 [...]
     const rawProducts = Array.isArray(body) ? body : (body.products || []);
-    const locale = (body.locale || 'de') as SupportedLocale;
+    // 兼容两种字段名：targetLang（客户端）和 locale
+    const locale = (body.targetLang || body.locale || 'en') as SupportedLocale;
+
+    console.log('[API translate-products] 接收到的语言参数:', { targetLang: body.targetLang, locale: body.locale, 最终使用: locale });
 
     if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
       return new Response(JSON.stringify([]), {
