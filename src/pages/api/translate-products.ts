@@ -1,42 +1,63 @@
 import type { APIRoute } from 'astro';
-import { translateProducts } from '../../lib/i18n/product-translator';
+import { env } from 'cloudflare:workers';
+import { translate } from '../../lib/i18n/translator';
+import type { SupportedLocale } from '../../lib/i18n/utils';
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
-    const { products, targetLang } = await request.json();
+    const body = await request.json();
+    
+    // 兼容入参：可能传的是 { products: [...] } 或直接传了数组 [...]
+    const rawProducts = Array.isArray(body) ? body : (body.products || []);
+    const locale = (body.locale || 'de') as SupportedLocale;
 
-    if (!products || !Array.isArray(products) || !targetLang) {
-      return new Response(JSON.stringify({ error: 'Missing products array or targetLang' }), {
-        status: 400,
+    if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
+      return new Response(JSON.stringify([]), {
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    console.log(`[API] 批量翻译 ${products.length} 个产品到 ${targetLang}`);
-    console.log(`[API] AI 绑定可用: ${!!locals.AI}`);
+    // 深拷贝一份产品列表，避免直接突变源数据
+    const translatedProducts = JSON.parse(JSON.stringify(rawProducts));
+    const CONCURRENCY = 4;
 
-    const startTime = Date.now();
+    // 分批并发处理翻译与写入 KV
+    for (let i = 0; i < translatedProducts.length; i += CONCURRENCY) {
+      const chunk = translatedProducts.slice(i, i + CONCURRENCY);
+      await Promise.all(
+        chunk.map(async (prod: any) => {
+          if (prod && prod.name) {
+            try {
+              const translatedName = await translate(
+                prod.name,
+                locale,
+                {
+                  cache: env.TRANSLATION_CACHE,
+                  cachePrefix: 'product',
+                  allowLiveInference: true // 允许预热与实时翻译写入 KV
+                }
+              );
+              prod.name = translatedName;
+            } catch (err) {
+              console.warn(`[Translate Error] 商品 ${prod.id || prod.name} 翻译失败:`, err);
+            }
+          }
+        })
+      );
+    }
 
-    // 批量翻译产品
-    const translatedProducts = await translateProducts(products, targetLang, locals);
-
-    const elapsed = Date.now() - startTime;
-    console.log(`[API] 批量翻译完成，耗时: ${elapsed}ms`);
-
+    // 核心：直接返回产品数组，供 shop.astro 中的 products.map 调用
     return new Response(JSON.stringify(translatedProducts), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
-  } catch (error) {
-    console.error('Batch translation API error:', error);
-    return new Response(JSON.stringify({
-      error: 'Batch translation failed',
-      details: error instanceof Error ? error.message : String(error)
-    }), {
+
+  } catch (error: any) {
+    console.error('[API /api/translate-products Error]:', error);
+    // 出错时返回空数组，避免前端再次抛出 products.map is not a function
+    return new Response(JSON.stringify([]), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
 };
-
-export const prerender = false;
