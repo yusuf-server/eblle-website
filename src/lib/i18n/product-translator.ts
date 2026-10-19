@@ -176,6 +176,12 @@ export async function translateVariation(
     // 翻译属性值
     if (variation.attributes && variation.attributes.length > 0) {
       for (const attr of variation.attributes) {
+        // 翻译属性名称（确保与产品主数据的属性名称一致）
+        if (attr.name) {
+          attr.name = await translate(attr.name, targetLang, config, context);
+        }
+
+        // 翻译属性选项值
         if (attr.option) {
           attr.option = await translate(attr.option, targetLang, config, context);
         }

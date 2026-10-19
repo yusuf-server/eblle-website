@@ -158,7 +158,9 @@ const giftProducts = giftProductIds.map((id, index) => {
       name: p.name,
       image: (p.images && p.images[0]) ? p.images[0].src : '',
       regular_price: getAccurateRegularPrice(p),
-      loaded: true
+      loaded: true,
+      attributes: p.attributes || [],
+      rawProduct: p
     };
   }
   return {
@@ -166,9 +168,26 @@ const giftProducts = giftProductIds.map((id, index) => {
     name: (id === 56339) ? 'E.B.belle PVC Zipper Jewelry Packaging Bag Pouch' : 'E.B.belle Velvet Anti-Tarnish Jewelry Keepsake Pouch',
     image: '',
     regular_price: '0.00',
-    loaded: false
+    loaded: false,
+    attributes: [],
+    rawProduct: null
   };
 });
+
+// 翻译 gift 产品（如果不是英语）
+if (currentLocale !== 'en') {
+  for (const gift of giftProducts) {
+    if (gift.loaded && gift.rawProduct) {
+      try {
+        const translatedProduct = await translateProduct(gift.rawProduct, currentLocale, Astro.locals);
+        gift.name = translatedProduct.name || gift.name;
+        gift.attributes = translatedProduct.attributes || [];
+      } catch (error) {
+        console.warn(`[Gift Translation Error] Failed to translate gift ${gift.id}:`, error);
+      }
+    }
+  }
+}
 ---
 
 <Layout title={`${product.name} - E.B.Belle`}>
