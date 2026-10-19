@@ -14,6 +14,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   ? (lang as SupportedLocale)
   : 'en';
 
+console.log('[SERVER shop.astro] Astro.params.lang =', lang, ', currentLocale =', currentLocale, ', URL =', Astro.url.pathname);
+
 const perPage = 20;
 
 if (Astro.response) {
@@ -2216,6 +2218,10 @@ if (Astro.response) {
   // ============================================================
   const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
   const PAGE_LOCALE = serverLocale; // 从服务端传递的语言
+
+  console.log('[CLIENT shop.astro] serverLocale 传入值 =', serverLocale);
+  console.log('[CLIENT shop.astro] PAGE_LOCALE 最终值 =', PAGE_LOCALE);
+  console.log('[CLIENT shop.astro] 当前 URL =', window.location.pathname);
 
   function getCurrentLocale() {
     // 直接使用服务端传递的语言，不再从 URL 重新检测
