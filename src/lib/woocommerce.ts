@@ -279,7 +279,9 @@ export async function getCategory(id: number): Promise<WooCommerceCategory | nul
 export async function getProductVariations(productId: number, retries = 2): Promise<any[]> {
   for (let i = 0; i <= retries; i++) {
     try {
-      const { data } = await wcRequest(`products/${productId}/variations`);
+      // 添加 per_page=100 以获取所有变体（WooCommerce 默认只返回10个）
+      const { data } = await wcRequest(`products/${productId}/variations`, { per_page: 100 });
+      console.log(`✓ 获取产品 ${productId} 的变体: ${data.length} 个`);
       return data;
     } catch (error) {
       if (i === retries) {

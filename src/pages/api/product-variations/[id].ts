@@ -21,8 +21,8 @@ export const GET: APIRoute = async ({ params }) => {
 
     console.log('获取产品变体，产品ID:', productId);
 
-    // 使用woocommerce库的方法获取变体
-    const variations = await getProductVariations(parseInt(productId), 100);
+    // 使用woocommerce库的方法获取变体（第二个参数是重试次数，不是per_page）
+    const variations = await getProductVariations(parseInt(productId));
     console.log(`获取到 ${variations.length} 个变体`);
 
     return new Response(JSON.stringify(variations), {
