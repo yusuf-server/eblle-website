@@ -2210,23 +2210,17 @@ if (Astro.response) {
   }
 </style>
 
-<script>
+<script define:vars={{ serverLocale: currentLocale }}>
   // ============================================================
   // 客户端多语言工具函数
   // ============================================================
   const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
+  const PAGE_LOCALE = serverLocale; // 从服务端传递的语言
 
   function getCurrentLocale() {
-    const pathname = window.location.pathname;
-    console.log('[Debug getCurrentLocale] pathname:', pathname);
-    for (const locale of SUPPORTED_LOCALES) {
-      if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
-        console.log('[Debug getCurrentLocale] 检测到语言:', locale);
-        return locale;
-      }
-    }
-    console.log('[Debug getCurrentLocale] 未检测到语言，默认: en');
-    return 'en';
+    // 直接使用服务端传递的语言，不再从 URL 重新检测
+    console.log('[Debug getCurrentLocale] 使用服务端语言:', PAGE_LOCALE);
+    return PAGE_LOCALE;
   }
 
   function addLocalePrefix(url) {
