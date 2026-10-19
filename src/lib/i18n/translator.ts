@@ -1,9 +1,11 @@
 /**
- * 翻译服务模块 - 完整导出版
+ * 翻译服务模块
+ * 架构：KV 缓存命中秒开 -> 未命中调用 Workers AI 自动回填 -> 异常平滑降级原文
  */
 import { env } from 'cloudflare:workers';
 import type { SupportedLocale } from './utils';
 
+// @cf/meta/m2m100-1.2b 规范两位语言代码
 const LANG_MAP: Record<SupportedLocale, string> = {
   en: 'en',
   fr: 'fr',
@@ -50,7 +52,7 @@ export async function translate(
   const cache = config.cache || env?.TRANSLATION_CACHE;
   const cacheKey = generateCacheKey(text, targetLang, config.cachePrefix);
 
-  // 1. 尝试从 KV 读取
+  // 1. 优先查 KV 缓存（毫秒级命中）
   if (cache) {
     try {
       const cached = await cache.get(cacheKey);
@@ -62,12 +64,7 @@ export async function translate(
     }
   }
 
-  // 2. 如果不许实时推理（普通页面渲染链路），未命中直接返回原文避免阻塞
-  if (!config.allowLiveInference) {
-    return text;
-  }
-
-  // 3. 预热/显式推理
+  // 2. 缓存未命中，调用 Cloudflare Workers AI 进行翻译
   const ai = env?.AI || context?.AI;
   if (!ai) {
     return text;
@@ -82,14 +79,17 @@ export async function translate(
     });
 
     const translated = response?.translated_text;
+
+    // 翻译成功，异步写入 KV，有效期 90 天
     if (translated && translated !== text) {
       if (cache) {
         await cache.put(cacheKey, translated, { expirationTtl: 90 * 24 * 60 * 60 });
-        console.log(`✓ [写入 KV]: ${cacheKey.substring(0, 45)}...`);
+        console.log(`✓ [KV 自动写入]: ${cacheKey.substring(0, 45)}...`);
       }
       return translated;
     }
   } catch (error: any) {
+    // 失败只记录日志，直接返回原文，绝不调用被封锁的 Google 接口或强行等待
     console.error('[Translator] AI 推理失败:', error?.message || error);
   }
 
@@ -97,8 +97,7 @@ export async function translate(
 }
 
 /**
- * 批量翻译函数 - 补齐导出
- * 采用受控并发（默认 4 个并发），避免阻塞边缘算力
+ * 批量受控并发翻译
  */
 export async function translateBatch(
   texts: string[],
