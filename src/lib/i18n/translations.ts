@@ -100,6 +100,46 @@ export interface UITranslations {
     listView: string;
   };
 
+  // 首页
+  home: {
+    flashSales: string;
+    viewMore: string;
+    newArrivals: string;
+    shopNow: string;
+    discover: string;
+    explore: string;
+    shopByCategory: string;
+    auth: {
+      welcomeGuest: string;
+      welcomeBack: string;
+      login: string;
+      register: string;
+      account: string;
+      logout: string;
+    };
+    coupon: {
+      badge: string;
+      value: string;
+      subtitle: string;
+      button: string;
+    };
+    trustBadges: {
+      shipping: { title: string; description: string };
+      skinFriendly: { title: string; description: string };
+      factory: { title: string; description: string };
+      service: { title: string; description: string };
+    };
+    categories: {
+      rings: string;
+      bracelets: string;
+      necklaces: string;
+      anklets: string;
+      bodyChains: string;
+      earrings: string;
+      more: string;
+    };
+  };
+
   // 结账
   checkout: {
     title: string;
@@ -342,6 +382,56 @@ export const translations: Record<SupportedLocale, UITranslations> = {
       gridView: 'Grid View',
       listView: 'List View'
     },
+    home: {
+      flashSales: 'FLASH SALES',
+      viewMore: 'View More',
+      newArrivals: 'New Arrivals',
+      shopNow: 'Shop Now',
+      discover: 'Discover',
+      explore: 'Explore',
+      shopByCategory: 'Shop by Category',
+      auth: {
+        welcomeGuest: 'Hello, Welcome to E.B.Belle',
+        welcomeBack: 'Hello',
+        login: 'Login',
+        register: 'Register',
+        account: 'Account',
+        logout: 'Logout'
+      },
+      coupon: {
+        badge: 'NEW USER BENEFITS',
+        value: '$130 Value',
+        subtitle: 'EXCLUSIVE COUPONS',
+        button: 'New User Deal'
+      },
+      trustBadges: {
+        shipping: {
+          title: 'WORLDWIDE SHIPPING',
+          description: 'Fast delivery to your door'
+        },
+        skinFriendly: {
+          title: 'SKIN-FRIENDLY',
+          description: 'Hypoallergenic Waterproof Jewelry'
+        },
+        factory: {
+          title: 'FACTORY DIRECT SUPPLY',
+          description: 'Competitive pricing No MOQ'
+        },
+        service: {
+          title: 'DEDICATED ACCOUNT',
+          description: 'Professional service manager'
+        }
+      },
+      categories: {
+        rings: 'Rings',
+        bracelets: 'Bracelets',
+        necklaces: 'Necklaces',
+        anklets: 'Anklets',
+        bodyChains: 'Body Chains',
+        earrings: 'Earrings',
+        more: 'More'
+      }
+    },
     checkout: {
       title: 'Checkout',
       shippingAddress: 'Shipping Address',
@@ -569,6 +659,56 @@ export const translations: Record<SupportedLocale, UITranslations> = {
       sortPopular: 'Populaire',
       gridView: 'Vue grille',
       listView: 'Vue liste'
+    },
+    home: {
+      flashSales: 'VENTES FLASH',
+      viewMore: 'Voir plus',
+      newArrivals: 'Nouveautés',
+      shopNow: 'Acheter',
+      discover: 'Découvrir',
+      explore: 'Explorer',
+      shopByCategory: 'Acheter par catégorie',
+      auth: {
+        welcomeGuest: 'Bonjour, Bienvenue chez E.B.Belle',
+        welcomeBack: 'Bonjour',
+        login: 'Connexion',
+        register: 'S\'inscrire',
+        account: 'Compte',
+        logout: 'Déconnexion'
+      },
+      coupon: {
+        badge: 'AVANTAGES NOUVEL UTILISATEUR',
+        value: 'Valeur 130$',
+        subtitle: 'COUPONS EXCLUSIFS',
+        button: 'Offre Nouveaux Clients'
+      },
+      trustBadges: {
+        shipping: {
+          title: 'LIVRAISON MONDIALE',
+          description: 'Livraison rapide à votre porte'
+        },
+        skinFriendly: {
+          title: 'RESPECTUEUX DE LA PEAU',
+          description: 'Bijoux hypoallergéniques et étanches'
+        },
+        factory: {
+          title: 'APPROVISIONNEMENT DIRECT USINE',
+          description: 'Prix compétitifs sans MOQ'
+        },
+        service: {
+          title: 'COMPTE DÉDIÉ',
+          description: 'Gestionnaire de service professionnel'
+        }
+      },
+      categories: {
+        rings: 'Bagues',
+        bracelets: 'Bracelets',
+        necklaces: 'Colliers',
+        anklets: 'Bracelets de cheville',
+        bodyChains: 'Chaînes corporelles',
+        earrings: 'Boucles d\'oreilles',
+        more: 'Plus'
+      }
     },
     checkout: {
       title: 'Paiement',
@@ -798,6 +938,56 @@ export const translations: Record<SupportedLocale, UITranslations> = {
       gridView: 'Rasteransicht',
       listView: 'Listenansicht'
     },
+    home: {
+      flashSales: 'BLITZANGEBOTE',
+      viewMore: 'Mehr anzeigen',
+      newArrivals: 'Neuankömmlinge',
+      shopNow: 'Jetzt einkaufen',
+      discover: 'Entdecken',
+      explore: 'Erkunden',
+      shopByCategory: 'Nach Kategorie einkaufen',
+      auth: {
+        welcomeGuest: 'Hallo, Willkommen bei E.B.Belle',
+        welcomeBack: 'Hallo',
+        login: 'Anmelden',
+        register: 'Registrieren',
+        account: 'Konto',
+        logout: 'Abmelden'
+      },
+      coupon: {
+        badge: 'VORTEILE FÜR NEUE BENUTZER',
+        value: '130$ Wert',
+        subtitle: 'EXKLUSIVE GUTSCHEINE',
+        button: 'Neukunden-Angebot'
+      },
+      trustBadges: {
+        shipping: {
+          title: 'WELTWEITER VERSAND',
+          description: 'Schnelle Lieferung zu Ihrer Haustür'
+        },
+        skinFriendly: {
+          title: 'HAUTFREUNDLICH',
+          description: 'Hypoallergener wasserdichter Schmuck'
+        },
+        factory: {
+          title: 'DIREKTER FABRIKBEZUG',
+          description: 'Wettbewerbsfähige Preise ohne MOQ'
+        },
+        service: {
+          title: 'DEDIZIERTES KONTO',
+          description: 'Professioneller Service-Manager'
+        }
+      },
+      categories: {
+        rings: 'Ringe',
+        bracelets: 'Armbänder',
+        necklaces: 'Halsketten',
+        anklets: 'Fußkettchen',
+        bodyChains: 'Körperketten',
+        earrings: 'Ohrringe',
+        more: 'Mehr'
+      }
+    },
     checkout: {
       title: 'Kasse',
       shippingAddress: 'Lieferadresse',
@@ -1025,6 +1215,56 @@ export const translations: Record<SupportedLocale, UITranslations> = {
       sortPopular: 'Más popular',
       gridView: 'Vista cuadrícula',
       listView: 'Vista lista'
+    },
+    home: {
+      flashSales: 'OFERTAS FLASH',
+      viewMore: 'Ver más',
+      newArrivals: 'Novedades',
+      shopNow: 'Comprar ahora',
+      discover: 'Descubrir',
+      explore: 'Explorar',
+      shopByCategory: 'Comprar por categoría',
+      auth: {
+        welcomeGuest: 'Hola, Bienvenido a E.B.Belle',
+        welcomeBack: 'Hola',
+        login: 'Iniciar sesión',
+        register: 'Registrarse',
+        account: 'Cuenta',
+        logout: 'Cerrar sesión'
+      },
+      coupon: {
+        badge: 'BENEFICIOS PARA NUEVOS USUARIOS',
+        value: 'Valor $130',
+        subtitle: 'CUPONES EXCLUSIVOS',
+        button: 'Oferta Nuevos Clientes'
+      },
+      trustBadges: {
+        shipping: {
+          title: 'ENVÍO MUNDIAL',
+          description: 'Entrega rápida a su puerta'
+        },
+        skinFriendly: {
+          title: 'AMIGABLE CON LA PIEL',
+          description: 'Joyería hipoalergénica e impermeable'
+        },
+        factory: {
+          title: 'SUMINISTRO DIRECTO DE FÁBRICA',
+          description: 'Precios competitivos sin MOQ'
+        },
+        service: {
+          title: 'CUENTA DEDICADA',
+          description: 'Gestor de servicio profesional'
+        }
+      },
+      categories: {
+        rings: 'Anillos',
+        bracelets: 'Pulseras',
+        necklaces: 'Collares',
+        anklets: 'Tobilleras',
+        bodyChains: 'Cadenas corporales',
+        earrings: 'Pendientes',
+        more: 'Más'
+      }
     },
     checkout: {
       title: 'Pagar',

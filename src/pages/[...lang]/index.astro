@@ -12,6 +12,8 @@ import { optimizeACFImage } from '../../lib/imageOptimizer';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
 import { t } from '../../lib/i18n/translations';
 import { getOptimizedHomepageData } from '../../lib/homepageAggregator';
+import { translateObjectFields, translateObjectArray, translateTextField } from '../../lib/i18n/acf-translator';
+import { env } from 'cloudflare:workers';
 
 // 获取语言参数（可选展开参数）
 const lang = Astro.params.lang as SupportedLocale | undefined;
@@ -20,7 +22,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   : 'en';
 
 // 🚀 一行代码获取完整首页数据（命中 KV 时 15ms 秒开，未命中时由 Workers AI 批量翻译并写入缓存）
-const { heroData, flashSaleProducts, instagramPosts } = await getOptimizedHomepageData(
+const { heroData, instagramPosts } = await getOptimizedHomepageData(
   currentLocale,
   Astro.locals
 );
@@ -163,13 +165,13 @@ const mobileSubCard2 = heroData ? {
 };
 
 // 解析 New Arrivals Section 数据
-const newArrivalsTitle = heroData?.new_arrivals_title || 'NEW ARRIVALS / WATERPROOF';
-const newArrivalsColumns = heroData?.new_arrivals_columns || [];
+let newArrivalsTitle = heroData?.new_arrivals_title || 'NEW ARRIVALS / WATERPROOF';
+let newArrivalsColumns = heroData?.new_arrivals_columns || [];
 const mobileArrivalsColumns = heroData?.mobile_arrivals_columns || [];
 
 // 解析 Campaign Section 数据
-const campaignTitle = heroData?.campaign_title || 'CAMPAIGN ZONE';
-const campaignCards = heroData?.campaign_cards || [];
+let campaignTitle = heroData?.campaign_title || 'CAMPAIGN ZONE';
+let campaignCards = heroData?.campaign_cards || [];
 const useSameCampaignData = heroData?.mobile_campaign_cards !== false;
 
 // 解析 Reviews Section 数据
@@ -179,13 +181,97 @@ const autoplayEnabled = heroData?.autoplay_enabled !== false;
 const autoplayInterval = heroData?.autoplay_interval || 5;
 const mobileUseSameImages = heroData?.mobile_use_same_images !== false;
 
-
 // 解析 FAQ Gallery Section 数据
-const faqSectionTitle = heroData?.faq_section_title || 'E.B.Belle: 316L Stainless Steel & PVD Plating Excellence';
+let faqSectionTitle = heroData?.faq_section_title || 'E.B.Belle: 316L Stainless Steel & PVD Plating Excellence';
 const galleryImages = heroData?.gallery_images || [];
-const faqItems = heroData?.faq_items || [];
-const mobileFaqTitle = heroData?.mobile_faq_title || 'E.B.Belle: 316L Stainless Steel Excellence';
+let faqItems = heroData?.faq_items || [];
+let mobileFaqTitle = heroData?.mobile_faq_title || 'E.B.Belle: 316L Stainless Steel Excellence';
 const mobileUseSameFaqData = heroData?.mobile_use_same_data !== false;
+
+// ============================================================
+// 翻译 ACF 字段（如果不是英语）
+// ============================================================
+const translationConfig = {
+  cache: env?.TRANSLATION_CACHE,
+  cachePrefix: 'acf',
+  context: Astro.locals
+};
+
+if (currentLocale !== 'en') {
+  // 翻译 Desktop Hero Slides
+  for (const slide of desktopHeroSlides) {
+    slide.subtitle = await translateTextField(slide.subtitle, currentLocale, translationConfig);
+    slide.title = await translateTextField(slide.title, currentLocale, translationConfig);
+    slide.description = await translateTextField(slide.description, currentLocale, translationConfig);
+    slide.buttonText = await translateTextField(slide.buttonText, currentLocale, translationConfig);
+  }
+
+  // 翻译 Mid Cards
+  midCard1.label = await translateTextField(midCard1.label, currentLocale, translationConfig);
+  midCard1.title = await translateTextField(midCard1.title, currentLocale, translationConfig);
+  midCard2.label = await translateTextField(midCard2.label, currentLocale, translationConfig);
+  midCard2.title = await translateTextField(midCard2.title, currentLocale, translationConfig);
+
+  // 翻译 Mobile Hero Slides
+  for (const slide of mobileHeroSlides) {
+    slide.subtitle = await translateTextField(slide.subtitle, currentLocale, translationConfig);
+    slide.title = await translateTextField(slide.title, currentLocale, translationConfig);
+    slide.description = await translateTextField(slide.description, currentLocale, translationConfig);
+    slide.buttonText = await translateTextField(slide.buttonText, currentLocale, translationConfig);
+  }
+
+  // 翻译 Mobile Sub Cards
+  mobileSubCard1.tag = await translateTextField(mobileSubCard1.tag, currentLocale, translationConfig);
+  mobileSubCard1.title = await translateTextField(mobileSubCard1.title, currentLocale, translationConfig);
+  mobileSubCard2.tag = await translateTextField(mobileSubCard2.tag, currentLocale, translationConfig);
+  mobileSubCard2.title = await translateTextField(mobileSubCard2.title, currentLocale, translationConfig);
+
+  // 翻译 New Arrivals 标题
+  newArrivalsTitle = await translateTextField(newArrivalsTitle, currentLocale, translationConfig);
+
+  // 翻译 New Arrivals Columns
+  for (const column of newArrivalsColumns) {
+    if (column.column_title) {
+      column.column_title = await translateTextField(column.column_title, currentLocale, translationConfig);
+    }
+    if (column.product_groups && Array.isArray(column.product_groups)) {
+      for (const group of column.product_groups) {
+        if (group.group_label) {
+          group.group_label = await translateTextField(group.group_label, currentLocale, translationConfig);
+        }
+        if (group.group_title) {
+          group.group_title = await translateTextField(group.group_title, currentLocale, translationConfig);
+        }
+      }
+    }
+  }
+
+  // 翻译 Campaign 数据
+  campaignTitle = await translateTextField(campaignTitle, currentLocale, translationConfig);
+  for (const card of campaignCards) {
+    if (card.poster_title) {
+      card.poster_title = await translateTextField(card.poster_title, currentLocale, translationConfig);
+    }
+    if (card.poster_subtitle) {
+      card.poster_subtitle = await translateTextField(card.poster_subtitle, currentLocale, translationConfig);
+    }
+    if (card.button_text) {
+      card.button_text = await translateTextField(card.button_text, currentLocale, translationConfig);
+    }
+  }
+
+  // 翻译 FAQ
+  faqSectionTitle = await translateTextField(faqSectionTitle, currentLocale, translationConfig);
+  mobileFaqTitle = await translateTextField(mobileFaqTitle, currentLocale, translationConfig);
+  for (const faq of faqItems) {
+    if (faq.question) {
+      faq.question = await translateTextField(faq.question, currentLocale, translationConfig);
+    }
+    if (faq.answer) {
+      faq.answer = await translateTextField(faq.answer, currentLocale, translationConfig);
+    }
+  }
+}
 
 // 获取分类数据
 const categories = await getCategories({ per_page: 10 });
@@ -297,10 +383,10 @@ const categories = await getCategories({ per_page: 10 });
             <div class="avatar-icon">
               <i class="fa-regular fa-user"></i>
             </div>
-            <p>Hello, Welcome to E.B.Belle</p>
+            <p>{t(currentLocale, 'home.auth.welcomeGuest')}</p>
             <div class="auth-btns">
-              <button type="button" class="btn-login" onclick="openAuthModal('login')">Login</button>
-              <button type="button" class="btn-reg" onclick="openAuthModal('register')">Register</button>
+              <button type="button" class="btn-login" onclick="openAuthModal('login')">{t(currentLocale, 'home.auth.login')}</button>
+              <button type="button" class="btn-reg" onclick="openAuthModal('register')">{t(currentLocale, 'home.auth.register')}</button>
             </div>
           </div>
 
@@ -309,25 +395,25 @@ const categories = await getCategories({ per_page: 10 });
             <div class="avatar-icon logged-in">
               <i class="fa-solid fa-user"></i>
             </div>
-            <p class="welcome-text" id="welcomeText">Hello <strong id="userName">User</strong>, welcome to E.B.Belle</p>
+            <p class="welcome-text" id="welcomeText">{t(currentLocale, 'home.auth.welcomeBack')} <strong id="userName">User</strong></p>
             <div class="auth-btns-logged">
               <button type="button" class="btn-account" onclick="window.location.href='/account'">
                 <i class="fa-solid fa-user-gear"></i>
-                <span>Account</span>
+                <span>{t(currentLocale, 'home.auth.account')}</span>
               </button>
               <button type="button" class="btn-logout" onclick="handleLogout()">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                <span>Logout</span>
+                <span>{t(currentLocale, 'home.auth.logout')}</span>
               </button>
             </div>
           </div>
 
           <div class="coupon-box">
             <div class="vip-badge">VIP</div>
-            <span class="badge">NEW USER BENEFITS</span>
-            <h3>$130 Value</h3>
-            <span class="coupon-subtitle">EXCLUSIVE COUPONS</span>
-            <a href="#" class="btn-coupon">New User Deal</a>
+            <span class="badge">{t(currentLocale, 'home.coupon.badge')}</span>
+            <h3>{t(currentLocale, 'home.coupon.value')}</h3>
+            <span class="coupon-subtitle">{t(currentLocale, 'home.coupon.subtitle')}</span>
+            <a href="#" class="btn-coupon">{t(currentLocale, 'home.coupon.button')}</a>
           </div>
         </div>
       </div>
@@ -339,7 +425,7 @@ const categories = await getCategories({ per_page: 10 });
     <div class="container">
       <div class="section-header-row">
         <div class="flash-title-area">
-          <h2 class="section-title">⚡ FLASH SALES</h2>
+          <h2 class="section-title">⚡ {t(currentLocale, 'home.flashSales')}</h2>
           <div class="countdown-timer" id="desktopCountdown">
             <span class="time-block hours">00</span>
             <span class="time-separator">:</span>
@@ -348,47 +434,11 @@ const categories = await getCategories({ per_page: 10 });
             <span class="time-block seconds">21</span>
           </div>
         </div>
-        <a href="#" class="view-more">View More <i class="fa-solid fa-chevron-right"></i></a>
+        <a href={`/${currentLocale === 'en' ? '' : currentLocale + '/'}shop`} class="view-more">{t(currentLocale, 'home.viewMore')} <i class="fa-solid fa-chevron-right"></i></a>
       </div>
-      <div class="product-grid-6">
-        {flashSaleProducts.length > 0 ? (
-          flashSaleProducts.map((product: any) => {
-            const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
-            const discountPercent = hasDiscount
-              ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
-              : 0;
-
-            return (
-              <div class="product-card">
-                <a href={`/product/${product.slug}`}>
-                  <div class="product-img-wrap">
-                    {hasDiscount && (
-                      <span class="product-badge discount-badge">
-                        -{discountPercent}%
-                      </span>
-                    )}
-                    <img
-                      src={product.images[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80'}
-                      alt={product.name}
-                      loading="lazy"
-                    />
-                  </div>
-                  <div class="product-info">
-                    <h3 class="product-name">{product.name}</h3>
-                    <div class="price-wrap">
-                      <span class="current-price">${product.price}</span>
-                      {hasDiscount && (
-                        <span class="old-price">${product.regular_price}</span>
-                      )}
-                    </div>
-                  </div>
-                </a>
-              </div>
-            );
-          })
-        ) : (
-          <ProductSkeleton count={10} columns={5} />
-        )}
+      <div class="product-grid-6" id="flashSaleProductGrid">
+        <!-- 骨架屏：页面加载时显示 -->
+        <ProductSkeleton count={6} columns={6} />
       </div>
     </div>
   </section>
@@ -399,23 +449,23 @@ const categories = await getCategories({ per_page: 10 });
       <div class="trust-grid">
         <div class="trust-item">
           <i class="fa-solid fa-plane-departure"></i>
-          <h5>WORLDWIDE SHIPPING</h5>
-          <p>Fast delivery to your door</p>
+          <h5>{t(currentLocale, 'home.trustBadges.shipping.title')}</h5>
+          <p>{t(currentLocale, 'home.trustBadges.shipping.description')}</p>
         </div>
         <div class="trust-item">
           <i class="fa-regular fa-gem"></i>
-          <h5>SKIN-FRIENDLY</h5>
-          <p>Hypoallergenic Waterproof Jewelry</p>
+          <h5>{t(currentLocale, 'home.trustBadges.skinFriendly.title')}</h5>
+          <p>{t(currentLocale, 'home.trustBadges.skinFriendly.description')}</p>
         </div>
         <div class="trust-item">
           <i class="fa-solid fa-industry"></i>
-          <h5>FACTORY DIRECT SUPPLY</h5>
-          <p>Competitive pricing No MOQ</p>
+          <h5>{t(currentLocale, 'home.trustBadges.factory.title')}</h5>
+          <p>{t(currentLocale, 'home.trustBadges.factory.description')}</p>
         </div>
         <div class="trust-item">
           <i class="fa-solid fa-headset"></i>
-          <h5>DEDICATED ACCOUNT</h5>
-          <p>Professional service manager</p>
+          <h5>{t(currentLocale, 'home.trustBadges.service.title')}</h5>
+          <p>{t(currentLocale, 'home.trustBadges.service.description')}</p>
         </div>
       </div>
     </div>
@@ -528,15 +578,15 @@ const categories = await getCategories({ per_page: 10 });
   <!-- 8. SHOP BY CATEGORY -->
   <section class="shop-by-cat-section">
     <div class="container">
-      <h3 class="serif-title">Shop by Category</h3>
+      <h3 class="serif-title">{t(currentLocale, 'home.shopByCategory')}</h3>
       <div class="cat-icon-row">
-        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-regular fa-circle-dot"></i></div><span>Rings</span></div>
-        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-solid fa-link"></i></div><span>Bracelets</span></div>
-        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-regular fa-gem"></i></div><span>Necklaces</span></div>
-        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-solid fa-ring"></i></div><span>Anklets</span></div>
-        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-solid fa-shield-halved"></i></div><span>Body Chains</span></div>
-        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-regular fa-snowflake"></i></div><span>Earrings</span></div>
-        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-solid fa-ellipsis"></i></div><span>More</span></div>
+        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-regular fa-circle-dot"></i></div><span>{t(currentLocale, 'home.categories.rings')}</span></div>
+        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-solid fa-link"></i></div><span>{t(currentLocale, 'home.categories.bracelets')}</span></div>
+        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-regular fa-gem"></i></div><span>{t(currentLocale, 'home.categories.necklaces')}</span></div>
+        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-solid fa-ring"></i></div><span>{t(currentLocale, 'home.categories.anklets')}</span></div>
+        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-solid fa-shield-halved"></i></div><span>{t(currentLocale, 'home.categories.bodyChains')}</span></div>
+        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-regular fa-snowflake"></i></div><span>{t(currentLocale, 'home.categories.earrings')}</span></div>
+        <div class="cat-icon-item"><div class="cat-icon-circle"><i class="fa-solid fa-ellipsis"></i></div><span>{t(currentLocale, 'home.categories.more')}</span></div>
       </div>
     </div>
   </section>
@@ -583,11 +633,11 @@ const categories = await getCategories({ per_page: 10 });
                 )}
                 <div class="campaign-right-items">
                   {productItems.map((item: any) => (
-                    <a href={`/product/${item.productSlug}`} class="camp-mini-item">
+                    <a href={`/${currentLocale === 'en' ? '' : currentLocale + '/'}product/${item.productSlug}`} class="camp-mini-item">
                       <img src={item.productImage} alt={item.productTitle} loading="lazy" />
                       <div class="camp-mini-info">
                         <h6>{item.productTitle}</h6>
-                        <span>${item.productPrice}</span>
+                        <span class="campaign-price" data-usd-price={item.productPrice}>${item.productPrice}</span>
                       </div>
                     </a>
                   ))}
@@ -715,11 +765,10 @@ const categories = await getCategories({ per_page: 10 });
     </div>
   </section>
 
-  <!-- 12. BRAND FAQ & FACTORY GALLERY (优化修复高度溢出问题) -->
+  <!-- 12. BRAND FAQ & FACTORY GALLERY -->
   <section class="faq-gallery-section">
     <div class="container">
       <div class="faq-grid-layout">
-        <!-- 桌面端 2x2 网格，自适应自然撑开，不再固定导致穿透底部 -->
         <div class="gallery-quad">
           {galleryImages.length >= 4 ? (
             galleryImages.slice(0, 4).map((img: any) => (
@@ -885,43 +934,9 @@ const categories = await getCategories({ per_page: 10 });
         </div>
       </div>
 
-      <div class="mobile-products-scroll">
-        {flashSaleProducts.length > 0 ? (
-          flashSaleProducts.map((product: any) => {
-            const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
-            const discountPercent = hasDiscount
-              ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
-              : 0;
-
-            return (
-              <div class="mobile-product-card">
-                <a href={`/product/${product.slug}`}>
-                  <div class="mobile-product-image">
-                    {hasDiscount && (
-                      <span class="mobile-discount-badge">-{discountPercent}%</span>
-                    )}
-                    <img
-                      src={product.images[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80'}
-                      alt={product.name}
-                      loading="lazy"
-                    />
-                  </div>
-                  <div class="mobile-product-info">
-                    <h3>{product.name}</h3>
-                    <div class="mobile-product-price">
-                      <span class="mobile-price">${product.price}</span>
-                      {hasDiscount && (
-                        <span class="mobile-old-price">${product.regular_price}</span>
-                      )}
-                    </div>
-                  </div>
-                </a>
-              </div>
-            );
-          })
-        ) : (
-          <ProductSkeleton count={6} columns={6} />
-        )}
+      <div class="mobile-products-scroll" id="mobileFlashSaleGrid">
+        <!-- 骨架屏：页面加载时显示 -->
+        <ProductSkeleton count={6} columns={6} />
       </div>
     </section>
 
@@ -1101,7 +1116,7 @@ const categories = await getCategories({ per_page: 10 });
 
     <div class="mobile-divider"></div>
 
-    <!-- Mobile Instagram Section (修复：右上角悬浮展示icon，杜绝与左下文字重叠) -->
+    <!-- Mobile Instagram Section -->
     <section class="mobile-instagram">
       <div class="instagram-header">
         <span class="instagram-subtitle">EVERYTHING YOU NEED & MORE</span>
@@ -1122,7 +1137,6 @@ const categories = await getCategories({ per_page: 10 });
                 ) : (
                   <img src={post.media_url} alt={post.caption.substring(0, 50)} loading="lazy" />
                 )}
-                <!-- 移动端图标移至右上角，和桌面端一致 -->
                 <a href={post.permalink} target="_blank" rel="noopener noreferrer" class="mobile-instagram-link-icon" aria-label="View on Instagram">
                   <i class="fa-brands fa-instagram"></i>
                 </a>
@@ -1148,7 +1162,7 @@ const categories = await getCategories({ per_page: 10 });
 
     <div class="mobile-divider"></div>
 
-    <!-- Mobile FAQ Section: 修复高度，改为2x2网格，恢复自然呼吸感 -->
+    <!-- Mobile FAQ Section -->
     <section class="mobile-faq">
       <h3 class="faq-main-title">{mobileUseSameFaqData ? faqSectionTitle : mobileFaqTitle}</h3>
 
@@ -1209,7 +1223,7 @@ const categories = await getCategories({ per_page: 10 });
   html, body {
     overflow-x: hidden;
     max-width: 100vw;
-    background: #ffffff; /* 恢复原版纯净浅白背景，彻底去除图片背景 */
+    background: #ffffff;
     color: #1a1a1a;
   }
 
@@ -1276,7 +1290,6 @@ const categories = await getCategories({ per_page: 10 });
     overflow: hidden;
   }
 
-  /* 轮播容器样式 */
   .hero-carousel-container {
     position: relative;
     border-radius: 4px;
@@ -1304,6 +1317,7 @@ const categories = await getCategories({ per_page: 10 });
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center center;
     transition: transform 0.7s ease;
   }
   .hero-carousel-container:hover .carousel-slide.is-active img {
@@ -1352,7 +1366,6 @@ const categories = await getCategories({ per_page: 10 });
     color: #fff;
   }
 
-  /* 轮播指示点 Dots */
   .carousel-dots-wrap {
     position: absolute;
     bottom: 20px;
@@ -1589,7 +1602,7 @@ const categories = await getCategories({ per_page: 10 });
     background: #b8822e;
   }
 
-  /* FLASH SALES */
+  /* FLASH SALES 基础容器 */
   .flash-sales-section {
     padding: 64px 0;
     position: relative;
@@ -1657,84 +1670,105 @@ const categories = await getCategories({ per_page: 10 });
     grid-template-columns: repeat(5, 1fr);
     gap: 16px;
   }
-  .product-card {
-    cursor: pointer;
-  }
-  .product-card a {
-    text-decoration: none;
-    color: inherit;
-    display: block;
-  }
-  .product-img-wrap {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1;
-    background: #f5f5f5;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 12px;
-  }
-  .product-img-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-  }
-  .product-card:hover .product-img-wrap img {
-    transform: scale(1.1);
-  }
-  .product-badge {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 2px;
-    z-index: 1;
-  }
-  .discount-badge {
-    background: #e53935;
-    color: #fff;
-  }
-  .product-name {
-    font-size: 12px;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    line-height: 1.4;
-  }
-  .price-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .current-price {
-    font-size: 14px;
-    font-weight: 700;
-    color: #111;
-  }
-  .old-price {
-    font-size: 10px;
-    color: #999;
-    text-decoration: line-through;
-  }
-
   @media (max-width: 1024px) {
     .product-grid-6 {
       grid-template-columns: repeat(4, 1fr);
     }
   }
 
-  @media (max-width: 768px) {
-    .product-grid-6 {
-      grid-template-columns: repeat(2, 1fr);
-    }
+  /* ============================================================ */
+  /* 全局穿透：针对 JS 动态加载的桌面端卡片 (解决 Astro 属性作用域隔离) */
+  /* ============================================================ */
+  :global(#flashSaleProductGrid .product-card) {
+    background: #ffffff !important;
+    border: 1px solid #eef0f2 !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    cursor: pointer !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+  }
+  :global(#flashSaleProductGrid .product-card:hover) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+  }
+  :global(#flashSaleProductGrid .product-card a) {
+    text-decoration: none !important;
+    color: inherit !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    width: 100% !important;
+  }
+  :global(#flashSaleProductGrid .product-img-wrap) {
+    position: relative !important;
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    background: #fbfbfb !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+  }
+  :global(#flashSaleProductGrid .product-img-wrap img) {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+    transition: transform 0.4s ease !important;
+  }
+  :global(#flashSaleProductGrid .product-card:hover .product-img-wrap img) {
+    transform: scale(1.06) !important;
+  }
+  :global(#flashSaleProductGrid .product-badge.discount-badge) {
+    position: absolute !important;
+    top: 8px !important;
+    left: 8px !important;
+    background: #d32f2f !important;
+    color: #ffffff !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    padding: 3px 6px !important;
+    border-radius: 3px !important;
+    line-height: 1 !important;
+    z-index: 2 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+  }
+  :global(#flashSaleProductGrid .product-info) {
+    padding: 10px 12px 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    flex: 1 !important;
+  }
+  :global(#flashSaleProductGrid .product-name) {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #222222 !important;
+    margin: 0 0 6px 0 !important;
+    line-height: 1.4 !important;
+    height: 33px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+  }
+  :global(#flashSaleProductGrid .price-wrap) {
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 6px !important;
+  }
+  :global(#flashSaleProductGrid .current-price) {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #111111 !important;
+  }
+  :global(#flashSaleProductGrid .old-price) {
+    font-size: 11px !important;
+    color: #a0a0a0 !important;
+    text-decoration: line-through !important;
   }
 
   /* TRUST BADGES */
@@ -2120,7 +2154,7 @@ const categories = await getCategories({ per_page: 10 });
     line-height: 1.5;
   }
 
-  /* BRAND FAQ & FACTORY GALLERY (优化修复高度溢出与遮盖 Footer 问题) */
+  /* BRAND FAQ & FACTORY GALLERY */
   .faq-gallery-section {
     padding: 40px 0 70px;
     background: #ffffff;
@@ -2132,7 +2166,7 @@ const categories = await getCategories({ per_page: 10 });
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 36px;
-    align-items: start; /* 顶部对齐，取消 stretch 避免高度强制撑开穿透 */
+    align-items: start;
   }
   .gallery-quad {
     display: grid;
@@ -2142,7 +2176,7 @@ const categories = await getCategories({ per_page: 10 });
   }
   .quad-img-item {
     width: 100%;
-    aspect-ratio: 1; /* 保持1:1四方块整齐，不写死像素高度 */
+    aspect-ratio: 1;
     overflow: hidden;
     border-radius: 4px;
     background: #f5f5f5;
@@ -2201,7 +2235,9 @@ const categories = await getCategories({ per_page: 10 });
     padding-top: 8px;
   }
 
-  /* ===== MOBILE STYLES ===== */
+  /* ============================================================ */
+  /* ===== MOBILE STYLES: 包含针对移动端动态卡片的全局穿透 ===== */
+  /* ============================================================ */
   @media (max-width: 768px) {
     .hero-section,
     .flash-sales-section,
@@ -2405,55 +2441,19 @@ const categories = await getCategories({ per_page: 10 });
     }
 
     .mobile-products-scroll {
-      display: flex;
-      gap: 12px;
-      padding: 0 16px;
-      overflow-x: auto;
-      scrollbar-width: none;
+      display: flex !important;
+      gap: 12px !important;
+      padding: 0 16px 8px !important;
+      overflow-x: auto !important;
+      scroll-snap-type: x mandatory !important;
+      scrollbar-width: none !important;
+      -webkit-overflow-scrolling: touch !important;
+      box-sizing: border-box !important;
+      width: 100% !important;
     }
-    .mobile-products-scroll::-webkit-scrollbar { display: none; }
-    .mobile-product-card {
-      flex-shrink: 0;
-      width: 144px;
-      border: 1px solid #e5e7eb;
-      background: #fff;
-      border-radius: 4px;
-      overflow: hidden;
+    .mobile-products-scroll::-webkit-scrollbar {
+      display: none !important;
     }
-    .mobile-product-card a { text-decoration: none; color: inherit; }
-    .mobile-product-image {
-      position: relative;
-      aspect-ratio: 1;
-      background: #f9fafb;
-    }
-    .mobile-product-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .mobile-discount-badge {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      background: #dc2626;
-      color: #fff;
-      font-size: 9px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 2px;
-    }
-    .mobile-product-info { padding: 10px; }
-    .mobile-product-info h3 {
-      font-size: 11px;
-      font-weight: 500;
-      margin-bottom: 6px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .mobile-product-price { display: flex; align-items: baseline; gap: 6px; }
-    .mobile-price { font-size: 12px; font-weight: 700; }
-    .mobile-old-price { font-size: 10px; color: #9ca3af; text-decoration: line-through; }
 
     .mobile-trust-badges {
       padding: 12px 16px;
@@ -2652,7 +2652,6 @@ const categories = await getCategories({ per_page: 10 });
     .mobile-slider-prev { left: 8px; }
     .mobile-slider-next { right: 8px; }
 
-    /* 移动端 Instagram (修复：右上角悬浮圆圈样式，不遮盖文字) */
     .mobile-instagram { padding: 20px 0 24px; }
     .instagram-header { text-align: center; margin-bottom: 12px; }
     .instagram-subtitle { font-size: 9px; letter-spacing: 2px; color: #999; }
@@ -2698,7 +2697,6 @@ const categories = await getCategories({ per_page: 10 });
       margin-right: 4px;
     }
 
-    /* 移动端 FAQ Gallery: 优化为 2x2 自然网格，下留足安全边距 */
     .mobile-faq {
       padding: 24px 16px 40px;
       background: white;
@@ -2719,7 +2717,7 @@ const categories = await getCategories({ per_page: 10 });
     }
     .mobile-faq-img-cell {
       width: 100%;
-      aspect-ratio: 1; /* 正方形网格呈现自然画质 */
+      aspect-ratio: 1;
       border-radius: 6px;
       overflow: hidden;
       background: #f5f5f5;
@@ -2762,6 +2760,94 @@ const categories = await getCategories({ per_page: 10 });
     }
   }
 
+  /* ============================================================ */
+  /* 全局穿透：针对 JS 动态加载的移动端卡片 (解决 Astro 属性作用域隔离) */
+  /* ============================================================ */
+  :global(#mobileFlashSaleGrid .mobile-product-card) {
+    flex: 0 0 144px !important;
+    width: 144px !important;
+    min-width: 144px !important;
+    max-width: 144px !important;
+    scroll-snap-align: start !important;
+    border: 1px solid #e8e8e8 !important;
+    background: #ffffff !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  :global(#mobileFlashSaleGrid .mobile-product-card a) {
+    text-decoration: none !important;
+    color: inherit !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    width: 100% !important;
+  }
+  :global(#mobileFlashSaleGrid .mobile-product-image) {
+    position: relative !important;
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    background: #fafafa !important;
+    margin: 0 !important;
+  }
+  :global(#mobileFlashSaleGrid .mobile-product-image img) {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+  :global(#mobileFlashSaleGrid .mobile-discount-badge) {
+    position: absolute !important;
+    top: 6px !important;
+    left: 6px !important;
+    background: #d32f2f !important;
+    color: #ffffff !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    padding: 2px 6px !important;
+    border-radius: 2px !important;
+    line-height: 1.1 !important;
+    z-index: 2 !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15) !important;
+  }
+  :global(#mobileFlashSaleGrid .mobile-product-info) {
+    padding: 8px 10px 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    flex: 1 !important;
+  }
+  :global(#mobileFlashSaleGrid .mobile-product-info h3) {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #222222 !important;
+    margin: 0 0 4px 0 !important;
+    line-height: 1.35 !important;
+    height: 29px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+  }
+  :global(#mobileFlashSaleGrid .mobile-product-price) {
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 6px !important;
+  }
+  :global(#mobileFlashSaleGrid .mobile-price) {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #111111 !important;
+  }
+  :global(#mobileFlashSaleGrid .mobile-old-price) {
+    font-size: 10px !important;
+    color: #a0a0a0 !important;
+    text-decoration: line-through !important;
+  }
+
   @media (min-width: 769px) {
     .mobile-only {
       display: none !important;
@@ -2770,6 +2856,221 @@ const categories = await getCategories({ per_page: 10 });
 </style>
 
 <script define:vars={{ autoplayEnabled, autoplayInterval }}>
+// ============================================================
+// 货币转换功能
+// ============================================================
+function updateProductPrices() {
+  const currentCurrency = localStorage.getItem('ebbelle_currency') || 'USD';
+  const exchangeRatesStr = localStorage.getItem('ebbelle_exchange_rates');
+  const exchangeRates = exchangeRatesStr ? JSON.parse(exchangeRatesStr) : {};
+
+  console.log('[Homepage] Updating prices, currency:', currentCurrency, 'rates:', exchangeRates);
+
+  const rate = currentCurrency === 'USD' ? 1 : parseFloat(exchangeRates[currentCurrency] || 1);
+  const symbol = getCurrencySymbol(currentCurrency);
+
+  // 更新 Flash Sale 桌面端产品价格
+  const flashCards = document.querySelectorAll('.flash-sales-section .product-card');
+  flashCards.forEach(card => {
+    const currentPriceEl = card.querySelector('.current-price');
+    const oldPriceEl = card.querySelector('.old-price');
+
+    if (currentPriceEl) {
+      const usdPrice = parseFloat(currentPriceEl.getAttribute('data-usd-price'));
+      if (!isNaN(usdPrice)) {
+        const convertedPrice = (usdPrice * rate).toFixed(2);
+        currentPriceEl.textContent = `${symbol}${convertedPrice}`;
+      }
+    }
+
+    if (oldPriceEl) {
+      const usdPrice = parseFloat(oldPriceEl.getAttribute('data-usd-price'));
+      if (!isNaN(usdPrice)) {
+        const convertedPrice = (usdPrice * rate).toFixed(2);
+        oldPriceEl.textContent = `${symbol}${convertedPrice}`;
+      }
+    }
+  });
+
+  // 更新 Flash Sale 移动端产品价格
+  const mobileFlashCards = document.querySelectorAll('.mobile-products-scroll .mobile-product-card');
+  mobileFlashCards.forEach(card => {
+    const currentPriceEl = card.querySelector('.mobile-price');
+    const oldPriceEl = card.querySelector('.mobile-old-price');
+
+    if (currentPriceEl) {
+      const usdPrice = parseFloat(currentPriceEl.getAttribute('data-usd-price'));
+      if (!isNaN(usdPrice)) {
+        const convertedPrice = (usdPrice * rate).toFixed(2);
+        currentPriceEl.textContent = `${symbol}${convertedPrice}`;
+      }
+    }
+
+    if (oldPriceEl) {
+      const usdPrice = parseFloat(oldPriceEl.getAttribute('data-usd-price'));
+      if (!isNaN(usdPrice)) {
+        const convertedPrice = (usdPrice * rate).toFixed(2);
+        oldPriceEl.textContent = `${symbol}${convertedPrice}`;
+      }
+    }
+  });
+
+  // 更新 New Arrivals 产品价格
+  document.querySelectorAll('.arrivals-grid .product-card').forEach(card => {
+    const currentPriceEl = card.querySelector('.current-price');
+    const oldPriceEl = card.querySelector('.old-price');
+
+    if (currentPriceEl) {
+      const usdPrice = parseFloat(currentPriceEl.getAttribute('data-usd-price'));
+      if (!isNaN(usdPrice)) {
+        const convertedPrice = (usdPrice * rate).toFixed(2);
+        currentPriceEl.textContent = `${symbol}${convertedPrice}`;
+      }
+    }
+
+    if (oldPriceEl) {
+      const usdPrice = parseFloat(oldPriceEl.getAttribute('data-usd-price'));
+      if (!isNaN(usdPrice)) {
+        const convertedPrice = (usdPrice * rate).toFixed(2);
+        oldPriceEl.textContent = `${symbol}${convertedPrice}`;
+      }
+    }
+  });
+
+  // 更新 Campaign 产品价格
+  document.querySelectorAll('.campaign-grid .campaign-price').forEach(priceEl => {
+    const usdPrice = parseFloat(priceEl.getAttribute('data-usd-price'));
+    if (!isNaN(usdPrice)) {
+      const convertedPrice = (usdPrice * rate).toFixed(2);
+      priceEl.textContent = `${symbol}${convertedPrice}`;
+    }
+  });
+}
+
+function getCurrencySymbol(currency) {
+  const symbols = {
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£',
+    'JPY': '¥',
+    'CNY': '¥',
+    'AUD': 'A$',
+    'CAD': 'C$'
+  };
+  return symbols[currency] || currency + ' ';
+}
+
+window.addEventListener('currencyChanged', updateProductPrices);
+document.addEventListener('DOMContentLoaded', updateProductPrices);
+
+// ============================================================
+// 异步加载 Flash Sale 产品并注入规范卡片结构
+// ============================================================
+async function loadFlashSaleProducts() {
+  const desktopGrid = document.getElementById('flashSaleProductGrid');
+  const mobileGrid = document.getElementById('mobileFlashSaleGrid');
+
+  if (!desktopGrid && !mobileGrid) return;
+
+  try {
+    const currentLocale = window.location.pathname.split('/')[1] || 'en';
+    const isNonEnglish = currentLocale && currentLocale !== 'en' && ['fr', 'de', 'es'].includes(currentLocale);
+    const locale = isNonEnglish ? currentLocale : 'en';
+
+    const response = await fetch(`/api/flash-sale-products.json?locale=${locale}`);
+    const products = await response.json();
+
+    if (products.length === 0) {
+      if (desktopGrid) desktopGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No products available</p>';
+      if (mobileGrid) mobileGrid.innerHTML = '<p style="text-align: center;">No products available</p>';
+      return;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 桌面端产品 HTML
+    const desktopHTML = products.map(product => {
+      const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
+      const discountPercent = hasDiscount
+        ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
+        : 0;
+
+      const productUrl = `/${locale === 'en' ? '' : locale + '/'}product/${product.slug}`;
+      const imgSrc = product.images[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80';
+      const productName = escapeHtml(product.name);
+
+      return `
+        <div class="product-card" data-product-id="${product.id}" data-price="${product.price}" data-regular-price="${product.regular_price || ''}">
+          <a href="${productUrl}">
+            <div class="product-img-wrap">
+              ${hasDiscount ? `<span class="product-badge discount-badge">-${discountPercent}%</span>` : ''}
+              <img src="${imgSrc}" alt="${productName}" loading="lazy" />
+            </div>
+            <div class="product-info">
+              <h3 class="product-name">${productName}</h3>
+              <div class="price-wrap">
+                <span class="current-price" data-usd-price="${product.price}">$${product.price}</span>
+                ${hasDiscount ? `<span class="old-price" data-usd-price="${product.regular_price}">$${product.regular_price}</span>` : ''}
+              </div>
+            </div>
+          </a>
+        </div>
+      `;
+    }).join('');
+
+    // 移动端产品 HTML
+    const mobileHTML = products.map(product => {
+      const hasDiscount = product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price);
+      const discountPercent = hasDiscount
+        ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.price)) / parseFloat(product.regular_price)) * 100)
+        : 0;
+
+      const productUrl = `/${locale === 'en' ? '' : locale + '/'}product/${product.slug}`;
+      const imgSrc = product.images[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=300&q=80';
+      const productName = escapeHtml(product.name);
+
+      return `
+        <div class="mobile-product-card" data-product-id="${product.id}">
+          <a href="${productUrl}">
+            <div class="mobile-product-image">
+              ${hasDiscount ? `<span class="mobile-discount-badge">-${discountPercent}%</span>` : ''}
+              <img src="${imgSrc}" alt="${productName}" loading="lazy" />
+            </div>
+            <div class="mobile-product-info">
+              <h3>${productName}</h3>
+              <div class="mobile-product-price">
+                <span class="mobile-price" data-usd-price="${product.price}">$${product.price}</span>
+                ${hasDiscount ? `<span class="mobile-old-price" data-usd-price="${product.regular_price}">$${product.regular_price}</span>` : ''}
+              </div>
+            </div>
+          </a>
+        </div>
+      `;
+    }).join('');
+
+    if (desktopGrid) {
+      desktopGrid.innerHTML = desktopHTML;
+    }
+    if (mobileGrid) {
+      mobileGrid.innerHTML = mobileHTML;
+    }
+
+    updateProductPrices();
+  } catch (error) {
+    console.error('加载 Flash Sale 产品失败:', error);
+    if (desktopGrid) desktopGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">Failed to load products</p>';
+    if (mobileGrid) mobileGrid.innerHTML = '<p style="text-align: center; color: #999;">Failed to load products</p>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadFlashSaleProducts();
+});
+
 // 统一活动倒计时功能
 function initFlashSalesCountdown() {
   let totalSeconds = 8 * 3600 - 150;

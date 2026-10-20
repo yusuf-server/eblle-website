@@ -6,13 +6,11 @@
 
 import type { SupportedLocale } from './i18n/utils';
 import { getHomepageData, parseACFImage, parseACFLink } from './wordpress';
-import { getProductsWithPrices } from './productCache';
 import { translate, translateBatch } from './i18n/translator';
 
 // 首页数据类型
 export interface HomepageData {
   heroData: any;
-  flashSaleProducts: any[];
   instagramPosts: any[];
 }
 
@@ -217,15 +215,9 @@ export async function getOptimizedHomepageData(
 
   console.log(`→ 首页 KV 缓存未命中 [${locale}] - 开始聚合数据...`);
 
-  // 2. 并行获取所有原始数据
-  const [rawHeroData, rawFlashSaleProducts, instagramPosts] = await Promise.all([
+  // 2. 并行获取所有原始数据（移除 Flash Sale，改为客户端加载）
+  const [rawHeroData, instagramPosts] = await Promise.all([
     getHomepageData(),
-    getProductsWithPrices({
-      per_page: 10,
-      category: 942,
-      orderby: 'date',
-      order: 'desc'
-    }).catch(() => []),
     getInstagramPosts()
   ]);
 
@@ -233,7 +225,6 @@ export async function getOptimizedHomepageData(
   if (locale === 'en') {
     const data: HomepageData = {
       heroData: rawHeroData,
-      flashSaleProducts: rawFlashSaleProducts,
       instagramPosts
     };
 
@@ -257,14 +248,10 @@ export async function getOptimizedHomepageData(
     AI: locals.AI // Cloudflare Workers AI binding
   };
 
-  const [translatedHeroData, translatedProducts] = await Promise.all([
-    translateHeroData(rawHeroData, locale, context, kvCache),
-    translateProducts(rawFlashSaleProducts, locale, context, kvCache)
-  ]);
+  const translatedHeroData = await translateHeroData(rawHeroData, locale, context, kvCache);
 
   const data: HomepageData = {
     heroData: translatedHeroData,
-    flashSaleProducts: translatedProducts,
     instagramPosts
   };
 
