@@ -22,10 +22,12 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   : 'en';
 
 // 🚀 一行代码获取完整首页数据（命中 KV 时 15ms 秒开，未命中时由 Workers AI 批量翻译并写入缓存）
+const startTime = Date.now();
 const { heroData, instagramPosts } = await getOptimizedHomepageData(
   currentLocale,
   Astro.locals
 );
+console.log(`[首页渲染] getOptimizedHomepageData 耗时: ${Date.now() - startTime}ms`);
 
 // 解析桌面端 Hero Main 轮播数据（支持 Repeater 数组与旧版单项回退）
 let desktopHeroSlides = [];
