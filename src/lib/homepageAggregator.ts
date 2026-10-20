@@ -192,7 +192,7 @@ async function getInstagramPosts(): Promise<any[]> {
  * 获取优化后的首页数据
  *
  * @param locale 当前语言
- * @param locals Astro.locals（包含 translationCache 和 AI binding）
+ * @param locals Astro.locals（包含 TRANSLATION_CACHE 和 AI binding）
  * @returns 完整的首页数据
  */
 export async function getOptimizedHomepageData(
@@ -200,7 +200,7 @@ export async function getOptimizedHomepageData(
   locals: any
 ): Promise<HomepageData> {
   const cacheKey = getHomepageCacheKey(locale);
-  const kvCache = locals.translationCache;
+  const kvCache = locals.TRANSLATION_CACHE; // Cloudflare KV 绑定（大写）
 
   // 1. 尝试从 KV 缓存读取完整页面数据包
   if (kvCache) {
