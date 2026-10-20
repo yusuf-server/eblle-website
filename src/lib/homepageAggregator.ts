@@ -7,6 +7,7 @@
 import type { SupportedLocale } from './i18n/utils';
 import { getHomepageData, parseACFImage, parseACFLink } from './wordpress';
 import { translate, translateBatch } from './i18n/translator';
+import { env } from 'cloudflare:workers';
 
 // 首页数据类型
 export interface HomepageData {
@@ -200,7 +201,14 @@ export async function getOptimizedHomepageData(
   locals: any
 ): Promise<HomepageData> {
   const cacheKey = getHomepageCacheKey(locale);
-  const kvCache = locals.TRANSLATION_CACHE; // Cloudflare KV 绑定（大写）
+  // 从 cloudflare:workers 模块获取 KV（推荐方式）
+  const kvCache = env?.TRANSLATION_CACHE || locals?.TRANSLATION_CACHE;
+
+  // 调试：检查 KV 是否可用
+  console.log(`[Homepage] KV 状态: ${kvCache ? '✓ 可用' : '✗ 不可用'}`);
+  if (!kvCache) {
+    console.warn('[Homepage] ⚠️  TRANSLATION_CACHE 未绑定 - 请检查 Cloudflare Pages 设置');
+  }
 
   // 1. 尝试从 KV 缓存读取完整页面数据包
   if (kvCache) {
