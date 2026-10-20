@@ -18,7 +18,9 @@ export interface HomepageData {
  * 生成首页缓存键
  */
 function getHomepageCacheKey(locale: SupportedLocale): string {
-  return `homepage:${locale}:v1`;
+  // 使用更长的缓存时间，添加日期作为版本
+  const version = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  return `homepage:${locale}:${version}:v2`;
 }
 
 /**
@@ -231,8 +233,8 @@ export async function getOptimizedHomepageData(
     // 写入英语缓存
     if (kvCache) {
       try {
-        await kvCache.put(cacheKey, JSON.stringify(data), { expirationTtl: 60 * 60 }); // 1小时
-        console.log(`✓ 首页英语数据缓存写入`);
+        await kvCache.put(cacheKey, JSON.stringify(data), { expirationTtl: 24 * 60 * 60 }); // 24小时
+        console.log(`✓ 首页英语数据缓存写入 [TTL: 24h]`);
       } catch (error) {
         console.warn('[HomepageAggregator] KV 缓存写入失败:', error);
       }
@@ -258,8 +260,8 @@ export async function getOptimizedHomepageData(
   // 5. 写入完整数据包到 KV 缓存
   if (kvCache) {
     try {
-      await kvCache.put(cacheKey, JSON.stringify(data), { expirationTtl: 60 * 60 }); // 1小时
-      console.log(`✓ 首页 [${locale}] 完整数据包缓存写入成功`);
+      await kvCache.put(cacheKey, JSON.stringify(data), { expirationTtl: 24 * 60 * 60 }); // 24小时
+      console.log(`✓ 首页 [${locale}] 完整数据包缓存写入成功 [TTL: 24h]`);
     } catch (error) {
       console.warn('[HomepageAggregator] KV 缓存写入失败:', error);
     }
