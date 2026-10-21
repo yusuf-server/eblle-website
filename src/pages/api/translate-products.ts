@@ -4,15 +4,16 @@ import { translate } from '../../lib/i18n/translator';
 import type { SupportedLocale } from '../../lib/i18n/utils';
 
 export const POST: APIRoute = async ({ request }) => {
+  const startTime = Date.now();
   try {
     const body = await request.json();
-    
+
     // 兼容入参：可能传的是 { products: [...] } 或直接传了数组 [...]
     const rawProducts = Array.isArray(body) ? body : (body.products || []);
     // 兼容两种字段名：targetLang（客户端）和 locale
     const locale = (body.targetLang || body.locale || 'en') as SupportedLocale;
 
-    console.log('[API translate-products] 接收到的语言参数:', { targetLang: body.targetLang, locale: body.locale, 最终使用: locale });
+    console.log('[API translate-products] 接收到的语言参数:', { targetLang: body.targetLang, locale: body.locale, 最终使用: locale, 产品数量: rawProducts.length });
 
     if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
       return new Response(JSON.stringify([]), {
@@ -48,6 +49,9 @@ export const POST: APIRoute = async ({ request }) => {
         })
       );
     }
+
+    const elapsed = Date.now() - startTime;
+    console.log(`✓ 产品列表翻译完成 [${locale}] - 耗时: ${elapsed}ms, 产品数: ${translatedProducts.length}`);
 
     // 核心：直接返回产品数组，供 shop.astro 中的 products.map 调用
     return new Response(JSON.stringify(translatedProducts), {
