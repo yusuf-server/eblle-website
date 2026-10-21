@@ -21,7 +21,7 @@ export interface HomepageData {
 function getHomepageCacheKey(locale: SupportedLocale): string {
   // 使用更长的缓存时间，添加日期作为版本
   const version = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  return `homepage:${locale}:${version}:v2`;
+  return `homepage:${locale}:${version}:v4`; // 改为 v4，强制刷新
 }
 
 /**
