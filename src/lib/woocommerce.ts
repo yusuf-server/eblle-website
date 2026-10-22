@@ -279,7 +279,9 @@ export async function getCategory(id: number): Promise<WooCommerceCategory | nul
 export async function getProductVariations(productId: number, retries = 2): Promise<any[]> {
   for (let i = 0; i <= retries; i++) {
     try {
-      const { data } = await wcRequest(`products/${productId}/variations`);
+      // 添加 per_page=100 以获取所有变体（WooCommerce 默认只返回10个）
+      const { data } = await wcRequest(`products/${productId}/variations`, { per_page: 100 });
+      console.log(`✓ 获取产品 ${productId} 的变体: ${data.length} 个`);
       return data;
     } catch (error) {
       if (i === retries) {
@@ -290,6 +292,26 @@ export async function getProductVariations(productId: number, retries = 2): Prom
     }
   }
   return [];
+}
+
+// 只获取第一个变体（用于首页 Flash Sale 优化）
+export async function getFirstProductVariation(productId: number, retries = 2): Promise<any | null> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const { data } = await wcRequest(`products/${productId}/variations`, { per_page: 1 });
+      if (data.length > 0) {
+        return data[0];
+      }
+      return null;
+    } catch (error) {
+      if (i === retries) {
+        console.error(`获取产品 ${productId} 的第一个变体失败:`, error);
+        return null;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+  return null;
 }
 
 // 根据slug获取分类

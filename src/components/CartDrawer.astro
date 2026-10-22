@@ -1,5 +1,17 @@
 ---
 // CartDrawer 组件
+import { SUPPORTED_LOCALES, type SupportedLocale, addLocalePrefix } from '../lib/i18n/utils';
+import { t } from '../lib/i18n/translations';
+
+// 检测当前语言
+const currentPath = Astro.url.pathname;
+let currentLocale: SupportedLocale = 'en';
+for (const locale of SUPPORTED_LOCALES) {
+  if (currentPath.startsWith(`/${locale}/`) || currentPath === `/${locale}`) {
+    currentLocale = locale as SupportedLocale;
+    break;
+  }
+}
 ---
 
 <!-- Cart Overlay -->
@@ -9,7 +21,7 @@
 <aside class="cart-drawer" id="cartDrawer">
   <!-- Header -->
   <div class="cart-header">
-    <h2>Shopping Cart <span class="cart-count">(0)</span></h2>
+    <h2>{t(currentLocale, 'cartDrawer.title')} <span class="cart-count">(0)</span></h2>
     <button class="close-btn" id="closeCart" aria-label="Close cart">
       <i class="fa-solid fa-xmark"></i>
     </button>
@@ -20,15 +32,15 @@
     <!-- Free Shipping Progress -->
     <div class="shipping-progress">
       <div class="progress-info">
-        <p class="progress-text">You're <span class="highlight">$50.00</span> away from <strong>FREE SHIPPING!</strong></p>
+        <p class="progress-text" id="progressText">{t(currentLocale, 'cartDrawer.freeShippingProgress').replace('$50.00', '$50.00')}</p>
         <p class="progress-percent">0%</p>
       </div>
       <div class="progress-bar">
         <div class="progress-fill" style="width: 0%;"></div>
       </div>
       <div class="progress-footer">
-        <p class="progress-current">CURRENT: $0.00</p>
-        <p class="progress-goal">GOAL: $50.00</p>
+        <p class="progress-current">{t(currentLocale, 'cartDrawer.current')}: $0.00</p>
+        <p class="progress-goal">{t(currentLocale, 'cartDrawer.goal')}: $50.00</p>
       </div>
     </div>
 
@@ -40,28 +52,28 @@
   <div class="cart-footer">
     <div class="cart-summary">
       <div class="summary-row small">
-        <span class="summary-label">Estimated Tax</span>
-        <span class="summary-note">Calculated at checkout</span>
+        <span class="summary-label">{t(currentLocale, 'cartDrawer.estimatedTax')}</span>
+        <span class="summary-note">{t(currentLocale, 'cartDrawer.calculatedAtCheckout')}</span>
       </div>
       <div class="summary-row small">
-        <span class="summary-label">Shipping</span>
-        <span class="summary-note">Calculated next step</span>
+        <span class="summary-label">{t(currentLocale, 'cartDrawer.shipping')}</span>
+        <span class="summary-note">{t(currentLocale, 'cartDrawer.calculatedNextStep')}</span>
       </div>
       <div class="summary-row main">
-        <span class="summary-label-main">Subtotal</span>
+        <span class="summary-label-main">{t(currentLocale, 'cartDrawer.subtotal')}</span>
         <span class="summary-value" id="cartSubtotal">$0.00</span>
       </div>
     </div>
     <div class="cart-actions">
       <button class="btn-checkout" id="btnCheckout">
-        CHECKOUT
+        {t(currentLocale, 'cartDrawer.checkout')}
         <i class="fa-solid fa-arrow-right"></i>
       </button>
-      <a href="/cart" class="btn-view-cart">VIEW CART</a>
+      <a href={addLocalePrefix('/cart', currentLocale)} class="btn-view-cart">{t(currentLocale, 'cartDrawer.viewCart')}</a>
     </div>
     <div class="trust-badge">
       <i class="fa-solid fa-lock"></i>
-      <span>SECURE CHECKOUT GUARANTEED</span>
+      <span>{t(currentLocale, 'cartDrawer.secureCheckout')}</span>
     </div>
   </div>
 </aside>
@@ -483,6 +495,122 @@
 </style>
 
 <script is:inline>
+  // ============================================================
+  // 客户端多语言工具函数
+  // ============================================================
+  const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
+
+  // 客户端翻译字典
+  const TRANSLATIONS = {
+    en: {
+      emptyCart: 'Your cart is currently empty',
+      continueShopping: 'CONTINUE SHOPPING',
+      freeShippingProgress: "You're <span class=\"highlight\">{{amount}}</span> away from <strong>FREE SHIPPING!</strong>",
+      freeShippingAchieved: '<strong>Congratulations! You\'ve unlocked FREE SHIPPING!</strong>',
+      current: 'CURRENT'
+    },
+    fr: {
+      emptyCart: 'Votre panier est actuellement vide',
+      continueShopping: 'CONTINUER VOS ACHATS',
+      freeShippingProgress: "Il vous reste <span class=\"highlight\">{{amount}}</span> pour bénéficier de la <strong>LIVRAISON GRATUITE!</strong>",
+      freeShippingAchieved: '<strong>Félicitations! Vous avez débloqué la LIVRAISON GRATUITE!</strong>',
+      current: 'ACTUEL'
+    },
+    de: {
+      emptyCart: 'Ihr Warenkorb ist derzeit leer',
+      continueShopping: 'WEITER EINKAUFEN',
+      freeShippingProgress: "Sie sind <span class=\"highlight\">{{amount}}</span> von <strong>KOSTENLOSEM VERSAND!</strong> entfernt",
+      freeShippingAchieved: '<strong>Glückwunsch! Sie haben KOSTENLOSEN VERSAND freigeschaltet!</strong>',
+      current: 'AKTUELL'
+    },
+    es: {
+      emptyCart: 'Su carrito está actualmente vacío',
+      continueShopping: 'CONTINUAR COMPRANDO',
+      freeShippingProgress: "Está a <span class=\"highlight\">{{amount}}</span> de <strong>¡ENVÍO GRATIS!</strong>",
+      freeShippingAchieved: '<strong>¡Felicitaciones! ¡Ha desbloqueado ENVÍO GRATIS!</strong>',
+      current: 'ACTUAL'
+    }
+  };
+
+  function t(key) {
+    const locale = getCurrentLocale();
+    return TRANSLATIONS[locale]?.[key] || TRANSLATIONS.en[key] || key;
+  }
+
+  function getCurrentLocale() {
+    const pathname = window.location.pathname;
+    for (const locale of SUPPORTED_LOCALES) {
+      if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+        return locale;
+      }
+    }
+    return 'en';
+  }
+
+  function addLocalePrefix(url) {
+    const currentLocale = getCurrentLocale();
+    if (currentLocale === 'en') {
+      return url;
+    }
+    // 如果URL已经有语言前缀，先移除
+    let cleanUrl = url;
+    for (const loc of SUPPORTED_LOCALES) {
+      if (cleanUrl.startsWith(`/${loc}/`)) {
+        cleanUrl = cleanUrl.substring(loc.length + 1);
+        break;
+      }
+    }
+    return `/${currentLocale}${cleanUrl}`;
+  }
+
+  // ============================================================
+  // 货币工具函数（客户端版本）
+  // ============================================================
+  const CURRENCY_SYMBOLS = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    CAD: 'C$'
+  };
+
+  const CURRENCY_RATES = {
+    USD: 1.0,
+    EUR: 0.92,
+    GBP: 0.79,
+    CAD: 1.36
+  };
+
+  function getCurrentCurrency() {
+    return localStorage.getItem('ebbelle_currency') || 'USD';
+  }
+
+  function getCurrencySymbol(currency) {
+    return CURRENCY_SYMBOLS[currency || getCurrentCurrency()] || '$';
+  }
+
+  function convertPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const rate = CURRENCY_RATES[currency] || 1.0;
+    return priceUSD * rate;
+  }
+
+  function formatPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const converted = convertPrice(priceUSD, currency);
+    const symbol = getCurrencySymbol(currency);
+    const formatted = converted.toFixed(2);
+
+    // EUR 符号通常放在后面
+    if (currency === 'EUR') {
+      return `${formatted}${symbol}`;
+    }
+    return `${symbol}${formatted}`;
+  }
+
+  // ============================================================
+  // 购物车逻辑
+  // ============================================================
+
   // 获取购物车数据
   function getCart() {
     try {
@@ -544,7 +672,7 @@
     }, 0);
 
     if (cartSubtotal) {
-      cartSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+      cartSubtotal.textContent = formatPrice(subtotal);
     }
 
     // 免邮门槛计算 ($50.00)
@@ -559,13 +687,13 @@
       progressPercent.textContent = `${Math.round(progress)}%`;
     }
     if (progressCurrent) {
-      progressCurrent.textContent = `CURRENT: $${subtotal.toFixed(2)}`;
+      progressCurrent.textContent = `${t('current')}: ${formatPrice(subtotal)}`;
     }
     if (progressText) {
       if (remaining > 0) {
-        progressText.innerHTML = `You're <span class="highlight">$${remaining.toFixed(2)}</span> away from <strong>FREE SHIPPING!</strong>`;
+        progressText.innerHTML = t('freeShippingProgress').replace('{{amount}}', formatPrice(remaining));
       } else {
-        progressText.innerHTML = `<strong>Congratulations! You've unlocked FREE SHIPPING!</strong>`;
+        progressText.innerHTML = t('freeShippingAchieved');
       }
     }
 
@@ -574,8 +702,8 @@
       cartItemsContainer.innerHTML = `
         <div style="text-align: center; padding: 48px 20px; color: #999;">
           <i class="fa-solid fa-cart-shopping" style="font-size: 40px; margin-bottom: 14px; opacity: 0.3;"></i>
-          <p style="font-size: 14px; color: #666; margin: 0 0 16px 0;">Your cart is currently empty</p>
-          <a href="/shop" style="display: inline-block; padding: 9px 20px; background: #111; color: #fff; text-decoration: none; border-radius: 2px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.5px;">CONTINUE SHOPPING</a>
+          <p style="font-size: 14px; color: #666; margin: 0 0 16px 0;">${t('emptyCart')}</p>
+          <a href="${addLocalePrefix('/shop')}" style="display: inline-block; padding: 9px 20px; background: #111; color: #fff; text-decoration: none; border-radius: 2px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.5px;">${t('continueShopping')}</a>
         </div>
       `;
       return;
@@ -583,7 +711,8 @@
 
     // 渲染每项商品（结构完全复刻设计图 1）
     cartItemsContainer.innerHTML = cart.map(item => {
-      const itemTotal = (parseFloat(item.price) * item.quantity).toFixed(2);
+      const itemPrice = parseFloat(item.price);
+      const itemTotal = itemPrice * item.quantity;
 
       // 清理和规范化 cartItemId，移除换行符、多余空格
       const cleanCartItemId = String(item.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_');
@@ -607,7 +736,7 @@
               <div class="item-info">
                 <h3>${item.name}</h3>
                 ${variantsText ? `<p class="item-meta">${variantsText}</p>` : ''}
-                <p class="item-price">$${parseFloat(item.price).toFixed(2)}</p>
+                <p class="item-price">${formatPrice(itemPrice)}</p>
               </div>
               <button type="button" class="delete-btn" data-action="delete" title="Remove item">
                 <i class="fa-regular fa-trash-can"></i>
@@ -619,7 +748,7 @@
                 <span class="qty-value">${item.quantity}</span>
                 <button type="button" class="qty-btn" data-action="increase">+</button>
               </div>
-              <p class="item-total">$${itemTotal}</p>
+              <p class="item-total">${formatPrice(itemTotal)}</p>
             </div>
           </div>
         </div>
@@ -842,6 +971,11 @@
 
   window.addEventListener('cartUpdated', renderCartItems);
   document.addEventListener('DOMContentLoaded', renderCartItems);
+
+  // 监听货币切换事件，重新渲染购物车
+  window.addEventListener('currencyChanged', () => {
+    renderCartItems();
+  });
 
   // 全局暴露方法
   window.toggleCart = toggleCart;

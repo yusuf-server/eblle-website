@@ -1,0 +1,379 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../../lib/i18n/utils';
+import { t } from '../../../lib/i18n/translations';
+
+// 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 获取 URL 参数
+const orderId = Astro.url.searchParams.get('order_id') || Astro.url.searchParams.get('orderId');
+const orderKey = Astro.url.searchParams.get('order_key') || Astro.url.searchParams.get('orderKey');
+
+let orderData: any = null;
+
+if (orderId && orderKey) {
+  try {
+    const WC_STORE_URL = import.meta.env.WC_STORE_URL || '';
+    const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY || '';
+    const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET || '';
+
+    const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
+    const res = await fetch(`${WC_STORE_URL}/wp-json/wc/v3/orders/${orderId}`, {
+      headers: { 'Authorization': `Basic ${auth}` }
+    });
+
+    if (res.ok) {
+      const order = await res.json();
+      // 安全核对 Order Key，核对成功才输出真实内容
+      if (order.order_key === orderKey) {
+        orderData = order;
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching order in confirmation:', err);
+  }
+}
+---
+
+<Layout title="Order Confirmation - E.B.Belle">
+  <header class="checkout-header">
+    <div class="header-container">
+      <a href="/" class="header-logo">
+        <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+          <path clip-rule="evenodd" d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
+        </svg>
+        <span>E.B.Belle</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="confirmation-page">
+    <div class="confirmation-container">
+      <div class="success-circle">
+        <i class="fa-solid fa-check"></i>
+      </div>
+
+      <h1>{t(currentLocale, 'checkout.orderConfirmed')}</h1>
+      <p class="subtitle">{t(currentLocale, 'checkout.thankYouForPurchase')}</p>
+
+      <div class="order-number">
+        <span class="label">{t(currentLocale, 'checkout.orderNumber')}:</span>
+        <span class="number">#{orderData ? orderData.id : orderId || 'COMPLETED'}</span>
+      </div>
+
+      <p class="confirmation-email">
+        We've sent a confirmation receipt to <strong>{orderData ? orderData.billing.email : 'your email address'}</strong>.
+      </p>
+
+      {orderData && (
+        <div class="order-card">
+          <h2>Order Details</h2>
+
+          <div class="order-items">
+            {orderData.line_items.map((item: any) => (
+              <div class="order-item">
+                <img src={item.image?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=200&q=80'} alt={item.name} />
+                <div class="item-info">
+                  <h3>{item.name}</h3>
+                  <p>Qty: {item.quantity} × ${parseFloat(item.price).toFixed(2)}</p>
+                </div>
+                <span class="price">${parseFloat(item.total).toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+
+          <div class="order-totals">
+            <div class="total-row">
+              <span>Subtotal</span>
+              <span>${(parseFloat(orderData.total) - parseFloat(orderData.shipping_total) - parseFloat(orderData.total_tax)).toFixed(2)}</span>
+            </div>
+            <div class="total-row">
+              <span>Shipping ({orderData.shipping_lines[0]?.method_title || 'Standard'})</span>
+              <span>${parseFloat(orderData.shipping_total).toFixed(2)}</span>
+            </div>
+            <div class="total-row">
+              <span>Tax</span>
+              <span>${parseFloat(orderData.total_tax).toFixed(2)}</span>
+            </div>
+            <div class="total-row grand">
+              <span>Total Paid</span>
+              <span>${parseFloat(orderData.total).toFixed(2)} {orderData.currency}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {orderData && (
+        <div class="info-grid">
+          <div class="info-box">
+            <div class="info-header">
+              <i class="fa-solid fa-truck"></i>
+              <h3>{t(currentLocale, 'checkout.shippingAddress')}</h3>
+            </div>
+            <div class="info-body">
+              <p>{orderData.shipping.first_name} {orderData.shipping.last_name}</p>
+              <p>{orderData.shipping.address_1} {orderData.shipping.address_2 || ''}</p>
+              <p>{orderData.shipping.city}, {orderData.shipping.state} {orderData.shipping.postcode}</p>
+              <p>{orderData.shipping.country}</p>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-header">
+              <i class="fa-solid fa-credit-card"></i>
+              <h3>{t(currentLocale, 'checkout.paymentMethod')}</h3>
+            </div>
+            <div class="info-body">
+              <p>{orderData.payment_method_title || 'PayPal'}</p>
+              <p class="success-text">
+                <i class="fa-solid fa-circle-check"></i>
+                Payment Completed ({orderData.status.toUpperCase()})
+              </p>
+              {orderData.transaction_id && (
+                <p style="font-size: 11px; color: #888; font-family: monospace; margin-top: 4px;">
+                  Txn ID: {orderData.transaction_id}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div class="delivery-box">
+        <div class="delivery-icon">
+          <i class="fa-solid fa-box"></i>
+        </div>
+        <div class="delivery-content">
+          <h3>Estimated Dispatch</h3>
+          <p class="delivery-date">Within 24–48 Business Hours</p>
+          <p class="delivery-note">You'll receive tracking information via email once your package ships from our atelier.</p>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <a href="/" class="btn-primary">{t(currentLocale, 'checkout.continueShopping')}</a>
+        <a href="/shop" class="btn-secondary">Explore Collection</a>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  * { box-sizing: border-box; }
+  .checkout-header {
+    border-bottom: 1px solid #c4c7c7;
+    background: #fcf9f3;
+  }
+  .header-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 40px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #0e0f0f;
+  }
+  .header-logo span {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .confirmation-page {
+    background: #fcf9f3;
+    min-height: calc(100vh - 72px);
+    padding: 60px 20px;
+    display: flex;
+    justify-content: center;
+  }
+  .confirmation-container {
+    max-width: 720px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .success-circle {
+    width: 72px;
+    height: 72px;
+    background: #16a34a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: #fff;
+    font-size: 32px;
+  }
+  h1 {
+    font-family: 'Bodoni Moda', serif;
+    font-size: 32px;
+    font-weight: 500;
+    color: #0e0f0f;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 16px;
+    color: #747878;
+    margin-bottom: 24px;
+  }
+  .order-number {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: #f6f3ed;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+  .order-number .label { font-size: 12px; font-weight: 600; color: #747878; }
+  .order-number .number { font-size: 16px; font-weight: 700; color: #111; font-family: monospace; }
+  .confirmation-email { font-size: 14px; color: #747878; margin-bottom: 36px; }
+  .order-card {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ddd8ce;
+    border-radius: 6px;
+    padding: 24px;
+    margin-bottom: 24px;
+    text-align: left;
+  }
+  .order-card h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .order-items {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .order-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .order-item img {
+    width: 56px;
+    height: 56px;
+    border-radius: 4px;
+    object-fit: cover;
+  }
+  .item-info { flex: 1; }
+  .item-info h3 { font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
+  .item-info p { font-size: 12px; color: #777; }
+  .order-item .price { font-size: 14px; font-weight: 600; }
+  .order-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13.5px;
+    color: #666;
+  }
+  .total-row.grand {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+  }
+  .info-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .info-box {
+    background: #fff;
+    border: 1px solid #ddd8ce;
+    border-radius: 6px;
+    padding: 20px;
+    text-align: left;
+  }
+  .info-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: #725b29;
+  }
+  .info-header h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #111; }
+  .info-body p { font-size: 13px; color: #666; line-height: 1.5; margin: 2px 0; }
+  .success-text { color: #16a34a !important; font-weight: 600; margin-top: 6px; }
+  .delivery-box {
+    width: 100%;
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    background: #f6f3ed;
+    border: 1px solid #ddd8ce;
+    border-radius: 6px;
+    margin-bottom: 24px;
+    text-align: left;
+  }
+  .delivery-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #725b29;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .delivery-content h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .delivery-date { font-size: 16px; font-weight: 600; color: #725b29; margin-bottom: 4px; }
+  .delivery-note { font-size: 12px; color: #777; line-height: 1.4; }
+  .action-buttons {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .btn-primary, .btn-secondary {
+    padding: 14px 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .btn-primary { background: #111; color: #fff; }
+  .btn-secondary { background: transparent; color: #111; border: 1px solid #111; }
+
+  @media (max-width: 640px) {
+    .info-grid, .action-buttons { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  // 彻底清除临时会话
+  try {
+    sessionStorage.removeItem('pendingOrderId');
+    sessionStorage.removeItem('pendingOrderKey');
+    sessionStorage.removeItem('shippingInfo');
+  } catch(e) {}
+</script>

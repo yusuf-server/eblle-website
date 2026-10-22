@@ -14,17 +14,8 @@ const CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
  * @returns {Promise<Object|null>} ACF 字段数据或 null
  */
 export async function getHomepageData() {
-  const cacheKey = 'homepage_data';
-  const now = Date.now();
-
-  // 检查缓存
-  if (cache.has(cacheKey)) {
-    const cached = cache.get(cacheKey);
-    if (now - cached.timestamp < CACHE_TTL) {
-      console.log('✓ 使用缓存的首页数据');
-      return cached.data;
-    }
-  }
+  // 禁用内存缓存，避免跨语言污染
+  // KV 缓存会在 homepageAggregator 层面处理
 
   try {
     console.log('→ 从 WordPress API 获取首页数据...');
@@ -54,12 +45,8 @@ export async function getHomepageData() {
       // 优先使用 acf_processed（经过处理的图片字段），否则使用 acf
       const data = page.acf_processed || page.acf || null;
 
-      // 缓存结果
-      cache.set(cacheKey, {
-        data,
-        timestamp: now,
-      });
-
+      // 不再缓存，避免跨语言污染
+      // KV 缓存会在 homepageAggregator 层面处理
       return data;
     }
 

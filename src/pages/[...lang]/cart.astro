@@ -1,19 +1,27 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+
+// 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
 ---
 
-<Layout title="Shopping Cart - E.B.Belle">
+<Layout title={`${t(currentLocale, 'cart.title')} - E.B.Belle`}>
   <Header />
 
   <!-- Breadcrumb -->
   <section class="breadcrumb-section">
     <div class="cart-container">
       <div class="breadcrumb-links">
-        <a href="/">Home</a>
+        <a href={currentLocale === 'en' ? '/' : `/${currentLocale}/`}>{t(currentLocale, 'nav.home')}</a>
         <span class="separator">/</span>
-        <span class="current">Shopping Cart</span>
+        <span class="current">{t(currentLocale, 'cart.title')}</span>
       </div>
     </div>
   </section>
@@ -22,8 +30,8 @@ import Footer from '../components/Footer.astro';
   <section class="cart-page">
     <div class="cart-container">
       <div class="cart-page-header">
-        <h1 class="page-title">Shopping Cart</h1>
-        <span class="items-count-tag">0 items in your bag</span>
+        <h1 class="page-title">{t(currentLocale, 'cart.title')}</h1>
+        <span class="items-count-tag" id="itemsCountTag">0 {t(currentLocale, 'cart.itemsInBag')}</span>
       </div>
 
       <div class="cart-layout">
@@ -54,11 +62,11 @@ import Footer from '../components/Footer.astro';
 
           <!-- Bottom Action Buttons -->
           <div class="cart-bottom-actions">
-            <a href="/shop" class="btn-continue-shopping">
+            <a href={currentLocale === 'en' ? '/shop' : `/${currentLocale}/shop`} class="btn-continue-shopping">
               <i class="fa-solid fa-arrow-left"></i>
-              <span>Continue Shopping</span>
+              <span>{t(currentLocale, 'cart.continueShopping')}</span>
             </a>
-            <button type="button" class="btn-clear-cart" id="btnClearAll">Clear All</button>
+            <button type="button" class="btn-clear-cart" id="btnClearAll">{t(currentLocale, 'cart.clearAll')}</button>
           </div>
         </main>
 
@@ -66,52 +74,52 @@ import Footer from '../components/Footer.astro';
         <aside class="cart-sidebar">
           <!-- Discount Code Block -->
           <div class="sidebar-card">
-            <h3 class="sidebar-heading">Promo Code</h3>
+            <h3 class="sidebar-heading">{t(currentLocale, 'cart.promoCode')}</h3>
             <div class="coupon-form">
-              <input type="text" class="coupon-field" placeholder="Enter coupon code" />
-              <button type="button" class="coupon-apply-btn">Apply</button>
+              <input type="text" class="coupon-field" placeholder={t(currentLocale, 'cart.enterCouponCode')} />
+              <button type="button" class="coupon-apply-btn">{t(currentLocale, 'cart.apply')}</button>
             </div>
           </div>
 
           <!-- Summary Block -->
           <div class="sidebar-card summary-card">
-            <h3 class="sidebar-heading">Order Summary</h3>
+            <h3 class="sidebar-heading">{t(currentLocale, 'cart.orderSummary')}</h3>
 
             <div class="fee-row">
-              <span class="fee-name">Subtotal (0 items)</span>
+              <span class="fee-name" id="subtotalLabel">{t(currentLocale, 'cart.subtotal')} (0 items)</span>
               <span class="fee-value" id="cartSubtotalVal">$0.00</span>
             </div>
 
             <div class="fee-row">
-              <span class="fee-name">Shipping</span>
-              <span class="fee-tag font-accent">Calculated next step</span>
+              <span class="fee-name">{t(currentLocale, 'cart.shipping')}</span>
+              <span class="fee-tag font-accent">{t(currentLocale, 'cartDrawer.calculatedNextStep')}</span>
             </div>
 
             <div class="fee-row">
-              <span class="fee-name">Estimated Tax</span>
-              <span class="fee-tag">Calculated at checkout</span>
+              <span class="fee-name">{t(currentLocale, 'cart.estimatedTax')}</span>
+              <span class="fee-tag">{t(currentLocale, 'cartDrawer.calculatedAtCheckout')}</span>
             </div>
 
             <div class="fee-divider"></div>
 
             <div class="fee-row total-highlight">
-              <span class="fee-total-name">Estimated Total</span>
+              <span class="fee-total-name">{t(currentLocale, 'cart.estimatedTotal')}</span>
               <span class="fee-total-value" id="cartTotalVal">$0.00</span>
             </div>
 
             <a href="/checkout/shipping" class="checkout-submit-btn">
-              <span>PROCEED TO CHECKOUT</span>
+              <span>{t(currentLocale, 'cart.proceedToCheckout')}</span>
               <i class="fa-solid fa-arrow-right"></i>
             </a>
 
             <div class="trust-badge">
               <i class="fa-solid fa-shield-halved"></i>
-              <span>Guaranteed safe & secure checkout</span>
+              <span>{t(currentLocale, 'cart.safeCheckout')}</span>
             </div>
 
             <!-- Accepted Payment Icons -->
             <div class="payment-trust-footer">
-              <span class="payment-title">WE ACCEPT</span>
+              <span class="payment-title">{t(currentLocale, 'cart.weAccept')}</span>
               <div class="payment-icon-list">
                 <i class="fa-brands fa-cc-visa" title="Visa"></i>
                 <i class="fa-brands fa-cc-mastercard" title="Mastercard"></i>
@@ -774,6 +782,69 @@ import Footer from '../components/Footer.astro';
 </style>
 
 <script is:inline>
+  // ============================================================
+  // 客户端多语言工具函数
+  // ============================================================
+  const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
+
+  const TRANSLATIONS = {
+    en: {
+      itemsInBag: 'items in your bag',
+      emptyCart: 'Your cart is currently empty',
+      continueShopping: 'Continue Shopping',
+      product: 'Product',
+      price: 'Price',
+      quantity: 'Quantity',
+      subtotal: 'Subtotal',
+      total: 'Total:'
+    },
+    fr: {
+      itemsInBag: 'articles dans votre panier',
+      emptyCart: 'Votre panier est actuellement vide',
+      continueShopping: 'Continuer vos achats',
+      product: 'Produit',
+      price: 'Prix',
+      quantity: 'Quantité',
+      subtotal: 'Sous-total',
+      total: 'Total:'
+    },
+    de: {
+      itemsInBag: 'Artikel in Ihrem Warenkorb',
+      emptyCart: 'Ihr Warenkorb ist derzeit leer',
+      continueShopping: 'Weiter einkaufen',
+      product: 'Produkt',
+      price: 'Preis',
+      quantity: 'Menge',
+      subtotal: 'Zwischensumme',
+      total: 'Gesamt:'
+    },
+    es: {
+      itemsInBag: 'artículos en su carrito',
+      emptyCart: 'Su carrito está actualmente vacío',
+      continueShopping: 'Seguir comprando',
+      product: 'Producto',
+      price: 'Precio',
+      quantity: 'Cantidad',
+      subtotal: 'Subtotal',
+      total: 'Total:'
+    }
+  };
+
+  function getCurrentLocale() {
+    const pathname = window.location.pathname;
+    for (const locale of SUPPORTED_LOCALES) {
+      if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+        return locale;
+      }
+    }
+    return 'en';
+  }
+
+  function t(key) {
+    const locale = getCurrentLocale();
+    return TRANSLATIONS[locale]?.[key] || TRANSLATIONS.en[key] || key;
+  }
+
   // 获取购物车数据
   function getCart() {
     try {
@@ -806,7 +877,7 @@ import Footer from '../components/Footer.astro';
     // 更新商品件数标签
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     if (itemsCountTag) {
-      itemsCountTag.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''} in your bag`;
+      itemsCountTag.textContent = `${totalItems} ${t('itemsInBag')}`;
     }
 
     // 购物车为空时
@@ -814,10 +885,10 @@ import Footer from '../components/Footer.astro';
       wrapper.innerHTML = `
         <div style="text-align: center; padding: 60px 20px; color: #999;">
           <i class="fa-solid fa-cart-shopping" style="font-size: 48px; margin-bottom: 16px; opacity: 0.25;"></i>
-          <p style="font-size: 16px; color: #555; margin: 0 0 20px;">Your cart is currently empty</p>
+          <p style="font-size: 16px; color: #555; margin: 0 0 20px;">${t('emptyCart')}</p>
           <a href="/shop" class="btn-continue-shopping" style="display: inline-flex; border: 1px solid #1a1917; padding: 10px 22px; border-radius: 2px;">
             <i class="fa-solid fa-arrow-left"></i>
-            <span>Continue Shopping</span>
+            <span>${t('continueShopping')}</span>
           </a>
         </div>
       `;
@@ -866,7 +937,7 @@ import Footer from '../components/Footer.astro';
           </div>
 
           <div class="item-total-col">
-            <span class="total-label">Total:</span>
+            <span class="total-label">${t('total')}</span>
             <span class="line-total">$${itemTotal}</span>
           </div>
 
@@ -881,10 +952,10 @@ import Footer from '../components/Footer.astro';
 
     wrapper.innerHTML = `
       <div class="cart-header-row">
-        <span class="col-product">Product</span>
-        <span class="col-price">Price</span>
-        <span class="col-quantity">Quantity</span>
-        <span class="col-total">Subtotal</span>
+        <span class="col-product">${t('product')}</span>
+        <span class="col-price">${t('price')}</span>
+        <span class="col-quantity">${t('quantity')}</span>
+        <span class="col-total">${t('subtotal')}</span>
         <span class="col-action"></span>
       </div>
       ${itemsHTML}
@@ -903,11 +974,11 @@ import Footer from '../components/Footer.astro';
     }, 0);
 
     const subtotalSpan = document.getElementById('cartSubtotalVal');
-    const subtotalName = document.querySelector('.summary-card .fee-row:first-child .fee-name');
+    const subtotalName = document.getElementById('subtotalLabel');
     const totalSpan = document.getElementById('cartTotalVal');
 
     if (subtotalName) {
-      subtotalName.textContent = `Subtotal (${totalItems} item${totalItems !== 1 ? 's' : ''})`;
+      subtotalName.textContent = `${t('subtotal')} (${totalItems} ${t('itemsInBag')})`;
     }
     if (subtotalSpan) {
       subtotalSpan.textContent = `$${subtotal.toFixed(2)}`;

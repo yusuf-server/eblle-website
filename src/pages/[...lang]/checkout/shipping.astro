@@ -1,5 +1,13 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import Layout from '../../../layouts/Layout.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../../lib/i18n/utils';
+import { t } from '../../../lib/i18n/translations';
+
+// 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
 ---
 
 <Layout title="Checkout: Shipping Information - E.B.Belle">
@@ -14,7 +22,7 @@ import Layout from '../../layouts/Layout.astro';
       </a>
       <a href="/shop" class="back-btn">
         <i class="fa-solid fa-arrow-left"></i>
-        Back to Boutique
+        {t(currentLocale, 'cart.continueShopping')}
       </a>
     </div>
   </header>
@@ -25,9 +33,9 @@ import Layout from '../../layouts/Layout.astro';
       <div class="checkout-left">
         <!-- Progress -->
         <nav class="progress-nav">
-          <span class="progress-step active">SHIPPING</span>
+          <span class="progress-step active">{t(currentLocale, 'checkout.shippingAddress').toUpperCase()}</span>
           <i class="fa-solid fa-chevron-right"></i>
-          <span class="progress-step">PAYMENT</span>
+          <span class="progress-step">{t(currentLocale, 'checkout.paymentMethod').toUpperCase()}</span>
           <i class="fa-solid fa-chevron-right"></i>
           <span class="progress-step">REVIEW</span>
         </nav>
@@ -39,7 +47,7 @@ import Layout from '../../layouts/Layout.astro';
             <button type="button" class="summary-toggle" id="summaryToggle">
               <div class="summary-header-left">
                 <i class="fa-solid fa-shopping-bag"></i>
-                <h2>Order summary (2 items)</h2>
+                <h2>{t(currentLocale, 'checkout.orderSummary')} (2 items)</h2>
                 <i class="fa-solid fa-chevron-down toggle-icon"></i>
               </div>
               <span class="summary-total">$1,782.00</span>
@@ -97,19 +105,19 @@ import Layout from '../../layouts/Layout.astro';
 
           <!-- Shipping Address -->
           <section class="form-section">
-            <h2>Shipping Address</h2>
+            <h2>{t(currentLocale, 'checkout.shippingAddress')}</h2>
             <div class="field-row">
               <div class="field">
-                <label>FIRST NAME</label>
+                <label>{t(currentLocale, 'checkout.firstName').toUpperCase()}</label>
                 <input type="text" id="firstName" required>
               </div>
               <div class="field">
-                <label>LAST NAME</label>
+                <label>{t(currentLocale, 'checkout.lastName').toUpperCase()}</label>
                 <input type="text" id="lastName" required>
               </div>
             </div>
             <div class="field">
-              <label>ADDRESS</label>
+              <label>{t(currentLocale, 'checkout.address').toUpperCase()}</label>
               <input type="text" id="address" placeholder="Street address" required>
             </div>
             <div class="field">
@@ -118,21 +126,21 @@ import Layout from '../../layouts/Layout.astro';
             </div>
             <div class="field-row">
               <div class="field">
-                <label>CITY</label>
+                <label>{t(currentLocale, 'checkout.city').toUpperCase()}</label>
                 <input type="text" id="city" required>
               </div>
               <div class="field">
-                <label>STATE / PROVINCE</label>
+                <label>{t(currentLocale, 'checkout.state').toUpperCase()}</label>
                 <input type="text" id="state" required>
               </div>
             </div>
             <div class="field-row">
               <div class="field">
-                <label>ZIP / POSTAL CODE</label>
+                <label>{t(currentLocale, 'checkout.zipCode').toUpperCase()}</label>
                 <input type="text" id="zip" required>
               </div>
               <div class="field">
-                <label>COUNTRY</label>
+                <label>{t(currentLocale, 'checkout.country').toUpperCase()}</label>
                 <select id="country" required>
                   <option>United States</option>
                   <option>Canada</option>
@@ -143,7 +151,7 @@ import Layout from '../../layouts/Layout.astro';
               </div>
             </div>
             <div class="field">
-              <label>PHONE NUMBER</label>
+              <label>{t(currentLocale, 'checkout.phone').toUpperCase()}</label>
               <input type="tel" id="phone" placeholder="+1 (555) 000-0000" required>
             </div>
           </section>
@@ -175,7 +183,7 @@ import Layout from '../../layouts/Layout.astro';
 
           <!-- Actions -->
           <div class="form-actions">
-            <button type="submit" class="btn-submit">Continue to Payment</button>
+            <button type="submit" class="btn-submit">{t(currentLocale, 'checkout.continueToPayment')}</button>
             <a href="/shop" class="link-return">Return to Shop</a>
           </div>
         </form>

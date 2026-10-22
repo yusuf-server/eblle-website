@@ -1,8 +1,16 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import CartDrawer from '../components/CartDrawer.astro';
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+
+// 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
 
 // 服务器端检查认证状态
 const userId = Astro.cookies.get('user_id')?.value;

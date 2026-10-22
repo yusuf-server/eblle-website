@@ -1,5 +1,17 @@
 ---
 // AuthModal.astro - 登录注册弹窗组件
+import { SUPPORTED_LOCALES, type SupportedLocale, addLocalePrefix } from '../lib/i18n/utils';
+import { t } from '../lib/i18n/translations';
+
+// 检测当前语言
+const currentPath = Astro.url.pathname;
+let currentLocale: SupportedLocale = 'en';
+for (const locale of SUPPORTED_LOCALES) {
+  if (currentPath.startsWith(`/${locale}/`) || currentPath === `/${locale}`) {
+    currentLocale = locale as SupportedLocale;
+    break;
+  }
+}
 ---
 
 <!-- Auth Modal Overlay -->
@@ -20,28 +32,28 @@
       />
       <div class="auth-left-content">
         <h2 class="auth-brand-tag">E.B.Belle</h2>
-        <p class="auth-brand-desc">Fine Jewelry & Timeless Elegance</p>
+        <p class="auth-brand-desc">{t(currentLocale, 'auth.brandDescription')}</p>
 
         <ul class="perks-list">
           <li class="perks-item">
             <i class="fa-solid fa-gift"></i>
-            <span>Exclusive member rewards and early access</span>
+            <span>{t(currentLocale, 'auth.perk1')}</span>
           </li>
           <li class="perks-item">
             <i class="fa-solid fa-heart"></i>
-            <span>Save favorites and build your wishlist</span>
+            <span>{t(currentLocale, 'auth.perk2')}</span>
           </li>
           <li class="perks-item">
             <i class="fa-solid fa-truck-fast"></i>
-            <span>Track orders and view purchase history</span>
+            <span>{t(currentLocale, 'auth.perk3')}</span>
           </li>
           <li class="perks-item">
             <i class="fa-solid fa-tags"></i>
-            <span>Special promotions and birthday discounts</span>
+            <span>{t(currentLocale, 'auth.perk4')}</span>
           </li>
           <li class="perks-item">
             <i class="fa-solid fa-lock"></i>
-            <span>Multiple secure encrypted payment gateways</span>
+            <span>{t(currentLocale, 'auth.perk5')}</span>
           </li>
         </ul>
       </div>
@@ -52,8 +64,8 @@
 
       <!-- Tab 切换 -->
       <div class="auth-tabs">
-        <button type="button" class="tab-btn active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
-        <button type="button" class="tab-btn" id="tabRegister" onclick="switchAuthTab('register')">Create Account</button>
+        <button type="button" class="tab-btn active" id="tabLogin" onclick="switchAuthTab('login')">{t(currentLocale, 'auth.signIn')}</button>
+        <button type="button" class="tab-btn" id="tabRegister" onclick="switchAuthTab('register')">{t(currentLocale, 'auth.createAccount')}</button>
       </div>
 
       <!-- Google OAuth 授权登录 -->
@@ -68,22 +80,22 @@
       </button>
 
       <div class="auth-divider">
-        <span>or continue with email</span>
+        <span>{t(currentLocale, 'auth.orContinueWithEmail')}</span>
       </div>
 
       <!-- 登录表单 -->
       <form class="auth-form active" id="formLogin" onsubmit="handleLoginSubmit(event)">
         <div class="form-group">
-          <label class="form-label" for="loginEmail">Email Address</label>
+          <label class="form-label" for="loginEmail">{t(currentLocale, 'auth.emailAddress')}</label>
           <div class="input-wrap">
-            <input type="email" id="loginEmail" class="form-input" placeholder="name@example.com" required />
+            <input type="email" id="loginEmail" class="form-input" placeholder={t(currentLocale, 'auth.emailPlaceholder')} required />
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="loginPwd">Password</label>
+          <label class="form-label" for="loginPwd">{t(currentLocale, 'auth.password')}</label>
           <div class="input-wrap">
-            <input type="password" id="loginPwd" class="form-input" placeholder="••••••••" required />
+            <input type="password" id="loginPwd" class="form-input" placeholder={t(currentLocale, 'auth.passwordPlaceholder')} required />
             <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('loginPwd', this)">
               <i class="fa-regular fa-eye"></i>
             </button>
@@ -93,13 +105,13 @@
         <div class="form-options">
           <label class="custom-checkbox-wrap">
             <input type="checkbox" class="custom-checkbox" checked />
-            <span>Remember me</span>
+            <span>{t(currentLocale, 'auth.rememberMe')}</span>
           </label>
-          <a href="/forgot-password" class="forgot-link">Forgot password?</a>
+          <a href={addLocalePrefix('/forgot-password', currentLocale)} class="forgot-link">Forgot password?</a>
         </div>
 
         <button type="submit" class="btn-submit-auth">
-          <span>SIGN IN</span>
+          <span>{t(currentLocale, 'auth.signInButton')}</span>
           <i class="fa-solid fa-arrow-right"></i>
         </button>
       </form>
@@ -108,28 +120,28 @@
       <form class="auth-form" id="formRegister" onsubmit="handleRegisterSubmit(event)">
         <div class="form-row-2">
           <div class="form-group">
-            <label class="form-label" for="regFirstName">First Name</label>
+            <label class="form-label" for="regFirstName">{t(currentLocale, 'auth.firstName')}</label>
             <div class="input-wrap">
-              <input type="text" id="regFirstName" class="form-input" placeholder="John" required />
+              <input type="text" id="regFirstName" class="form-input" placeholder={t(currentLocale, 'auth.firstNamePlaceholder')} required />
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="regLastName">Last Name</label>
+            <label class="form-label" for="regLastName">{t(currentLocale, 'auth.lastName')}</label>
             <div class="input-wrap">
-              <input type="text" id="regLastName" class="form-input" placeholder="Doe" required />
+              <input type="text" id="regLastName" class="form-input" placeholder={t(currentLocale, 'auth.lastNamePlaceholder')} required />
             </div>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="regEmail">Email Address</label>
+          <label class="form-label" for="regEmail">{t(currentLocale, 'auth.emailAddress')}</label>
           <div class="input-wrap">
-            <input type="email" id="regEmail" class="form-input" placeholder="name@example.com" required />
+            <input type="email" id="regEmail" class="form-input" placeholder={t(currentLocale, 'auth.emailPlaceholder')} required />
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="regPwd">Create Password</label>
+          <label class="form-label" for="regPwd">{t(currentLocale, 'auth.createPassword')}</label>
           <div class="input-wrap">
             <input type="password" id="regPwd" class="form-input" placeholder="Min. 8 characters" minlength="8" required />
             <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('regPwd', this)">
@@ -139,11 +151,11 @@
         </div>
 
         <p class="auth-terms">
-          By creating an account, you agree to our <a href="/terms">Terms</a> & <a href="/privacy">Privacy Policy</a>.
+          {t(currentLocale, 'auth.termsAgreement')} <a href={addLocalePrefix('/terms', currentLocale)}>{t(currentLocale, 'auth.terms')}</a> & <a href={addLocalePrefix('/privacy', currentLocale)}>{t(currentLocale, 'auth.privacyPolicy')}</a>.
         </p>
 
         <button type="submit" class="btn-submit-auth">
-          <span>JOIN E.B.BELLE</span>
+          <span>{t(currentLocale, 'auth.joinButton')}</span>
           <i class="fa-solid fa-arrow-right"></i>
         </button>
       </form>

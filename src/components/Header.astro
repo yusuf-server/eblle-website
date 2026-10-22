@@ -1,5 +1,18 @@
 ---
 // Header 组件
+import { SUPPORTED_LOCALES, type SupportedLocale, addLocalePrefix } from '../lib/i18n/utils';
+import { t } from '../lib/i18n/translations';
+
+// 检测当前语言
+const currentPath = Astro.url.pathname;
+let currentLocale: SupportedLocale = 'en';
+for (const locale of SUPPORTED_LOCALES) {
+  if (currentPath.startsWith(`/${locale}/`) || currentPath === `/${locale}`) {
+    currentLocale = locale as SupportedLocale;
+    break;
+  }
+}
+
 // 1. 数据结构：根据 WooCommerce 分类 CSV 构建完整的 1-2-3 级菜单映射
 const categoryMenu = [
   {
@@ -201,7 +214,7 @@ const newArrivalSubcategories = [
 ];
 ---
 
-<!-- 1. Announcement Bar (加大字体与间距，配备动态倒计时) -->
+<!-- 1. Announcement Bar -->
 <div class="announcement-bar">
   <div class="announcement-content">
     <span class="announcement-promo">GET $130 COUPONS + 50% OFF AIR SHIPPING</span>
@@ -219,7 +232,7 @@ const newArrivalSubcategories = [
       </button>
 
       <div class="header-brand">
-        <a href="/">
+        <a href={addLocalePrefix('/', currentLocale)}>
           <h1>E.B.Belle</h1>
         </a>
       </div>
@@ -261,11 +274,47 @@ const newArrivalSubcategories = [
           <i class="fa-solid fa-magnifying-glass"></i>
         </button>
 
-        <button class="action-item desktop-only" title="Region & Language" type="button">
-          <i class="fa-solid fa-globe"></i>
-          <span>USD/English</span>
-          <i class="fa-solid fa-angle-down arrow-down"></i>
-        </button>
+        <!-- 语言与货币设置（桌面端 Hover 展开弹出卡片） -->
+        <div class="settings-dropdown-wrapper">
+          <button class="action-item desktop-only settings-trigger-btn" id="desktopCurrencyLangBtn" title="Region & Language" type="button">
+            <i class="fa-solid fa-globe"></i>
+            <span id="currentSettingsLabel">USD / English</span>
+            <i class="fa-solid fa-angle-down arrow-down"></i>
+          </button>
+
+          <!-- 桌面端 Your Website Settings 浮层弹窗 -->
+          <div class="website-settings-card" id="desktopSettingsDropdown">
+            <h3 class="settings-card-title">Your Website Settings</h3>
+
+            <div class="settings-field-group">
+              <label class="settings-label" for="desktopLangSelect">Language:</label>
+              <div class="custom-select-wrap">
+                <select id="desktopLangSelect" class="settings-select">
+                  <option value="en" selected>English</option>
+                  <option value="fr">Français (French)</option>
+                  <option value="de">Deutsch (German)</option>
+                  <option value="es">Español (Spanish)</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+              </div>
+            </div>
+
+            <div class="settings-field-group">
+              <label class="settings-label" for="desktopCurrencySelect">Currency:</label>
+              <div class="custom-select-wrap">
+                <select id="desktopCurrencySelect" class="settings-select">
+                  <option value="USD" selected>USD (US$)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="CAD">CAD (CA$)</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+              </div>
+            </div>
+
+            <button type="button" class="settings-confirm-btn" id="desktopConfirmSettingsBtn">Confirm</button>
+          </div>
+        </div>
 
         <div class="account-wrapper">
           <button class="action-item desktop-only" id="desktopAccountBtn" title="Account" type="button">
@@ -274,15 +323,15 @@ const newArrivalSubcategories = [
           </button>
 
           <div class="user-menu-dropdown" id="userMenuDropdown">
-            <a href="/account" class="user-menu-item">
+            <a href={addLocalePrefix('/account', currentLocale)} class="user-menu-item">
               <i class="fa-regular fa-user"></i>
               <span>My Account</span>
             </a>
-            <a href="/account?tab=orders" class="user-menu-item">
+            <a href={addLocalePrefix('/account?tab=orders', currentLocale)} class="user-menu-item">
               <i class="fa-solid fa-box"></i>
               <span>Orders</span>
             </a>
-            <a href="/account?tab=wishlist" class="user-menu-item">
+            <a href={addLocalePrefix('/account?tab=wishlist', currentLocale)} class="user-menu-item">
               <i class="fa-regular fa-heart"></i>
               <span>Wishlist</span>
             </a>
@@ -339,11 +388,14 @@ const newArrivalSubcategories = [
   <!-- 3. Desktop Bottom Navigation Bar -->
   <div class="header-nav-bar">
     <div class="header-container nav-container">
-      <!-- ALL CATEGORIES 一体化三栏容器 -->
       <div class="all-categories-trigger" id="allCategoriesTrigger">
         <button class="categories-btn" type="button" aria-expanded="false">
           <i class="fa-solid fa-bars"></i>
-          <span>ALL CATEGORIES</span>
+          <span>
+            <a href={addLocalePrefix('/shop', currentLocale)} onclick="event.stopPropagation();" style="text-decoration: none; color: inherit;">
+              {t(currentLocale, 'nav.allCategories')}
+            </a>
+          </span>
           <i class="fa-solid fa-angle-down arrow-down"></i>
         </button>
 
@@ -353,7 +405,7 @@ const newArrivalSubcategories = [
             <ul class="cat-list">
               {categoryMenu.map((l1, idx1) => (
                 <li class={`cat-item level-1-item ${idx1 === 0 ? 'is-active' : ''}`} data-index={idx1}>
-                  <a href={`/shop?category=${l1.slug}`} class="cat-link">
+                  <a href={addLocalePrefix(`/shop?category=${l1.slug}`, currentLocale)} class="cat-link">
                     <span>{l1.name}</span>
                     {l1.children && l1.children.length > 0 && (
                       <i class="fa-solid fa-angle-right sub-arrow"></i>
@@ -364,7 +416,7 @@ const newArrivalSubcategories = [
             </ul>
           </div>
 
-          <!-- Column 2: 二级菜单列 (平级并列) -->
+          <!-- Column 2: 二级菜单列 -->
           <div class="mega-column col-level-2" id="level2Column">
             {categoryMenu.map((l1, idx1) => (
               <div class={`sub-group-l2 ${idx1 === 0 ? 'is-active' : ''}`} id={`subGroupL2_${idx1}`}>
@@ -372,7 +424,7 @@ const newArrivalSubcategories = [
                   <ul class="cat-list">
                     {l1.children.map((l2, idx2) => (
                       <li class={`cat-item level-2-item ${idx1 === 0 && idx2 === 0 ? 'is-active' : ''}`} data-parent={idx1} data-index={idx2}>
-                        <a href={`/shop?category=${l2.slug}`} class="cat-link">
+                        <a href={addLocalePrefix(`/shop?category=${l2.slug}`, currentLocale)} class="cat-link">
                           <span>{l2.name}</span>
                           {l2.children && l2.children.length > 0 && (
                             <i class="fa-solid fa-angle-right sub-arrow"></i>
@@ -386,7 +438,7 @@ const newArrivalSubcategories = [
             ))}
           </div>
 
-          <!-- Column 3: 三级菜单列 (平级并列) -->
+          <!-- Column 3: 三级菜单列 -->
           <div class="mega-column col-level-3" id="level3Column">
             {categoryMenu.map((l1, idx1) =>
               l1.children.map((l2, idx2) =>
@@ -395,7 +447,7 @@ const newArrivalSubcategories = [
                     <ul class="cat-list">
                       {l2.children.map((l3) => (
                         <li class="cat-item level-3-item">
-                          <a href={`/shop?category=${l3.slug}`} class="cat-link">
+                          <a href={addLocalePrefix(`/shop?category=${l3.slug}`, currentLocale)} class="cat-link">
                             <span>{l3.name}</span>
                           </a>
                         </li>
@@ -411,10 +463,9 @@ const newArrivalSubcategories = [
 
       <!-- Main Navigation Menu -->
       <nav class="main-nav">
-        <!-- NEW ARRIVAL (重构优化：通透高质感下拉菜单) -->
         <div class="nav-item-dropdown-wrapper">
-          <a href="/shop?category=new-arrivals" class="nav-main-link has-dropdown">
-            <span>NEW ARRIVAL</span>
+          <a href={addLocalePrefix('/shop?category=new-arrivals', currentLocale)} class="nav-main-link has-dropdown">
+            <span>{t(currentLocale, 'nav.newArrival')}</span>
             <i class="fa-solid fa-angle-down nav-arrow"></i>
           </a>
           <div class="nav-simple-dropdown" id="desktopNewArrivalDropdown">
@@ -424,14 +475,14 @@ const newArrivalSubcategories = [
             </div>
             <ul class="nav-dropdown-list" id="newArrivalsListDesktop">
               <li>
-                <a href="/shop?category=new-arrivals" class="nav-dropdown-link is-primary">
+                <a href={addLocalePrefix('/shop?category=new-arrivals', currentLocale)} class="nav-dropdown-link is-primary">
                   <span class="link-label">All New Arrivals</span>
                   <i class="fa-solid fa-arrow-right link-icon"></i>
                 </a>
               </li>
               {newArrivalSubcategories.slice(1).map((item) => (
                 <li>
-                  <a href={`/shop?category=${item.slug}`} class="nav-dropdown-link">
+                  <a href={addLocalePrefix(`/shop?category=${item.slug}`, currentLocale)} class="nav-dropdown-link">
                     <span class="link-label">{item.name}</span>
                   </a>
                 </li>
@@ -440,38 +491,38 @@ const newArrivalSubcategories = [
           </div>
         </div>
 
-        <a href="/best-sellers">BEST SELLERS</a>
-        <a href="/factory">FACTORY</a>
-        <a href="/about">ABOUT E.B.BELLE</a>
-        <a href="/contact">CONTACT US</a>
-        <a href="/halloween" class="halloween-special-link">
+        <a href={addLocalePrefix('/best-sellers', currentLocale)}>{t(currentLocale, 'nav.bestSellers')}</a>
+        <a href={addLocalePrefix('/factory', currentLocale)}>{t(currentLocale, 'nav.factory')}</a>
+        <a href={addLocalePrefix('/about', currentLocale)}>{t(currentLocale, 'nav.aboutEbBelle')}</a>
+        <a href={addLocalePrefix('/contact', currentLocale)}>{t(currentLocale, 'nav.contactUs')}</a>
+        <a href={addLocalePrefix('/halloween', currentLocale)} class="halloween-special-link">
           <i class="fa-solid fa-fire halloween-flame"></i>
           <span class="halloween-text">Halloween</span>
         </a>
       </nav>
 
       <div class="nav-right">
-        <a href="/order-tracking" class="tracking-link">
+        <a href={addLocalePrefix('/order-tracking', currentLocale)} class="tracking-link">
           <i class="fa-solid fa-truck-fast"></i>
-          <span>Order Tracking</span>
+          <span>{t(currentLocale, 'nav.orderTracking')}</span>
         </a>
       </div>
     </div>
   </div>
 </header>
 
-<!-- 4. Mobile Off-Canvas Drawer Menu & Backdrop (手机端全量同步) -->
+<!-- 4. Mobile Off-Canvas Drawer Menu & Backdrop -->
 <div class="drawer-backdrop" id="drawer-backdrop"></div>
 <aside class="mobile-drawer" id="mobile-drawer" aria-label="Mobile Navigation">
   <div class="drawer-header">
-    <span class="drawer-title">MENU</span>
+    <span class="drawer-title">{t(currentLocale, 'nav.menu')}</span>
     <button class="drawer-close" id="drawer-close" type="button" aria-label="Close Menu">
       <i class="fa-solid fa-xmark"></i>
     </button>
   </div>
 
   <div class="drawer-body">
-    <!-- Categories 区域：完全同步 CSV 8 个一级分类，二三级不展示 -->
+    <!-- Categories 区域 -->
     <div class="drawer-section">
       <div class="drawer-section-title">
         <i class="fa-solid fa-layer-group"></i>
@@ -484,39 +535,38 @@ const newArrivalSubcategories = [
       </div>
     </div>
 
-    <!-- Discover 区域：NEW ARRIVAL 双列胶囊卡片排版，告别紧密拥挤 -->
+    <!-- Discover 区域 -->
     <div class="drawer-section">
       <div class="drawer-section-title">
         <i class="fa-solid fa-compass"></i>
         <span>Discover</span>
       </div>
       <div class="drawer-links">
-        <!-- 可折叠的 Mobile New Arrivals -->
         <div class="mobile-accordion-item" id="mobileNewArrivalAccordion">
           <div class="mobile-accordion-trigger" id="mobileNewArrivalToggle">
-            <a href="/shop?category=new-arrivals" class="mobile-acc-title">NEW ARRIVAL</a>
+            <a href={addLocalePrefix('/shop?category=new-arrivals', currentLocale)} class="mobile-acc-title">{t(currentLocale, 'nav.newArrival')}</a>
             <button type="button" class="mobile-acc-arrow-btn" aria-label="Toggle subcategories">
               <i class="fa-solid fa-chevron-down mobile-acc-icon"></i>
             </button>
           </div>
           <div class="mobile-accordion-content" id="mobileNewArrivalContent">
             <div class="mobile-sublinks-grid" id="newArrivalsListMobile">
-              <a href="/shop?category=new-arrivals" class="mobile-sublink is-primary-pill">
+              <a href={addLocalePrefix('/shop?category=new-arrivals', currentLocale)} class="mobile-sublink is-primary-pill">
                 <span>All New Arrivals</span>
                 <i class="fa-solid fa-arrow-right"></i>
               </a>
               {newArrivalSubcategories.slice(1).map((item) => (
-                <a href={`/shop?category=${item.slug}`} class="mobile-sublink">{item.name}</a>
+                <a href={addLocalePrefix(`/shop?category=${item.slug}`, currentLocale)} class="mobile-sublink">{item.name}</a>
               ))}
             </div>
           </div>
         </div>
 
-        <a href="/best-sellers">BEST SELLERS</a>
-        <a href="/factory">FACTORY</a>
-        <a href="/about">ABOUT E.B.BELLE</a>
-        <a href="/contact">CONTACT US</a>
-        <a href="/halloween" class="halloween-special-link">
+        <a href={addLocalePrefix('/best-sellers', currentLocale)}>{t(currentLocale, 'nav.bestSellers')}</a>
+        <a href={addLocalePrefix('/factory', currentLocale)}>{t(currentLocale, 'nav.factory')}</a>
+        <a href={addLocalePrefix('/about', currentLocale)}>{t(currentLocale, 'nav.aboutEbBelle')}</a>
+        <a href={addLocalePrefix('/contact', currentLocale)}>{t(currentLocale, 'nav.contactUs')}</a>
+        <a href={addLocalePrefix('/halloween', currentLocale)} class="halloween-special-link">
           <i class="fa-solid fa-fire halloween-flame"></i>
           <span class="halloween-text">Halloween</span>
         </a>
@@ -526,7 +576,7 @@ const newArrivalSubcategories = [
     <!-- Quick Utilities -->
     <div class="drawer-section">
       <div class="drawer-links">
-        <a href="/order-tracking" class="drawer-highlight-link">
+        <a href={addLocalePrefix('/order-tracking', currentLocale)} class="drawer-highlight-link">
           <i class="fa-solid fa-truck-fast"></i>
           <span>Order Tracking</span>
         </a>
@@ -538,12 +588,49 @@ const newArrivalSubcategories = [
     </div>
   </div>
 
+  <!-- 移动端底栏：折叠式 Your Website Settings (图三位置) -->
   <div class="drawer-footer">
-    <button class="drawer-currency-btn" type="button">
-      <i class="fa-solid fa-globe"></i>
-      <span>USD / English</span>
-      <i class="fa-solid fa-angle-down"></i>
-    </button>
+    <div class="mobile-settings-accordion" id="mobileSettingsAccordion">
+      <button class="drawer-currency-btn" type="button" id="mobileSettingsToggleBtn">
+        <div class="btn-left">
+          <i class="fa-solid fa-globe"></i>
+          <span id="mobileCurrentSettingsLabel">USD / English</span>
+        </div>
+        <i class="fa-solid fa-angle-down mobile-arrow"></i>
+      </button>
+
+      <div class="mobile-settings-panel" id="mobileSettingsPanel">
+        <h4 class="mobile-panel-title">Your Website Settings</h4>
+        
+        <div class="mobile-field-row">
+          <label for="mobileLangSelect">Language:</label>
+          <div class="custom-select-wrap">
+            <select id="mobileLangSelect" class="settings-select">
+              <option value="en" selected>English</option>
+              <option value="fr">Français (French)</option>
+              <option value="de">Deutsch (German)</option>
+              <option value="es">Español (Spanish)</option>
+            </select>
+            <i class="fa-solid fa-chevron-down select-arrow"></i>
+          </div>
+        </div>
+
+        <div class="mobile-field-row">
+          <label for="mobileCurrencySelect">Currency:</label>
+          <div class="custom-select-wrap">
+            <select id="mobileCurrencySelect" class="settings-select">
+              <option value="USD" selected>USD (US$)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="CAD">CAD (CA$)</option>
+            </select>
+            <i class="fa-solid fa-chevron-down select-arrow"></i>
+          </div>
+        </div>
+
+        <button type="button" class="settings-confirm-btn" id="mobileConfirmSettingsBtn">Confirm</button>
+      </div>
+    </div>
   </div>
 </aside>
 
@@ -665,6 +752,132 @@ const newArrivalSubcategories = [
     color: #666;
   }
 
+  /* =========================================================
+     YOUR WEBSITE SETTINGS 桌面端悬浮卡片 (图一精确还原)
+     ========================================================= */
+  .settings-dropdown-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .website-settings-card {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: -20px;
+    width: 330px;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+    padding: 22px 20px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    z-index: 1000;
+    text-align: left;
+    box-sizing: border-box;
+  }
+
+  /* 悬停唤醒 */
+  .settings-dropdown-wrapper:hover .website-settings-card {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  /* 顶部小三角形指针 */
+  .website-settings-card::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 48px;
+    width: 10px;
+    height: 10px;
+    background: #ffffff;
+    border-left: 1px solid #e5e5e5;
+    border-top: 1px solid #e5e5e5;
+    transform: rotate(45deg);
+  }
+
+  .settings-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 18px 0;
+    letter-spacing: -0.01em;
+  }
+
+  .settings-field-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+
+  .settings-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #334155;
+    min-width: 75px;
+  }
+
+  .custom-select-wrap {
+    position: relative;
+    flex: 1;
+  }
+
+  .settings-select {
+    width: 100%;
+    height: 38px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 0 30px 0 12px;
+    font-size: 13px;
+    color: #1f2937;
+    background: #ffffff;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.2s;
+  }
+
+  .settings-select:focus {
+    border-color: #111111;
+  }
+
+  .select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #9ca3af;
+    pointer-events: none;
+  }
+
+  .settings-confirm-btn {
+    width: 100%;
+    height: 42px;
+    background: #111827;
+    color: #ffffff;
+    font-size: 13.5px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    margin-top: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .settings-confirm-btn:hover {
+    background: #000000;
+  }
+
+  /* 账号下拉 */
   .account-wrapper {
     position: relative;
     display: flex;
@@ -802,7 +1015,6 @@ const newArrivalSubcategories = [
     height: 44px;
   }
 
-  /* ALL CATEGORIES 一体化三栏容器 */
   .all-categories-trigger {
     position: relative;
     height: 100%;
@@ -989,9 +1201,7 @@ const newArrivalSubcategories = [
     color: #b21b1b;
   }
 
-  /* =========================================================
-     NEW ARRIVALS 桌面端下拉菜单 (重构：通透舒展，杜绝拥挤)
-     ========================================================= */
+  /* NEW ARRIVAL 下拉 */
   .nav-item-dropdown-wrapper {
     position: relative;
     height: 100%;
@@ -1028,7 +1238,6 @@ const newArrivalSubcategories = [
     color: #b21b1b;
   }
 
-  /* 桌面端下拉浮层卡片 */
   .nav-simple-dropdown {
     position: absolute;
     top: 100%;
@@ -1055,7 +1264,6 @@ const newArrivalSubcategories = [
     transform: translateY(0);
   }
 
-  /* 小顶部标题栏 */
   .nav-dropdown-header {
     display: flex;
     align-items: center;
@@ -1086,7 +1294,6 @@ const newArrivalSubcategories = [
     gap: 3px;
   }
 
-  /* 全局穿透：确保动态注入与静态渲染均享有高质感轻奢排版 */
   :global(.nav-dropdown-link) {
     display: flex !important;
     align-items: center !important;
@@ -1137,7 +1344,7 @@ const newArrivalSubcategories = [
     opacity: 1 !important;
   }
 
-  /* Halloween 特效链接 */
+  /* Halloween 特效 */
   .halloween-special-link {
     display: flex !important;
     align-items: center;
@@ -1229,8 +1436,8 @@ const newArrivalSubcategories = [
     position: fixed;
     top: 0;
     left: 0;
-    width: 82%;
-    max-width: 320px;
+    width: 84%;
+    max-width: 330px;
     height: 100%;
     background: #ffffff;
     z-index: 100;
@@ -1308,9 +1515,7 @@ const newArrivalSubcategories = [
     color: #b21b1b;
   }
 
-  /* =========================================================
-     移动端 NEW ARRIVAL 折叠菜单 (重构：双列呼吸感胶囊布局，拒绝密集拥挤)
-     ========================================================= */
+  /* 移动端 NEW ARRIVAL 折叠 */
   .mobile-accordion-item {
     border-bottom: 1px solid #f6f4f0;
   }
@@ -1367,7 +1572,6 @@ const newArrivalSubcategories = [
     border: 1px solid #eee7db;
   }
 
-  /* 呼吸感网格容器 (Grid) */
   .mobile-sublinks-grid,
   :global(.mobile-sublinks-grid) {
     display: grid !important;
@@ -1379,7 +1583,6 @@ const newArrivalSubcategories = [
     box-sizing: border-box !important;
   }
 
-  /* 单个胶囊子项 (全局穿透) */
   :global(.mobile-sublink) {
     display: flex !important;
     align-items: center !important;
@@ -1408,7 +1611,6 @@ const newArrivalSubcategories = [
     background: #fff8f8 !important;
   }
 
-  /* All New Arrivals 全宽首项高亮横幅 */
   :global(.mobile-sublink.is-primary-pill) {
     grid-column: 1 / -1 !important;
     justify-content: space-between !important;
@@ -1446,24 +1648,92 @@ const newArrivalSubcategories = [
     color: #555;
   }
 
+  /* =========================================================
+     移动端抽屉底栏：Your Website Settings 折叠展开
+     ========================================================= */
   .drawer-footer {
-    padding: 16px 20px;
+    padding: 16px;
     border-top: 1px solid #eeebe5;
     background: #faf8f5;
   }
+
+  .mobile-settings-accordion {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #ddd8ce;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
   .drawer-currency-btn {
     width: 100%;
-    background: #fff;
-    border: 1px solid #ddd8ce;
-    border-radius: 4px;
-    padding: 10px 14px;
+    background: #ffffff;
+    border: none;
+    padding: 12px 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 500;
-    color: #222;
+    color: #111;
     cursor: pointer;
+  }
+
+  .drawer-currency-btn .btn-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .drawer-currency-btn .btn-left i {
+    font-size: 15px;
+    color: #555;
+  }
+
+  .mobile-arrow {
+    font-size: 11px;
+    color: #777;
+    transition: transform 0.25s ease;
+  }
+
+  .mobile-settings-accordion.is-open .mobile-arrow {
+    transform: rotate(180deg);
+  }
+
+  .mobile-settings-panel {
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 14px;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+    border-top: 0px solid transparent;
+  }
+
+  .mobile-settings-accordion.is-open .mobile-settings-panel {
+    max-height: 300px;
+    padding: 12px 14px 16px;
+    border-top: 1px solid #eee7db;
+  }
+
+  .mobile-panel-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+  }
+
+  .mobile-field-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .mobile-field-row label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+    min-width: 65px;
   }
 
   /* Responsive Media Queries */
@@ -1880,6 +2150,37 @@ const newArrivalSubcategories = [
 </style>
 
 <script>
+  // ============================================================
+  // 客户端工具函数：多语言路径前缀处理
+  // ============================================================
+  const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
+
+  function getCurrentLocale(): string {
+    const pathname = window.location.pathname;
+    for (const locale of SUPPORTED_LOCALES) {
+      if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+        return locale;
+      }
+    }
+    return 'en';
+  }
+
+  function addLocalePrefix(url: string, locale?: string): string {
+    const currentLocale = locale || getCurrentLocale();
+    if (currentLocale === 'en') {
+      return url;
+    }
+    // 如果URL已经有语言前缀，先移除
+    let cleanUrl = url;
+    for (const loc of SUPPORTED_LOCALES) {
+      if (cleanUrl.startsWith(`/${loc}/`)) {
+        cleanUrl = cleanUrl.substring(loc.length + 1);
+        break;
+      }
+    }
+    return `/${currentLocale}${cleanUrl}`;
+  }
+
   // 1. 顶部公告栏实时倒计时驱动
   function initAnnouncementCountdown() {
     const timerEl = document.getElementById('countdownTimer');
@@ -2066,7 +2367,7 @@ const newArrivalSubcategories = [
             `<div class="search-result-price">$${parseFloat(product.price).toFixed(2)}</div>`;
 
           return `
-            <a href="/product/${product.slug}" class="search-result-item">
+            <a href="${addLocalePrefix(`/product/${product.slug}`)}" class="search-result-item">
               <img
                 src="${product.image || 'https://via.placeholder.com/80x80?text=No+Image'}"
                 alt="${product.name}"
@@ -2083,7 +2384,7 @@ const newArrivalSubcategories = [
 
         if (total > products.length) {
           resultsEl.innerHTML += `
-            <a href="/shop?q=${encodeURIComponent(query)}" class="search-view-all">
+            <a href="${addLocalePrefix(`/shop?q=${encodeURIComponent(query)}`)}" class="search-view-all">
               View all ${total} results <i class="fa-solid fa-arrow-right"></i>
             </a>
           `;
@@ -2097,7 +2398,7 @@ const newArrivalSubcategories = [
           <div class="search-categories-title">Related Categories</div>
           <div class="search-category-list">
             ${categories.map((cat: any) => `
-              <a href="/shop?category=${cat.slug}" class="search-category-item">
+              <a href="${addLocalePrefix(`/shop?category=${cat.slug}`)}" class="search-category-item">
                 <i class="fa-solid fa-tag"></i>
                 <span>${cat.name}</span>
                 <span class="search-category-count">(${cat.count})</span>
@@ -2216,7 +2517,7 @@ const newArrivalSubcategories = [
     }
   }
 
-  // 4. 一体化三栏多级菜单控制器 (0 毫秒响应，永不断触)
+  // 4. 一体化三栏多级菜单控制器
   function initUnifiedMegaMenu() {
     const trigger = document.getElementById('allCategoriesTrigger');
     const dropdown = document.getElementById('categoriesUnifiedDropdown');
@@ -2297,7 +2598,7 @@ const newArrivalSubcategories = [
     });
   }
 
-  // 5. 动态同步 WooCommerce New Arrivals 子分类数据 (注入精细化格式)
+  // 5. 动态同步 WooCommerce New Arrivals 子分类数据
   async function syncNewArrivalSubcategories() {
     try {
       const res = await fetch('/api/filters');
@@ -2322,19 +2623,18 @@ const newArrivalSubcategories = [
             return extractDate(b.name) - extractDate(a.name);
           });
 
-          // 1. 同步桌面端下拉列表 (通透卡片条目)
           const desktopListEl = document.getElementById('newArrivalsListDesktop');
           if (desktopListEl) {
             desktopListEl.innerHTML = `
               <li>
-                <a href="/shop?category=new-arrivals" class="nav-dropdown-link is-primary">
+                <a href="${addLocalePrefix('/shop?category=new-arrivals')}" class="nav-dropdown-link is-primary">
                   <span class="link-label">All New Arrivals</span>
                   <i class="fa-solid fa-arrow-right link-icon"></i>
                 </a>
               </li>
               ${subCats.map(c => `
                 <li>
-                  <a href="/shop?category=${c.slug}" class="nav-dropdown-link">
+                  <a href="${addLocalePrefix(`/shop?category=${c.slug}`)}" class="nav-dropdown-link">
                     <span class="link-label">${c.name}</span>
                   </a>
                 </li>
@@ -2342,16 +2642,15 @@ const newArrivalSubcategories = [
             `;
           }
 
-          // 2. 同步手机端抽屉子分类列表 (双列呼吸感胶囊标签)
           const mobileListEl = document.getElementById('newArrivalsListMobile');
           if (mobileListEl) {
             mobileListEl.innerHTML = `
-              <a href="/shop?category=new-arrivals" class="mobile-sublink is-primary-pill">
+              <a href="${addLocalePrefix('/shop?category=new-arrivals')}" class="mobile-sublink is-primary-pill">
                 <span>All New Arrivals</span>
                 <i class="fa-solid fa-arrow-right"></i>
               </a>
               ${subCats.map(c => `
-                <a href="/shop?category=${c.slug}" class="mobile-sublink">${c.name}</a>
+                <a href="${addLocalePrefix(`/shop?category=${c.slug}`)}" class="mobile-sublink">${c.name}</a>
               `).join('')}
             `;
           }
@@ -2362,7 +2661,7 @@ const newArrivalSubcategories = [
     }
   }
 
-  // 6. Mobile Drawer 及 New Arrival 折叠展开逻辑
+  // 6. Mobile Drawer 控制
   function initMobileDrawer() {
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const drawerBackdrop = document.getElementById('drawer-backdrop');
@@ -2418,6 +2717,118 @@ const newArrivalSubcategories = [
     }
   }
 
+  // 7. 语言与货币设置交互控制器（桌面端 + 移动端联动）
+  function initWebsiteSettings() {
+    const supportedLocales = ['en', 'fr', 'de', 'es'];
+
+    // 从当前 URL 检测语言代码
+    function getCurrentLangFromUrl() {
+      const pathname = window.location.pathname;
+      const firstSegment = pathname.split('/')[1];
+      if (supportedLocales.includes(firstSegment)) {
+        return firstSegment;
+      }
+      return 'en';
+    }
+
+    const currentLang = getCurrentLangFromUrl();
+    const savedCurrency = localStorage.getItem('ebbelle_currency') || 'USD';
+
+    // 语言展示名映射
+    const langNames: Record<string, string> = {
+      en: 'English',
+      fr: 'Français',
+      de: 'Deutsch',
+      es: 'Español'
+    };
+
+    // 更新顶栏标签文本展示
+    const currentLabelText = `${savedCurrency} / ${langNames[currentLang] || 'English'}`;
+    const desktopLabel = document.getElementById('currentSettingsLabel');
+    const mobileLabel = document.getElementById('mobileCurrentSettingsLabel');
+    if (desktopLabel) desktopLabel.textContent = currentLabelText;
+    if (mobileLabel) mobileLabel.textContent = currentLabelText;
+
+    // 同步下拉框的默认选中值
+    const desktopLangSelect = document.getElementById('desktopLangSelect') as HTMLSelectElement;
+    const desktopCurrencySelect = document.getElementById('desktopCurrencySelect') as HTMLSelectElement;
+    const mobileLangSelect = document.getElementById('mobileLangSelect') as HTMLSelectElement;
+    const mobileCurrencySelect = document.getElementById('mobileCurrencySelect') as HTMLSelectElement;
+
+    if (desktopLangSelect) desktopLangSelect.value = currentLang;
+    if (desktopCurrencySelect) desktopCurrencySelect.value = savedCurrency;
+    if (mobileLangSelect) mobileLangSelect.value = currentLang;
+    if (mobileCurrencySelect) mobileCurrencySelect.value = savedCurrency;
+
+    // 应用保存并重定向至新语言子目录
+    function applySettings(targetLang: string, targetCurrency: string) {
+      localStorage.setItem('ebbelle_currency', targetCurrency);
+
+      // 派发全局货币切换事件
+      window.dispatchEvent(new CustomEvent('currencyChanged', {
+        detail: { currency: targetCurrency }
+      }));
+
+      const pathname = window.location.pathname;
+      const search = window.location.search;
+      const hash = window.location.hash;
+
+      // 剔除旧的前缀路径
+      let purePath = pathname;
+      for (const loc of supportedLocales) {
+        if (purePath.startsWith(`/${loc}/`)) {
+          purePath = purePath.replace(`/${loc}`, '');
+          break;
+        } else if (purePath === `/${loc}`) {
+          purePath = '/';
+          break;
+        }
+      }
+
+      // 计算重定向新路径
+      let targetUrl = '';
+      if (targetLang === 'en') {
+        targetUrl = `${purePath}${search}${hash}`;
+      } else {
+        const prefix = `/${targetLang}`;
+        targetUrl = purePath === '/' ? `${prefix}/` : `${prefix}${purePath}${search}${hash}`;
+      }
+
+      window.location.href = targetUrl;
+    }
+
+    // 桌面端 Confirm 按钮点击
+    const desktopConfirmBtn = document.getElementById('desktopConfirmSettingsBtn');
+    if (desktopConfirmBtn) {
+      desktopConfirmBtn.addEventListener('click', () => {
+        const langVal = desktopLangSelect ? desktopLangSelect.value : 'en';
+        const currVal = desktopCurrencySelect ? desktopCurrencySelect.value : 'USD';
+        applySettings(langVal, currVal);
+      });
+    }
+
+    // 移动端折叠展开切换
+    const mobileAccordion = document.getElementById('mobileSettingsAccordion');
+    const mobileToggleBtn = document.getElementById('mobileSettingsToggleBtn');
+    if (mobileAccordion && mobileToggleBtn) {
+      mobileToggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        mobileAccordion.classList.toggle('is-open');
+      });
+    }
+
+    // 移动端 Confirm 按钮点击
+    const mobileConfirmBtn = document.getElementById('mobileConfirmSettingsBtn');
+    if (mobileConfirmBtn) {
+      mobileConfirmBtn.addEventListener('click', () => {
+        const langVal = mobileLangSelect ? mobileLangSelect.value : 'en';
+        const currVal = mobileCurrencySelect ? mobileCurrencySelect.value : 'USD';
+        applySettings(langVal, currVal);
+      });
+    }
+  }
+
   function initHeader() {
     initAnnouncementCountdown();
     checkAuthStatus();
@@ -2425,6 +2836,7 @@ const newArrivalSubcategories = [
     initUnifiedMegaMenu();
     syncNewArrivalSubcategories();
     initMobileDrawer();
+    initWebsiteSettings();
   }
 
   if (document.readyState === 'loading') {

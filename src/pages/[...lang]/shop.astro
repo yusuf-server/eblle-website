@@ -1,9 +1,19 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import CartDrawer from '../components/CartDrawer.astro';
-import ProductSkeleton from '../components/ProductSkeleton.astro';
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import ProductSkeleton from '../../components/ProductSkeleton.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+
+// 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+console.log('[SERVER shop.astro] Astro.params.lang =', lang, ', currentLocale =', currentLocale, ', URL =', Astro.url.pathname);
 
 const perPage = 20;
 
@@ -35,7 +45,7 @@ if (Astro.response) {
   <div class="mobile-filter-bar">
     <button class="filter-main-btn" id="mobileFilterBtn" type="button">
       <i class="fa-solid fa-sliders"></i>
-      <span>Filters</span>
+      <span>{t(currentLocale, 'shop.filters')}</span>
       <span class="filter-count" id="mobileFilterCount">0</span>
     </button>
     <button class="filter-tag-btn active" type="button">Best Match</button>
@@ -48,7 +58,7 @@ if (Astro.response) {
   <div class="mobile-filter-drawer-overlay" id="mobileFilterOverlay"></div>
   <div class="mobile-filter-drawer" id="mobileFilterDrawer">
     <div class="mobile-filter-header">
-      <h3>Filters</h3>
+      <h3>{t(currentLocale, 'shop.filters')}</h3>
       <button class="mobile-filter-close" id="mobileFilterClose" type="button">
         <i class="fa-solid fa-times"></i>
       </button>
@@ -57,10 +67,10 @@ if (Astro.response) {
     <div class="mobile-filter-footer">
       <button class="mobile-filter-reset" id="mobileFilterReset" type="button">
         <i class="fa-solid fa-rotate-right"></i>
-        Reset
+        {t(currentLocale, 'shop.clearFilters')}
       </button>
       <button class="mobile-filter-apply" id="mobileFilterApply" type="button">
-        Apply Filters
+        {t(currentLocale, 'shop.applyFilters')}
       </button>
     </div>
   </div>
@@ -88,7 +98,7 @@ if (Astro.response) {
   <!-- Mobile Sort & Layout Control -->
   <div class="mobile-control-bar">
     <button class="sort-btn" id="mobileSortBtn" type="button">
-      <span>Sort</span>
+      <span>{t(currentLocale, 'shop.sortBy')}</span>
       <i class="fa-solid fa-chevron-down"></i>
     </button>
     <div class="layout-toggle">
@@ -103,12 +113,12 @@ if (Astro.response) {
 
   <!-- Sort Dropdown -->
   <div class="mobile-sort-dropdown" id="mobileSortDropdown">
-    <button class="sort-option active" data-sort="menu_order" type="button">Default sorting</button>
-    <button class="sort-option" data-sort="popularity" type="button">Sort by popularity</button>
+    <button class="sort-option active" data-sort="menu_order" type="button">{t(currentLocale, 'shop.sortFeatured')}</button>
+    <button class="sort-option" data-sort="popularity" type="button">{t(currentLocale, 'shop.sortPopular')}</button>
     <button class="sort-option" data-sort="rating" type="button">Sort by average rating</button>
-    <button class="sort-option" data-sort="date" type="button">Sort by latest</button>
-    <button class="sort-option" data-sort="price" type="button">Sort by price: low to high</button>
-    <button class="sort-option" data-sort="price-desc" type="button">Sort by price: high to low</button>
+    <button class="sort-option" data-sort="date" type="button">{t(currentLocale, 'shop.sortNewest')}</button>
+    <button class="sort-option" data-sort="price" type="button">{t(currentLocale, 'shop.sortPriceAsc')}</button>
+    <button class="sort-option" data-sort="price-desc" type="button">{t(currentLocale, 'shop.sortPriceDesc')}</button>
   </div>
 
   <!-- Mobile Products Grid -->
@@ -149,16 +159,16 @@ if (Astro.response) {
           <!-- Sorting Bar -->
           <div class="sorting-bar">
             <div class="sort-left">
-              <span class="sort-label">Sort by:</span>
-              <button class="sort-btn active" data-sort="menu_order" type="button">Default sorting</button>
-              <button class="sort-btn" data-sort="popularity" type="button">Sort by popularity</button>
+              <span class="sort-label">{t(currentLocale, 'shop.sortBy')}:</span>
+              <button class="sort-btn active" data-sort="menu_order" type="button">{t(currentLocale, 'shop.sortFeatured')}</button>
+              <button class="sort-btn" data-sort="popularity" type="button">{t(currentLocale, 'shop.sortPopular')}</button>
               <button class="sort-btn" data-sort="rating" type="button">Sort by average rating</button>
-              <button class="sort-btn" data-sort="date" type="button">Sort by latest</button>
-              <button class="sort-btn" data-sort="price" type="button">Sort by price: low to high</button>
-              <button class="sort-btn" data-sort="price-desc" type="button">Sort by price: high to low</button>
+              <button class="sort-btn" data-sort="date" type="button">{t(currentLocale, 'shop.sortNewest')}</button>
+              <button class="sort-btn" data-sort="price" type="button">{t(currentLocale, 'shop.sortPriceAsc')}</button>
+              <button class="sort-btn" data-sort="price-desc" type="button">{t(currentLocale, 'shop.sortPriceDesc')}</button>
             </div>
             <div class="sort-right">
-              <span class="products-count"><span id="products-count-desktop">0</span> Products Found</span>
+              <span class="products-count"><span id="products-count-desktop">0</span> {t(currentLocale, 'shop.products')}</span>
             </div>
           </div>
 
@@ -2201,7 +2211,87 @@ if (Astro.response) {
   }
 </style>
 
-<script>
+<script define:vars={{ serverLocale: currentLocale }}>
+  // ============================================================
+  // 客户端多语言工具函数
+  // ============================================================
+  const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
+  const PAGE_LOCALE = serverLocale; // 从服务端传递的语言
+
+  console.log('[CLIENT shop.astro] serverLocale 传入值 =', serverLocale);
+  console.log('[CLIENT shop.astro] PAGE_LOCALE 最终值 =', PAGE_LOCALE);
+  console.log('[CLIENT shop.astro] 当前 URL =', window.location.pathname);
+
+  function getCurrentLocale() {
+    // 直接使用服务端传递的语言，不再从 URL 重新检测
+    console.log('[Debug getCurrentLocale] 使用服务端语言:', PAGE_LOCALE);
+    return PAGE_LOCALE;
+  }
+
+  function addLocalePrefix(url) {
+    const currentLocale = getCurrentLocale();
+    if (currentLocale === 'en') {
+      return url;
+    }
+    // 如果URL已经有语言前缀，先移除
+    let cleanUrl = url;
+    for (const loc of SUPPORTED_LOCALES) {
+      if (cleanUrl.startsWith(`/${loc}/`)) {
+        cleanUrl = cleanUrl.substring(loc.length + 1);
+        break;
+      }
+    }
+    return `/${currentLocale}${cleanUrl}`;
+  }
+
+  // ============================================================
+  // 货币工具函数（客户端版本）
+  // ============================================================
+  const CURRENCY_SYMBOLS = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    CAD: 'C$'
+  };
+
+  const CURRENCY_RATES = {
+    USD: 1.0,
+    EUR: 0.92,
+    GBP: 0.79,
+    CAD: 1.36
+  };
+
+  function getCurrentCurrency() {
+    return localStorage.getItem('ebbelle_currency') || 'USD';
+  }
+
+  function getCurrencySymbol(currency) {
+    return CURRENCY_SYMBOLS[currency || getCurrentCurrency()] || '$';
+  }
+
+  function convertPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const rate = CURRENCY_RATES[currency] || 1.0;
+    return priceUSD * rate;
+  }
+
+  function formatPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const converted = convertPrice(priceUSD, currency);
+    const symbol = getCurrencySymbol(currency);
+    const formatted = converted.toFixed(2);
+
+    // EUR 符号通常放在后面
+    if (currency === 'EUR') {
+      return `${formatted}${symbol}`;
+    }
+    return `${symbol}${formatted}`;
+  }
+
+  // ============================================================
+  // Shop 页面逻辑
+  // ============================================================
+
   window.shopQuickOrderInitialized = true;
 
   // 全局三级分类数据 (与 Header ALL CATEGORIES CSV 完全同步)
@@ -2732,8 +2822,43 @@ if (Astro.response) {
         return;
       }
 
-      currentProducts = data.products;
-      renderProducts(data.products);
+      // 翻译产品数据（如果不是英语）- 优化为批量请求
+      let products = data.products;
+      const currentLocale = getCurrentLocale();
+      console.log('[Debug loadProducts] currentLocale =', currentLocale, '类型:', typeof currentLocale);
+
+      if (currentLocale !== 'en') {
+        console.log('[Debug] 正在批量翻译商店列表产品，语言:', currentLocale, '产品数量:', products.length);
+        const startTime = Date.now();
+
+        try {
+          const payload = {
+            products,
+            targetLang: currentLocale
+          };
+          console.log('[Debug] 即将发送 payload.targetLang:', payload.targetLang);
+
+          // 批量翻译所有产品（一次请求）
+          const response = await fetch('/api/translate-products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (response.ok) {
+            products = await response.json();
+            const elapsed = Date.now() - startTime;
+            console.log('[Debug] 批量翻译完成，耗时:', elapsed, 'ms');
+          } else {
+            console.error('[Debug] 批量翻译API失败:', response.status);
+          }
+        } catch (e) {
+          console.error('[Debug] 批量翻译请求失败:', e);
+        }
+      }
+
+      currentProducts = products;
+      renderProducts(products);
       currentPage = page;
       renderPagination();
 
@@ -2764,7 +2889,7 @@ if (Astro.response) {
     if (isMobile && layout === 'list') {
       return `
         <div class="mobile-product-card-list">
-          <a href="/product/${productSlug}" class="card-list-link">
+          <a href="${addLocalePrefix(`/product/${productSlug}`)}" class="card-list-link">
             <div class="card-list-image">
               ${hasDiscount ? `<span class="mobile-badge-list">-${discountPercent}%</span>` : ''}
               <img src="${imageUrl}" alt="${productName}" loading="lazy"/>
@@ -2777,8 +2902,8 @@ if (Astro.response) {
                 </button>
               </div>
               <div class="card-list-price">
-                <span class="list-price-current">US$${product.price}</span>
-                ${hasDiscount ? `<span class="list-price-old">$${product.regular_price}</span>` : ''}
+                <span class="list-price-current">${formatPrice(parseFloat(product.price))}</span>
+                ${hasDiscount ? `<span class="list-price-old">${formatPrice(parseFloat(product.regular_price))}</span>` : ''}
                 ${hasDiscount ? `<span class="list-discount-badge">-${discountPercent}%</span>` : ''}
               </div>
               <div class="card-list-meta">
@@ -2804,7 +2929,7 @@ if (Astro.response) {
     } else if (isMobile) {
       return `
         <div class="mobile-product-card">
-          <a href="/product/${productSlug}">
+          <a href="${addLocalePrefix(`/product/${productSlug}`)}">
             <div class="mobile-product-image">
               ${hasDiscount ? `<span class="mobile-badge new">-${discountPercent}%</span>` : ''}
               <button class="mobile-wishlist-btn" onclick="event.preventDefault();" type="button">
@@ -2815,8 +2940,8 @@ if (Astro.response) {
             <div class="mobile-product-info">
               <h3 class="mobile-product-title">${productName}</h3>
               <div class="mobile-product-price">
-                <span class="mobile-price">US$${product.price}</span>
-                ${hasDiscount ? `<span class="mobile-old-price">$${product.regular_price}</span>` : ''}
+                <span class="mobile-price">${formatPrice(parseFloat(product.price))}</span>
+                ${hasDiscount ? `<span class="mobile-old-price">${formatPrice(parseFloat(product.regular_price))}</span>` : ''}
               </div>
               <div class="mobile-product-meta">
                 <span class="mobile-moq">MOQ: 1 pc</span>
@@ -2833,7 +2958,7 @@ if (Astro.response) {
     } else {
       return `
         <div class="product-card-shop">
-          <a href="/product/${productSlug}">
+          <a href="${addLocalePrefix(`/product/${productSlug}`)}">
             <div class="product-image-wrapper">
               ${hasDiscount ? `<span class="product-badge new">-${discountPercent}%</span>` : ''}
               <button class="wishlist-btn" onclick="event.preventDefault();" type="button">
@@ -2844,8 +2969,8 @@ if (Astro.response) {
             <div class="product-details-shop">
               <h3 class="product-title-shop">${productName}</h3>
               <div class="product-price-shop">
-                <span class="price-current">US$${product.price}</span>
-                ${hasDiscount ? `<span class="price-old">$${product.regular_price}</span>` : ''}
+                <span class="price-current">${formatPrice(parseFloat(product.price))}</span>
+                ${hasDiscount ? `<span class="price-old">${formatPrice(parseFloat(product.regular_price))}</span>` : ''}
               </div>
               <div class="product-meta">
                 <span class="moq">MOQ: 1 pc</span>
@@ -2867,6 +2992,9 @@ if (Astro.response) {
     const mobileGrid = document.getElementById('products-grid-mobile');
 
     if (!products || products.length === 0) return;
+
+    // 保存到全局变量，供货币切换时重新渲染
+    window.currentProducts = products;
 
     if (desktopGrid) {
       desktopGrid.innerHTML = products.map(p => renderProductCard(p, false)).join('');
@@ -3409,7 +3537,7 @@ if (Astro.response) {
     headerHTML += '</div>';
     headerHTML += '<div class="mobile-sheet-header-right">';
     headerHTML += `<div class="mobile-sheet-title">${name}</div>`;
-    headerHTML += `<div class="mobile-sheet-price" id="mobileSheetPrice">$${price.toFixed(2)}</div>`;
+    headerHTML += `<div class="mobile-sheet-price" id="mobileSheetPrice">${formatPrice(price)}</div>`;
     headerHTML += '</div>';
     mobileSheetHeader.innerHTML = headerHTML;
 
@@ -3448,7 +3576,7 @@ if (Astro.response) {
     headerHTML += '</div>';
     headerHTML += '<div class="mobile-sheet-header-right">';
     headerHTML += `<div class="mobile-sheet-title">${name}</div>`;
-    headerHTML += `<div class="mobile-sheet-price" id="mobileSheetPrice">$${price.toFixed(2)}</div>`;
+    headerHTML += `<div class="mobile-sheet-price" id="mobileSheetPrice">${formatPrice(price)}</div>`;
     headerHTML += '</div>';
     mobileSheetHeader.innerHTML = headerHTML;
 
@@ -3462,10 +3590,10 @@ if (Astro.response) {
     html += '<span class="mobile-tier-badge">Tiered Discounts</span>';
     html += '</div>';
     html += '<div class="mobile-pricing-grid">';
-    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">1–9 pcs</div><div class="mobile-tier-price">$' + price.toFixed(2) + '</div><div class="mobile-tier-label">Retail</div></div>';
-    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">10–49 pcs</div><div class="mobile-tier-price">$' + (price * 0.79).toFixed(2) + '</div><div class="mobile-tier-save">Save 21%</div></div>';
-    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">50–99 pcs</div><div class="mobile-tier-price">$' + (price * 0.62).toFixed(2) + '</div><div class="mobile-tier-save">Save 38%</div></div>';
-    html += '<div class="mobile-price-tier best"><div class="mobile-tier-qty">100+ pcs</div><div class="mobile-tier-price">$' + (price * 0.45).toFixed(2) + '</div><div class="mobile-tier-best-badge">Best Value</div></div>';
+    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">1–9 pcs</div><div class="mobile-tier-price">' + formatPrice(price) + '</div><div class="mobile-tier-label">Retail</div></div>';
+    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">10–49 pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.79) + '</div><div class="mobile-tier-save">Save 21%</div></div>';
+    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">50–99 pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.62) + '</div><div class="mobile-tier-save">Save 38%</div></div>';
+    html += '<div class="mobile-price-tier best"><div class="mobile-tier-qty">100+ pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.45) + '</div><div class="mobile-tier-best-badge">Best Value</div></div>';
     html += '</div></div>';
 
     html += '<div class="quick-gift-carousel" id="mobileQuickGiftCarousel">';
@@ -3478,7 +3606,7 @@ if (Astro.response) {
         <div class="quick-gift-info">
           <h4 class="quick-gift-name" title="${gift.name}">${gift.name}</h4>
           <div class="quick-gift-pricing">
-            <span class="quick-gift-price">$${gift.price}</span>
+            <span class="quick-gift-price">${formatPrice(parseFloat(gift.price))}</span>
             <span class="quick-gift-tag">Complimentary</span>
           </div>
         </div>
@@ -3592,7 +3720,7 @@ if (Astro.response) {
 
     if (matchedVariation) {
       if (matchedVariation.price && priceDisplay) {
-        priceDisplay.textContent = `$${parseFloat(matchedVariation.price).toFixed(2)}`;
+        priceDisplay.textContent = formatPrice(parseFloat(matchedVariation.price));
       }
       if (matchedVariation.image?.src && mobileMainImg) {
         mobileMainImg.src = matchedVariation.image.src;
@@ -3652,9 +3780,9 @@ if (Astro.response) {
 
     html += '<div id="quickOrderPriceContainer">';
     if (regularPrice > price) {
-      html += `<div class="quick-order-price"><span class="quick-order-price-current">$${price.toFixed(2)}</span><span class="quick-order-price-regular">$${regularPrice.toFixed(2)}</span></div>`;
+      html += `<div class="quick-order-price"><span class="quick-order-price-current">${formatPrice(price)}</span><span class="quick-order-price-regular">${formatPrice(regularPrice)}</span></div>`;
     } else {
-      html += `<div class="quick-order-price">$${price.toFixed(2)}</div>`;
+      html += `<div class="quick-order-price">${formatPrice(price)}</div>`;
     }
     html += '</div>';
 
@@ -3676,10 +3804,10 @@ if (Astro.response) {
     html += '<span class="header-badge">Tiered Discounts</span>';
     html += '</div>';
     html += '<div class="pricing-grid">';
-    html += '<div class="price-tier"><span class="tier-qty">1 – 9 pcs</span><span class="tier-price">$' + price.toFixed(2) + '</span><span class="tier-label">Retail</span></div>';
-    html += '<div class="price-tier"><span class="tier-qty">10 – 49 pcs</span><span class="tier-price">$' + (price * 0.79).toFixed(2) + '</span><span class="tier-save">Save 21%</span></div>';
-    html += '<div class="price-tier"><span class="tier-qty">50 – 99 pcs</span><span class="tier-price">$' + (price * 0.62).toFixed(2) + '</span><span class="tier-save">Save 38%</span></div>';
-    html += '<div class="price-tier best"><span class="tier-qty">100+ pcs</span><span class="tier-price">$' + (price * 0.45).toFixed(2) + '</span><span class="tier-badge">Best Value</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">1 – 9 pcs</span><span class="tier-price">' + formatPrice(price) + '</span><span class="tier-label">Retail</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">10 – 49 pcs</span><span class="tier-price">' + formatPrice(price * 0.79) + '</span><span class="tier-save">Save 21%</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">50 – 99 pcs</span><span class="tier-price">' + formatPrice(price * 0.62) + '</span><span class="tier-save">Save 38%</span></div>';
+    html += '<div class="price-tier best"><span class="tier-qty">100+ pcs</span><span class="tier-price">' + formatPrice(price * 0.45) + '</span><span class="tier-badge">Best Value</span></div>';
     html += '</div></div>';
 
     html += '<div class="quick-gift-carousel" id="desktopQuickGiftCarousel">';
@@ -3692,7 +3820,7 @@ if (Astro.response) {
         <div class="quick-gift-info">
           <h4 class="quick-gift-name" title="${gift.name}">${gift.name}</h4>
           <div class="quick-gift-pricing">
-            <span class="quick-gift-price">$${gift.price}</span>
+            <span class="quick-gift-price">${formatPrice(parseFloat(gift.price))}</span>
             <span class="quick-gift-tag">Complimentary Gift</span>
           </div>
         </div>
@@ -3794,9 +3922,9 @@ if (Astro.response) {
 
       let priceHTML = '';
       if (regularPrice > price) {
-        priceHTML = `<div class="quick-order-price"><span class="quick-order-price-current">$${price.toFixed(2)}</span><span class="quick-order-price-regular">$${regularPrice.toFixed(2)}</span></div>`;
+        priceHTML = `<div class="quick-order-price"><span class="quick-order-price-current">${formatPrice(price)}</span><span class="quick-order-price-regular">${formatPrice(regularPrice)}</span></div>`;
       } else {
-        priceHTML = `<div class="quick-order-price">$${price.toFixed(2)}</div>`;
+        priceHTML = `<div class="quick-order-price">${formatPrice(price)}</div>`;
       }
       priceContainer.innerHTML = priceHTML;
 
@@ -4119,4 +4247,12 @@ if (Astro.response) {
   if (quickOrderOverlay) quickOrderOverlay.addEventListener('click', closeQuickOrder);
   if (quickOrderMobileClose) quickOrderMobileClose.addEventListener('click', closeQuickOrder);
   if (quickOrderMobileOverlay) quickOrderMobileOverlay.addEventListener('click', closeQuickOrder);
+
+  // 监听货币切换事件，重新渲染产品列表
+  window.addEventListener('currencyChanged', () => {
+    const productsGrid = document.getElementById('productsGrid');
+    if (productsGrid && window.currentProducts) {
+      renderProducts(window.currentProducts);
+    }
+  });
 </script>
