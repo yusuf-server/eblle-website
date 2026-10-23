@@ -13,6 +13,14 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   ? (lang as SupportedLocale)
   : 'en';
 
+// 301 重定向：如果 URL 包含 ?category= 参数，重定向到新的 /product-category/[slug] 结构
+const categoryParam = Astro.url.searchParams.get('category');
+if (categoryParam) {
+  const localePrefix = currentLocale === 'en' ? '' : `/${currentLocale}`;
+  const newUrl = `${localePrefix}/product-category/${categoryParam}/`;
+  return Astro.redirect(newUrl, 301);
+}
+
 console.log('[SERVER shop.astro] Astro.params.lang =', lang, ', currentLocale =', currentLocale, ', URL =', Astro.url.pathname);
 
 const perPage = 20;

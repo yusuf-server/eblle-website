@@ -176,6 +176,11 @@ let campaignTitle = heroData?.campaign_title || 'CAMPAIGN ZONE';
 let campaignCards = heroData?.campaign_cards || [];
 const useSameCampaignData = heroData?.mobile_campaign_cards !== false;
 
+// 调试：查看产品数据结构
+if (campaignCards.length > 0 && campaignCards[0].products) {
+  console.log('[Campaign Zone] 第一个产品数据:', JSON.stringify(campaignCards[0].products[0], null, 2));
+}
+
 // 解析 Reviews Section 数据
 const reviewsTitle = heroData?.reviews_title || 'What Our Clients Say';
 const reviewImages = heroData?.review_images || [];
@@ -988,8 +993,8 @@ const categories = await getCategories({ per_page: 10 });
                 <a href={`/product/${item.slug || ''}`} class="campaign-product">
                   <img src={item.featured_image || 'https://via.placeholder.com/100'} alt="" loading="lazy" />
                   <div class="campaign-product-info">
-                    <h6>{item.title || item.post_title}</h6>
-                    <span class="campaign-price">${item.price || '0.00'}</span>
+                    <h6>{item.translated_title || item.title || item.post_title}</h6>
+                    <span class="campaign-price" data-usd-price={item.price || '0.00'}>${item.price || '0.00'}</span>
                   </div>
                 </a>
               ))}
@@ -2535,8 +2540,25 @@ const categories = await getCategories({ per_page: 10 });
       text-decoration: none;
     }
     .campaign-product:last-child { border-bottom: none; }
-    .campaign-product img { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; }
-    .campaign-product-info h6 { font-size: 10.5px; color: #1a1a1a; margin: 0 0 2px 0; }
+    .campaign-product img { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+    .campaign-product-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .campaign-product-info h6 {
+      font-size: 10.5px;
+      color: #1a1a1a;
+      margin: 0 0 2px 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.3;
+    }
     .campaign-price { font-size: 12px; font-weight: 700; color: #1a1a1a; }
 
     .mobile-reviews { padding: 20px 0 24px; }
@@ -2548,14 +2570,36 @@ const categories = await getCategories({ per_page: 10 });
       text-transform: uppercase;
       margin: 0;
     }
-    .mobile-reviews-slider { position: relative; padding: 0 50px; }
-    .mobile-reviews-track { display: flex; }
-    .mobile-review-slide { min-width: 85%; flex-shrink: 0; padding: 0 10px; }
+   .mobile-reviews-slider {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      padding: 0; /* 移除 padding，由 slide 内部控制间距，保证 track 移动距离精确等于 100% 屏宽 */
+    }
+    .mobile-reviews-track {
+      display: flex;
+      width: 100%;
+    }
+    .mobile-review-slide {
+      width: 100%;
+      min-width: 100%;
+      max-width: 100%;
+      flex-shrink: 0;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center; /* 确保弹性盒水平居中 */
+      padding: 0 24px; /* 两侧留出安全间距，避免遮挡左右翻页按钮 */
+    }
     .mobile-review-slide img {
       width: 100%;
-      height: 350px;
-      object-fit: cover;
+      max-width: 460px; /* 限制卡片最大宽度 */
+      height: auto;
+      max-height: 400px;
+      object-fit: contain; /* 保证评价图片完整显示且比例居中 */
       border-radius: 8px;
+      margin: 0 auto;
+      display: block;
     }
     .mobile-slider-btn {
       position: absolute;
@@ -2860,8 +2904,8 @@ function updateProductPrices() {
     }
   });
 
-  // 更新 Campaign 产品价格
-  document.querySelectorAll('.campaign-grid .campaign-price').forEach(priceEl => {
+  // 更新 Campaign 产品价格（桌面端和移动端）
+  document.querySelectorAll('.campaign-grid .campaign-price, .mobile-campaign-zone .campaign-price').forEach(priceEl => {
     const usdPrice = parseFloat(priceEl.getAttribute('data-usd-price'));
     if (!isNaN(usdPrice)) {
       const convertedPrice = (usdPrice * rate).toFixed(2);
@@ -3168,6 +3212,35 @@ function initMobileReviewsSlider() {
 
   prevBtn?.addEventListener('click', () => { currentIndex--; updateSlider(); });
   nextBtn?.addEventListener('click', () => { currentIndex++; updateSlider(); });
+
+  // 添加触摸滑动支持
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  track.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+
+  track.addEventListener('touchmove', (e) => {
+    touchEndX = e.touches[0].clientX;
+  }, { passive: true });
+
+  track.addEventListener('touchend', () => {
+    const swipeDistance = touchStartX - touchEndX;
+    const threshold = 50; // 最小滑动距离
+
+    if (Math.abs(swipeDistance) > threshold) {
+      if (swipeDistance > 0) {
+        // 向左滑动 - 下一张
+        currentIndex++;
+      } else {
+        // 向右滑动 - 上一张
+        currentIndex--;
+      }
+      updateSlider();
+    }
+  });
+
   updateSlider(false);
 }
 

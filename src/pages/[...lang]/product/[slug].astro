@@ -187,7 +187,7 @@ const giftProducts = giftProductIds.map((id, index) => {
         <a href={currentLocale === 'en' ? '/shop' : `/${currentLocale}/shop`}>{t(currentLocale, 'nav.shop')}</a>
         <i class="fa-solid fa-chevron-right"></i>
         {categorySlug ? (
-          <a href={currentLocale === 'en' ? `/shop?category=${categorySlug}` : `/${currentLocale}/shop?category=${categorySlug}`}>{category}</a>
+          <a href={currentLocale === 'en' ? `/product-category/${categorySlug}/` : `/${currentLocale}/product-category/${categorySlug}/`}>{category}</a>
         ) : (
           <span>{category}</span>
         )}

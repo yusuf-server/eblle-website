@@ -144,45 +144,62 @@ const heroData = {
   }
 };
 
+// 默认 Mood Cards 配置
+const defaultMoodCards = [
+  {
+    badge: 'Mood 01',
+    badge_color: 'secondary',
+    title: 'Dark & Mysterious',
+    desc: 'Obsidian talismans for late-night allure',
+    image: 'https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=500&q=80',
+    link: '#vault-favorites'
+  },
+  {
+    badge: 'Mood 02',
+    badge_color: 'tertiary',
+    title: 'Ethereal Witchcraft',
+    desc: 'Moon crescents and selenite shimmer',
+    image: 'https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=500&q=80',
+    link: '#vault-favorites'
+  },
+  {
+    badge: 'Mood 03',
+    badge_color: 'primary',
+    title: 'Playful Serpent',
+    desc: 'Bold gold coils with winking ruby eyes',
+    image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500&q=80',
+    link: '#vault-favorites'
+  },
+  {
+    badge: 'Mood 04',
+    badge_color: 'primary',
+    title: 'Diamond Radiance',
+    desc: 'Celestial brilliance meets midnight sky',
+    image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=500&q=80',
+    link: '#vault-favorites'
+  }
+];
+
+// 解析 Mood Cards 图片（处理 WordPress Media ID/对象/URL 各种类型）
+const resolvedMoodCards = acfData?.mood_cards && Array.isArray(acfData.mood_cards) && acfData.mood_cards.length > 0
+  ? await Promise.all(
+      acfData.mood_cards.map(async (card: any, idx: number) => {
+        const defaultCard = defaultMoodCards[idx] || defaultMoodCards[0];
+        const resolvedImg = await resolveImageUrl(card.image);
+        return {
+          ...card,
+          image: resolvedImg || (typeof card.image === 'string' && card.image) || defaultCard.image
+        };
+      })
+    )
+  : defaultMoodCards;
+
 // Mood Categories Section
 const moodData = {
   kicker: acfData?.mood_section_kicker || 'Curated Expressions',
   title: acfData?.mood_section_title || 'Find Your Halloween Mood',
   description: acfData?.mood_section_desc || 'Whether you invoke candlelit mystery, ethereal witchcraft, playful serpent wit, or pure diamond radiance.',
-  cards: acfData?.mood_cards || [
-    {
-      badge: 'Mood 01',
-      badge_color: 'secondary',
-      title: 'Dark & Mysterious',
-      desc: 'Obsidian talismans for late-night allure',
-      image: 'https://images.unsplash.com/photo-1611591475806-03c09b0b4b2c?w=500&q=80',
-      link: '#vault-favorites'
-    },
-    {
-      badge: 'Mood 02',
-      badge_color: 'tertiary',
-      title: 'Ethereal Witchcraft',
-      desc: 'Moon crescents and selenite shimmer',
-      image: 'https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=500&q=80',
-      link: '#vault-favorites'
-    },
-    {
-      badge: 'Mood 03',
-      badge_color: 'primary',
-      title: 'Playful Serpent',
-      desc: 'Bold gold coils with winking ruby eyes',
-      image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500&q=80',
-      link: '#vault-favorites'
-    },
-    {
-      badge: 'Mood 04',
-      badge_color: 'primary',
-      title: 'Diamond Radiance',
-      desc: 'Celestial brilliance meets midnight sky',
-      image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=500&q=80',
-      link: '#vault-favorites'
-    }
-  ]
+  cards: resolvedMoodCards
 };
 
 // Favorites/Products Section
@@ -228,6 +245,9 @@ const fallbackFavorites = [
   { id: 'fb-8', name: 'Shadow Pavé Diamond Band', price: '480', regular_price: '', on_sale: false, category: 'Heirloom Series', badge_text: 'Bespoke', image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&q=80' }
 ];
 
+// 解析 Manifesto 图像真实链接
+const resolvedManifestoImage = await resolveImageUrl(acfData?.manifesto_image);
+
 // Manifesto Section
 const manifestoData = {
   kicker: acfData?.manifesto_kicker || 'Autumn Atelier Manifesto',
@@ -235,7 +255,7 @@ const manifestoData = {
   description: acfData?.manifesto_desc || 'Your everyday fine jewelry, infused with an alluring Halloween twist. Transition effortlessly from twilight gatherings to everyday heirloom luxury with tactile obsidian accents and radiant gold silhouettes.',
   buttonText: acfData?.manifesto_btn_text || 'Shop The Editorial →',
   buttonLink: acfData?.manifesto_btn_link || '#vault-favorites',
-  image: acfData?.manifesto_image || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80',
+  image: resolvedManifestoImage || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80',
   imageTag: acfData?.manifesto_image_tag || 'Place Vendôme Workshop'
 };
 

@@ -109,6 +109,17 @@ async function translateHeroData(heroData: any, locale: SupportedLocale, context
         if (card.description) {
           card.description = await translate(card.description, locale, config, context);
         }
+        // 翻译 Campaign 卡片中的产品标题
+        if (card.products && Array.isArray(card.products)) {
+          for (const product of card.products) {
+            // 产品数据使用 post_title 字段
+            if (product.post_title) {
+              product.translated_title = await translate(product.post_title, locale, config, context);
+            } else if (product.title) {
+              product.translated_title = await translate(product.title, locale, config, context);
+            }
+          }
+        }
       }
     }
 
@@ -121,6 +132,24 @@ async function translateHeroData(heroData: any, locale: SupportedLocale, context
     }
     if (heroData.button_text) {
       heroData.button_text = await translate(heroData.button_text, locale, config, context);
+    }
+
+    // 翻译 FAQ Section
+    if (heroData.faq_section_title) {
+      heroData.faq_section_title = await translate(heroData.faq_section_title, locale, config, context);
+    }
+    if (heroData.mobile_faq_title) {
+      heroData.mobile_faq_title = await translate(heroData.mobile_faq_title, locale, config, context);
+    }
+    if (heroData.faq_items && Array.isArray(heroData.faq_items)) {
+      for (const faq of heroData.faq_items) {
+        if (faq.question) {
+          faq.question = await translate(faq.question, locale, config, context);
+        }
+        if (faq.answer) {
+          faq.answer = await translate(faq.answer, locale, config, context);
+        }
+      }
     }
 
   } catch (error) {

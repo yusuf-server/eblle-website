@@ -405,7 +405,7 @@ const newArrivalSubcategories = [
             <ul class="cat-list">
               {categoryMenu.map((l1, idx1) => (
                 <li class={`cat-item level-1-item ${idx1 === 0 ? 'is-active' : ''}`} data-index={idx1}>
-                  <a href={addLocalePrefix(`/shop?category=${l1.slug}`, currentLocale)} class="cat-link">
+                  <a href={addLocalePrefix(`/product-category/${l1.slug}/`, currentLocale)} class="cat-link">
                     <span>{l1.name}</span>
                     {l1.children && l1.children.length > 0 && (
                       <i class="fa-solid fa-angle-right sub-arrow"></i>
@@ -424,7 +424,7 @@ const newArrivalSubcategories = [
                   <ul class="cat-list">
                     {l1.children.map((l2, idx2) => (
                       <li class={`cat-item level-2-item ${idx1 === 0 && idx2 === 0 ? 'is-active' : ''}`} data-parent={idx1} data-index={idx2}>
-                        <a href={addLocalePrefix(`/shop?category=${l2.slug}`, currentLocale)} class="cat-link">
+                        <a href={addLocalePrefix(`/product-category/${l2.slug}/`, currentLocale)} class="cat-link">
                           <span>{l2.name}</span>
                           {l2.children && l2.children.length > 0 && (
                             <i class="fa-solid fa-angle-right sub-arrow"></i>
@@ -447,7 +447,7 @@ const newArrivalSubcategories = [
                     <ul class="cat-list">
                       {l2.children.map((l3) => (
                         <li class="cat-item level-3-item">
-                          <a href={addLocalePrefix(`/shop?category=${l3.slug}`, currentLocale)} class="cat-link">
+                          <a href={addLocalePrefix(`/product-category/${l3.slug}/`, currentLocale)} class="cat-link">
                             <span>{l3.name}</span>
                           </a>
                         </li>
@@ -464,7 +464,7 @@ const newArrivalSubcategories = [
       <!-- Main Navigation Menu -->
       <nav class="main-nav">
         <div class="nav-item-dropdown-wrapper">
-          <a href={addLocalePrefix('/shop?category=new-arrivals', currentLocale)} class="nav-main-link has-dropdown">
+          <a href={addLocalePrefix('/product-category/new-arrivals/', currentLocale)} class="nav-main-link has-dropdown">
             <span>{t(currentLocale, 'nav.newArrival')}</span>
             <i class="fa-solid fa-angle-down nav-arrow"></i>
           </a>
@@ -475,14 +475,14 @@ const newArrivalSubcategories = [
             </div>
             <ul class="nav-dropdown-list" id="newArrivalsListDesktop">
               <li>
-                <a href={addLocalePrefix('/shop?category=new-arrivals', currentLocale)} class="nav-dropdown-link is-primary">
+                <a href={addLocalePrefix('/product-category/new-arrivals/', currentLocale)} class="nav-dropdown-link is-primary">
                   <span class="link-label">All New Arrivals</span>
                   <i class="fa-solid fa-arrow-right link-icon"></i>
                 </a>
               </li>
               {newArrivalSubcategories.slice(1).map((item) => (
                 <li>
-                  <a href={addLocalePrefix(`/shop?category=${item.slug}`, currentLocale)} class="nav-dropdown-link">
+                  <a href={addLocalePrefix(`/product-category/${item.slug}/`, currentLocale)} class="nav-dropdown-link">
                     <span class="link-label">{item.name}</span>
                   </a>
                 </li>
@@ -530,7 +530,7 @@ const newArrivalSubcategories = [
       </div>
       <div class="drawer-links">
         {categoryMenu.map((l1) => (
-          <a href={`/shop?category=${l1.slug}`}>{l1.name}</a>
+          <a href={`/product-category/${l1.slug}/`}>{l1.name}</a>
         ))}
       </div>
     </div>
@@ -544,19 +544,19 @@ const newArrivalSubcategories = [
       <div class="drawer-links">
         <div class="mobile-accordion-item" id="mobileNewArrivalAccordion">
           <div class="mobile-accordion-trigger" id="mobileNewArrivalToggle">
-            <a href={addLocalePrefix('/shop?category=new-arrivals', currentLocale)} class="mobile-acc-title">{t(currentLocale, 'nav.newArrival')}</a>
+            <a href={addLocalePrefix('/product-category/new-arrivals/', currentLocale)} class="mobile-acc-title">{t(currentLocale, 'nav.newArrival')}</a>
             <button type="button" class="mobile-acc-arrow-btn" aria-label="Toggle subcategories">
               <i class="fa-solid fa-chevron-down mobile-acc-icon"></i>
             </button>
           </div>
           <div class="mobile-accordion-content" id="mobileNewArrivalContent">
             <div class="mobile-sublinks-grid" id="newArrivalsListMobile">
-              <a href={addLocalePrefix('/shop?category=new-arrivals', currentLocale)} class="mobile-sublink is-primary-pill">
+              <a href={addLocalePrefix('/product-category/new-arrivals/', currentLocale)} class="mobile-sublink is-primary-pill">
                 <span>All New Arrivals</span>
                 <i class="fa-solid fa-arrow-right"></i>
               </a>
               {newArrivalSubcategories.slice(1).map((item) => (
-                <a href={addLocalePrefix(`/shop?category=${item.slug}`, currentLocale)} class="mobile-sublink">{item.name}</a>
+                <a href={addLocalePrefix(`/product-category/${item.slug}/`, currentLocale)} class="mobile-sublink">{item.name}</a>
               ))}
             </div>
           </div>
@@ -2398,7 +2398,7 @@ const newArrivalSubcategories = [
           <div class="search-categories-title">Related Categories</div>
           <div class="search-category-list">
             ${categories.map((cat: any) => `
-              <a href="${addLocalePrefix(`/shop?category=${cat.slug}`)}" class="search-category-item">
+              <a href="${addLocalePrefix(`/product-category/${cat.slug}`)}" class="search-category-item">
                 <i class="fa-solid fa-tag"></i>
                 <span>${cat.name}</span>
                 <span class="search-category-count">(${cat.count})</span>
@@ -2627,14 +2627,14 @@ const newArrivalSubcategories = [
           if (desktopListEl) {
             desktopListEl.innerHTML = `
               <li>
-                <a href="${addLocalePrefix('/shop?category=new-arrivals')}" class="nav-dropdown-link is-primary">
+                <a href="${addLocalePrefix('/product-category/new-arrivals/')}" class="nav-dropdown-link is-primary">
                   <span class="link-label">All New Arrivals</span>
                   <i class="fa-solid fa-arrow-right link-icon"></i>
                 </a>
               </li>
               ${subCats.map(c => `
                 <li>
-                  <a href="${addLocalePrefix(`/shop?category=${c.slug}`)}" class="nav-dropdown-link">
+                  <a href="${addLocalePrefix(`/product-category/${c.slug}`)}" class="nav-dropdown-link">
                     <span class="link-label">${c.name}</span>
                   </a>
                 </li>
@@ -2645,12 +2645,12 @@ const newArrivalSubcategories = [
           const mobileListEl = document.getElementById('newArrivalsListMobile');
           if (mobileListEl) {
             mobileListEl.innerHTML = `
-              <a href="${addLocalePrefix('/shop?category=new-arrivals')}" class="mobile-sublink is-primary-pill">
+              <a href="${addLocalePrefix('/product-category/new-arrivals/')}" class="mobile-sublink is-primary-pill">
                 <span>All New Arrivals</span>
                 <i class="fa-solid fa-arrow-right"></i>
               </a>
               ${subCats.map(c => `
-                <a href="${addLocalePrefix(`/shop?category=${c.slug}`)}" class="mobile-sublink">${c.name}</a>
+                <a href="${addLocalePrefix(`/product-category/${c.slug}`)}" class="mobile-sublink">${c.name}</a>
               `).join('')}
             `;
           }
