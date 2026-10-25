@@ -9,6 +9,12 @@ export const POST: APIRoute = async ({ request }) => {
     const page = parseInt(body.page || '1');
     const perPage = parseInt(body.per_page || '20');
 
+    // 检测是否需要强制刷新（跳过缓存）
+    const forceRefresh = request.headers.get('X-Force-Refresh') === 'true';
+    if (forceRefresh) {
+      console.log('🔄 检测到强制刷新标记，将跳过缓存直接从 WooCommerce 获取');
+    }
+
     console.log(`API: 获取第 ${page} 页产品（带价格和变体）...`);
     console.log('筛选参数:', {
       search: body.search,
@@ -105,7 +111,8 @@ export const POST: APIRoute = async ({ request }) => {
     console.log('最终查询参数:', queryParams);
 
     // 使用缓存系统，包含变体价格获取
-    let result = await getProductsWithPricesAndTotal(queryParams);
+    // 如果有强制刷新标记，跳过缓存
+    let result = await getProductsWithPricesAndTotal(queryParams, forceRefresh);
 
     console.log(`API: 初始返回 ${result.products.length} 个产品`);
 

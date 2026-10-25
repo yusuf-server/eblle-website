@@ -271,22 +271,22 @@ const giftProducts = giftProductIds.map((id, index) => {
               <div class="price-tier">
                 <span class="tier-qty">1 – 9 pcs</span>
                 <span class="tier-price">${product.price}</span>
-                <span class="tier-label">Retail</span>
+                <span class="tier-label">Regular</span>
               </div>
               <div class="price-tier">
                 <span class="tier-qty">10 – 49 pcs</span>
-                <span class="tier-price">${(parseFloat(product.price) * 0.79).toFixed(2)}</span>
-                <span class="tier-save">Save 21%</span>
+                <span class="tier-price">${(parseFloat(product.price) * 0.97).toFixed(2)}</span>
+                <span class="tier-save">Save 3%</span>
               </div>
               <div class="price-tier">
                 <span class="tier-qty">50 – 99 pcs</span>
-                <span class="tier-price">${(parseFloat(product.price) * 0.62).toFixed(2)}</span>
-                <span class="tier-save">Save 38%</span>
+                <span class="tier-price">${(parseFloat(product.price) * 0.94).toFixed(2)}</span>
+                <span class="tier-save">Save 6%</span>
               </div>
               <div class="price-tier best">
                 <span class="tier-qty">100+ pcs</span>
-                <span class="tier-price">${(parseFloat(product.price) * 0.45).toFixed(2)}</span>
-                <span class="tier-badge">Best Value</span>
+                <span class="tier-price">${(parseFloat(product.price) * 0.90).toFixed(2)}</span>
+                <span class="tier-badge">Best Value - Save 10%</span>
               </div>
             </div>
             <div class="auto-apply">
@@ -2696,14 +2696,24 @@ const giftProducts = giftProductIds.map((id, index) => {
     const productName = document.querySelector('.product-title')?.textContent || '';
     const productImage = document.querySelector('.slider-item img')?.src || '';
 
-    let price = document.querySelector('.current-price')?.textContent.replace(/[^0-9.]/g, '') || '0';
+    let basePrice = document.querySelector('.current-price')?.textContent.replace(/[^0-9.]/g, '') || '0';
     let variationId = null;
     let stockStatus = 'instock';
 
     if (matchingVariation) {
-      price = matchingVariation.price;
+      basePrice = matchingVariation.price;
       variationId = matchingVariation.id;
       stockStatus = matchingVariation.stock_status;
+    }
+
+    // 应用批发价格折扣
+    let finalPrice = parseFloat(basePrice);
+    if (quantity >= 100) {
+      finalPrice = finalPrice * 0.90; // 10% 折扣
+    } else if (quantity >= 50) {
+      finalPrice = finalPrice * 0.94; // 6% 折扣
+    } else if (quantity >= 10) {
+      finalPrice = finalPrice * 0.97; // 3% 折扣
     }
 
     return {
@@ -2711,7 +2721,8 @@ const giftProducts = giftProductIds.map((id, index) => {
       productId: window.productId,
       variationId: variationId,
       name: productName,
-      price: price,
+      price: finalPrice.toFixed(2),
+      basePrice: basePrice, // 保存原价用于购物车重新计算
       quantity: quantity,
       image: productImage,
       selectedVariants: selectedAttrs,
@@ -2989,6 +3000,43 @@ const giftProducts = giftProductIds.map((id, index) => {
         btn.style.cursor = 'pointer';
       });
     }
+
+    // 5. 更新批发价格表格
+    if (variation.price) {
+      updateWholesalePriceTable(parseFloat(variation.price));
+    }
+  }
+
+  // 更新批发价格表格
+  function updateWholesalePriceTable(basePrice) {
+    const priceTiers = document.querySelectorAll('.wholesale-table .price-tier');
+    if (priceTiers.length === 0) return;
+
+    const currency = getCurrentCurrency();
+    const prices = [
+      { price: basePrice, label: 'Regular' },                    // 1-9 件
+      { price: basePrice * 0.97, label: 'Save 3%' },            // 10-49 件
+      { price: basePrice * 0.94, label: 'Save 6%' },            // 50-99 件
+      { price: basePrice * 0.90, label: 'Best Value - Save 10%' } // 100+ 件
+    ];
+
+    priceTiers.forEach((tier, index) => {
+      const priceElement = tier.querySelector('.tier-price');
+      const labelElement = tier.querySelector('.tier-save, .tier-badge, .tier-label');
+
+      if (priceElement && prices[index]) {
+        const convertedPrice = convertPrice(prices[index].price);
+        if (currency === 'EUR') {
+          priceElement.textContent = `${convertedPrice.toFixed(2)}€`;
+        } else {
+          priceElement.textContent = `${getCurrencySymbol()}${convertedPrice.toFixed(2)}`;
+        }
+      }
+
+      if (labelElement && prices[index]) {
+        labelElement.textContent = prices[index].label;
+      }
+    });
   }
 
   function selectVariant(attribute, value, element) {

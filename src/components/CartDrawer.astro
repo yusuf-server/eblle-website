@@ -797,6 +797,19 @@ for (const locale of SUPPORTED_LOCALES) {
 
     if (item) {
       item.quantity = newQuantity;
+
+      // 重新计算批发价格
+      const basePrice = parseFloat(item.basePrice || item.price);
+      let finalPrice = basePrice;
+      if (newQuantity >= 100) {
+        finalPrice = basePrice * 0.90; // 10% 折扣
+      } else if (newQuantity >= 50) {
+        finalPrice = basePrice * 0.94; // 6% 折扣
+      } else if (newQuantity >= 10) {
+        finalPrice = basePrice * 0.97; // 3% 折扣
+      }
+      item.price = finalPrice.toFixed(2);
+
       saveCart(cart);
       // 不重新渲染整个列表，只更新这一项
       const cartItem = document.querySelector(`[data-cart-item-id="${cleanInputId}"]`);
@@ -805,8 +818,7 @@ for (const locale of SUPPORTED_LOCALES) {
         const itemTotal = cartItem.querySelector('.item-total');
         if (qtyValue) qtyValue.textContent = newQuantity;
         if (itemTotal) {
-          const price = parseFloat(item.price) || 0;
-          itemTotal.textContent = `$${(price * newQuantity).toFixed(2)}`;
+          itemTotal.textContent = `$${(finalPrice * newQuantity).toFixed(2)}`;
         }
       }
       // 更新总价和进度条

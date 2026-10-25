@@ -77,10 +77,6 @@ const CURRENT_CURRENCY = 'USD';
                   <span>Shipping</span>
                   <span class="shipping-val">$20.00</span>
                 </div>
-                <div class="total-line">
-                  <span>Estimated Taxes</span>
-                  <span class="tax-val">$0.00</span>
-                </div>
                 <div class="total-line grand">
                   <span>Total</span>
                   <span class="total-amount">
@@ -187,10 +183,6 @@ const CURRENT_CURRENCY = 'USD';
             <div class="total-line">
               <span>Shipping</span>
               <span class="shipping-val">$20.00</span>
-            </div>
-            <div class="total-line">
-              <span>Estimated Taxes</span>
-              <span class="tax-val">$0.00</span>
             </div>
             <div class="total-line grand">
               <span>Total</span>
@@ -555,6 +547,47 @@ const CURRENT_CURRENCY = 'USD';
 </style>
 
 <script define:vars={{ CURRENT_CURRENCY }}>
+  // 货币处理函数
+  const CURRENCY_SYMBOLS = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    CAD: 'C$'
+  };
+
+  const CURRENCY_RATES = {
+    USD: 1.0,
+    EUR: 0.92,
+    GBP: 0.79,
+    CAD: 1.36
+  };
+
+  function getCurrentCurrency() {
+    return localStorage.getItem('ebbelle_currency') || 'USD';
+  }
+
+  function getCurrencySymbol(currency) {
+    return CURRENCY_SYMBOLS[currency || getCurrentCurrency()] || '$';
+  }
+
+  function convertPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const rate = CURRENCY_RATES[currency] || 1.0;
+    return priceUSD * rate;
+  }
+
+  function formatPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const converted = convertPrice(priceUSD, currency);
+    const symbol = getCurrencySymbol(currency);
+    const formatted = converted.toFixed(2);
+
+    if (currency === 'EUR') {
+      return `${formatted}${symbol}`;
+    }
+    return `${symbol}${formatted}`;
+  }
+
   function getCart() {
     try {
       const cart = localStorage.getItem('ebbelle_cart');
@@ -570,13 +603,24 @@ const CURRENT_CURRENCY = 'USD';
       return sum + (price * item.quantity);
     }, 0);
 
-    const shipping = subtotal > 0 ? 20.00 : 0.00; // 统一定义运费
-    const tax = subtotal * 0.08;
-    const total = subtotal + tax + shipping;
+    // 从 sessionStorage 读取用户选择的运费
+    let shipping = 0;
+    try {
+      const shippingInfo = sessionStorage.getItem('shippingInfo');
+      if (shippingInfo) {
+        const info = JSON.parse(shippingInfo);
+        shipping = parseFloat(info.shippingCost) || 0;
+      }
+    } catch (e) {
+      console.error('读取运费失败:', e);
+      shipping = 0;
+    }
+
+    // 移除税务计算
+    const total = subtotal + shipping;
 
     return {
       subtotal: subtotal.toFixed(2),
-      tax: tax.toFixed(2),
       shipping: shipping.toFixed(2),
       total: total.toFixed(2),
       currency: CURRENT_CURRENCY,
@@ -592,28 +636,31 @@ const CURRENT_CURRENCY = 'USD';
         el.innerHTML = '<p style="text-align:center;padding:16px;color:#888;">Cart is empty</p>';
         return;
       }
-      el.innerHTML = cart.map(item => `
-        <div class="item">
-          <img src="${item.image || '/placeholder.jpg'}" alt="${item.name}">
-          <div class="item-details">
-            <h3>${item.name}</h3>
-            <p>Qty: ${item.quantity}</p>
+      el.innerHTML = cart.map(item => {
+        const price = parseFloat(item.price) || 0;
+        const itemTotal = price * item.quantity;
+        return `
+          <div class="item">
+            <img src="${item.image || '/placeholder.jpg'}" alt="${item.name}">
+            <div class="item-details">
+              <h3>${item.name}</h3>
+              <p>Qty: ${item.quantity}</p>
+            </div>
+            <span class="item-price">${formatPrice(itemTotal)}</span>
           </div>
-          <span class="item-price">$${(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     };
 
     renderBox('mobileCartItems');
     renderBox('desktopCartItems');
 
-    document.querySelectorAll('.subtotal-val').forEach(el => el.textContent = `$${totals.subtotal}`);
-    document.querySelectorAll('.shipping-val').forEach(el => el.textContent = `$${totals.shipping}`);
-    document.querySelectorAll('.tax-val').forEach(el => el.textContent = `$${totals.tax}`);
-    document.querySelectorAll('.total-val').forEach(el => el.textContent = `$${totals.total}`);
+    document.querySelectorAll('.subtotal-val').forEach(el => el.textContent = formatPrice(parseFloat(totals.subtotal)));
+    document.querySelectorAll('.shipping-val').forEach(el => el.textContent = formatPrice(parseFloat(totals.shipping)));
+    document.querySelectorAll('.total-val').forEach(el => el.textContent = formatPrice(parseFloat(totals.total)));
 
     const mobileSummary = document.getElementById('mobileSummaryTotal');
-    if (mobileSummary) mobileSummary.textContent = `$${totals.total}`;
+    if (mobileSummary) mobileSummary.textContent = formatPrice(parseFloat(totals.total));
 
     const dtTitle = document.getElementById('desktopOrderTitle');
     if (dtTitle) dtTitle.textContent = `Order summary (${totals.itemCount} items)`;
@@ -669,6 +716,39 @@ const CURRENT_CURRENCY = 'USD';
       },
 
       createOrder: async function() {
+        // 检查是否已有 pending 订单
+        const existingOrderId = sessionStorage.getItem('pendingOrderId');
+        const existingOrderKey = sessionStorage.getItem('pendingOrderKey');
+
+        // 如果已有 pending 订单，先尝试复用
+        if (existingOrderId && existingOrderKey) {
+          console.log(`🔄 检测到已有订单 ${existingOrderId}，尝试复用...`);
+
+          try {
+            // 调用后端检查订单状态
+            const checkRes = await fetch(`/api/woocommerce/check-order?orderId=${existingOrderId}&orderKey=${existingOrderKey}`);
+
+            if (checkRes.ok) {
+              const orderData = await checkRes.json();
+
+              // 如果订单仍然是 pending，复用它
+              if (orderData.status === 'pending' && orderData.paypalOrderId) {
+                console.log(`✅ 复用现有 pending 订单 ${existingOrderId}`);
+                return orderData.paypalOrderId;
+              }
+            }
+          } catch (err) {
+            console.warn('检查现有订单失败，将创建新订单:', err);
+          }
+
+          // 如果订单已经不是 pending 或检查失败，清理 sessionStorage
+          sessionStorage.removeItem('pendingOrderId');
+          sessionStorage.removeItem('pendingOrderKey');
+        }
+
+        // 创建新订单
+        console.log('📦 创建新的 PayPal 订单...');
+
         const shippingInfoStr = sessionStorage.getItem('shippingInfo');
         if (!shippingInfoStr) {
           alert('Please provide shipping details first.');
@@ -702,8 +782,8 @@ const CURRENT_CURRENCY = 'USD';
             postcode: shipping.zip || '',
             country: shipping.country || 'US',
           },
-          shippingMethod: 'standard',
-          shippingCost: totals.shipping,
+          shippingMethod: shipping.shippingMethod || 'standard',
+          shippingCost: shipping.shippingCost || totals.shipping,
           line_items: cart.map(item => ({
             product_id: item.product_id || item.id,
             variation_id: item.variation_id || undefined,
@@ -723,40 +803,95 @@ const CURRENT_CURRENCY = 'USD';
         }
 
         const data = await res.json();
+        console.log('✅ PayPal 订单创建成功:', {
+          paypalOrderId: data.paypalOrderId,
+          wcOrderId: data.orderId,
+          amount: data.amount,
+          currency: data.currency
+        });
+
         sessionStorage.setItem('pendingOrderId', data.orderId.toString());
         sessionStorage.setItem('pendingOrderKey', data.orderKey);
 
         return data.paypalOrderId;
       },
 
-      onApprove: async function(data) {
+      onApprove: async function(data, actions) {
+        console.log('💳 PayPal onApprove triggered, orderID:', data.orderID);
+
         const orderId = sessionStorage.getItem('pendingOrderId');
         const orderKey = sessionStorage.getItem('pendingOrderKey');
 
-        const res = await fetch('/api/paypal/capture-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paypalOrderId: data.orderID,
-            orderId: parseInt(orderId || '0')
-          })
-        });
+        console.log('📦 Capturing order:', orderId);
 
-        if (!res.ok) {
-          alert('Payment capture failed. Please check with customer service.');
-          return;
+        try {
+          const res = await fetch('/api/paypal/capture-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              paypalOrderId: data.orderID,
+              orderId: parseInt(orderId || '0')
+            })
+          });
+
+          const result = await res.json();
+          console.log('✅ Capture result:', result);
+
+          if (!res.ok) {
+            console.error('❌ Capture failed:', result);
+
+            // 检查是否为可恢复的错误（拒卡等）
+            if (result.paypalError) {
+              const errorName = result.paypalError.name;
+              const details = result.paypalError.details || [];
+
+              // INSTRUMENT_DECLINED: 卡被拒绝，用户可以换卡重试
+              if (errorName === 'INSTRUMENT_DECLINED' ||
+                  details.some(d => d.issue === 'INSTRUMENT_DECLINED')) {
+                alert('Your payment method was declined. Please try a different card or payment method.');
+                return actions.restart(); // 重启 PayPal 流程，让用户换卡
+              }
+
+              // PAYER_ACTION_REQUIRED: 需要用户额外验证（3DS等）
+              if (errorName === 'PAYER_ACTION_REQUIRED') {
+                alert('Additional verification required. Please complete the verification in the PayPal window.');
+                return actions.restart();
+              }
+            }
+
+            alert('Payment capture failed. Please contact customer service or try again later.');
+            return;
+          }
+
+          // 清空本地购物车
+          localStorage.removeItem('ebbelle_cart');
+
+          console.log('🔄 Redirecting to confirmation page...');
+
+          // 跳转至统一确认页
+          window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal`;
+        } catch (error) {
+          console.error('❌ Capture error:', error);
+          alert('An error occurred during payment. Please try again.');
         }
-
-        // 清空本地购物车
-        localStorage.removeItem('ebbelle_cart');
-
-        // 跳转至统一确认页
-        window.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal`;
       },
 
       onError: function(err) {
-        console.error('PayPal encounter error:', err);
+        console.error('❌ PayPal encounter error:', err);
         alert('An error occurred during payment. Please try again.');
+      },
+
+      onCancel: function(data) {
+        console.log('⚠️ 用户取消或关闭了 PayPal 弹窗:', data);
+
+        // 不执行 cancel-order API，让订单保持 pending 状态
+        // 用户可以直接再次点击支付按钮重试
+        // 清理 sessionStorage 中的订单 ID，以便重新创建订单（如果需要）
+        // 注意：不清理也可以，因为下次点击会检查并复用 pending 订单
+
+        alert('Payment was not completed. You can try again whenever you are ready.');
+
+        // 不刷新页面，用户可以直接再次点击 PayPal 按钮
       }
     }).render('#paypal-button-container');
   }

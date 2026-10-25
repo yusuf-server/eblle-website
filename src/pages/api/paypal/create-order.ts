@@ -42,6 +42,75 @@ interface RequestBody {
   }>;
 }
 
+/**
+ * 将国家名称或代码转换为 ISO 2 字母代码
+ */
+function normalizeCountryCode(country: string): string {
+  if (!country) return 'US';
+
+  const upperCountry = country.toUpperCase().trim();
+
+  // 如果已经是 2 字母代码，直接返回
+  if (upperCountry.length === 2 && /^[A-Z]{2}$/.test(upperCountry)) {
+    return upperCountry;
+  }
+
+  // 常见国家名称映射
+  const countryMap: Record<string, string> = {
+    'UNITED STATES': 'US',
+    'UNITED STATES OF AMERICA': 'US',
+    'USA': 'US',
+    'UNITED KINGDOM': 'GB',
+    'UK': 'GB',
+    'GREAT BRITAIN': 'GB',
+    'CHINA': 'CN',
+    'CANADA': 'CA',
+    'AUSTRALIA': 'AU',
+    'GERMANY': 'DE',
+    'FRANCE': 'FR',
+    'ITALY': 'IT',
+    'SPAIN': 'ES',
+    'JAPAN': 'JP',
+    'SOUTH KOREA': 'KR',
+    'KOREA': 'KR',
+    'BRAZIL': 'BR',
+    'MEXICO': 'MX',
+    'INDIA': 'IN',
+    'NETHERLANDS': 'NL',
+    'SWEDEN': 'SE',
+    'NORWAY': 'NO',
+    'DENMARK': 'DK',
+    'FINLAND': 'FI',
+    'POLAND': 'PL',
+    'SWITZERLAND': 'CH',
+    'AUSTRIA': 'AT',
+    'BELGIUM': 'BE',
+    'IRELAND': 'IE',
+    'NEW ZEALAND': 'NZ',
+    'SINGAPORE': 'SG',
+    'MALAYSIA': 'MY',
+    'THAILAND': 'TH',
+    'VIETNAM': 'VN',
+    'PHILIPPINES': 'PH',
+    'INDONESIA': 'ID',
+    'PORTUGAL': 'PT',
+    'GREECE': 'GR',
+    'TURKEY': 'TR',
+    'RUSSIA': 'RU',
+    'SOUTH AFRICA': 'ZA',
+    'ARGENTINA': 'AR',
+    'CHILE': 'CL',
+    'COLOMBIA': 'CO',
+    'PERU': 'PE',
+    'ISRAEL': 'IL',
+    'SAUDI ARABIA': 'SA',
+    'UNITED ARAB EMIRATES': 'AE',
+    'UAE': 'AE',
+  };
+
+  return countryMap[upperCountry] || 'US';
+}
+
 export const POST: APIRoute = async ({ request, cookies, locals }) => {
   try {
     const env = getEnv(locals);
@@ -205,7 +274,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
                 admin_area_2: shipping.city,
                 admin_area_1: shipping.state,
                 postal_code: shipping.postcode,
-                country_code: shipping.country || 'US',
+                country_code: normalizeCountryCode(shipping.country),
               },
             },
           },
@@ -227,6 +296,14 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     }
 
     const paypalOrder = await paypalOrderRes.json();
+
+    console.log('✅ PayPal 订单创建成功:', {
+      paypalOrderId: paypalOrder.id,
+      wcOrderId: wcOrder.id,
+      status: paypalOrder.status,
+      amount: orderTotal,
+      currency: orderCurrency
+    });
 
     // 4. 将 PayPal Order ID 记录回 WooCommerce
     await fetch(`${env.WC_STORE_URL}/wp-json/wc/v3/orders/${wcOrder.id}`, {

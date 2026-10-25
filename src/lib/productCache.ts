@@ -134,15 +134,20 @@ export async function getProductsWithPricesAndTotal(params: {
   search?: string;  // 添加搜索支持
   attribute?: string;
   attribute_term?: string;
-}) {
+}, forceRefresh: boolean = false) {
   const cacheKey = `products-total-${JSON.stringify(params)}`;
   console.log('缓存key:', cacheKey);
 
-  const cached = getCache(cacheKey);
-  if (cached) {
-    console.log('使用缓存的产品数据（带总数）');
-    console.log('缓存的第一个产品ID:', cached.products[0]?.id);
-    return cached;
+  // 如果强制刷新，跳过缓存直接获取
+  if (forceRefresh) {
+    console.log('🔄 强制刷新：跳过缓存，直接从 WooCommerce 获取');
+  } else {
+    const cached = getCache(cacheKey);
+    if (cached) {
+      console.log('使用缓存的产品数据（带总数）');
+      console.log('缓存的第一个产品ID:', cached.products[0]?.id);
+      return cached;
+    }
   }
 
   console.log('从API获取产品数据（带总数）...');

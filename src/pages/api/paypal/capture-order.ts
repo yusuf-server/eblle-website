@@ -76,17 +76,34 @@ export const POST: APIRoute = async ({ request, locals }) => {
       },
     });
 
+    const captureData = await captureRes.json();
+
     if (!captureRes.ok) {
-      const err = await captureRes.json();
-      console.error('PayPal Capture Error:', err);
-      throw new Error('Capture rejected by PayPal');
+      console.error('❌ PayPal Capture Error:', captureData);
+
+      // 透传 PayPal 错误详情，供前端识别 INSTRUMENT_DECLINED 等可恢复错误
+      return new Response(
+        JSON.stringify({
+          error: 'Capture rejected',
+          paypalError: {
+            name: captureData.name,
+            message: captureData.message,
+            details: captureData.details || []
+          }
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    const captureData = await captureRes.json();
     const captureId = captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id || captureData.id;
 
-    // 4. 将订单推进为 processing（已付款）
-    await fetch(`${env.WC_STORE_URL}/wp-json/wc/v3/orders/${orderId}`, {
+    console.log('✅ PayPal 捕获成功，Capture ID:', captureId);
+
+    // 4. 异步更新 WooCommerce 订单（不阻塞响应）
+    console.log(`📦 正在更新 WooCommerce 订单 ${orderId} 为 processing...`);
+
+    // 立即返回成功响应，避免 PayPal 弹窗卡住
+    const updatePromise = fetch(`${env.WC_STORE_URL}/wp-json/wc/v3/orders/${orderId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -102,8 +119,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
           { key: '_paypal_captured_at', value: new Date().toISOString() }
         ]
       }),
+    }).then(async (wcUpdateRes) => {
+      if (wcUpdateRes.ok) {
+        const wcData = await wcUpdateRes.json();
+        console.log('✅ WooCommerce 订单已更新为 processing, 订单号:', wcData.id);
+      } else {
+        const wcError = await wcUpdateRes.json();
+        console.error('❌ WooCommerce 订单更新失败:', wcError);
+      }
+    }).catch(err => {
+      console.error('❌ WooCommerce 更新异常:', err);
     });
 
+    // 注意：不等待更新完成，立即返回
+    // 缓存清除由前端在确认页调用
     return new Response(
       JSON.stringify({ success: true, captureId: captureId, status: 'COMPLETED' }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }

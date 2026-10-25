@@ -2802,9 +2802,19 @@ if (Astro.response) {
 
       const response = await fetch(`/api/products`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // 添加缓存破坏头，强制 API 绕过缓存
+          ...(window._forceRefresh ? { 'X-Force-Refresh': 'true' } : {})
+        },
         body: JSON.stringify(requestBody)
       });
+
+      // 清除刷新标记（只刷新一次）
+      if (window._forceRefresh) {
+        delete window._forceRefresh;
+        console.log('✅ 已强制刷新产品列表，获取最新库存');
+      }
 
       if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
 
@@ -3077,6 +3087,21 @@ if (Astro.response) {
     fetchAndSyncQuickGiftsData();
     const urlParams = new URLSearchParams(window.location.search);
     const pageParam = urlParams.get('page');
+
+    // 检测从确认页跳转过来的刷新标记
+    const refreshParam = urlParams.get('refresh');
+    if (refreshParam === '1') {
+      // 设置全局标记，让 loadPage 知道需要跳过缓存
+      window._forceRefresh = true;
+
+      // 清理 URL 参数（移除 refresh=1，保持页面干净）
+      urlParams.delete('refresh');
+      const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, '', newUrl);
+
+      console.log('🔄 检测到购买后刷新，强制重新加载产品列表');
+    }
+
     loadPage(pageParam ? parseInt(pageParam) : 1);
   });
 
@@ -3598,10 +3623,10 @@ if (Astro.response) {
     html += '<span class="mobile-tier-badge">Tiered Discounts</span>';
     html += '</div>';
     html += '<div class="mobile-pricing-grid">';
-    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">1–9 pcs</div><div class="mobile-tier-price">' + formatPrice(price) + '</div><div class="mobile-tier-label">Retail</div></div>';
-    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">10–49 pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.79) + '</div><div class="mobile-tier-save">Save 21%</div></div>';
-    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">50–99 pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.62) + '</div><div class="mobile-tier-save">Save 38%</div></div>';
-    html += '<div class="mobile-price-tier best"><div class="mobile-tier-qty">100+ pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.45) + '</div><div class="mobile-tier-best-badge">Best Value</div></div>';
+    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">1–9 pcs</div><div class="mobile-tier-price">' + formatPrice(price) + '</div><div class="mobile-tier-label">Regular</div></div>';
+    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">10–49 pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.97) + '</div><div class="mobile-tier-save">Save 3%</div></div>';
+    html += '<div class="mobile-price-tier"><div class="mobile-tier-qty">50–99 pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.94) + '</div><div class="mobile-tier-save">Save 6%</div></div>';
+    html += '<div class="mobile-price-tier best"><div class="mobile-tier-qty">100+ pcs</div><div class="mobile-tier-price">' + formatPrice(price * 0.90) + '</div><div class="mobile-tier-best-badge">Best Value - Save 10%</div></div>';
     html += '</div></div>';
 
     html += '<div class="quick-gift-carousel" id="mobileQuickGiftCarousel">';
@@ -3706,6 +3731,32 @@ if (Astro.response) {
     input.value = Math.max(1, currentQty + delta);
   };
 
+  // 更新移动端批发价格表格
+  function updateMobileWholesalePriceTable(basePrice) {
+    const priceTiers = document.querySelectorAll('.mobile-pricing-grid .mobile-price-tier');
+    if (priceTiers.length === 0) return;
+
+    const prices = [
+      { price: basePrice, label: 'Regular' },                    // 1-9 件
+      { price: basePrice * 0.97, label: 'Save 3%' },            // 10-49 件
+      { price: basePrice * 0.94, label: 'Save 6%' },            // 50-99 件
+      { price: basePrice * 0.90, label: 'Best Value - Save 10%' } // 100+ 件
+    ];
+
+    priceTiers.forEach((tier, index) => {
+      const priceElement = tier.querySelector('.mobile-tier-price');
+      const labelElement = tier.querySelector('.mobile-tier-save, .mobile-tier-best-badge, .mobile-tier-label');
+
+      if (priceElement && prices[index]) {
+        priceElement.textContent = formatPrice(prices[index].price);
+      }
+
+      if (labelElement && prices[index]) {
+        labelElement.textContent = prices[index].label;
+      }
+    });
+  }
+
   function updateMobileVariationStock() {
     const variationsData = window.currentProductVariationsData;
     if (!variationsData || variationsData.length === 0) return;
@@ -3727,9 +3778,15 @@ if (Astro.response) {
     const mobileMainImg = document.getElementById('mobileSheetMainImg');
 
     if (matchedVariation) {
+      const price = parseFloat(matchedVariation.price);
+
       if (matchedVariation.price && priceDisplay) {
-        priceDisplay.textContent = formatPrice(parseFloat(matchedVariation.price));
+        priceDisplay.textContent = formatPrice(price);
       }
+
+      // 更新移动端批发价格表格
+      updateMobileWholesalePriceTable(price);
+
       if (matchedVariation.image?.src && mobileMainImg) {
         mobileMainImg.src = matchedVariation.image.src;
       }
@@ -3812,10 +3869,10 @@ if (Astro.response) {
     html += '<span class="header-badge">Tiered Discounts</span>';
     html += '</div>';
     html += '<div class="pricing-grid">';
-    html += '<div class="price-tier"><span class="tier-qty">1 – 9 pcs</span><span class="tier-price">' + formatPrice(price) + '</span><span class="tier-label">Retail</span></div>';
-    html += '<div class="price-tier"><span class="tier-qty">10 – 49 pcs</span><span class="tier-price">' + formatPrice(price * 0.79) + '</span><span class="tier-save">Save 21%</span></div>';
-    html += '<div class="price-tier"><span class="tier-qty">50 – 99 pcs</span><span class="tier-price">' + formatPrice(price * 0.62) + '</span><span class="tier-save">Save 38%</span></div>';
-    html += '<div class="price-tier best"><span class="tier-qty">100+ pcs</span><span class="tier-price">' + formatPrice(price * 0.45) + '</span><span class="tier-badge">Best Value</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">1 – 9 pcs</span><span class="tier-price">' + formatPrice(price) + '</span><span class="tier-label">Regular</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">10 – 49 pcs</span><span class="tier-price">' + formatPrice(price * 0.97) + '</span><span class="tier-save">Save 3%</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">50 – 99 pcs</span><span class="tier-price">' + formatPrice(price * 0.94) + '</span><span class="tier-save">Save 6%</span></div>';
+    html += '<div class="price-tier best"><span class="tier-qty">100+ pcs</span><span class="tier-price">' + formatPrice(price * 0.90) + '</span><span class="tier-badge">Best Value - Save 10%</span></div>';
     html += '</div></div>';
 
     html += '<div class="quick-gift-carousel" id="desktopQuickGiftCarousel">';
@@ -3904,6 +3961,32 @@ if (Astro.response) {
     }
   };
 
+  // 更新批发价格表格
+  function updateWholesalePriceTable(basePrice) {
+    const priceTiers = document.querySelectorAll('.quick-order-wholesale .price-tier');
+    if (priceTiers.length === 0) return;
+
+    const prices = [
+      { price: basePrice, label: 'Regular' },                    // 1-9 件
+      { price: basePrice * 0.97, label: 'Save 3%' },            // 10-49 件
+      { price: basePrice * 0.94, label: 'Save 6%' },            // 50-99 件
+      { price: basePrice * 0.90, label: 'Best Value - Save 10%' } // 100+ 件
+    ];
+
+    priceTiers.forEach((tier, index) => {
+      const priceElement = tier.querySelector('.tier-price');
+      const labelElement = tier.querySelector('.tier-save, .tier-badge, .tier-label');
+
+      if (priceElement && prices[index]) {
+        priceElement.textContent = formatPrice(prices[index].price);
+      }
+
+      if (labelElement && prices[index]) {
+        labelElement.textContent = prices[index].label;
+      }
+    });
+  }
+
   function updateQuickOrderVariationStock() {
     const variationsData = window.currentProductVariationsData;
     if (!variationsData || variationsData.length === 0) return;
@@ -3935,6 +4018,9 @@ if (Astro.response) {
         priceHTML = `<div class="quick-order-price">${formatPrice(price)}</div>`;
       }
       priceContainer.innerHTML = priceHTML;
+
+      // 更新批发价格表格
+      updateWholesalePriceTable(price);
 
       if (matchedVariation.image?.src && mainImg) {
         mainImg.src = matchedVariation.image.src;
@@ -4184,7 +4270,7 @@ if (Astro.response) {
       const variationsData = window.currentProductVariationsData || [];
 
       let selectedVariation = null;
-      let price = productData.price || '0';
+      let basePrice = parseFloat(productData.price) || 0;
       let productName = productData.name || '';
       let productImage = productData.images?.[0]?.src || '';
 
@@ -4194,12 +4280,25 @@ if (Astro.response) {
         });
 
         if (selectedVariation) {
-          price = selectedVariation.price;
+          basePrice = parseFloat(selectedVariation.price) || 0;
           if (selectedVariation.image?.src) {
             productImage = selectedVariation.image.src;
           }
         }
       }
+
+      // 应用批发价格折扣
+      let finalPrice = basePrice;
+      if (qty >= 100) {
+        finalPrice = basePrice * 0.90; // 10% 折扣
+      } else if (qty >= 50) {
+        finalPrice = basePrice * 0.94; // 6% 折扣
+      } else if (qty >= 10) {
+        finalPrice = basePrice * 0.97; // 3% 折扣
+      }
+
+      // 保留两位小数
+      finalPrice = parseFloat(finalPrice.toFixed(2));
 
       let cart = [];
       try {
@@ -4218,12 +4317,25 @@ if (Astro.response) {
       const existingIndex = cart.findIndex(item => item.cartItemId === cartItemId);
       if (existingIndex > -1) {
         cart[existingIndex].quantity += qty;
+        // 重新计算批发价格
+        const newQty = cart[existingIndex].quantity;
+        let newPrice = basePrice;
+        if (newQty >= 100) {
+          newPrice = basePrice * 0.90;
+        } else if (newQty >= 50) {
+          newPrice = basePrice * 0.94;
+        } else if (newQty >= 10) {
+          newPrice = basePrice * 0.97;
+        }
+        cart[existingIndex].price = parseFloat(newPrice.toFixed(2));
+        cart[existingIndex].basePrice = basePrice; // 保存原价用于后续计算
       } else {
         cart.push({
           cartItemId: cartItemId,
           id: productId,
           name: productName,
-          price: price,
+          price: finalPrice,
+          basePrice: basePrice, // 保存原价
           quantity: qty,
           image: productImage,
           selectedVariants: selectedVariations,

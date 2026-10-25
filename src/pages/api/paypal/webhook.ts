@@ -4,6 +4,7 @@
  * 处理 PayPal 事件通知：
  * - CHECKOUT.ORDER.APPROVED: 订单已批准
  * - PAYMENT.CAPTURE.COMPLETED: 支付已完成
+ * - PAYMENT.CAPTURE.PENDING: 支付待审核（风控/余额验证）
  * - PAYMENT.CAPTURE.DENIED: 支付被拒绝
  * - PAYMENT.CAPTURE.REFUNDED: 支付已退款
  *
@@ -208,6 +209,55 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
           if (updateResponse.ok) {
             console.log('✅ 订单状态更新为 processing');
+          } else {
+            const errorData = await updateResponse.json();
+            console.error('❌ 更新订单失败:', errorData);
+          }
+        }
+        break;
+      }
+
+      case 'PAYMENT.CAPTURE.PENDING': {
+        // 支付待审核（风控、余额验证等）
+        const captureId = payload.resource.id;
+        const customId = payload.resource.custom_id;
+        const orderId = customId || payload.resource.supplementary_data?.related_ids?.order_id;
+
+        console.log('⏳ 支付待审核，订单 ID:', orderId, '捕获 ID:', captureId);
+
+        if (orderId) {
+          // 更新订单状态为 on-hold
+          const updateResponse = await fetch(`${env.WC_STORE_URL}/wp-json/wc/v3/orders/${orderId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${wcAuth}`,
+            },
+            body: JSON.stringify({
+              status: 'on-hold',
+              meta_data: [
+                {
+                  key: '_paypal_capture_id',
+                  value: captureId
+                },
+                {
+                  key: '_paypal_payment_status',
+                  value: 'PENDING'
+                },
+                {
+                  key: '_paypal_pending_reason',
+                  value: payload.resource.status_details?.reason || 'Under review'
+                },
+                {
+                  key: '_paypal_webhook_processed_at',
+                  value: new Date().toISOString()
+                }
+              ]
+            }),
+          });
+
+          if (updateResponse.ok) {
+            console.log('✅ 订单状态更新为 on-hold（待审核）');
           } else {
             const errorData = await updateResponse.json();
             console.error('❌ 更新订单失败:', errorData);

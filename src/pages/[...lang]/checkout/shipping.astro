@@ -74,10 +74,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
                   <span>Shipping</span>
                   <span class="calculated-text">Calculated at next step</span>
                 </div>
-                <div class="total-line">
-                  <span>Estimated Taxes</span>
-                  <span>$132.00</span>
-                </div>
                 <div class="total-line grand">
                   <span>Total</span>
                   <span class="total-amount">
@@ -159,7 +155,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
           <!-- Shipping Method -->
           <section class="form-section">
             <h2>Shipping Method</h2>
-            <label class="shipping-option active">
+            <label class="shipping-option active" data-method="standard" data-cost="5.00">
               <input type="radio" name="shipping" value="standard" checked>
               <div class="option-content">
                 <div class="option-row">
@@ -169,7 +165,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
                 <span class="option-time">5-7 business days</span>
               </div>
             </label>
-            <label class="shipping-option">
+            <label class="shipping-option" data-method="express" data-cost="15.00">
               <input type="radio" name="shipping" value="express">
               <div class="option-content">
                 <div class="option-row">
@@ -212,10 +208,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
             <div class="total-line">
               <span>Shipping</span>
               <span class="calculated-text">Calculated at next step</span>
-            </div>
-            <div class="total-line">
-              <span>Estimated Taxes</span>
-              <span>$132.00</span>
             </div>
             <div class="total-line grand">
               <span>Total</span>
@@ -733,6 +725,47 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 </style>
 
 <script>
+  // 货币处理函数
+  const CURRENCY_SYMBOLS = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    CAD: 'C$'
+  };
+
+  const CURRENCY_RATES = {
+    USD: 1.0,
+    EUR: 0.92,
+    GBP: 0.79,
+    CAD: 1.36
+  };
+
+  function getCurrentCurrency() {
+    return localStorage.getItem('ebbelle_currency') || 'USD';
+  }
+
+  function getCurrencySymbol(currency) {
+    return CURRENCY_SYMBOLS[currency || getCurrentCurrency()] || '$';
+  }
+
+  function convertPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const rate = CURRENCY_RATES[currency] || 1.0;
+    return priceUSD * rate;
+  }
+
+  function formatPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const converted = convertPrice(priceUSD, currency);
+    const symbol = getCurrencySymbol(currency);
+    const formatted = converted.toFixed(2);
+
+    if (currency === 'EUR') {
+      return `${formatted}${symbol}`;
+    }
+    return `${symbol}${formatted}`;
+  }
+
   // 从localStorage读取购物车
   function getCart() {
     try {
@@ -751,15 +784,14 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       return sum + (price * item.quantity);
     }, 0);
 
-    const tax = subtotal * 0.08; // 8% tax
-    const shipping = 0; // 待计算
-    const total = subtotal + tax + shipping;
+    const shipping = 0; // 待用户选择
+    const total = subtotal + shipping;
 
     return {
       subtotal: subtotal.toFixed(2),
-      tax: tax.toFixed(2),
       shipping: shipping.toFixed(2),
       total: total.toFixed(2),
+      currency: getCurrentCurrency(),
       itemCount: cart.reduce((sum, item) => sum + item.quantity, 0)
     };
   }
@@ -781,7 +813,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
     let html = '';
     cart.forEach(item => {
-      const itemTotal = (parseFloat(item.price) * item.quantity).toFixed(2);
+      const price = parseFloat(item.price) || 0;
+      const itemTotal = price * item.quantity;
       const variants = item.selectedVariants ?
         Object.values(item.selectedVariants).filter(v => v).join(' / ') : '';
 
@@ -796,7 +829,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
         html += `<p>Qty: ${item.quantity}</p>`;
       }
       html += '</div>';
-      html += `<span class="item-price">$${itemTotal}</span>`;
+      html += `<span class="item-price">${formatPrice(itemTotal)}</span>`;
       html += '</div>';
     });
 
@@ -806,6 +839,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
   // 更新总计
   function updateTotals(totals) {
+    const currency = totals.currency || getCurrentCurrency();
+
     // 更新移动端
     const mobileItemCount = document.querySelector('.mobile-order-summary h2');
     if (mobileItemCount) {
@@ -813,7 +848,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     }
     const mobileTotalAmount = document.querySelector('.mobile-order-summary .summary-total');
     if (mobileTotalAmount) {
-      mobileTotalAmount.textContent = `$${totals.total}`;
+      mobileTotalAmount.textContent = formatPrice(parseFloat(totals.total));
     }
 
     // 更新桌面端
@@ -825,13 +860,11 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     // 更新金额显示
     document.querySelectorAll('.summary-totals').forEach(container => {
       const subtotalEl = container.querySelector('.total-line:nth-child(1) span:last-child');
-      const taxEl = container.querySelector('.total-line:nth-child(3) span:last-child');
       const totalEl = container.querySelector('.total-amount');
 
-      if (subtotalEl) subtotalEl.textContent = `$${totals.subtotal}`;
-      if (taxEl) taxEl.textContent = `$${totals.tax}`;
+      if (subtotalEl) subtotalEl.textContent = formatPrice(parseFloat(totals.subtotal));
       if (totalEl) {
-        totalEl.innerHTML = `<span class="currency">USD</span> $${totals.total}`;
+        totalEl.innerHTML = `<span class="currency">${currency}</span> ${formatPrice(parseFloat(totals.total))}`;
       }
     });
   }
@@ -873,6 +906,12 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   // Form submission
   document.getElementById('shippingForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
+
+    // 获取选中的运费方式
+    const selectedShipping = document.querySelector('.shipping-option.active');
+    const shippingMethod = selectedShipping?.getAttribute('data-method') || 'standard';
+    const shippingCost = selectedShipping?.getAttribute('data-cost') || '20.00';
+
     const formData = {
       email: (document.getElementById('email') as HTMLInputElement).value,
       firstName: (document.getElementById('firstName') as HTMLInputElement).value,
@@ -884,6 +923,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       zip: (document.getElementById('zip') as HTMLInputElement).value,
       country: (document.getElementById('country') as HTMLSelectElement).value,
       phone: (document.getElementById('phone') as HTMLInputElement).value,
+      shippingMethod: shippingMethod,
+      shippingCost: shippingCost
     };
     sessionStorage.setItem('shippingInfo', JSON.stringify(formData));
     window.location.href = '/checkout/payment';

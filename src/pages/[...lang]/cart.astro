@@ -95,11 +95,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
               <span class="fee-tag font-accent">{t(currentLocale, 'cartDrawer.calculatedNextStep')}</span>
             </div>
 
-            <div class="fee-row">
-              <span class="fee-name">{t(currentLocale, 'cart.estimatedTax')}</span>
-              <span class="fee-tag">{t(currentLocale, 'cartDrawer.calculatedAtCheckout')}</span>
-            </div>
-
             <div class="fee-divider"></div>
 
             <div class="fee-row total-highlight">
@@ -845,6 +840,47 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     return TRANSLATIONS[locale]?.[key] || TRANSLATIONS.en[key] || key;
   }
 
+  // 货币处理函数
+  const CURRENCY_SYMBOLS = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    CAD: 'C$'
+  };
+
+  const CURRENCY_RATES = {
+    USD: 1.0,
+    EUR: 0.92,
+    GBP: 0.79,
+    CAD: 1.36
+  };
+
+  function getCurrentCurrency() {
+    return localStorage.getItem('ebbelle_currency') || 'USD';
+  }
+
+  function getCurrencySymbol(currency) {
+    return CURRENCY_SYMBOLS[currency || getCurrentCurrency()] || '$';
+  }
+
+  function convertPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const rate = CURRENCY_RATES[currency] || 1.0;
+    return priceUSD * rate;
+  }
+
+  function formatPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const converted = convertPrice(priceUSD, currency);
+    const symbol = getCurrencySymbol(currency);
+    const formatted = converted.toFixed(2);
+
+    if (currency === 'EUR') {
+      return `${formatted}${symbol}`;
+    }
+    return `${symbol}${formatted}`;
+  }
+
   // 获取购物车数据
   function getCart() {
     try {
@@ -898,7 +934,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
     // 渲染商品列表（结构直接绑定全局穿透类）
     const itemsHTML = cart.map(item => {
-      const itemTotal = (parseFloat(item.price) * item.quantity).toFixed(2);
+      const price = parseFloat(item.price) || 0;
+      const itemTotal = convertPrice(price * item.quantity);
 
       // 提取变体
       let variantsText = '';
@@ -919,13 +956,13 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
               <h3 class="item-title"><a href="/product/${item.slug || ''}">${item.name}</a></h3>
               ${variantsText ? `<p class="item-variant">${variantsText}</p>` : ''}
               <div class="mobile-price-row">
-                <span class="unit-price">$${parseFloat(item.price).toFixed(2)}</span>
+                <span class="unit-price item-price">${formatPrice(price)}</span>
               </div>
             </div>
           </div>
 
           <div class="item-price-col">
-            <span class="unit-price">$${parseFloat(item.price).toFixed(2)}</span>
+            <span class="unit-price item-price">${formatPrice(price)}</span>
           </div>
 
           <div class="item-quantity-col">
@@ -938,7 +975,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
           <div class="item-total-col">
             <span class="total-label">${t('total')}</span>
-            <span class="line-total">$${itemTotal}</span>
+            <span class="line-total">${formatPrice(price * item.quantity)}</span>
           </div>
 
           <div class="item-action-col">
@@ -981,10 +1018,10 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       subtotalName.textContent = `${t('subtotal')} (${totalItems} ${t('itemsInBag')})`;
     }
     if (subtotalSpan) {
-      subtotalSpan.textContent = `$${subtotal.toFixed(2)}`;
+      subtotalSpan.textContent = formatPrice(subtotal);
     }
     if (totalSpan) {
-      totalSpan.textContent = `$${subtotal.toFixed(2)}`;
+      totalSpan.textContent = formatPrice(subtotal);
     }
 
     // 免邮进度 ($50 门槛)
@@ -1001,15 +1038,15 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     if (progressPercent) progressPercent.textContent = `${Math.round(progress)}%`;
     if (progressMessage) {
       if (remaining > 0) {
-        progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> You're <span class="highlight">$${remaining.toFixed(2)}</span> away from <strong>FREE SHIPPING!</strong>`;
+        progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> You're <span class="highlight">${formatPrice(remaining)}</span> away from <strong>FREE SHIPPING!</strong>`;
       } else {
         progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> <strong>Congratulations! You've unlocked FREE SHIPPING!</strong>`;
       }
     }
     if (progressLabels) {
       progressLabels.innerHTML = `
-        <span>Current: <strong>$${subtotal.toFixed(2)}</strong></span>
-        <span>Free threshold: <strong>$50.00</strong></span>
+        <span>Current: <strong>${formatPrice(subtotal)}</strong></span>
+        <span>Free threshold: <strong>${formatPrice(freeShippingThreshold)}</strong></span>
       `;
     }
   }
@@ -1021,16 +1058,31 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     const item = cart.find(i => String(i.cartItemId) === String(cartItemId));
     if (item) {
       item.quantity = newQuantity;
+
+      // 重新计算批发价格
+      const basePrice = parseFloat(item.basePrice || item.price);
+      let finalPrice = basePrice;
+      if (newQuantity >= 100) {
+        finalPrice = basePrice * 0.90; // 10% 折扣
+      } else if (newQuantity >= 50) {
+        finalPrice = basePrice * 0.94; // 6% 折扣
+      } else if (newQuantity >= 10) {
+        finalPrice = basePrice * 0.97; // 3% 折扣
+      }
+      item.price = finalPrice.toFixed(2);
+
       saveCart(cart);
 
       const cartItem = document.querySelector(`[data-cart-item-id="${cartItemId}"]`);
       if (cartItem) {
         const stepperInput = cartItem.querySelector('.stepper-input');
         const lineTotal = cartItem.querySelector('.line-total');
+        const priceElement = cartItem.querySelector('.item-price');
+
         if (stepperInput) stepperInput.value = newQuantity;
+        if (priceElement) priceElement.textContent = formatPrice(finalPrice);
         if (lineTotal) {
-          const price = parseFloat(item.price) || 0;
-          lineTotal.textContent = `$${(price * newQuantity).toFixed(2)}`;
+          lineTotal.textContent = formatPrice(finalPrice * newQuantity);
         }
       }
       updateCartSummary();

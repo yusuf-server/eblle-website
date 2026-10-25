@@ -31,6 +31,23 @@ if (orderId && orderKey) {
       // 安全核对 Order Key，核对成功才输出真实内容
       if (order.order_key === orderKey) {
         orderData = order;
+
+        // 清除购买产品的缓存，确保库存同步
+        if (order.status === 'processing' || order.status === 'completed') {
+          try {
+            const productIds = order.line_items?.map((item: any) => item.product_id) || [];
+            if (productIds.length > 0) {
+              await fetch(`${Astro.url.origin}/api/cache/clear-products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productIds })
+              });
+              console.log('✅ 确认页已清除购买产品的缓存');
+            }
+          } catch (err) {
+            console.warn('⚠️ 清除产品缓存失败（不影响订单）:', err);
+          }
+        }
       }
     }
   } catch (err) {
@@ -53,12 +70,61 @@ if (orderId && orderKey) {
 
   <main class="confirmation-page">
     <div class="confirmation-container">
-      <div class="success-circle">
-        <i class="fa-solid fa-check"></i>
-      </div>
+      {/* 根据订单状态显示不同的图标和颜色 */}
+      {orderData && (orderData.status === 'processing' || orderData.status === 'completed') ? (
+        <div class="success-circle">
+          <i class="fa-solid fa-check"></i>
+        </div>
+      ) : orderData && orderData.status === 'on-hold' ? (
+        <div class="warning-circle">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+      ) : orderData && (orderData.status === 'pending') ? (
+        <div class="pending-circle">
+          <i class="fa-solid fa-hourglass-half"></i>
+        </div>
+      ) : orderData && (orderData.status === 'cancelled' || orderData.status === 'failed') ? (
+        <div class="error-circle">
+          <i class="fa-solid fa-times"></i>
+        </div>
+      ) : (
+        <div class="success-circle">
+          <i class="fa-solid fa-check"></i>
+        </div>
+      )}
 
-      <h1>{t(currentLocale, 'checkout.orderConfirmed')}</h1>
-      <p class="subtitle">{t(currentLocale, 'checkout.thankYouForPurchase')}</p>
+      {/* 根据订单状态显示不同的标题和描述 */}
+      {orderData && (orderData.status === 'processing' || orderData.status === 'completed') ? (
+        <>
+          <h1>{t(currentLocale, 'checkout.orderConfirmed')}</h1>
+          <p class="subtitle">{t(currentLocale, 'checkout.thankYouForPurchase')}</p>
+        </>
+      ) : orderData && orderData.status === 'on-hold' ? (
+        <>
+          <h1>Payment Under Review</h1>
+          <p class="subtitle">Your order is being verified. We'll email you once it's confirmed.</p>
+        </>
+      ) : orderData && orderData.status === 'pending' ? (
+        <>
+          <h1>Order Received</h1>
+          <p class="subtitle">Waiting for payment confirmation...</p>
+        </>
+      ) : orderData && orderData.status === 'cancelled' ? (
+        <>
+          <h1>Order Cancelled</h1>
+          <p class="subtitle">This order has been cancelled.</p>
+        </>
+      ) : orderData && orderData.status === 'failed' ? (
+        <>
+          <h1>Payment Failed</h1>
+          <p class="subtitle">Your payment could not be processed. Please try again or contact support.</p>
+        </>
+      ) : (
+        <>
+          <h1>{t(currentLocale, 'checkout.orderConfirmed')}</h1>
+          <p class="subtitle">{t(currentLocale, 'checkout.thankYouForPurchase')}</p>
+        </>
+      )}
 
       <div class="order-number">
         <span class="label">{t(currentLocale, 'checkout.orderNumber')}:</span>
@@ -95,10 +161,6 @@ if (orderId && orderKey) {
               <span>Shipping ({orderData.shipping_lines[0]?.method_title || 'Standard'})</span>
               <span>${parseFloat(orderData.shipping_total).toFixed(2)}</span>
             </div>
-            <div class="total-row">
-              <span>Tax</span>
-              <span>${parseFloat(orderData.total_tax).toFixed(2)}</span>
-            </div>
             <div class="total-row grand">
               <span>Total Paid</span>
               <span>${parseFloat(orderData.total).toFixed(2)} {orderData.currency}</span>
@@ -129,10 +191,37 @@ if (orderId && orderKey) {
             </div>
             <div class="info-body">
               <p>{orderData.payment_method_title || 'PayPal'}</p>
-              <p class="success-text">
-                <i class="fa-solid fa-circle-check"></i>
-                Payment Completed ({orderData.status.toUpperCase()})
-              </p>
+
+              {/* 根据订单状态显示不同的信息 */}
+              {orderData.status === 'processing' || orderData.status === 'completed' ? (
+                <p class="success-text">
+                  <i class="fa-solid fa-circle-check"></i>
+                  Payment Completed
+                </p>
+              ) : orderData.status === 'pending' ? (
+                <p class="pending-text">
+                  <i class="fa-solid fa-clock"></i>
+                  Payment Pending
+                </p>
+              ) : orderData.status === 'on-hold' ? (
+                <p class="warning-text">
+                  <i class="fa-solid fa-exclamation-triangle"></i>
+                  Payment On Hold (Under Review)
+                </p>
+              ) : orderData.status === 'cancelled' ? (
+                <p class="error-text">
+                  <i class="fa-solid fa-times-circle"></i>
+                  Payment Cancelled
+                </p>
+              ) : orderData.status === 'failed' ? (
+                <p class="error-text">
+                  <i class="fa-solid fa-times-circle"></i>
+                  Payment Failed
+                </p>
+              ) : (
+                <p>Status: {orderData.status.toUpperCase()}</p>
+              )}
+
               {orderData.transaction_id && (
                 <p style="font-size: 11px; color: #888; font-family: monospace; margin-top: 4px;">
                   Txn ID: {orderData.transaction_id}
@@ -155,8 +244,8 @@ if (orderId && orderKey) {
       </div>
 
       <div class="action-buttons">
-        <a href="/" class="btn-primary">{t(currentLocale, 'checkout.continueShopping')}</a>
-        <a href="/shop" class="btn-secondary">Explore Collection</a>
+        <a href="/" class="btn-primary" onclick="clearCacheAndNavigate(event, '/')">{t(currentLocale, 'checkout.continueShopping')}</a>
+        <a href="/shop" class="btn-secondary" onclick="clearCacheAndNavigate(event, '/shop')">Explore Collection</a>
       </div>
     </div>
   </main>
@@ -206,6 +295,42 @@ if (orderId && orderKey) {
     width: 72px;
     height: 72px;
     background: #16a34a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: #fff;
+    font-size: 32px;
+  }
+  .warning-circle {
+    width: 72px;
+    height: 72px;
+    background: #f59e0b;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: #fff;
+    font-size: 32px;
+  }
+  .pending-circle {
+    width: 72px;
+    height: 72px;
+    background: #6b7280;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: #fff;
+    font-size: 32px;
+  }
+  .error-circle {
+    width: 72px;
+    height: 72px;
+    background: #dc2626;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -320,6 +445,9 @@ if (orderId && orderKey) {
   .info-header h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #111; }
   .info-body p { font-size: 13px; color: #666; line-height: 1.5; margin: 2px 0; }
   .success-text { color: #16a34a !important; font-weight: 600; margin-top: 6px; }
+  .pending-text { color: #f59e0b !important; font-weight: 600; margin-top: 6px; }
+  .warning-text { color: #ef4444 !important; font-weight: 600; margin-top: 6px; }
+  .error-text { color: #dc2626 !important; font-weight: 600; margin-top: 6px; }
   .delivery-box {
     width: 100%;
     display: flex;
@@ -369,11 +497,25 @@ if (orderId && orderKey) {
   }
 </style>
 
-<script>
+<script is:inline>
   // 彻底清除临时会话
   try {
     sessionStorage.removeItem('pendingOrderId');
     sessionStorage.removeItem('pendingOrderKey');
     sessionStorage.removeItem('shippingInfo');
   } catch(e) {}
+
+  // 清除缓存并导航（用于确保库存同步）
+  function clearCacheAndNavigate(event, url) {
+    event.preventDefault();
+
+    if (url === '/shop') {
+      // 跳转到 shop 页，添加强制刷新标记
+      // shop 页会检测这个参数，触发骨架屏重新加载
+      window.location.href = '/shop?refresh=1';
+    } else {
+      // 其他页面正常跳转
+      window.location.href = url;
+    }
+  }
 </script>
