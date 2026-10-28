@@ -4217,6 +4217,7 @@ if (Astro.response) {
 
       let cartItem;
       let cartItemId;
+      let weight = 0; // 单件重量（kg）
 
       if (type === 'variable' && variationsData.length > 0) {
         const matchedVariation = variationsData.find(variation => {
@@ -4235,24 +4236,33 @@ if (Astro.response) {
           .join('|');
         cartItemId = `${productData.id}_${variationKey}`;
 
+        // 从变体获取重量，如果变体没有重量则使用第一个变体或父级产品的重量
+        weight = parseFloat(matchedVariation.weight) ||
+                 (variationsData.length > 0 ? parseFloat(variationsData[0].weight) : 0) ||
+                 parseFloat(productData.weight) || 0;
+
         cartItem = {
           cartItemId: cartItemId,
           id: productData.id,
           name: `${productData.name} - ${variantName}`,
           price: matchedVariation.price,
           quantity: qty,
+          weight: weight, // 保存单件重量（kg）
           image: matchedVariation.image?.src || productData.images?.[0]?.src || '',
           selectedVariants: selectedAttributes,
           variationId: matchedVariation.id
         };
       } else {
         cartItemId = `${productData.id}_simple`;
+        weight = parseFloat(productData.weight) || 0; // Simple 产品从父级获取重量
+
         cartItem = {
           cartItemId: cartItemId,
           id: productData.id,
           name: productData.name,
           price: productData.price,
           quantity: qty,
+          weight: weight, // 保存单件重量（kg）
           image: productData.images?.[0]?.src || '',
           selectedVariants: {},
           variationId: null
