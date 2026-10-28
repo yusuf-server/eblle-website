@@ -366,6 +366,12 @@ const giftProducts = giftProductIds.map((id, index) => {
             <span class="badge">HYPOALLERGENIC</span>
           </div>
 
+          <!-- Product SKU -->
+          <div class="product-sku">
+            <span class="sku-label">SKU:</span>
+            <span class="sku-value" id="product-sku">{product.sku || 'N/A'}</span>
+          </div>
+
           <!-- Product Variants Selection -->
           {attributes.length > 0 && (
             <div class="variants-section">
@@ -1339,6 +1345,24 @@ const giftProducts = giftProductIds.map((id, index) => {
     letter-spacing: 1.2px;
     padding: 5px 10px;
     border-radius: 2px;
+  }
+
+  .product-sku {
+    margin-top: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid #e5dfd5;
+    font-size: 14px;
+    color: #5c5f5f;
+  }
+  .product-sku .sku-label {
+    font-weight: 600;
+    margin-right: 8px;
+    color: #333;
+  }
+  .product-sku .sku-value {
+    color: #666;
+    font-family: monospace;
+    letter-spacing: 0.5px;
   }
 
   .variants-section {
@@ -2979,7 +3003,13 @@ const giftProducts = giftProductIds.map((id, index) => {
       stockStatus.textContent = variation.stock_status === 'instock' ? 'In Stock' : 'Out of Stock';
     }
 
-    // 4. 加购与立即购买按钮状态切换
+    // 4. 更新 SKU 显示
+    const skuValue = document.getElementById('product-sku');
+    if (skuValue && variation.sku) {
+      skuValue.textContent = variation.sku;
+    }
+
+    // 5. 加购与立即购买按钮状态切换
     const addToCartBtns = document.querySelectorAll('.btn-add-cart, .sticky-btn-cart');
     const buyNowBtns = document.querySelectorAll('.btn-buy-now, .sticky-btn-buy');
 
