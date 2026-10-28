@@ -138,11 +138,153 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
               <div class="field">
                 <label>{t(currentLocale, 'checkout.country').toUpperCase()}</label>
                 <select id="country" required>
-                  <option>United States</option>
+                  <option value="">Select a country</option>
+                  <option>Albania</option>
+                  <option>Algeria</option>
+                  <option>American Samoa</option>
+                  <option>Andorra</option>
+                  <option>Angola</option>
+                  <option>Argentina</option>
+                  <option>Armenia</option>
+                  <option>Australia</option>
+                  <option>Austria</option>
+                  <option>Bahrain</option>
+                  <option>Bangladesh</option>
+                  <option>Barbados</option>
+                  <option>Belarus</option>
+                  <option>Belgium</option>
+                  <option>Benin</option>
+                  <option>Bolivia</option>
+                  <option>Brazil</option>
+                  <option>Brunei</option>
+                  <option>Bulgaria</option>
                   <option>Canada</option>
-                  <option>United Kingdom</option>
+                  <option>Cape Verde</option>
+                  <option>Chad</option>
+                  <option>Chile</option>
+                  <option>China (Hong Kong)</option>
+                  <option>China (Macao)</option>
+                  <option>Collectivity of Saint Martin</option>
+                  <option>Colombia</option>
+                  <option>Costa Rica</option>
+                  <option>Croatia</option>
+                  <option>Cyprus</option>
+                  <option>Czech Republic</option>
+                  <option>Côte d'Ivoire</option>
+                  <option>Democratic Republic of the Congo</option>
+                  <option>Denmark</option>
+                  <option>Ecuador</option>
+                  <option>Egypt</option>
+                  <option>El Salvador</option>
+                  <option>Estonia</option>
+                  <option>Eswatini</option>
+                  <option>Faroe Islands</option>
+                  <option>Fiji</option>
+                  <option>Finland</option>
                   <option>France</option>
+                  <option>French Guiana</option>
+                  <option>French Polynesia</option>
+                  <option>Gambia</option>
+                  <option>Georgia</option>
+                  <option>Germany</option>
+                  <option>Ghana</option>
+                  <option>Greece</option>
+                  <option>Grenada</option>
+                  <option>Guadeloupe</option>
+                  <option>Guatemala</option>
+                  <option>Honduras</option>
+                  <option>Hungary</option>
+                  <option>Iceland</option>
+                  <option>Indonesia</option>
+                  <option>Iraq</option>
+                  <option>Ireland</option>
+                  <option>Israel</option>
+                  <option>Italy</option>
                   <option>Japan</option>
+                  <option>Jordan</option>
+                  <option>Kazakhstan</option>
+                  <option>Kenya</option>
+                  <option>Kuwait</option>
+                  <option>Laos</option>
+                  <option>Latvia</option>
+                  <option>Lebanon</option>
+                  <option>Lesotho</option>
+                  <option>Liberia</option>
+                  <option>Libya</option>
+                  <option>Liechtenstein</option>
+                  <option>Lithuania</option>
+                  <option>Luxembourg</option>
+                  <option>Madagascar</option>
+                  <option>Malawi</option>
+                  <option>Malaysia</option>
+                  <option>Maldives</option>
+                  <option>Mali</option>
+                  <option>Malta</option>
+                  <option>Marshall Islands</option>
+                  <option>Martinique</option>
+                  <option>Mauritania</option>
+                  <option>Mauritius</option>
+                  <option>Mayotte</option>
+                  <option>Mexico</option>
+                  <option>Micronesia</option>
+                  <option>Moldova</option>
+                  <option>Morocco</option>
+                  <option>Mozambique</option>
+                  <option>Namibia</option>
+                  <option>Nepal</option>
+                  <option>Netherlands</option>
+                  <option>New Caledonia</option>
+                  <option>New Zealand</option>
+                  <option>Nicaragua</option>
+                  <option>Niger</option>
+                  <option>Nigeria</option>
+                  <option>North Macedonia</option>
+                  <option>Norway</option>
+                  <option>Oman</option>
+                  <option>Pakistan</option>
+                  <option>Palau</option>
+                  <option>Panama</option>
+                  <option>Papua New Guinea</option>
+                  <option>Paraguay</option>
+                  <option>Peru</option>
+                  <option>Philippines</option>
+                  <option>Poland</option>
+                  <option>Portugal</option>
+                  <option>Puerto Rico</option>
+                  <option>Qatar</option>
+                  <option>Romania</option>
+                  <option>Rwanda</option>
+                  <option>Réunion</option>
+                  <option>Saudi Arabia</option>
+                  <option>Senegal</option>
+                  <option>Serbia</option>
+                  <option>Seychelles</option>
+                  <option>Singapore</option>
+                  <option>Sint Maarten</option>
+                  <option>Slovakia</option>
+                  <option>Slovenia</option>
+                  <option>South Africa</option>
+                  <option>South Korea</option>
+                  <option>Spain</option>
+                  <option>Sri Lanka</option>
+                  <option>Suriname</option>
+                  <option>Sweden</option>
+                  <option>Switzerland</option>
+                  <option>Syria</option>
+                  <option>Tanzania</option>
+                  <option>Thailand</option>
+                  <option>Trinidad and Tobago</option>
+                  <option>Tunisia</option>
+                  <option>Turkey</option>
+                  <option>Uganda</option>
+                  <option>United Arab Emirates</option>
+                  <option>United Kingdom</option>
+                  <option>United States</option>
+                  <option>Uruguay</option>
+                  <option>Venezuela</option>
+                  <option>Vietnam</option>
+                  <option>Western Samoa</option>
+                  <option>Zambia</option>
                 </select>
               </div>
             </div>
@@ -155,26 +297,19 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
           <!-- Shipping Method -->
           <section class="form-section">
             <h2>Shipping Method</h2>
-            <label class="shipping-option active" data-method="standard" data-cost="5.00">
+            <label class="shipping-option active" data-method="standard" data-cost="0.00" id="shippingOption">
               <input type="radio" name="shipping" value="standard" checked>
               <div class="option-content">
                 <div class="option-row">
                   <span class="option-name">Standard Shipping</span>
-                  <span class="option-price">$5.00</span>
+                  <span class="option-price" id="shippingPrice">Calculating...</span>
                 </div>
-                <span class="option-time">5-7 business days</span>
+                <span class="option-time">5-15 business days</span>
               </div>
             </label>
-            <label class="shipping-option" data-method="express" data-cost="15.00">
-              <input type="radio" name="shipping" value="express">
-              <div class="option-content">
-                <div class="option-row">
-                  <span class="option-name">Express Shipping</span>
-                  <span class="option-price">$15.00</span>
-                </div>
-                <span class="option-time">2-3 business days</span>
-              </div>
-            </label>
+            <div class="shipping-info" id="shippingDetails" style="display: none; margin-top: 12px; padding: 12px; background: #f9fafb; border-radius: 8px; font-size: 13px; color: #6b7280;">
+              <!-- 运费详情将动态显示 -->
+            </div>
           </section>
 
           <!-- Actions -->
@@ -724,8 +859,97 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   }
 </style>
 
-<script>
+<script is:inline>
+  // ============================================================
+  // 运费计算函数
+  // ============================================================
+
+  /**
+   * 计算基础运费
+   * @param totalWeight 订单商品总重量（kg）
+   * @returns 基础运费（USD）
+   */
+  function calculateBaseShipping(totalWeight) {
+    const weight = Math.max(0.03, totalWeight); // 最小重量 0.03kg
+    const baseShipping = (161 * weight + 27) / 6.3 / 0.95;
+    return parseFloat(baseShipping.toFixed(2));
+  }
+
+  /**
+   * 国家附加费配置
+   */
+  const COUNTRY_SURCHARGES = {
+    // 特殊国家订单附加费
+    'Argentina': 6, 'Australia': 5, 'Bahrain': 5, 'Indonesia': 4,
+    'Jordan': 2, 'Kuwait': 5, 'Mayotte': 35, 'Morocco': 3,
+    'Qatar': 3, 'Saudi Arabia': 3, 'Senegal': 20, 'Seychelles': 35, 'Zambia': 3,
+
+    // 偏远地区附加费 +$30
+    'Albania': 30, 'Algeria': 30, 'Andorra': 30, 'Belarus': 30, 'Benin': 30,
+    'Bulgaria': 30, 'Cape Verde': 30, 'Chad': 30, 'Croatia': 30, 'Cyprus': 30,
+    'Czech Republic': 30, 'Côte d\'Ivoire': 30, 'Democratic Republic of the Congo': 30,
+    'Egypt': 30, 'Eswatini': 30, 'Faroe Islands': 30, 'Gambia': 30, 'Georgia': 30,
+    'Ghana': 30, 'Greece': 30, 'Iceland': 30, 'Iraq': 30, 'Kenya': 30, 'Laos': 30,
+    'Lebanon': 30, 'Lesotho': 30, 'Liberia': 30, 'Libya': 30, 'Liechtenstein': 30,
+    'Madagascar': 30, 'Malawi': 30, 'Maldives': 30, 'Mali': 30, 'Mauritania': 30,
+    'Mauritius': 30, 'Micronesia': 30, 'Moldova': 30, 'Mozambique': 30, 'Namibia': 30,
+    'Nepal': 30, 'Niger': 30, 'Nigeria': 30, 'North Macedonia': 30, 'Rwanda': 30,
+    'Syria': 30, 'Tanzania': 30, 'Tunisia': 30, 'Turkey': 30, 'Uganda': 30,
+
+    // 偏远/特殊区域附加费 +$43
+    'American Samoa': 43, 'Angola': 43, 'Armenia': 43, 'Bangladesh': 43, 'Barbados': 43,
+    'Bolivia': 43, 'Collectivity of Saint Martin': 43, 'Costa Rica': 43, 'Ecuador': 43,
+    'El Salvador': 43, 'Fiji': 43, 'French Guiana': 43, 'French Polynesia': 43,
+    'Grenada': 43, 'Guadeloupe': 43, 'Guatemala': 43, 'Honduras': 43, 'Marshall Islands': 43,
+    'Martinique': 43, 'New Caledonia': 43, 'Nicaragua': 43, 'Palau': 43, 'Panama': 43,
+    'Papua New Guinea': 43, 'Paraguay': 43, 'Peru': 43, 'Sint Maarten': 43, 'Suriname': 43,
+    'Trinidad and Tobago': 43, 'Uruguay': 43, 'Venezuela': 43, 'Western Samoa': 43
+  };
+
+  /**
+   * 获取国家附加费
+   * @param country 国家名称
+   * @returns 附加费（USD）
+   */
+  function getCountrySurcharge(country) {
+    return COUNTRY_SURCHARGES[country] || 0;
+  }
+
+  /**
+   * 计算购物车总重量
+   * @param cart 购物车数组
+   * @returns 总重量（kg）
+   */
+  function calculateTotalWeight(cart) {
+    return cart.reduce((total, item) => {
+      const weight = parseFloat(item.weight) || 0;
+      return total + (weight * item.quantity);
+    }, 0);
+  }
+
+  /**
+   * 计算总运费（基础运费 + 国家附加费）
+   * @param totalWeight 订单商品总重量（kg）
+   * @param country 国家名称
+   * @returns 运费详情对象
+   */
+  function calculateShipping(totalWeight, country) {
+    const baseShipping = calculateBaseShipping(totalWeight);
+    const surcharge = getCountrySurcharge(country);
+    const totalShipping = baseShipping + surcharge;
+
+    return {
+      totalWeight: parseFloat(totalWeight.toFixed(3)),
+      baseShipping: parseFloat(baseShipping.toFixed(2)),
+      surcharge: parseFloat(surcharge.toFixed(2)),
+      totalShipping: parseFloat(totalShipping.toFixed(2)),
+      hasSurcharge: surcharge > 0
+    };
+  }
+
+  // ============================================================
   // 货币处理函数
+  // ============================================================
   const CURRENCY_SYMBOLS = {
     USD: '$',
     EUR: '€',
@@ -779,10 +1003,15 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
   // 计算购物车总计
   function calculateCartTotals(cart) {
+    console.log('🛒 购物车数据:', cart);
+
     const subtotal = cart.reduce((sum, item) => {
       const price = parseFloat(item.price) || 0;
+      console.log(`商品: ${item.name}, 价格: ${item.price}, 解析后: ${price}, 数量: ${item.quantity}`);
       return sum + (price * item.quantity);
     }, 0);
+
+    console.log('💰 小计:', subtotal);
 
     const shipping = 0; // 待用户选择
     const total = subtotal + shipping;
@@ -904,25 +1133,83 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   }
 
   // Form submission
-  document.getElementById('shippingForm')?.addEventListener('submit', (e) => {
+  // 检测邮箱是否已注册
+  async function checkEmailRegistered(email) {
+    try {
+      const response = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+      return data.exists || false;
+    } catch (error) {
+      console.error('检测邮箱失败:', error);
+      return false; // 失败时默认为未注册，允许继续流程
+    }
+  }
+
+  document.getElementById('shippingForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // 获取选中的运费方式
+    // 获取邮箱
+    const email = document.getElementById('email').value;
+
+    // 验证是否选择了国家
+    const country = document.getElementById('country').value;
+    if (!country || country === '') {
+      alert('Please select a country');
+      return;
+    }
+
+    // 获取选中的运费方式并确保运费已计算
     const selectedShipping = document.querySelector('.shipping-option.active');
     const shippingMethod = selectedShipping?.getAttribute('data-method') || 'standard';
-    const shippingCost = selectedShipping?.getAttribute('data-cost') || '20.00';
+    let shippingCost = selectedShipping?.getAttribute('data-cost') || '0.00';
+
+    // 如果运费为 0 或未计算，重新计算
+    if (!shippingCost || shippingCost === '0.00' || shippingCost === 'undefined') {
+      const cart = JSON.parse(localStorage.getItem('ebbelle_cart') || '[]');
+      if (cart.length > 0) {
+        const totalWeight = calculateTotalWeight(cart);
+        const shipping = calculateShipping(totalWeight, country);
+        shippingCost = shipping.totalShipping.toFixed(2);
+
+        // 更新 data-cost
+        if (selectedShipping) {
+          selectedShipping.setAttribute('data-cost', shippingCost);
+        }
+
+        console.log('✅ 重新计算运费:', shippingCost);
+      }
+    }
+
+    console.log('📦 提交表单，运费:', shippingCost);
+
+    // 检测邮箱是否已注册
+    const isRegistered = await checkEmailRegistered(email);
+
+    // 存储用户状态到 sessionStorage
+    sessionStorage.setItem('userEmailStatus', JSON.stringify({
+      email: email,
+      isRegistered: isRegistered,
+      checkedAt: new Date().toISOString()
+    }));
 
     const formData = {
-      email: (document.getElementById('email') as HTMLInputElement).value,
-      firstName: (document.getElementById('firstName') as HTMLInputElement).value,
-      lastName: (document.getElementById('lastName') as HTMLInputElement).value,
-      address: (document.getElementById('address') as HTMLInputElement).value,
-      apartment: (document.getElementById('apartment') as HTMLInputElement).value,
-      city: (document.getElementById('city') as HTMLInputElement).value,
-      state: (document.getElementById('state') as HTMLInputElement).value,
-      zip: (document.getElementById('zip') as HTMLInputElement).value,
-      country: (document.getElementById('country') as HTMLSelectElement).value,
-      phone: (document.getElementById('phone') as HTMLInputElement).value,
+      email: email,
+      firstName: document.getElementById('firstName').value,
+      lastName: document.getElementById('lastName').value,
+      address: document.getElementById('address').value,
+      apartment: document.getElementById('apartment').value,
+      city: document.getElementById('city').value,
+      state: document.getElementById('state').value,
+      zip: document.getElementById('zip').value,
+      country: country,
+      phone: document.getElementById('phone').value,
       shippingMethod: shippingMethod,
       shippingCost: shippingCost
     };
@@ -937,4 +1224,94 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       opt.classList.add('active');
     });
   });
+
+  // ============================================================
+  // 运费更新逻辑
+  // ============================================================
+
+  /**
+   * 更新运费显示
+   */
+  function updateShippingDisplay() {
+    const countrySelect = document.getElementById('country');
+    const shippingPriceEl = document.getElementById('shippingPrice');
+    const shippingDetailsEl = document.getElementById('shippingDetails');
+    const shippingOption = document.getElementById('shippingOption');
+
+    if (!countrySelect || !shippingPriceEl) {
+      console.error('Required elements not found');
+      return;
+    }
+
+    const selectedCountry = countrySelect.value;
+
+    // 如果没有选择国家，显示提示
+    if (!selectedCountry || selectedCountry === '') {
+      shippingPriceEl.textContent = 'Select country';
+      if (shippingDetailsEl) shippingDetailsEl.style.display = 'none';
+      return;
+    }
+
+    // 获取购物车
+    const cart = JSON.parse(localStorage.getItem('ebbelle_cart') || '[]');
+    if (cart.length === 0) {
+      shippingPriceEl.textContent = '$0.00';
+      if (shippingDetailsEl) shippingDetailsEl.style.display = 'none';
+      return;
+    }
+
+    // 计算总重量
+    const totalWeight = calculateTotalWeight(cart);
+
+    // 计算运费
+    const shipping = calculateShipping(totalWeight, selectedCountry);
+
+    // 更新运费价格显示
+    shippingPriceEl.textContent = formatPrice(shipping.totalShipping);
+
+    // 更新 data-cost 属性
+    if (shippingOption) {
+      shippingOption.setAttribute('data-cost', shipping.totalShipping.toFixed(2));
+    }
+
+    // 显示运费详情（如果有附加费）
+    if (shippingDetailsEl && shipping.hasSurcharge) {
+      shippingDetailsEl.style.display = 'block';
+      shippingDetailsEl.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span>Base Shipping (${totalWeight.toFixed(3)}kg):</span>
+          <span>${formatPrice(shipping.baseShipping)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>Additional Fee (${selectedCountry}):</span>
+          <span>${formatPrice(shipping.surcharge)}</span>
+        </div>
+      `;
+    } else if (shippingDetailsEl) {
+      shippingDetailsEl.style.display = 'none';
+    }
+
+    console.log('Shipping updated:', {
+      country: selectedCountry,
+      weight: totalWeight,
+      shipping: shipping
+    });
+  }
+
+  // 监听国家选择变化
+  const countrySelect = document.getElementById('country');
+  if (countrySelect) {
+    countrySelect.addEventListener('change', updateShippingDisplay);
+  }
+
+  // 监听购物车更新
+  window.addEventListener('cartUpdated', updateShippingDisplay);
+
+  // 页面加载时更新运费
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateShippingDisplay);
+  } else {
+    updateShippingDisplay();
+  }
+
 </script>

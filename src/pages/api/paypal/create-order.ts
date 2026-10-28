@@ -172,15 +172,21 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     ];
 
     // 处理客户身份关联
+    // 优先使用登录用户的 ID，确保已登录用户的订单始终关联到其账户
     let customerId: number | null = null;
-    const userDataStr = cookies.get('user')?.value;
+    const userId = cookies.get('user_id')?.value;
+    const userEmail = cookies.get('user_email')?.value;
 
-    if (userDataStr) {
+    if (userId) {
+      // 用户已登录，使用登录用户的 ID
       try {
-        const userData = JSON.parse(userDataStr);
-        customerId = userData.id || null;
-      } catch (e) {}
+        customerId = parseInt(userId);
+        console.log('✅ 用户已登录，使用客户 ID:', customerId, '登录邮箱:', userEmail, '填写邮箱:', billing.email);
+      } catch (e) {
+        console.error('❌ 解析登录用户 ID 失败:', e);
+      }
     } else {
+      // 用户未登录，根据填写的邮箱搜索客户
       try {
         const searchResponse = await fetch(
           `${env.WC_STORE_URL}/wp-json/wc/v3/customers?email=${encodeURIComponent(billing.email)}`,
@@ -188,9 +194,16 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
         );
         if (searchResponse.ok) {
           const customers = await searchResponse.json();
-          if (customers.length > 0) customerId = customers[0].id;
+          if (customers.length > 0) {
+            customerId = customers[0].id;
+            console.log('✅ 未登录，根据邮箱找到客户 ID:', customerId, 'Email:', billing.email);
+          } else {
+            console.log('⚠️ 未登录，未找到邮箱对应的客户:', billing.email);
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('❌ 搜索客户失败:', e);
+      }
     }
 
     // 1. 创建 WooCommerce 初始订单
@@ -214,6 +227,13 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
     if (customerId) orderPayload.customer_id = customerId;
 
+    console.log('📦 准备创建 WooCommerce 订单:', {
+      billing: orderPayload.billing,
+      shipping: orderPayload.shipping,
+      line_items: orderPayload.line_items,
+      shipping_lines: orderPayload.shipping_lines
+    });
+
     const wcOrderRes = await fetch(`${env.WC_STORE_URL}/wp-json/wc/v3/orders`, {
       method: 'POST',
       headers: {
@@ -224,14 +244,38 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     });
 
     if (!wcOrderRes.ok) {
-      const errData = await wcOrderRes.json();
+      let errData;
+      const contentType = wcOrderRes.headers.get('content-type');
+      try {
+        if (contentType && contentType.includes('application/json')) {
+          errData = await wcOrderRes.json();
+        } else {
+          const text = await wcOrderRes.text();
+          console.error('❌ WooCommerce API 返回非 JSON 响应:', text);
+          errData = { message: text };
+        }
+      } catch (parseErr) {
+        console.error('❌ 解析 WooCommerce 错误响应失败:', parseErr);
+        errData = { message: 'Unable to parse error response' };
+      }
       return new Response(
         JSON.stringify({ error: 'Failed to create WooCommerce order', details: errData.message }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const wcOrder = await wcOrderRes.json();
+    let wcOrder;
+    try {
+      const responseText = await wcOrderRes.text();
+      console.log('✅ WooCommerce 订单响应原始文本:', responseText.substring(0, 200));
+      wcOrder = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error('❌ 解析 WooCommerce 订单响应失败:', parseErr);
+      return new Response(
+        JSON.stringify({ error: 'Failed to parse WooCommerce order response' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
     const orderTotal = parseFloat(wcOrder.total).toFixed(2);
     const orderCurrency = (wcOrder.currency || currency).toUpperCase();
 

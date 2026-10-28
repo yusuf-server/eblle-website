@@ -148,28 +148,39 @@ if (!userId || !userEmail) {
 
           <!-- Tab 2: Orders -->
           <div class="acc-tab-pane" id="orders">
-            <div class="acc-pane-title-row">
-              <h2>Order History</h2>
-              <span id="orderCount">Loading...</span>
+            <!-- 列表视图 -->
+            <div id="ordersListWrap">
+              <div class="acc-pane-title-row">
+                <h2>Order History</h2>
+                <span id="orderCount">Loading...</span>
+              </div>
+
+              <!-- 加载状态 -->
+              <div id="ordersLoading" style="text-align: center; padding: 40px;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #999;"></i>
+                <p style="margin-top: 12px; color: #666;">Loading your orders...</p>
+              </div>
+
+              <!-- 订单列表 -->
+              <div class="acc-order-list" id="ordersList" style="display: none;"></div>
+
+              <!-- 无订单状态 -->
+              <div id="noOrders" style="display: none; text-align: center; padding: 60px 20px;">
+                <i class="fa-solid fa-shopping-bag" style="font-size: 48px; color: #ddd; margin-bottom: 20px;"></i>
+                <h3 style="font-size: 18px; margin-bottom: 12px; color: #333;">No Orders Yet</h3>
+                <p style="color: #666; margin-bottom: 24px;">You haven't placed any orders yet.</p>
+                <a href="/shop" class="acc-btn-detail" style="display: inline-block; padding: 12px 28px; background: #111; color: #fff; text-decoration: none; font-size: 12px; font-weight: 700; text-transform: uppercase;">
+                  Start Shopping
+                </a>
+              </div>
             </div>
 
-            <!-- 加载状态 -->
-            <div id="ordersLoading" style="text-align: center; padding: 40px;">
-              <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #999;"></i>
-              <p style="margin-top: 12px; color: #666;">Loading your orders...</p>
-            </div>
-
-            <!-- 订单列表 -->
-            <div class="acc-order-list" id="ordersList" style="display: none;"></div>
-
-            <!-- 无订单状态 -->
-            <div id="noOrders" style="display: none; text-align: center; padding: 60px 20px;">
-              <i class="fa-solid fa-shopping-bag" style="font-size: 48px; color: #ddd; margin-bottom: 20px;"></i>
-              <h3 style="font-size: 18px; margin-bottom: 12px; color: #333;">No Orders Yet</h3>
-              <p style="color: #666; margin-bottom: 24px;">You haven't placed any orders yet.</p>
-              <a href="/shop" class="acc-btn-detail" style="display: inline-block; padding: 12px 28px; background: #111; color: #fff; text-decoration: none; font-size: 12px; font-weight: 700; text-transform: uppercase;">
-                Start Shopping
-              </a>
+            <!-- 点击VIEW展开的订单详情 -->
+            <div id="orderDetailWrap" style="display: none;">
+              <button type="button" id="backToOrdersListBtn" class="acc-back-list-btn">
+                <i class="fa-solid fa-arrow-left"></i> Back to Orders
+              </button>
+              <div id="orderDetailContent"></div>
             </div>
           </div>
 
@@ -441,7 +452,7 @@ if (!userId || !userEmail) {
 
   .acc-wrapper {
     width: 100% !important;
-    max-width: 1200px !important;
+    max-width: 1600px !important;
     margin-left: auto !important;
     margin-right: auto !important;
     padding-left: 18px !important;
@@ -617,39 +628,12 @@ if (!userId || !userEmail) {
     font-weight: 600; color: #a3824c; text-align: left; cursor: pointer;
   }
 
-  /* 订单列表（响应式流，绝不溢出） */
   .acc-recent-block { margin-top: 10px; }
   .acc-block-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .acc-block-bar h3 { font-size: 15px; margin: 0; }
   .acc-mini-link { background: none; border: none; font-size: 12px; color: #a3824c; cursor: pointer; }
 
-  .acc-order-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
-  .acc-order-row {
-    display: grid;
-    grid-template-columns: 1fr 1.2fr 1.2fr 1fr auto;
-    align-items: center;
-    gap: 12px;
-    background: #fbf9f6;
-    border: 1px solid #eee8df;
-    padding: 14px 16px;
-    border-radius: 2px;
-    font-size: 13px;
-  }
-  .acc-order-cell { display: flex; flex-direction: column; min-width: 0; }
-  .acc-order-cell .label { display: none; font-size: 10.5px; color: #999; text-transform: uppercase; margin-bottom: 2px; }
-  .val-mono { font-family: monospace; font-weight: 600; color: #111; }
-  .val-price { font-weight: 700; color: #111; }
-  .acc-pill-status {
-    display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10.5px;
-    font-weight: 600; text-transform: uppercase; width: fit-content;
-  }
-  .acc-pill-status.delivered { background: #eef7ee; color: #2e7d32; }
-  .acc-pill-status.processing { background: #fef8ec; color: #b7791f; }
-  .acc-pill-status.cancelled { background: #fdf2f2; color: #c53030; }
-  .acc-btn-detail {
-    padding: 5px 12px; background: #111; color: #fff; text-decoration: none;
-    border-radius: 2px; font-size: 11.5px; font-weight: 600;
-  }
+  .acc-order-list { display: flex; flex-direction: column; gap: 14px; width: 100%; }
 
   /* 地址网格 */
   .acc-address-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
@@ -707,23 +691,14 @@ if (!userId || !userEmail) {
   .acc-submit-btn { height: 38px; padding: 0 20px; background: #111; color: #fff; border: none; font-size: 11.5px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
   .acc-cancel-btn { height: 38px; padding: 0 16px; background: transparent; border: 1px solid #ccc; font-size: 11.5px; cursor: pointer; }
 
-  /* =========================================================
-     移动端断点：彻底保证在 402px 及以下屏幕完美贴合无横移
-     ========================================================= */
+  /* 移动端断点基础 */
   @media (max-width: 820px) {
-    /* 强制防止所有横向溢出 */
     html, body {
       overflow-x: hidden !important;
       width: 100% !important;
     }
-
-    * {
-      max-width: 100%;
-    }
-
-    :root {
-      --container-w: 100%;
-    }
+    * { max-width: 100%; }
+    :root { --container-w: 100%; }
     .acc-root-scope {
       padding: 16px 0 40px !important;
       overflow-x: hidden !important;
@@ -733,22 +708,18 @@ if (!userId || !userEmail) {
       padding-right: 12px !important;
       overflow-x: hidden !important;
     }
-
     .acc-main-grid {
       display: flex !important;
       flex-direction: column !important;
       gap: 16px !important;
       width: 100% !important;
     }
-
     .acc-sidebar-panel,
     .acc-content-panel {
       width: 100% !important;
       padding: 14px !important;
       box-sizing: border-box !important;
     }
-
-    /* 药丸横滑隔离层：只在自身内部横向平移，绝不触碰全屏 */
     .acc-nav-scroller {
       width: 100% !important;
       max-width: 100% !important;
@@ -760,7 +731,6 @@ if (!userId || !userEmail) {
       box-sizing: border-box !important;
     }
     .acc-nav-scroller::-webkit-scrollbar { display: none; }
-
     .acc-nav-list {
       display: flex !important;
       flex-direction: row !important;
@@ -771,13 +741,8 @@ if (!userId || !userEmail) {
       gap: 6px !important;
       padding-bottom: 8px !important;
     }
-    .acc-nav-list::-webkit-scrollbar {
-      height: 4px;
-    }
-    .acc-nav-list::-webkit-scrollbar-thumb {
-      background: #ddd;
-      border-radius: 2px;
-    }
+    .acc-nav-list::-webkit-scrollbar { height: 4px; }
+    .acc-nav-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
     .acc-nav-pill {
       width: auto !important;
       flex-shrink: 0 !important;
@@ -796,40 +761,297 @@ if (!userId || !userEmail) {
       border-top: 1px solid #ded7cb !important;
       padding-top: 7px !important;
     }
-
     .acc-metric-grid,
     .acc-address-grid,
     .acc-row-2 {
       grid-template-columns: minmax(0, 1fr) !important;
       gap: 10px !important;
     }
+  }
+</style>
 
-    /* 移动端订单卡片化：上下折行，彻底消除右边遮挡 */
-    .acc-order-row {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 6px !important;
-      padding: 12px !important;
+<!-- 关键：添加 is:global 允许动态生成的订单卡片和详情节点应用样式 -->
+<style is:global>
+  /* 订单卡片外框 */
+  .acc-order-card {
+    background: #ffffff;
+    border: 1px solid #eee8df;
+    border-radius: 4px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+  }
+  .acc-order-card:hover {
+    border-color: #d6ccbe;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  }
+
+  /* 卡片顶部条 */
+  .acc-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f6f2ec;
+  }
+  .acc-card-top-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .acc-card-order-id {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 14.5px;
+    color: #111;
+  }
+  .acc-card-dot {
+    color: #ccc;
+    font-size: 11px;
+  }
+  .acc-card-date {
+    color: #777;
+    font-size: 12.5px;
+  }
+  .acc-card-top-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .acc-card-total-box {
+    font-size: 13px;
+    color: #666;
+  }
+  .acc-card-total-box strong {
+    font-size: 15px;
+    color: #111;
+    font-weight: 700;
+  }
+
+  /* 状态徽章 */
+  .acc-pill-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .acc-pill-status.delivered { background: #eef7ee; color: #2e7d32; }
+  .acc-pill-status.processing { background: #fef8ec; color: #b7791f; }
+  .acc-pill-status.cancelled { background: #fdf2f2; color: #c53030; }
+
+  /* 卡片下半部（缩略图 + 按钮） */
+  .acc-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+  }
+  .acc-card-thumbs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .acc-thumb-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 3px;
+    border: 1px solid #ebe5dc;
+    object-fit: cover;
+    background: #faf8f5;
+  }
+  .acc-thumb-summary {
+    font-size: 12.5px;
+    color: #777;
+    margin-left: 4px;
+    white-space: nowrap;
+  }
+
+  /* 查看按钮 */
+  .acc-btn-detail {
+    padding: 8px 18px;
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .acc-btn-detail:hover {
+    background: #333;
+    transform: translateY(-1px);
+  }
+
+  /* 完成支付按钮（主要操作） */
+  .acc-btn-pay {
+    padding: 8px 18px;
+    background: #a3824c;
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .acc-btn-pay:hover {
+    background: #8c6f3f;
+    transform: translateY(-1px);
+  }
+
+  /* 次要查看按钮 */
+  .acc-btn-detail-secondary {
+    padding: 8px 18px;
+    background: transparent;
+    color: #111;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .acc-btn-detail-secondary:hover {
+    background: #f5f5f5;
+    border-color: #999;
+  }
+
+  /* 订单详情面板 */
+  .acc-back-list-btn {
+    background: none;
+    border: none;
+    font-size: 12.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #111;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 0;
+  }
+  .acc-back-list-btn:hover {
+    color: #a3824c;
+  }
+  .acc-view-detail-card {
+    background: #ffffff;
+    border: 1px solid #eee8df;
+    border-radius: 3px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .acc-view-detail-card h3 {
+    margin: 0 0 14px;
+    font-size: 13.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    color: #111;
+    border-bottom: 1px solid #f6f2ec;
+    padding-bottom: 8px;
+  }
+  .acc-detail-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .acc-detail-item-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed #f0eae1;
+  }
+  .acc-detail-item-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .acc-detail-thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 3px;
+    border: 1px solid #eee8df;
+    object-fit: cover;
+  }
+  .acc-detail-name-box { flex: 1; }
+  .acc-detail-name-box h4 {
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111;
+  }
+  .acc-detail-name-box p {
+    margin: 0;
+    font-size: 12px;
+    color: #777;
+  }
+  .acc-detail-price-box {
+    font-weight: 700;
+    font-size: 13.5px;
+    color: #111;
+  }
+
+  @media (max-width: 820px) {
+    .acc-card-top {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
     }
-    .acc-order-cell {
-      display: flex !important;
-      flex-direction: row !important;
-      justify-content: space-between !important;
-      align-items: center !important;
-      width: 100% !important;
-      border-bottom: 1px dashed #eee;
-      padding-bottom: 4px;
+    .acc-card-top-right {
+      width: 100%;
+      justify-content: space-between;
     }
-    .acc-order-cell.col-action {
-      border-bottom: none !important;
-      padding-top: 6px;
+    .acc-card-bottom {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
     }
-    .acc-order-cell .label { display: inline-block !important; }
-    .acc-btn-detail { width: 100% !important; text-align: center !important; }
+    .acc-btn-detail,
+    .acc-btn-pay,
+    .acc-btn-detail-secondary {
+      width: 100%;
+      justify-content: center;
+    }
+    .acc-card-bottom > div:last-child {
+      width: 100%;
+    }
   }
 </style>
 
 <script is:inline>
+  // 保持全部订单数据以便展开详情
+  let cachedOrdersData = [];
+
   // Tab 切换逻辑
   const navPills = document.querySelectorAll('.acc-nav-pill[data-tab]');
   const tabPanes = document.querySelectorAll('.acc-tab-pane');
@@ -850,6 +1072,13 @@ if (!userId || !userEmail) {
         pane.classList.remove('active');
       }
     });
+
+    if (tabId === 'orders') {
+      const listWrap = document.getElementById('ordersListWrap');
+      const detailWrap = document.getElementById('orderDetailWrap');
+      if (listWrap) listWrap.style.display = 'block';
+      if (detailWrap) detailWrap.style.display = 'none';
+    }
   }
 
   navPills.forEach(btn => {
@@ -868,8 +1097,13 @@ if (!userId || !userEmail) {
     });
   });
 
+  // 返回列表按钮
+  document.getElementById('backToOrdersListBtn')?.addEventListener('click', () => {
+    document.getElementById('ordersListWrap').style.display = 'block';
+    document.getElementById('orderDetailWrap').style.display = 'none';
+  });
+
   // 地址编辑表单展开/收起
-  // Address编辑按钮事件
   const billingFormBlock = document.getElementById('billingFormBlock');
   const shippingFormBlock = document.getElementById('shippingFormBlock');
 
@@ -894,7 +1128,7 @@ if (!userId || !userEmail) {
   });
 
   // 页面加载时获取用户信息
-  let currentUserId = null; // 存储用户ID
+  let currentUserId = null;
 
   async function loadUserInfo() {
     try {
@@ -903,22 +1137,17 @@ if (!userId || !userEmail) {
 
       if (data.authenticated && data.user) {
         const user = data.user;
-        currentUserId = user.id; // 保存用户ID
+        currentUserId = user.id;
 
-        // 更新侧边栏用户信息
         document.getElementById('sidebarUserName').textContent = `${user.firstName} ${user.lastName}`;
         document.getElementById('sidebarUserEmail').textContent = user.email;
-
-        // 更新Welcome信息
         document.getElementById('welcomeUserName').textContent = user.firstName;
 
-        // 填充Account Details表单
         document.getElementById('account_first_name').value = user.firstName || '';
         document.getElementById('account_last_name').value = user.lastName || '';
         document.getElementById('account_display_name').value = `${user.firstName} ${user.lastName}`;
         document.getElementById('account_email').value = user.email || '';
 
-        // 加载并显示地址
         if (user.billing) {
           displayAddress('billing', user.billing);
           populateAddressForm('billing', user.billing);
@@ -928,15 +1157,10 @@ if (!userId || !userEmail) {
           populateAddressForm('shipping', user.shipping);
         }
 
-        // 更新Dashboard地址统计
         updateAddressMetric(user.billing, user.shipping);
-      } else {
-        // 未登录，重定向到首页
-        window.location.href = '/';
       }
     } catch (error) {
       console.error('Load user info error:', error);
-      window.location.href = '/';
     }
   }
 
@@ -947,11 +1171,9 @@ if (!userId || !userEmail) {
     const confirmPassword = document.getElementById('confirmPassword').value;
     const messageEl = document.getElementById('passwordMessage');
 
-    // 清除之前的消息
     messageEl.style.display = 'none';
     messageEl.className = 'acc-message';
 
-    // 验证
     if (!currentPassword || !newPassword || !confirmPassword) {
       showMessage('Please fill in all password fields', 'error');
       return;
@@ -972,7 +1194,6 @@ if (!userId || !userEmail) {
       return;
     }
 
-    // 显示加载状态
     const submitBtn = document.getElementById('savePasswordBtn');
     const originalText = submitBtn.textContent;
     submitBtn.disabled = true;
@@ -980,7 +1201,6 @@ if (!userId || !userEmail) {
     submitBtn.style.opacity = '0.7';
 
     try {
-      // 首先验证当前密码
       const userEmail = document.getElementById('sidebarUserEmail').textContent;
 
       const validateResponse = await fetch('/api/auth/login', {
@@ -1003,7 +1223,6 @@ if (!userId || !userEmail) {
         return;
       }
 
-      // 当前密码正确，调用修改密码API
       if (!currentUserId) {
         showMessage('Session expired. Please log in again.', 'error');
         submitBtn.disabled = false;
@@ -1027,8 +1246,6 @@ if (!userId || !userEmail) {
 
       if (data.success) {
         showMessage('Password updated successfully! Please use your new password next time you log in.', 'success');
-
-        // 清空表单
         document.getElementById('currentPassword').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmPassword').value = '';
@@ -1045,14 +1262,12 @@ if (!userId || !userEmail) {
     }
   }
 
-  // 显示消息
   function showMessage(message, type) {
     const messageEl = document.getElementById('passwordMessage');
     messageEl.textContent = message;
     messageEl.className = `acc-message ${type}`;
     messageEl.style.display = 'block';
 
-    // 5秒后自动隐藏成功消息
     if (type === 'success') {
       setTimeout(() => {
         messageEl.style.display = 'none';
@@ -1062,23 +1277,21 @@ if (!userId || !userEmail) {
 
   // 页面加载时执行
   loadUserInfo();
-  loadOrders(); // 加载订单
-  loadRecentOrders(); // 加载Dashboard的最近订单
-  loadWishlist(); // 加载Wishlist
+  loadOrders();
+  loadRecentOrders();
+  loadWishlist();
 
   // 处理URL参数，自动切换到指定Tab
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get('tab');
 
   if (tabParam) {
-    // 查找对应的tab按钮并触发点击
     const tabButton = document.querySelector(`[data-tab="${tabParam}"]`);
     if (tabButton) {
       tabButton.click();
     }
   }
 
-  // 暴露到全局
   window.handlePasswordChange = handlePasswordChange;
   window.saveAccountDetails = saveAccountDetails;
 
@@ -1154,13 +1367,11 @@ if (!userId || !userEmail) {
       postcode: document.getElementById(`${type}_postcode`).value.trim(),
     };
 
-    // Billing额外字段
     if (type === 'billing') {
       address.phone = document.getElementById(`${type}_phone`).value.trim();
       address.email = document.getElementById(`${type}_email`).value.trim();
     }
 
-    // 验证必填字段
     if (!address.firstName || !address.lastName || !address.address1 || !address.city || !address.postcode) {
       showAddressMessage(type, 'Please fill in all required fields', 'error');
       return;
@@ -1185,11 +1396,7 @@ if (!userId || !userEmail) {
 
       if (data.success) {
         showAddressMessage(type, 'Address updated successfully!', 'success');
-
-        // 更新显示
         displayAddress(type, data.address);
-
-        // 2秒后关闭表单
         setTimeout(() => {
           document.getElementById(`${type}FormBlock`).style.display = 'none';
         }, 2000);
@@ -1206,14 +1413,12 @@ if (!userId || !userEmail) {
     }
   }
 
-  // 显示地址消息
   function showAddressMessage(type, message, messageType) {
     const messageEl = document.getElementById(`${type}AddressMessage`);
     messageEl.textContent = message;
     messageEl.className = `acc-message ${messageType}`;
     messageEl.style.display = 'block';
 
-    // 5秒后自动隐藏成功消息
     if (messageType === 'success') {
       setTimeout(() => {
         messageEl.style.display = 'none';
@@ -1221,19 +1426,16 @@ if (!userId || !userEmail) {
     }
   }
 
-  // 保存Account Details
   async function saveAccountDetails() {
     const firstName = document.getElementById('account_first_name').value.trim();
     const lastName = document.getElementById('account_last_name').value.trim();
     const email = document.getElementById('account_email').value.trim();
 
-    // 验证
     if (!firstName || !lastName || !email) {
       showAccountMessage('Please fill in all required fields', 'error');
       return;
     }
 
-    // 验证邮箱格式
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       showAccountMessage('Please enter a valid email address', 'error');
@@ -1263,7 +1465,6 @@ if (!userId || !userEmail) {
 
       if (data.success) {
         showAccountMessage('Profile updated successfully!', 'success');
-        // 重新加载用户信息以更新所有显示
         await loadUserInfo();
       } else {
         showAccountMessage(data.message || 'Failed to update profile', 'error');
@@ -1278,20 +1479,243 @@ if (!userId || !userEmail) {
     }
   }
 
-  // 显示Account Details消息
   function showAccountMessage(message, type) {
     const messageEl = document.getElementById('accountDetailsMessage');
     messageEl.textContent = message;
     messageEl.className = `acc-message ${type}`;
     messageEl.style.display = 'block';
 
-    // 5秒后自动隐藏成功消息
     if (type === 'success') {
       setTimeout(() => {
         messageEl.style.display = 'none';
       }, 5000);
     }
   }
+
+  // 辅助渲染状态
+  function formatOrderStatus(statusKey) {
+    const statusMap = {
+      'pending': { text: 'Pending', class: 'processing' },
+      'processing': { text: 'Processing', class: 'processing' },
+      'on-hold': { text: 'On Hold', class: 'processing' },
+      'completed': { text: 'Completed', class: 'delivered' },
+      'cancelled': { text: 'Cancelled', class: 'cancelled' },
+      'refunded': { text: 'Refunded', class: 'cancelled' },
+      'failed': { text: 'Failed', class: 'cancelled' }
+    };
+    const s = statusMap[statusKey] || { text: statusKey || 'Processing', class: 'processing' };
+    return `<span class="acc-pill-status ${s.class}">${s.text}</span>`;
+  }
+
+  // 生成单张订单卡片 HTML
+  function buildOrderCardHtml(order) {
+    const orderDate = new Date(order.date_created).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+
+    const items = order.line_items || [];
+    const count = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+
+    const thumbsHtml = items.slice(0, 3).map(item => {
+      const src = item.image?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=100&q=80';
+      return `<img src="${src}" alt="${item.name || 'item'}" class="acc-thumb-img" />`;
+    }).join('');
+
+    // 判断订单是否可以再次支付
+    const canPay = ['pending', 'failed', 'on-hold'].includes(order.status);
+
+    // 根据订单状态显示不同的按钮
+    let actionButtonHtml = '';
+    if (canPay) {
+      actionButtonHtml = `
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="acc-btn-pay" onclick="retryPayment('${order.id}')">
+            Complete Payment &rarr;
+          </button>
+          <button type="button" class="acc-btn-detail-secondary" onclick="viewSingleOrder('${order.id}')">
+            View Details
+          </button>
+        </div>
+      `;
+    } else {
+      actionButtonHtml = `
+        <button type="button" class="acc-btn-detail" onclick="viewSingleOrder('${order.id}')">
+          View Details &rarr;
+        </button>
+      `;
+    }
+
+    return `
+      <div class="acc-order-card">
+        <div class="acc-card-top">
+          <div class="acc-card-top-left">
+            <span class="acc-card-order-id">#${order.number || order.id}</span>
+            <span class="acc-card-dot">&bull;</span>
+            <span class="acc-card-date">${orderDate}</span>
+            ${formatOrderStatus(order.status)}
+          </div>
+          <div class="acc-card-top-right">
+            <div class="acc-card-total-box">Total: <strong>$${parseFloat(order.total).toFixed(2)}</strong></div>
+          </div>
+        </div>
+        <div class="acc-card-bottom">
+          <div class="acc-card-thumbs">
+            ${thumbsHtml}
+            <span class="acc-thumb-summary">${count} item${count > 1 ? 's' : ''}</span>
+          </div>
+          ${actionButtonHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  // 处理重新支付
+  function retryPayment(orderId) {
+    const order = cachedOrdersData.find(o => String(o.id) === String(orderId));
+    if (!order) {
+      alert('Order not found');
+      return;
+    }
+
+    console.log('🔄 准备重新支付订单:', orderId);
+
+    // 从订单中提取 shipping 和 billing 信息
+    const shipping = order.shipping || {};
+    const billing = order.billing || {};
+
+    // 构建 shippingInfo 对象（与 checkout/shipping.astro 格式一致）
+    const shippingInfo = {
+      firstName: shipping.first_name || billing.first_name || '',
+      lastName: shipping.last_name || billing.last_name || '',
+      email: billing.email || '',
+      phone: billing.phone || '',
+      address: shipping.address_1 || billing.address_1 || '',
+      apartment: shipping.address_2 || billing.address_2 || '',
+      city: shipping.city || billing.city || '',
+      state: shipping.state || billing.state || '',
+      zip: shipping.postcode || billing.postcode || '',
+      country: shipping.country || billing.country || 'US',
+      shippingMethod: order.shipping_lines?.[0]?.method_id || 'standard',
+      shippingCost: parseFloat(order.shipping_total || 0).toFixed(2)
+    };
+
+    console.log('📦 恢复订单信息:', shippingInfo);
+
+    // 将订单信息写入 sessionStorage
+    sessionStorage.setItem('shippingInfo', JSON.stringify(shippingInfo));
+    sessionStorage.setItem('pendingOrderId', order.id.toString());
+    sessionStorage.setItem('pendingOrderKey', order.order_key || '');
+
+    // 将订单商品重新添加到购物车（payment 页面需要显示商品列表）
+    const cartItems = order.line_items.map(item => ({
+      id: item.product_id,
+      product_id: item.product_id,
+      variation_id: item.variation_id || 0,
+      name: item.name,
+      price: parseFloat(item.price || 0).toFixed(2),
+      quantity: item.quantity,
+      image: item.image?.src || ''
+    }));
+
+    localStorage.setItem('ebbelle_cart', JSON.stringify(cartItems));
+
+    console.log('✅ 订单信息已恢复，跳转到支付页面');
+
+    // 跳转到 payment 页面
+    window.location.href = '/checkout/payment';
+  }
+
+  window.retryPayment = retryPayment;
+
+  // 点击 View Details 展示订单详细介绍
+  function viewSingleOrder(orderId) {
+    const order = cachedOrdersData.find(o => String(o.id) === String(orderId));
+    if (!order) return;
+
+    changeTab('orders');
+
+    const listWrap = document.getElementById('ordersListWrap');
+    const detailWrap = document.getElementById('orderDetailWrap');
+    const content = document.getElementById('orderDetailContent');
+
+    listWrap.style.display = 'none';
+    detailWrap.style.display = 'block';
+
+    const orderDate = new Date(order.date_created).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const items = order.line_items || [];
+    const shipping = order.shipping || {};
+    const billing = order.billing || {};
+    const subtotal = (parseFloat(order.total) - parseFloat(order.shipping_total || 0) - parseFloat(order.total_tax || 0)).toFixed(2);
+
+    content.innerHTML = `
+      <div class="acc-view-detail-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div>
+            <h2 style="font-size: 20px; margin: 0 0 4px; font-weight: 700;">Order #${order.number || order.id}</h2>
+            <p style="margin: 0; font-size: 12.5px; color: #888;">Placed on ${orderDate}</p>
+          </div>
+          <div>
+            ${formatOrderStatus(order.status)}
+          </div>
+        </div>
+
+        <h3>Items Ordered</h3>
+        <div class="acc-detail-items-list">
+          ${items.map(item => `
+            <div class="acc-detail-item-row">
+              <img src="${item.image?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=120&q=80'}" class="acc-detail-thumb" alt="${item.name}" />
+              <div class="acc-detail-name-box">
+                <h4>${item.name}</h4>
+                <p>Qty: ${item.quantity} &times; $${parseFloat(item.price || 0).toFixed(2)}</p>
+              </div>
+              <div class="acc-detail-price-box">
+                $${parseFloat(item.total || 0).toFixed(2)}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+        <div class="acc-view-detail-card" style="margin-bottom: 0;">
+          <h3>Order Summary</h3>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #666;">
+            <div style="display: flex; justify-content: space-between;">
+              <span>Subtotal:</span>
+              <span>$${subtotal}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Shipping:</span>
+              <span>$${parseFloat(order.shipping_total || 0).toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-weight: 700; color: #111; border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px;">
+              <span>Total Paid:</span>
+              <span>$${parseFloat(order.total).toFixed(2)} ${order.currency || 'USD'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="acc-view-detail-card" style="margin-bottom: 0;">
+          <h3>Shipping Address</h3>
+          <div style="font-size: 13px; color: #555; line-height: 1.5;">
+            <p style="margin: 0 0 4px; font-weight: 700; color: #111;">${shipping.first_name || billing.first_name || ''} ${shipping.last_name || billing.last_name || ''}</p>
+            <p style="margin: 0;">${shipping.address_1 || billing.address_1 || 'No address provided'}</p>
+            ${shipping.address_2 || billing.address_2 ? `<p style="margin: 0;">${shipping.address_2 || billing.address_2}</p>` : ''}
+            <p style="margin: 0;">${shipping.city || billing.city || ''}, ${shipping.state || billing.state || ''} ${shipping.postcode || billing.postcode || ''}</p>
+            <p style="margin: 0;">${shipping.country || billing.country || ''}</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  window.viewSingleOrder = viewSingleOrder;
 
   // 加载订单列表
   async function loadOrders() {
@@ -1307,80 +1731,31 @@ if (!userId || !userEmail) {
       ordersLoading.style.display = 'none';
 
       if (data.success && data.orders && data.orders.length > 0) {
-        // 显示订单列表
+        cachedOrdersData = data.orders;
         orderCount.textContent = `Showing ${data.orders.length} order${data.orders.length > 1 ? 's' : ''}`;
-        ordersList.style.display = 'block';
+        ordersList.style.display = 'flex';
 
-        // 渲染订单
-        ordersList.innerHTML = data.orders.map(order => {
-          const orderDate = new Date(order.date_created).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          });
+        ordersList.innerHTML = data.orders.map(order => buildOrderCardHtml(order)).join('');
 
-          // 状态映射
-          const statusMap = {
-            'pending': { text: 'Pending', class: 'processing' },
-            'processing': { text: 'Processing', class: 'processing' },
-            'on-hold': { text: 'On Hold', class: 'processing' },
-            'completed': { text: 'Completed', class: 'delivered' },
-            'cancelled': { text: 'Cancelled', class: 'cancelled' },
-            'refunded': { text: 'Refunded', class: 'cancelled' },
-            'failed': { text: 'Failed', class: 'cancelled' }
-          };
-
-          const status = statusMap[order.status] || { text: order.status, class: 'processing' };
-
-          return `
-            <div class="acc-order-row">
-              <div class="acc-order-cell col-id">
-                <span class="label">Order</span>
-                <strong class="val-mono">#${order.number}</strong>
-              </div>
-              <div class="acc-order-cell col-date">
-                <span class="label">Date</span>
-                <span class="val">${orderDate}</span>
-              </div>
-              <div class="acc-order-cell col-status">
-                <span class="label">Status</span>
-                <span class="acc-pill-status ${status.class}">${status.text}</span>
-              </div>
-              <div class="acc-order-cell col-total">
-                <span class="label">Total</span>
-                <strong class="val-price">$${parseFloat(order.total).toFixed(2)}</strong>
-              </div>
-              <div class="acc-order-cell col-action">
-                <a href="/order/${order.id}" class="acc-btn-detail">View</a>
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        // 更新侧边栏订单数量徽章
         const sidebarBadge = document.getElementById('sidebarOrderCount');
         if (sidebarBadge) {
           sidebarBadge.textContent = data.orders.length;
           sidebarBadge.style.display = 'inline-block';
         }
 
-        // 更新Dashboard订单统计
         const dashboardMetric = document.getElementById('dashboardOrdersMetric');
         if (dashboardMetric) {
           dashboardMetric.textContent = `${data.orders.length} Total Order${data.orders.length > 1 ? 's' : ''}`;
         }
       } else {
-        // 显示无订单状态
         orderCount.textContent = 'No orders';
         noOrders.style.display = 'block';
 
-        // 隐藏侧边栏徽章
         const sidebarBadge = document.getElementById('sidebarOrderCount');
         if (sidebarBadge) {
           sidebarBadge.style.display = 'none';
         }
 
-        // 更新Dashboard订单统计
         const dashboardMetric = document.getElementById('dashboardOrdersMetric');
         if (dashboardMetric) {
           dashboardMetric.textContent = '0 Total Orders';
@@ -1405,57 +1780,13 @@ if (!userId || !userEmail) {
       recentOrdersLoading.style.display = 'none';
 
       if (data.success && data.orders && data.orders.length > 0) {
-        // 只显示最近3个订单
+        if (!cachedOrdersData || cachedOrdersData.length === 0) {
+          cachedOrdersData = data.orders;
+        }
         const recentOrders = data.orders.slice(0, 3);
-        recentOrdersList.style.display = 'block';
-
-        // 状态映射
-        const statusMap = {
-          'pending': { text: 'Pending', class: 'processing' },
-          'processing': { text: 'Processing', class: 'processing' },
-          'on-hold': { text: 'On Hold', class: 'processing' },
-          'completed': { text: 'Completed', class: 'delivered' },
-          'cancelled': { text: 'Cancelled', class: 'cancelled' },
-          'refunded': { text: 'Refunded', class: 'cancelled' },
-          'failed': { text: 'Failed', class: 'cancelled' }
-        };
-
-        // 渲染最近订单
-        recentOrdersList.innerHTML = recentOrders.map(order => {
-          const orderDate = new Date(order.date_created).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          });
-
-          const status = statusMap[order.status] || { text: order.status, class: 'processing' };
-
-          return `
-            <div class="acc-order-row">
-              <div class="acc-order-cell col-id">
-                <span class="label">Order</span>
-                <strong class="val-mono">#${order.number}</strong>
-              </div>
-              <div class="acc-order-cell col-date">
-                <span class="label">Date</span>
-                <span class="val">${orderDate}</span>
-              </div>
-              <div class="acc-order-cell col-status">
-                <span class="label">Status</span>
-                <span class="acc-pill-status ${status.class}">${status.text}</span>
-              </div>
-              <div class="acc-order-cell col-total">
-                <span class="label">Total</span>
-                <strong class="val-price">$${parseFloat(order.total).toFixed(2)}</strong>
-              </div>
-              <div class="acc-order-cell col-action">
-                <a href="/order/${order.id}" class="acc-btn-detail">View</a>
-              </div>
-            </div>
-          `;
-        }).join('');
+        recentOrdersList.style.display = 'flex';
+        recentOrdersList.innerHTML = recentOrders.map(order => buildOrderCardHtml(order)).join('');
       } else {
-        // 显示无订单状态
         noRecentOrders.style.display = 'block';
       }
     } catch (error) {
@@ -1476,7 +1807,7 @@ if (!userId || !userEmail) {
     dashboardMetric.textContent = `${addressCount} Saved Address${addressCount !== 1 ? 'es' : ''}`;
   }
 
-  // 加载Wishlist（占位函数，等待后端API对接）
+  // 加载Wishlist
   async function loadWishlist() {
     const wishlistLoading = document.getElementById('wishlistLoading');
     const wishlistGrid = document.getElementById('wishlistGrid');
@@ -1484,40 +1815,26 @@ if (!userId || !userEmail) {
     const wishlistCount = document.getElementById('wishlistCount');
     const sidebarWishlistBadge = document.getElementById('sidebarWishlistCount');
 
-    // 模拟加载
     setTimeout(() => {
       wishlistLoading.style.display = 'none';
-
-      // TODO: 替换为真实API调用
-      // const response = await fetch('/api/user/wishlist');
-      // const data = await response.json();
-
-      // 暂时显示空状态
-      const mockWishlistItems = []; // 后端对接后改为 data.items
+      const mockWishlistItems = [];
 
       if (mockWishlistItems.length > 0) {
         wishlistCount.textContent = `${mockWishlistItems.length} item${mockWishlistItems.length > 1 ? 's' : ''}`;
         wishlistGrid.style.display = 'grid';
 
-        // 显示侧边栏徽章
         if (sidebarWishlistBadge) {
           sidebarWishlistBadge.textContent = mockWishlistItems.length;
           sidebarWishlistBadge.style.display = 'inline-block';
         }
-
-        // TODO: 渲染wishlist items
-        // wishlistGrid.innerHTML = mockWishlistItems.map(item => `...`).join('');
       } else {
         wishlistCount.textContent = 'No items';
         noWishlist.style.display = 'block';
 
-        // 隐藏侧边栏徽章
         if (sidebarWishlistBadge) {
           sidebarWishlistBadge.style.display = 'none';
         }
       }
     }, 500);
   }
-
-
 </script>

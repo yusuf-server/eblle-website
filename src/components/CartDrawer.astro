@@ -713,6 +713,8 @@ for (const locale of SUPPORTED_LOCALES) {
     cartItemsContainer.innerHTML = cart.map(item => {
       const itemPrice = parseFloat(item.price);
       const itemTotal = itemPrice * item.quantity;
+      const itemWeight = parseFloat(item.weight) || 0;
+      const totalWeight = itemWeight * item.quantity;
 
       // 清理和规范化 cartItemId，移除换行符、多余空格
       const cleanCartItemId = String(item.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_');
@@ -726,6 +728,9 @@ for (const locale of SUPPORTED_LOCALES) {
           .join(' / ');
       }
 
+      // 添加重量信息（如果有）
+      const weightText = itemWeight > 0 ? ` • ${totalWeight.toFixed(3)}kg` : '';
+
       return `
         <div class="cart-item" data-cart-item-id="${cleanCartItemId}">
           <div class="item-image">
@@ -735,7 +740,7 @@ for (const locale of SUPPORTED_LOCALES) {
             <div class="item-header">
               <div class="item-info">
                 <h3>${item.name}</h3>
-                ${variantsText ? `<p class="item-meta">${variantsText}</p>` : ''}
+                ${variantsText ? `<p class="item-meta">${variantsText}${weightText}</p>` : (weightText ? `<p class="item-meta">${weightText.substring(3)}</p>` : '')}
                 <p class="item-price">${formatPrice(itemPrice)}</p>
               </div>
               <button type="button" class="delete-btn" data-action="delete" title="Remove item">

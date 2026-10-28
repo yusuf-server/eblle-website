@@ -79,6 +79,16 @@ const shortDesc = stripHtml(product.short_description || product.description || 
 
 const attributes = product.attributes || [];
 
+// 提取 FAQ 数据
+const faqMeta = product.meta_data?.find((meta: any) => meta.key === '_custom_dynamic_faqs');
+const faqs = faqMeta?.value || [];
+
+// 从 FAQ 中提取 Description 内容（用于产品描述区域）
+const faqDescription = faqs.find((faq: any) => faq.title === 'Description')?.content || '';
+
+// 过滤出非 Description 的 FAQ 项
+const otherFaqs = faqs.filter((faq: any) => faq.title !== 'Description');
+
 // =========================================================
 // 纯原生 JavaScript 获取 56339 & 57994 真实数据
 // =========================================================
@@ -343,7 +353,7 @@ const giftProducts = giftProductIds.map((id, index) => {
           <div class="desc-expandable-wrapper" id="descWrapper">
             <div class="product-description-content" id="descContent">
               <p class="product-description">
-                {stripHtml(product.description || product.short_description || '')}
+                {stripHtml(faqDescription || product.short_description || '')}
               </p>
             </div>
             <button type="button" class="btn-toggle-desc" id="btnToggleDesc">Show more</button>
@@ -491,56 +501,40 @@ const giftProducts = giftProductIds.map((id, index) => {
 
           <!-- Accordions -->
           <div class="accordions">
+            <!-- 第一项：Description（显示长描述） -->
             <div class="accordion-item">
               <button type="button" class="accordion-header" onclick="toggleAccordion('desc')">
-                <span>{t(currentLocale, 'product.description')}</span>
+                <span>Description</span>
                 <i class="fa-solid fa-chevron-down" id="icon-desc"></i>
               </button>
               <div class="accordion-content active" id="content-desc">
-                <div class="accordion-body" set:html={product.description || product.short_description || '<p>No description available.</p>'}>
+                <div class="accordion-body" set:html={product.description || '<p>No description available.</p>'}>
                 </div>
               </div>
             </div>
 
-            <div class="accordion-item">
-              <button type="button" class="accordion-header" onclick="toggleAccordion('care')">
-                <span>Material & Care</span>
-                <i class="fa-solid fa-chevron-down" id="icon-care"></i>
-              </button>
-              <div class="accordion-content" id="content-care">
-                <div class="accordion-body">
-                  <p>Crafted with 316L Stainless Steel and plated with 14K Gold using PVD technology. This piece is tarnish-resistant, waterproof, and hypoallergenic.</p>
-                  <p>To maintain its shine, gently wipe with a soft cloth after use. While waterproof, we recommend removing before swimming in chlorinated pools or oceans to extend its lifespan.</p>
-                </div>
-              </div>
-            </div>
+            <!-- 动态生成其他 FAQ 项 -->
+            {faqs.filter((faq: any) => faq.title !== 'Description').map((faq: any, index: number) => {
+              const faqId = faq.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+              // 将换行符转换为 <br> 标签
+              const formattedContent = faq.content
+                .replace(/\r\n/g, '<br>')
+                .replace(/\n/g, '<br>')
+                .replace(/\r/g, '<br>');
 
-            <div class="accordion-item">
-              <button type="button" class="accordion-header" onclick="toggleAccordion('shipping')">
-                <span>Shipping & Returns</span>
-                <i class="fa-solid fa-chevron-down" id="icon-shipping"></i>
-              </button>
-              <div class="accordion-content" id="content-shipping">
-                <div class="accordion-body">
-                  <p>Enjoy free standard shipping on all orders over $50. Orders are typically processed within 1-2 business days.</p>
-                  <p>We accept returns within 30 days of delivery. Items must be in original condition with tags attached. See our full return policy for details.</p>
+              return (
+                <div class="accordion-item">
+                  <button type="button" class="accordion-header" onclick={`toggleAccordion('${faqId}')`}>
+                    <span>{faq.title}</span>
+                    <i class="fa-solid fa-chevron-down" id={`icon-${faqId}`}></i>
+                  </button>
+                  <div class="accordion-content" id={`content-${faqId}`}>
+                    <div class="accordion-body" set:html={formattedContent}>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            <div class="accordion-item">
-              <button type="button" class="accordion-header" onclick="toggleAccordion('wholesale')">
-                <span>Wholesale & Customization</span>
-                <i class="fa-solid fa-chevron-down" id="icon-wholesale"></i>
-              </button>
-              <div class="accordion-content" id="content-wholesale">
-                <div class="accordion-body">
-                  <p><strong>Minimum Order Quantity:</strong> 50 pieces per design</p>
-                  <p><strong>Customization Options:</strong> Logo engraving, custom plating (18k Gold, Rose Gold, Rhodium), and bespoke packaging.</p>
-                  <p><strong>Lead Time:</strong> 15-25 business days depending on order volume.</p>
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -2442,9 +2436,10 @@ const giftProducts = giftProductIds.map((id, index) => {
 }
 </style>
 
-<script is:inline define:vars={{ productId: product.id, productSlug: product.slug }}>
+<script is:inline define:vars={{ productId: product.id, productSlug: product.slug, productWeight: product.weight }}>
   window.productId = productId;
   window.productSlug = productSlug;
+  window.productWeight = productWeight || '0';
 
   // ============================================================
   // 货币工具函数（客户端版本）
@@ -2699,11 +2694,21 @@ const giftProducts = giftProductIds.map((id, index) => {
     let basePrice = document.querySelector('.current-price')?.textContent.replace(/[^0-9.]/g, '') || '0';
     let variationId = null;
     let stockStatus = 'instock';
+    let weight = 0; // 单件重量（kg）
 
     if (matchingVariation) {
       basePrice = matchingVariation.price;
       variationId = matchingVariation.id;
       stockStatus = matchingVariation.stock_status;
+      weight = parseFloat(matchingVariation.weight) || 0; // 从变体获取重量
+    } else {
+      // Simple 产品或没有匹配变体，从全局产品数据获取
+      weight = parseFloat(window.productWeight) || 0;
+
+      // 如果是变体产品但没有匹配到，尝试使用第一个变体的重量
+      if (variationsData && variationsData.length > 0) {
+        weight = parseFloat(variationsData[0].weight) || 0;
+      }
     }
 
     // 应用批发价格折扣
@@ -2724,6 +2729,7 @@ const giftProducts = giftProductIds.map((id, index) => {
       price: finalPrice.toFixed(2),
       basePrice: basePrice, // 保存原价用于购物车重新计算
       quantity: quantity,
+      weight: weight, // 保存单件重量（kg）
       image: productImage,
       selectedVariants: selectedAttrs,
       stockStatus: stockStatus,

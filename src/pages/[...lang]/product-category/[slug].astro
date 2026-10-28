@@ -3813,10 +3813,10 @@ if (Astro.response) {
     html += '<span class="header-badge">Tiered Discounts</span>';
     html += '</div>';
     html += '<div class="pricing-grid">';
-    html += '<div class="price-tier"><span class="tier-qty">1 – 9 pcs</span><span class="tier-price">' + formatPrice(price) + '</span><span class="tier-label">Retail</span></div>';
-    html += '<div class="price-tier"><span class="tier-qty">10 – 49 pcs</span><span class="tier-price">' + formatPrice(price * 0.79) + '</span><span class="tier-save">Save 21%</span></div>';
-    html += '<div class="price-tier"><span class="tier-qty">50 – 99 pcs</span><span class="tier-price">' + formatPrice(price * 0.62) + '</span><span class="tier-save">Save 38%</span></div>';
-    html += '<div class="price-tier best"><span class="tier-qty">100+ pcs</span><span class="tier-price">' + formatPrice(price * 0.45) + '</span><span class="tier-badge">Best Value</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">1 – 9 pcs</span><span class="tier-price">' + formatPrice(price) + '</span><span class="tier-label">Regular</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">10 – 49 pcs</span><span class="tier-price">' + formatPrice(price * 0.97) + '</span><span class="tier-save">Save 3%</span></div>';
+    html += '<div class="price-tier"><span class="tier-qty">50 – 99 pcs</span><span class="tier-price">' + formatPrice(price * 0.94) + '</span><span class="tier-save">Save 6%</span></div>';
+    html += '<div class="price-tier best"><span class="tier-qty">100+ pcs</span><span class="tier-price">' + formatPrice(price * 0.90) + '</span><span class="tier-badge">Best Value - Save 10%</span></div>';
     html += '</div></div>';
 
     html += '<div class="quick-gift-carousel" id="desktopQuickGiftCarousel">';
@@ -3905,6 +3905,32 @@ if (Astro.response) {
     }
   };
 
+  // 更新批发价格表格
+  function updateWholesalePriceTable(basePrice) {
+    const priceTiers = document.querySelectorAll('.quick-order-wholesale .price-tier');
+    if (priceTiers.length === 0) return;
+
+    const prices = [
+      { price: basePrice, label: 'Regular' },                    // 1-9 件
+      { price: basePrice * 0.97, label: 'Save 3%' },            // 10-49 件
+      { price: basePrice * 0.94, label: 'Save 6%' },            // 50-99 件
+      { price: basePrice * 0.90, label: 'Best Value - Save 10%' } // 100+ 件
+    ];
+
+    priceTiers.forEach((tier, index) => {
+      const priceElement = tier.querySelector('.tier-price');
+      const labelElement = tier.querySelector('.tier-save, .tier-badge, .tier-label');
+
+      if (priceElement && prices[index]) {
+        priceElement.textContent = formatPrice(prices[index].price);
+      }
+
+      if (labelElement && prices[index]) {
+        labelElement.textContent = prices[index].label;
+      }
+    });
+  }
+
   function updateQuickOrderVariationStock() {
     const variationsData = window.currentProductVariationsData;
     if (!variationsData || variationsData.length === 0) return;
@@ -3936,6 +3962,9 @@ if (Astro.response) {
         priceHTML = `<div class="quick-order-price">${formatPrice(price)}</div>`;
       }
       priceContainer.innerHTML = priceHTML;
+
+      // 更新批发价格表格
+      updateWholesalePriceTable(price);
 
       if (matchedVariation.image?.src && mainImg) {
         mainImg.src = matchedVariation.image.src;
@@ -4185,9 +4214,10 @@ if (Astro.response) {
       const variationsData = window.currentProductVariationsData || [];
 
       let selectedVariation = null;
-      let price = productData.price || '0';
+      let basePrice = parseFloat(productData.price) || 0;
       let productName = productData.name || '';
       let productImage = productData.images?.[0]?.src || '';
+      let weight = 0; // 单件重量（kg）
 
       if (productType === 'variable' && variationsData.length > 0) {
         selectedVariation = variationsData.find(variation => {
@@ -4195,12 +4225,33 @@ if (Astro.response) {
         });
 
         if (selectedVariation) {
-          price = selectedVariation.price;
+          basePrice = parseFloat(selectedVariation.price) || 0;
+          weight = parseFloat(selectedVariation.weight) || 0; // 从变体获取重量
           if (selectedVariation.image?.src) {
             productImage = selectedVariation.image.src;
           }
+        } else if (variationsData.length > 0) {
+          // 如果没有匹配到变体，使用第一个变体的数据
+          basePrice = parseFloat(variationsData[0].price) || 0;
+          weight = parseFloat(variationsData[0].weight) || 0;
         }
+      } else {
+        // Simple 产品从父级获取重量
+        weight = parseFloat(productData.weight) || 0;
       }
+
+      // 应用批发价格折扣
+      let finalPrice = basePrice;
+      if (qty >= 100) {
+        finalPrice = basePrice * 0.90; // 10% 折扣
+      } else if (qty >= 50) {
+        finalPrice = basePrice * 0.94; // 6% 折扣
+      } else if (qty >= 10) {
+        finalPrice = basePrice * 0.97; // 3% 折扣
+      }
+
+      // 保留两位小数
+      finalPrice = parseFloat(finalPrice.toFixed(2));
 
       let cart = [];
       try {
@@ -4219,13 +4270,28 @@ if (Astro.response) {
       const existingIndex = cart.findIndex(item => item.cartItemId === cartItemId);
       if (existingIndex > -1) {
         cart[existingIndex].quantity += qty;
+        // 重新计算批发价格
+        const newQty = cart[existingIndex].quantity;
+        let newPrice = basePrice;
+        if (newQty >= 100) {
+          newPrice = basePrice * 0.90;
+        } else if (newQty >= 50) {
+          newPrice = basePrice * 0.94;
+        } else if (newQty >= 10) {
+          newPrice = basePrice * 0.97;
+        }
+        cart[existingIndex].price = parseFloat(newPrice.toFixed(2));
+        cart[existingIndex].basePrice = basePrice; // 保存原价用于后续计算
+        // 重量不需要重新设置，因为单件重量不变
       } else {
         cart.push({
           cartItemId: cartItemId,
           id: productId,
           name: productName,
-          price: price,
+          price: finalPrice,
+          basePrice: basePrice, // 保存原价
           quantity: qty,
+          weight: weight, // 保存单件重量（kg）
           image: productImage,
           selectedVariants: selectedVariations,
           variationId: selectedVariation?.id || null

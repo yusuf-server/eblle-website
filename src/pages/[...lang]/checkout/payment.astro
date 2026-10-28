@@ -785,8 +785,8 @@ const CURRENT_CURRENCY = 'USD';
           shippingMethod: shipping.shippingMethod || 'standard',
           shippingCost: shipping.shippingCost || totals.shipping,
           line_items: cart.map(item => ({
-            product_id: item.product_id || item.id,
-            variation_id: item.variation_id || undefined,
+            product_id: item.productId || item.product_id || item.id,
+            variation_id: item.variationId || item.variation_id || undefined,
             quantity: item.quantity
           }))
         };
@@ -840,58 +840,88 @@ const CURRENT_CURRENCY = 'USD';
           if (!res.ok) {
             console.error('❌ Capture failed:', result);
 
-            // 检查是否为可恢复的错误（拒卡等）
-            if (result.paypalError) {
-              const errorName = result.paypalError.name;
-              const details = result.paypalError.details || [];
+            // 存储支付失败状态
+            sessionStorage.setItem('paymentStatus', JSON.stringify({
+              status: 'failed',
+              reason: result.paypalError?.name || 'unknown',
+              details: result.paypalError?.details || []
+            }));
 
-              // INSTRUMENT_DECLINED: 卡被拒绝，用户可以换卡重试
-              if (errorName === 'INSTRUMENT_DECLINED' ||
-                  details.some(d => d.issue === 'INSTRUMENT_DECLINED')) {
-                alert('Your payment method was declined. Please try a different card or payment method.');
-                return actions.restart(); // 重启 PayPal 流程，让用户换卡
-              }
+            // 清空本地购物车
+            localStorage.removeItem('ebbelle_cart');
 
-              // PAYER_ACTION_REQUIRED: 需要用户额外验证（3DS等）
-              if (errorName === 'PAYER_ACTION_REQUIRED') {
-                alert('Additional verification required. Please complete the verification in the PayPal window.');
-                return actions.restart();
-              }
-            }
-
-            alert('Payment capture failed. Please contact customer service or try again later.');
+            // 跳转到确认页显示失败状态
+            window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=failed`;
             return;
           }
 
           // 清空本地购物车
           localStorage.removeItem('ebbelle_cart');
 
+          // 存储支付成功状态
+          sessionStorage.setItem('paymentStatus', JSON.stringify({
+            status: 'success'
+          }));
+
           console.log('🔄 Redirecting to confirmation page...');
 
           // 跳转至统一确认页
-          window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal`;
+          window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=success`;
         } catch (error) {
           console.error('❌ Capture error:', error);
-          alert('An error occurred during payment. Please try again.');
+
+          // 存储错误状态
+          sessionStorage.setItem('paymentStatus', JSON.stringify({
+            status: 'error',
+            message: error.message
+          }));
+
+          const orderId = sessionStorage.getItem('pendingOrderId');
+          const orderKey = sessionStorage.getItem('pendingOrderKey');
+
+          // 清空本地购物车
+          localStorage.removeItem('ebbelle_cart');
+
+          // 跳转到确认页
+          window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=error`;
         }
       },
 
       onError: function(err) {
         console.error('❌ PayPal encounter error:', err);
-        alert('An error occurred during payment. Please try again.');
+
+        const orderId = sessionStorage.getItem('pendingOrderId');
+        const orderKey = sessionStorage.getItem('pendingOrderKey');
+
+        // 存储错误状态
+        sessionStorage.setItem('paymentStatus', JSON.stringify({
+          status: 'error',
+          message: 'PayPal encountered an error'
+        }));
+
+        // 清空本地购物车
+        localStorage.removeItem('ebbelle_cart');
+
+        // 跳转到确认页
+        window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=error`;
       },
 
       onCancel: function(data) {
         console.log('⚠️ 用户取消或关闭了 PayPal 弹窗:', data);
 
-        // 不执行 cancel-order API，让订单保持 pending 状态
-        // 用户可以直接再次点击支付按钮重试
-        // 清理 sessionStorage 中的订单 ID，以便重新创建订单（如果需要）
-        // 注意：不清理也可以，因为下次点击会检查并复用 pending 订单
+        const orderId = sessionStorage.getItem('pendingOrderId');
+        const orderKey = sessionStorage.getItem('pendingOrderKey');
 
-        alert('Payment was not completed. You can try again whenever you are ready.');
+        // 存储取消状态
+        sessionStorage.setItem('paymentStatus', JSON.stringify({
+          status: 'cancelled'
+        }));
 
-        // 不刷新页面，用户可以直接再次点击 PayPal 按钮
+        // 清空本地购物车
+        localStorage.removeItem('ebbelle_cart');
+
+        // 跳转到确认页
+        window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=cancelled`;
       }
     }).render('#paypal-button-container');
   }

@@ -704,10 +704,14 @@ for (const locale of SUPPORTED_LOCALES) {
         // 触发自定义事件，通知其他组件用户已登录
         window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: data.user }));
 
-        // 延迟关闭弹窗并刷新页面
+        // 延迟关闭弹窗
         setTimeout(() => {
           closeAuthModal();
-          window.location.reload();
+
+          // 如果在确认页，不刷新页面（让确认页自己处理按钮更新）
+          if (!window.isConfirmationPage) {
+            window.location.reload();
+          }
         }, 1000);
       } else {
         showAuthMessage(data.message || 'Login failed', 'error');

@@ -936,6 +936,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     const itemsHTML = cart.map(item => {
       const price = parseFloat(item.price) || 0;
       const itemTotal = convertPrice(price * item.quantity);
+      const itemWeight = parseFloat(item.weight) || 0;
+      const totalWeight = itemWeight * item.quantity;
 
       // 提取变体
       let variantsText = '';
@@ -946,6 +948,9 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
           .join(' / ');
       }
 
+      // 添加重量信息（如果有）
+      const weightText = itemWeight > 0 ? ` • ${totalWeight.toFixed(3)}kg` : '';
+
       return `
         <div class="cart-item-card" data-cart-item-id="${item.cartItemId}">
           <div class="item-product-col">
@@ -954,7 +959,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
             </div>
             <div class="item-meta">
               <h3 class="item-title"><a href="/product/${item.slug || ''}">${item.name}</a></h3>
-              ${variantsText ? `<p class="item-variant">${variantsText}</p>` : ''}
+              ${variantsText ? `<p class="item-variant">${variantsText}${weightText}</p>` : (weightText ? `<p class="item-variant">${weightText.substring(3)}</p>` : '')}
               <div class="mobile-price-row">
                 <span class="unit-price item-price">${formatPrice(price)}</span>
               </div>
