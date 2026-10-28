@@ -2700,10 +2700,11 @@ const giftProducts = giftProductIds.map((id, index) => {
 }
 </style>
 
-<script is:inline define:vars={{ productId: product.id, productSlug: product.slug, productWeight: product.weight }}>
+<script is:inline define:vars={{ productId: product.id, productSlug: product.slug, productWeight: product.weight, wcUrl }}>
   window.productId = productId;
   window.productSlug = productSlug;
   window.productWeight = productWeight || '0';
+  window.wcUrl = wcUrl;
 
   // ============================================================
   // 货币工具函数（客户端版本）
@@ -3890,7 +3891,7 @@ const giftProducts = giftProductIds.map((id, index) => {
         };
 
         // 获取 API URL
-        const WC_URL = '{import.meta.env.WC_STORE_URL || import.meta.env.WC_URL}';
+        const WC_URL = window.wcUrl || wcUrl;
 
         // 发送到 WordPress API
         const response = await fetch(`${WC_URL}/wp-json/custom/v1/send-inquiry`, {
