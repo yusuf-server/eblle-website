@@ -2876,6 +2876,39 @@ if (Astro.response) {
       }
 
       currentProducts = products;
+
+      // ============================================================
+      // 批量获取最新库存（优化：1次请求获取所有产品库存）
+      // ============================================================
+      try {
+        const productIds = products.map(p => p.id).join(',');
+        if (productIds) {
+          const stockResponse = await fetch(`https://api.ebbellejewelry.com/wp-json/custom/v1/stock?ids=${productIds}`);
+
+          if (stockResponse.ok) {
+            const stockData = await stockResponse.json();
+
+            if (stockData.success && stockData.stocks) {
+              // 更新产品库存信息
+              products.forEach(product => {
+                const stock = stockData.stocks[product.id];
+                if (stock) {
+                  product.stock_status = stock.stock_status;
+                  product.stock_quantity = stock.stock_quantity;
+                  product.is_in_stock = stock.is_in_stock;
+                  product.managing_stock = stock.managing_stock;
+                }
+              });
+            }
+          } else {
+            console.warn('⚠️ 库存API请求失败，使用缓存库存数据');
+          }
+        }
+      } catch (stockError) {
+        console.error('❌ 批量库存查询失败:', stockError);
+        console.warn('⚠️ 降级使用缓存库存数据');
+      }
+
       renderProducts(products);
       currentPage = page;
       renderPagination();
@@ -4258,10 +4291,10 @@ if (Astro.response) {
 
     const selectedVariations = {};
     document.querySelectorAll('.quick-order-section').forEach(section => {
-      const title = section.querySelector('.quick-order-section-title')?.textContent;
+      const title = section.querySelector('.quick-order-section-title')?.textContent?.trim();
       const selected = section.querySelector('.quick-order-option.selected');
       if (title && selected && title !== 'Quantity') {
-        selectedVariations[title] = selected.textContent;
+        selectedVariations[title] = selected.textContent.trim();
       }
     });
 
@@ -4283,8 +4316,23 @@ if (Astro.response) {
         if (selectedVariation) {
           basePrice = parseFloat(selectedVariation.price) || 0;
           weight = parseFloat(selectedVariation.weight) || 0; // 从变体获取重量
+
+          // 获取加购时的产品图片
+          // 优先级：1. 变体图片 > 2. 用户选中的缩略图 > 3. 当前显示的主图
           if (selectedVariation.image?.src) {
             productImage = selectedVariation.image.src;
+          } else {
+            // 优先从用户选中的缩略图获取（带 .active class）
+            const activeThumbnail = document.querySelector('.quick-order-thumb.active img')?.src;
+            if (activeThumbnail) {
+              productImage = activeThumbnail;
+            } else {
+              // 降级到主图
+              const currentDisplayImage = document.querySelector('.quick-order-main-image img')?.src;
+              if (currentDisplayImage) {
+                productImage = currentDisplayImage;
+              }
+            }
           }
         } else if (variationsData.length > 0) {
           // 如果没有匹配到变体，使用第一个变体的数据

@@ -3,7 +3,10 @@ import { getProducts, getProductsWithTotal, getProductVariations } from './wooco
 
 // 内存缓存
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
+// 产品信息缓存时间：10分钟（从5分钟延长，减少API调用）
+// 库存信息通过批量API实时查询，不在此缓存
+const CACHE_DURATION = 10 * 60 * 1000; // 10分钟缓存
 
 // 获取缓存
 function getCache(key: string) {
