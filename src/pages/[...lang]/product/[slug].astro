@@ -697,6 +697,68 @@ const giftProducts = giftProductIds.map((id, index) => {
         <span class="lightbox-caption">Tap anywhere to close</span>
       </div>
     </div>
+
+    <!-- Inquiry Popup -->
+    <div id="inquiryPopup" class="inquiry-popup-overlay">
+      <div class="inquiry-popup-container">
+        <button class="inquiry-close-btn" type="button" onclick="closeInquiryPopup()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+
+        <div class="inquiry-popup-header">
+          <h2>Get in Touch</h2>
+          <p>We'd love to hear about your wholesale or customization needs</p>
+        </div>
+
+        <form id="inquiryForm" class="inquiry-form">
+          <div class="inquiry-form-row">
+            <div class="inquiry-form-group">
+              <label for="inquiry-name">Full Name *</label>
+              <input type="text" id="inquiry-name" name="name" required placeholder="John Doe">
+            </div>
+            <div class="inquiry-form-group">
+              <label for="inquiry-email">Email Address *</label>
+              <input type="email" id="inquiry-email" name="email" required placeholder="john@example.com">
+            </div>
+          </div>
+
+          <div class="inquiry-form-row">
+            <div class="inquiry-form-group">
+              <label for="inquiry-phone">Phone Number (WhatsApp) *</label>
+              <input type="tel" id="inquiry-phone" name="phone" required placeholder="+1 (555) 000-0000">
+            </div>
+            <div class="inquiry-form-group">
+              <label for="inquiry-company">Company Name</label>
+              <input type="text" id="inquiry-company" name="company" placeholder="Your Company">
+            </div>
+          </div>
+
+          <div class="inquiry-form-group">
+            <label for="inquiry-type">Inquiry Type</label>
+            <select id="inquiry-type" name="inquiryType">
+              <option value="">Select an option</option>
+              <option value="Wholesale">Wholesale Orders</option>
+              <option value="Customization">Custom Design</option>
+              <option value="Bulk Order">Bulk Purchase</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="inquiry-form-group">
+            <label for="inquiry-message">Your Message *</label>
+            <textarea id="inquiry-message" name="message" required rows="5"
+              placeholder="Tell us about your requirements..."></textarea>
+          </div>
+
+          <input type="hidden" id="inquiry-product-name" name="productName">
+          <input type="hidden" id="inquiry-product-url" name="productUrl">
+
+          <button type="submit" class="inquiry-submit-btn">Send Inquiry</button>
+        </form>
+      </div>
+    </div>
   </main>
 
   <Footer />
@@ -2458,6 +2520,184 @@ const giftProducts = giftProductIds.map((id, index) => {
 :global(.mobile-nav-bar) {
   display: none !important;
 }
+
+/* ============================================================
+   Inquiry Popup Styles
+   ============================================================ */
+.inquiry-popup-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(18, 15, 13, 0.65);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(4px);
+}
+
+.inquiry-popup-overlay.active {
+  display: flex;
+  opacity: 1;
+}
+
+.inquiry-popup-container {
+  background: #FDFBF7;
+  border-radius: 8px;
+  max-width: 680px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  padding: 48px 40px 40px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  transform: translateY(30px);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inquiry-popup-overlay.active .inquiry-popup-container {
+  transform: translateY(0);
+}
+
+.inquiry-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #827A73;
+  transition: all 0.3s ease;
+}
+
+.inquiry-close-btn:hover {
+  background: #F5F1EC;
+  color: #1E1A17;
+}
+
+.inquiry-popup-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.inquiry-popup-header h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 600;
+  color: #1E1A17;
+  margin-bottom: 8px;
+}
+
+.inquiry-popup-header p {
+  font-size: 14px;
+  color: #827A73;
+  line-height: 1.5;
+}
+
+.inquiry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inquiry-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.inquiry-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inquiry-form-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1E1A17;
+  letter-spacing: 0.3px;
+}
+
+.inquiry-form-group input,
+.inquiry-form-group select,
+.inquiry-form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: #FAF7F2;
+  border: 1px solid #E5DED5;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #1E1A17;
+  font-family: 'Montserrat', sans-serif;
+  transition: all 0.3s ease;
+}
+
+.inquiry-form-group input:focus,
+.inquiry-form-group select:focus,
+.inquiry-form-group textarea:focus {
+  outline: none;
+  border-color: #C5A880;
+  background: #FDFBF7;
+}
+
+.inquiry-form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.inquiry-submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: #C5A880;
+  color: #FDFBF7;
+  border: 2px solid #C5A880;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 8px;
+}
+
+.inquiry-submit-btn:hover {
+  background: #A88656;
+  border-color: #A88656;
+}
+
+.inquiry-submit-btn:disabled {
+  background: #E5DED5;
+  border-color: #E5DED5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .inquiry-popup-container {
+    padding: 40px 24px 32px;
+    max-height: 85vh;
+  }
+
+  .inquiry-popup-header h2 {
+    font-size: 26px;
+  }
+
+  .inquiry-form-row {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 
 <script is:inline define:vars={{ productId: product.id, productSlug: product.slug, productWeight: product.weight }}>
@@ -3569,5 +3809,131 @@ const giftProducts = giftProductIds.map((id, index) => {
     document.addEventListener('DOMContentLoaded', initAll);
   } else {
     initAll();
+  }
+
+  // ============================================================
+  // Inquiry Popup Functions (独立功能，不影响现有代码)
+  // ============================================================
+
+  // 打开询盘弹窗
+  window.openInquiryPopup = function() {
+    const popup = document.getElementById('inquiryPopup');
+    if (popup) {
+      // 填充产品信息
+      const productNameInput = document.getElementById('inquiry-product-name');
+      const productUrlInput = document.getElementById('inquiry-product-url');
+      const productTitle = document.querySelector('h1');
+
+      if (productNameInput && productTitle) {
+        productNameInput.value = productTitle.textContent || '';
+      }
+      if (productUrlInput) {
+        productUrlInput.value = window.location.href;
+      }
+
+      popup.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+  };
+
+  // 关闭询盘弹窗
+  window.closeInquiryPopup = function() {
+    const popup = document.getElementById('inquiryPopup');
+    if (popup) {
+      popup.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  };
+
+  // 点击遮罩层关闭弹窗
+  const inquiryPopup = document.getElementById('inquiryPopup');
+  if (inquiryPopup) {
+    inquiryPopup.addEventListener('click', function(e) {
+      if (e.target === this) {
+        window.closeInquiryPopup();
+      }
+    });
+  }
+
+  // 绑定批发按钮点击事件
+  const wholesaleBtn = document.querySelector('.btn-wholesale');
+  if (wholesaleBtn) {
+    wholesaleBtn.addEventListener('click', function() {
+      window.openInquiryPopup();
+    });
+  }
+
+  // 处理表单提交
+  const inquiryForm = document.getElementById('inquiryForm');
+  if (inquiryForm) {
+    inquiryForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const submitBtn = this.querySelector('.inquiry-submit-btn');
+      const originalText = submitBtn.textContent;
+
+      // 禁用按钮并显示加载状态
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+
+      try {
+        // 收集表单数据
+        const formData = {
+          name: document.getElementById('inquiry-name').value,
+          email: document.getElementById('inquiry-email').value,
+          phone: document.getElementById('inquiry-phone').value,
+          company: document.getElementById('inquiry-company').value,
+          inquiryType: document.getElementById('inquiry-type').value,
+          message: document.getElementById('inquiry-message').value,
+          productName: document.getElementById('inquiry-product-name').value,
+          productUrl: document.getElementById('inquiry-product-url').value,
+        };
+
+        // 获取 API URL
+        const WC_URL = '{import.meta.env.WC_STORE_URL || import.meta.env.WC_URL}';
+
+        // 发送到 WordPress API
+        const response = await fetch(`${WC_URL}/wp-json/custom/v1/send-inquiry`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // 成功提示
+          submitBtn.textContent = 'Inquiry Received ✓';
+          submitBtn.style.background = '#446651';
+          submitBtn.style.borderColor = '#446651';
+
+          // 1.2秒后关闭弹窗并重置表单
+          setTimeout(() => {
+            inquiryForm.reset();
+            window.closeInquiryPopup();
+            submitBtn.textContent = originalText;
+            submitBtn.style.background = '';
+            submitBtn.style.borderColor = '';
+            submitBtn.disabled = false;
+          }, 1200);
+        } else {
+          throw new Error(data.message || 'Failed to send inquiry');
+        }
+      } catch (error) {
+        console.error('Inquiry submission error:', error);
+        submitBtn.textContent = 'Failed to Send';
+        submitBtn.style.background = '#C84B4B';
+        submitBtn.style.borderColor = '#C84B4B';
+
+        setTimeout(() => {
+          submitBtn.textContent = originalText;
+          submitBtn.style.background = '';
+          submitBtn.style.borderColor = '';
+          submitBtn.disabled = false;
+        }, 2000);
+      }
+    });
   }
 </script>
