@@ -988,17 +988,14 @@ const CURRENT_CURRENCY = 'USD';
         const orderId = sessionStorage.getItem('pendingOrderId');
         const orderKey = sessionStorage.getItem('pendingOrderKey');
 
-        // 存储错误状态
         sessionStorage.setItem('paymentStatus', JSON.stringify({
           status: 'error',
           message: 'PayPal encountered an error'
         }));
 
-        // 清空本地购物车
         localStorage.removeItem('ebbelle_cart');
 
-        // 跳转到确认页
-        window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=error`;
+        window.top.location.href = `/checkout/confirmation?order_id=${orderId || ''}&order_key=${orderKey || ''}&payment=paypal&status=error`;
       },
 
       onCancel: function(data) {
@@ -1007,16 +1004,13 @@ const CURRENT_CURRENCY = 'USD';
         const orderId = sessionStorage.getItem('pendingOrderId');
         const orderKey = sessionStorage.getItem('pendingOrderKey');
 
-        // 存储取消状态
         sessionStorage.setItem('paymentStatus', JSON.stringify({
           status: 'cancelled'
         }));
 
-        // 清空本地购物车
         localStorage.removeItem('ebbelle_cart');
 
-        // 跳转到确认页
-        window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=cancelled`;
+        window.top.location.href = `/checkout/confirmation?order_id=${orderId || ''}&order_key=${orderKey || ''}&payment=paypal&status=cancelled`;
       }
     }).render('#paypal-button-container');
   }

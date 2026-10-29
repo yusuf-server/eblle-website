@@ -13,6 +13,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 // 获取 URL 参数
 const orderId = Astro.url.searchParams.get('order_id') || Astro.url.searchParams.get('orderId');
 const orderKey = Astro.url.searchParams.get('order_key') || Astro.url.searchParams.get('orderKey');
+const urlStatus = Astro.url.searchParams.get('status');
 
 let orderData: any = null;
 
@@ -57,6 +58,9 @@ if (orderId && orderKey) {
     console.error('Error fetching order in confirmation:', err);
   }
 }
+
+// 综合确定显示状态：以 WooCommerce 真实订单状态为主，无订单时参考 URL 参数
+const status = orderData ? orderData.status : (urlStatus || 'pending');
 ---
 
 <Layout title="Order Confirmation - E.B.Belle">
@@ -71,73 +75,71 @@ if (orderId && orderKey) {
     </div>
   </header>
 
-  <div id="confetti-container" class="confetti-container"></div>
+  {/* 彩带只在支付成功状态显示 */}
+  {(status === 'processing' || status === 'completed') && (
+    <div id="confetti-container" class="confetti-container"></div>
+  )}
 
   <main class="confirmation-page">
     <div class="confirmation-container">
       {/* 状态图标 */}
       <div id="statusIconBox">
-        {orderData && (orderData.status === 'processing' || orderData.status === 'completed') ? (
+        {status === 'processing' || status === 'completed' ? (
           <div class="success-circle">
             <i class="fa-solid fa-check"></i>
           </div>
-        ) : orderData && orderData.status === 'on-hold' ? (
+        ) : status === 'on-hold' ? (
           <div class="warning-circle">
             <i class="fa-solid fa-clock"></i>
           </div>
-        ) : orderData && (orderData.status === 'pending') ? (
+        ) : status === 'pending' ? (
           <div class="pending-circle">
             <i class="fa-solid fa-hourglass-half"></i>
           </div>
-        ) : orderData && (orderData.status === 'cancelled' || orderData.status === 'failed') ? (
-          <div class="error-circle">
-            <i class="fa-solid fa-times"></i>
+        ) : status === 'cancelled' ? (
+          <div class="warning-circle">
+            <i class="fa-solid fa-ban"></i>
           </div>
         ) : (
-          <div class="success-circle">
-            <i class="fa-solid fa-check"></i>
+          <div class="error-circle">
+            <i class="fa-solid fa-times"></i>
           </div>
         )}
       </div>
 
-      {/* 状态文字 */}
+      {/* 状态标题与说明文字 */}
       <div id="statusTextBox">
-        {orderData && (orderData.status === 'processing' || orderData.status === 'completed') ? (
+        {status === 'processing' || status === 'completed' ? (
           <>
             <h1>{t(currentLocale, 'checkout.orderConfirmed')}</h1>
             <p class="subtitle">{t(currentLocale, 'checkout.thankYouForPurchase')}</p>
           </>
-        ) : orderData && orderData.status === 'on-hold' ? (
+        ) : status === 'on-hold' ? (
           <>
             <h1>Payment Under Review</h1>
             <p class="subtitle">Your order is being verified. We'll email you once it's confirmed.</p>
           </>
-        ) : orderData && orderData.status === 'pending' ? (
+        ) : status === 'pending' ? (
           <>
             <h1>Order Received</h1>
             <p class="subtitle">Waiting for payment confirmation...</p>
           </>
-        ) : orderData && orderData.status === 'cancelled' ? (
+        ) : status === 'cancelled' ? (
           <>
             <h1>Order Cancelled</h1>
-            <p class="subtitle">This order has been cancelled.</p>
-          </>
-        ) : orderData && orderData.status === 'failed' ? (
-          <>
-            <h1>Payment Failed</h1>
-            <p class="subtitle">Your payment could not be processed. Please try again or contact support.</p>
+            <p class="subtitle">Payment was cancelled. You can complete the payment anytime from your account.</p>
           </>
         ) : (
           <>
-            <h1>{t(currentLocale, 'checkout.orderConfirmed')}</h1>
-            <p class="subtitle">{t(currentLocale, 'checkout.thankYouForPurchase')}</p>
+            <h1>Payment Failed</h1>
+            <p class="subtitle">Your payment could not be processed. Please try again or contact support.</p>
           </>
         )}
       </div>
 
       <div class="order-number">
         <span class="label">{t(currentLocale, 'checkout.orderNumber')}:</span>
-        <span class="number">#{orderData ? orderData.id : orderId || 'COMPLETED'}</span>
+        <span class="number">#{orderData ? orderData.id : orderId || 'N/A'}</span>
       </div>
 
       <p class="confirmation-email">
@@ -180,7 +182,7 @@ if (orderId && orderKey) {
               <span>${parseFloat(orderData.shipping_total).toFixed(2)}</span>
             </div>
             <div class="total-row grand">
-              <span>Total Paid</span>
+              <span>Total</span>
               <span>${parseFloat(orderData.total).toFixed(2)} {orderData.currency}</span>
             </div>
           </div>
@@ -211,24 +213,24 @@ if (orderId && orderKey) {
               <p>{orderData.payment_method_title || 'PayPal'}</p>
 
               <div id="paymentStatusBox">
-                {orderData.status === 'processing' || orderData.status === 'completed' ? (
+                {status === 'processing' || status === 'completed' ? (
                   <p class="success-text">
                     <i class="fa-solid fa-circle-check"></i>
                     Payment Completed
                   </p>
-                ) : orderData.status === 'pending' ? (
+                ) : status === 'pending' ? (
                   <p class="pending-text">
                     <i class="fa-solid fa-clock"></i>
                     Payment Pending
                   </p>
-                ) : orderData.status === 'on-hold' ? (
+                ) : status === 'on-hold' ? (
                   <p class="warning-text">
                     <i class="fa-solid fa-exclamation-triangle"></i>
                     Payment On Hold (Under Review)
                   </p>
-                ) : orderData.status === 'cancelled' ? (
+                ) : status === 'cancelled' ? (
                   <p class="error-text">
-                    <i class="fa-solid fa-times-circle"></i>
+                    <i class="fa-solid fa-ban"></i>
                     Payment Cancelled
                   </p>
                 ) : (
@@ -553,7 +555,7 @@ if (orderId && orderKey) {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
-  .btn-primary, .btn-secondary {
+  .btn-secondary {
     padding: 14px 20px;
     font-size: 12px;
     font-weight: 700;
@@ -561,16 +563,17 @@ if (orderId && orderKey) {
     text-decoration: none;
     border-radius: 4px;
     text-align: center;
+    background: transparent;
+    color: #111;
+    border: 1px solid #111;
   }
-  .btn-primary { background: #111; color: #fff; }
-  .btn-secondary { background: transparent; color: #111; border: 1px solid #111; }
 
   @media (max-width: 640px) {
     .info-grid, .action-buttons { grid-template-columns: 1fr; }
   }
 </style>
 
-<script is:inline>
+<script is:inline define:vars={{ initialStatus: status }}>
   function createConfetti() {
     const container = document.getElementById('confetti-container');
     if (!container) return;
@@ -591,25 +594,28 @@ if (orderId && orderKey) {
       confetti.style.animation = `confetti-fall ${duration}s ${delay}s linear forwards`;
       container.appendChild(confetti);
     }
-
     setTimeout(() => { container.innerHTML = ''; }, 6000);
   }
 
-  // 前端轮询状态（若边缘初次返回为 pending，自动兜底拉取）
-  function pollOrderStatusSafely(initialStatus) {
-    if (initialStatus === 'processing' || initialStatus === 'completed') {
-      createConfetti();
-      return;
-    }
-
+  // 仅在明确是支付中且未确认状态时轮询，取消或报错状态不轮询
+  function pollOrderStatusSafely() {
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get('order_id') || urlParams.get('orderId');
     const orderKey = urlParams.get('order_key') || urlParams.get('orderKey');
+    const urlStatus = urlParams.get('status');
+
+    // 如果用户明确取消或出错，或者订单已经处理完成，不进行轮询
+    if (urlStatus === 'cancelled' || urlStatus === 'error' || initialStatus === 'processing' || initialStatus === 'completed') {
+      if (initialStatus === 'processing' || initialStatus === 'completed') {
+        createConfetti();
+      }
+      return;
+    }
 
     if (!orderId || !orderKey) return;
 
     let attempts = 0;
-    const maxAttempts = 6; // 轮询 6 次，共 12 秒
+    const maxAttempts = 6;
 
     const timer = setInterval(async () => {
       attempts++;
@@ -620,7 +626,6 @@ if (orderId && orderKey) {
           if (data.status === 'processing' || data.status === 'completed') {
             clearInterval(timer);
 
-            // 局部无感更新 UI，变为成功状态
             const iconBox = document.getElementById('statusIconBox');
             if (iconBox) iconBox.innerHTML = '<div class="success-circle"><i class="fa-solid fa-check"></i></div>';
 
@@ -685,7 +690,7 @@ if (orderId && orderKey) {
       } catch(e) {}
     }
 
-    // 1. 已登录用户：直接显示 VIEW ORDER
+    // 1. 已登录用户：直接显示 VIEW ORDER 前往账户中心查看
     if (isLoggedIn) {
       viewOrderBtnText.textContent = 'View Order';
       viewOrderBtn.style.display = 'inline-flex';
@@ -693,7 +698,7 @@ if (orderId && orderKey) {
       return;
     }
 
-    // 2. 未注册新用户：自动注册并由 register 接口直接签发登录态
+    // 2. 未注册新用户：自动注册并在成功后显示 VIEW ORDER
     if (!isRegistered && userEmail) {
       const regSuccess = await handleAutoRegister(userEmail);
       if (regSuccess) {
@@ -718,13 +723,11 @@ if (orderId && orderKey) {
     };
   }
 
-  // 注册并自动建立本地会话（不再调用 /api/auth/login）
   async function handleAutoRegister(email) {
     try {
       const shippingInfoStr = sessionStorage.getItem('shippingInfo');
       const shippingInfo = shippingInfoStr ? JSON.parse(shippingInfoStr) : {};
 
-      // 生成临时密码发给注册接口
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
       let tempPassword = '';
       for (let i = 0; i < 12; i++) tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -741,12 +744,9 @@ if (orderId && orderKey) {
       });
 
       const data = await res.json();
-
       if (data.success && data.user) {
-        // 保存用户信息到本地
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        // 绑定订单 customerId
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('order_id') || urlParams.get('orderId');
         if (orderId && data.user.id) {
@@ -771,10 +771,7 @@ if (orderId && orderKey) {
   if (typeof window !== 'undefined') {
     window.isConfirmationPage = true;
     initOrderCompletion();
-
-    // 检查初始状态并按需触发轮询
-    const currentStatus = '{orderData ? orderData.status : "pending"}';
-    pollOrderStatusSafely(currentStatus);
+    pollOrderStatusSafely();
 
     window.addEventListener('userLoggedIn', function(e) {
       const viewOrderBtn = document.getElementById('viewOrderBtn');
