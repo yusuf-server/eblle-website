@@ -23,7 +23,6 @@ if (orderId && orderKey) {
     const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET || '';
 
     const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
-    // 添加时间戳绕过缓存，确保获取最新订单状态
     const timestamp = Date.now();
     const res = await fetch(`${WC_STORE_URL}/wp-json/wc/v3/orders/${orderId}?_t=${timestamp}`, {
       headers: {
@@ -35,11 +34,9 @@ if (orderId && orderKey) {
 
     if (res.ok) {
       const order = await res.json();
-      // 安全核对 Order Key，核对成功才输出真实内容
       if (order.order_key === orderKey) {
         orderData = order;
 
-        // 清除购买产品的缓存，确保库存同步
         if (order.status === 'processing' || order.status === 'completed') {
           try {
             const productIds = order.line_items?.map((item: any) => item.product_id) || [];
@@ -49,10 +46,9 @@ if (orderId && orderKey) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ productIds })
               });
-              console.log('✅ 确认页已清除购买产品的缓存');
             }
           } catch (err) {
-            console.warn('⚠️ 清除产品缓存失败（不影响订单）:', err);
+            console.warn('⚠️ 清除产品缓存失败:', err);
           }
         }
       }
@@ -75,68 +71,69 @@ if (orderId && orderKey) {
     </div>
   </header>
 
-  {/* 彩带效果 - 只在支付成功时显示 */}
-  {orderData && (orderData.status === 'processing' || orderData.status === 'completed') && (
-    <div id="confetti-container" class="confetti-container"></div>
-  )}
+  <div id="confetti-container" class="confetti-container"></div>
 
   <main class="confirmation-page">
     <div class="confirmation-container">
-      {/* 根据订单状态显示不同的图标和颜色 */}
-      {orderData && (orderData.status === 'processing' || orderData.status === 'completed') ? (
-        <div class="success-circle">
-          <i class="fa-solid fa-check"></i>
-        </div>
-      ) : orderData && orderData.status === 'on-hold' ? (
-        <div class="warning-circle">
-          <i class="fa-solid fa-clock"></i>
-        </div>
-      ) : orderData && (orderData.status === 'pending') ? (
-        <div class="pending-circle">
-          <i class="fa-solid fa-hourglass-half"></i>
-        </div>
-      ) : orderData && (orderData.status === 'cancelled' || orderData.status === 'failed') ? (
-        <div class="error-circle">
-          <i class="fa-solid fa-times"></i>
-        </div>
-      ) : (
-        <div class="success-circle">
-          <i class="fa-solid fa-check"></i>
-        </div>
-      )}
+      {/* 状态图标 */}
+      <div id="statusIconBox">
+        {orderData && (orderData.status === 'processing' || orderData.status === 'completed') ? (
+          <div class="success-circle">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        ) : orderData && orderData.status === 'on-hold' ? (
+          <div class="warning-circle">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+        ) : orderData && (orderData.status === 'pending') ? (
+          <div class="pending-circle">
+            <i class="fa-solid fa-hourglass-half"></i>
+          </div>
+        ) : orderData && (orderData.status === 'cancelled' || orderData.status === 'failed') ? (
+          <div class="error-circle">
+            <i class="fa-solid fa-times"></i>
+          </div>
+        ) : (
+          <div class="success-circle">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        )}
+      </div>
 
-      {/* 根据订单状态显示不同的标题和描述 */}
-      {orderData && (orderData.status === 'processing' || orderData.status === 'completed') ? (
-        <>
-          <h1>{t(currentLocale, 'checkout.orderConfirmed')}</h1>
-          <p class="subtitle">{t(currentLocale, 'checkout.thankYouForPurchase')}</p>
-        </>
-      ) : orderData && orderData.status === 'on-hold' ? (
-        <>
-          <h1>Payment Under Review</h1>
-          <p class="subtitle">Your order is being verified. We'll email you once it's confirmed.</p>
-        </>
-      ) : orderData && orderData.status === 'pending' ? (
-        <>
-          <h1>Order Received</h1>
-          <p class="subtitle">Waiting for payment confirmation...</p>
-        </>
-      ) : orderData && orderData.status === 'cancelled' ? (
-        <>
-          <h1>Order Cancelled</h1>
-          <p class="subtitle">This order has been cancelled.</p>
-        </>
-      ) : orderData && orderData.status === 'failed' ? (
-        <>
-          <h1>Payment Failed</h1>
-          <p class="subtitle">Your payment could not be processed. Please try again or contact support.</p>
-        </>
-      ) : (
-        <>
-          <h1>{t(currentLocale, 'checkout.orderConfirmed')}</h1>
-          <p class="subtitle">{t(currentLocale, 'checkout.thankYouForPurchase')}</p>
-        </>
-      )}
+      {/* 状态文字 */}
+      <div id="statusTextBox">
+        {orderData && (orderData.status === 'processing' || orderData.status === 'completed') ? (
+          <>
+            <h1>{t(currentLocale, 'checkout.orderConfirmed')}</h1>
+            <p class="subtitle">{t(currentLocale, 'checkout.thankYouForPurchase')}</p>
+          </>
+        ) : orderData && orderData.status === 'on-hold' ? (
+          <>
+            <h1>Payment Under Review</h1>
+            <p class="subtitle">Your order is being verified. We'll email you once it's confirmed.</p>
+          </>
+        ) : orderData && orderData.status === 'pending' ? (
+          <>
+            <h1>Order Received</h1>
+            <p class="subtitle">Waiting for payment confirmation...</p>
+          </>
+        ) : orderData && orderData.status === 'cancelled' ? (
+          <>
+            <h1>Order Cancelled</h1>
+            <p class="subtitle">This order has been cancelled.</p>
+          </>
+        ) : orderData && orderData.status === 'failed' ? (
+          <>
+            <h1>Payment Failed</h1>
+            <p class="subtitle">Your payment could not be processed. Please try again or contact support.</p>
+          </>
+        ) : (
+          <>
+            <h1>{t(currentLocale, 'checkout.orderConfirmed')}</h1>
+            <p class="subtitle">{t(currentLocale, 'checkout.thankYouForPurchase')}</p>
+          </>
+        )}
+      </div>
 
       <div class="order-number">
         <span class="label">{t(currentLocale, 'checkout.orderNumber')}:</span>
@@ -213,35 +210,34 @@ if (orderId && orderKey) {
             <div class="info-body">
               <p>{orderData.payment_method_title || 'PayPal'}</p>
 
-              {/* 根据订单状态显示不同的信息 */}
-              {orderData.status === 'processing' || orderData.status === 'completed' ? (
-                <p class="success-text">
-                  <i class="fa-solid fa-circle-check"></i>
-                  Payment Completed
-                </p>
-              ) : orderData.status === 'pending' ? (
-                <p class="pending-text">
-                  <i class="fa-solid fa-clock"></i>
-                  Payment Pending
-                </p>
-              ) : orderData.status === 'on-hold' ? (
-                <p class="warning-text">
-                  <i class="fa-solid fa-exclamation-triangle"></i>
-                  Payment On Hold (Under Review)
-                </p>
-              ) : orderData.status === 'cancelled' ? (
-                <p class="error-text">
-                  <i class="fa-solid fa-times-circle"></i>
-                  Payment Cancelled
-                </p>
-              ) : orderData.status === 'failed' ? (
-                <p class="error-text">
-                  <i class="fa-solid fa-times-circle"></i>
-                  Payment Failed
-                </p>
-              ) : (
-                <p>Status: {orderData.status.toUpperCase()}</p>
-              )}
+              <div id="paymentStatusBox">
+                {orderData.status === 'processing' || orderData.status === 'completed' ? (
+                  <p class="success-text">
+                    <i class="fa-solid fa-circle-check"></i>
+                    Payment Completed
+                  </p>
+                ) : orderData.status === 'pending' ? (
+                  <p class="pending-text">
+                    <i class="fa-solid fa-clock"></i>
+                    Payment Pending
+                  </p>
+                ) : orderData.status === 'on-hold' ? (
+                  <p class="warning-text">
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                    Payment On Hold (Under Review)
+                  </p>
+                ) : orderData.status === 'cancelled' ? (
+                  <p class="error-text">
+                    <i class="fa-solid fa-times-circle"></i>
+                    Payment Cancelled
+                  </p>
+                ) : (
+                  <p class="error-text">
+                    <i class="fa-solid fa-times-circle"></i>
+                    Payment Failed
+                  </p>
+                )}
+              </div>
 
               {orderData.transaction_id && (
                 <p style="font-size: 11px; color: #888; font-family: monospace; margin-top: 4px;">
@@ -277,7 +273,6 @@ if (orderId && orderKey) {
 <style>
   * { box-sizing: border-box; }
 
-  /* 彩带效果容器 */
   .confetti-container {
     position: fixed;
     top: 0;
@@ -289,7 +284,6 @@ if (orderId && orderKey) {
     overflow: hidden;
   }
 
-  /* 使用 :global 解决 Astro 样式作用域无法识别动态 JS 创建节点的问题 */
   :global(.confetti-piece) {
     position: fixed;
     pointer-events: none;
@@ -298,14 +292,8 @@ if (orderId && orderKey) {
   }
 
   @keyframes confetti-fall {
-    0% {
-      transform: translateY(-20px) rotate(0deg);
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(105vh) rotate(720deg);
-      opacity: 0;
-    }
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
   }
 
   .checkout-header {
@@ -420,7 +408,6 @@ if (orderId && orderKey) {
   .order-number .number { font-size: 16px; font-weight: 700; color: #111; font-family: monospace; }
   .confirmation-email { font-size: 14px; color: #747878; margin-bottom: 36px; }
 
-  /* View Order Button Section */
   .view-order-section {
     margin: 32px 0;
     display: flex;
@@ -450,18 +437,6 @@ if (orderId && orderKey) {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
 
-  .view-order-button i:first-child {
-    font-size: 16px;
-  }
-
-  .view-order-button i:last-child {
-    font-size: 14px;
-    transition: transform 0.3s ease;
-  }
-
-  .view-order-button:hover i:last-child {
-    transform: translateX(4px);
-  }
   .order-card {
     width: 100%;
     background: #fff;
@@ -596,224 +571,167 @@ if (orderId && orderKey) {
 </style>
 
 <script is:inline>
-  // 彩带效果函数
   function createConfetti() {
     const container = document.getElementById('confetti-container');
     if (!container) return;
-
-    // 清空历史彩带
     container.innerHTML = '';
-
     const colors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#f97316', '#fd79a8', '#fdcb6e'];
-    const confettiCount = 90;
 
-    for (let i = 0; i < confettiCount; i++) {
+    for (let i = 0; i < 80; i++) {
       const confetti = document.createElement('div');
       confetti.className = 'confetti-piece';
-
-      // 明确写入 position，防止全局/框架样式冲突
-      confetti.style.position = 'fixed';
-      confetti.style.pointerEvents = 'none';
-      confetti.style.zIndex = '9999';
-
-      // 均匀分散在全屏宽度
       confetti.style.left = (Math.random() * 100) + 'vw';
       confetti.style.top = (-20 - Math.random() * 30) + 'px';
-
-      // 形状与随机颜色
-      const width = Math.random() * 6 + 6; // 6px ~ 12px
-      const height = Math.random() * 10 + 12; // 12px ~ 22px
-      confetti.style.width = width + 'px';
-      confetti.style.height = height + 'px';
+      confetti.style.width = (Math.random() * 6 + 6) + 'px';
+      confetti.style.height = (Math.random() * 10 + 12) + 'px';
       confetti.style.borderRadius = '2px';
       confetti.style.backgroundColor = colors[i % colors.length];
-
-      // 随机下落时间与延迟
       const duration = 2.5 + Math.random() * 2.5;
-      const delay = Math.random() * 1.8;
+      const delay = Math.random() * 1.5;
       confetti.style.animation = `confetti-fall ${duration}s ${delay}s linear forwards`;
-
       container.appendChild(confetti);
     }
 
-    // 动画结束后清空节点
-    setTimeout(() => {
-      container.innerHTML = '';
-    }, 6000);
+    setTimeout(() => { container.innerHTML = ''; }, 6000);
   }
 
-  // 页面加载时，如果是支付成功页面，触发彩带效果
-  if (typeof window !== 'undefined') {
-    window.addEventListener('load', () => {
-      const container = document.getElementById('confetti-container');
-      if (container) {
-        setTimeout(createConfetti, 200);
+  // 前端轮询状态（若边缘初次返回为 pending，自动兜底拉取）
+  function pollOrderStatusSafely(initialStatus) {
+    if (initialStatus === 'processing' || initialStatus === 'completed') {
+      createConfetti();
+      return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('order_id') || urlParams.get('orderId');
+    const orderKey = urlParams.get('order_key') || urlParams.get('orderKey');
+
+    if (!orderId || !orderKey) return;
+
+    let attempts = 0;
+    const maxAttempts = 6; // 轮询 6 次，共 12 秒
+
+    const timer = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch(`/api/woocommerce/check-order?orderId=${orderId}&orderKey=${orderKey}&_t=${Date.now()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'processing' || data.status === 'completed') {
+            clearInterval(timer);
+
+            // 局部无感更新 UI，变为成功状态
+            const iconBox = document.getElementById('statusIconBox');
+            if (iconBox) iconBox.innerHTML = '<div class="success-circle"><i class="fa-solid fa-check"></i></div>';
+
+            const textBox = document.getElementById('statusTextBox');
+            if (textBox) textBox.innerHTML = '<h1>Order Confirmed!</h1><p class="subtitle">Thank you for your purchase</p>';
+
+            const paymentBox = document.getElementById('paymentStatusBox');
+            if (paymentBox) paymentBox.innerHTML = '<p class="success-text"><i class="fa-solid fa-circle-check"></i> Payment Completed</p>';
+
+            createConfetti();
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('轮询异常:', e);
       }
-    });
+
+      if (attempts >= maxAttempts) {
+        clearInterval(timer);
+      }
+    }, 2000);
   }
 
-  // 清除订单相关的临时会话（但保留 shippingInfo 和 userEmailStatus 用于注册）
-  try {
-    sessionStorage.removeItem('pendingOrderId');
-    sessionStorage.removeItem('pendingOrderKey');
-    // 不要立即删除 shippingInfo，等注册完成后再删
-    // sessionStorage.removeItem('shippingInfo');
-  } catch(e) {}
-
-  // 清除缓存并导航（用于确保库存同步）
   function clearCacheAndNavigate(event, url) {
     event.preventDefault();
-
-    // 离开确认页时清除临时数据
     try {
       sessionStorage.removeItem('shippingInfo');
       sessionStorage.removeItem('userEmailStatus');
       sessionStorage.removeItem('paymentStatus');
     } catch(e) {}
-
-    if (url === '/shop') {
-      // 跳转到 shop 页，添加强制刷新标记
-      // shop 页会检测这个参数，触发骨架屏重新加载
-      window.location.href = '/shop?refresh=1';
-    } else {
-      // 其他页面正常跳转
-      window.location.href = url;
-    }
+    window.location.href = url === '/shop' ? '/shop?refresh=1' : url;
   }
 
-  // 订单完成后的用户注册和登录逻辑
-  async function initOrderCompletion() {
-    console.log('🔄 initOrderCompletion 开始执行');
+  function checkIfLoggedIn() {
+    const user = localStorage.getItem('user');
+    const hasCookies = document.cookie.includes('user_id=') || document.cookie.includes('session_token=');
+    return !!(user || hasCookies);
+  }
 
+  async function initOrderCompletion() {
     const viewOrderBtn = document.getElementById('viewOrderBtn');
     const viewOrderBtnText = document.getElementById('viewOrderBtnText');
+    if (!viewOrderBtn || !viewOrderBtnText) return;
 
-    console.log('🔍 按钮元素:', viewOrderBtn);
-
-    if (!viewOrderBtn) {
-      console.error('❌ 找不到 viewOrderBtn 元素');
-      return;
-    }
-
-    // 获取当前登录状态
     const isLoggedIn = checkIfLoggedIn();
-    console.log('🔐 登录状态:', isLoggedIn);
-
-    // 获取用户邮箱状态
     const emailStatusStr = sessionStorage.getItem('userEmailStatus');
     const shippingInfoStr = sessionStorage.getItem('shippingInfo');
-
-    console.log('📧 emailStatusStr:', emailStatusStr);
-    console.log('📦 shippingInfoStr:', shippingInfoStr);
 
     let userEmail = '';
     let isRegistered = false;
 
     if (emailStatusStr) {
-      const emailStatus = JSON.parse(emailStatusStr);
-      userEmail = emailStatus.email;
-      isRegistered = emailStatus.isRegistered;
+      try {
+        const parsed = JSON.parse(emailStatusStr);
+        userEmail = parsed.email;
+        isRegistered = parsed.isRegistered;
+      } catch(e) {}
     } else if (shippingInfoStr) {
-      const shippingInfo = JSON.parse(shippingInfoStr);
-      userEmail = shippingInfo.email;
+      try {
+        const parsed = JSON.parse(shippingInfoStr);
+        userEmail = parsed.email;
+      } catch(e) {}
     }
 
-    console.log('✉️ userEmail:', userEmail);
-    console.log('📋 isRegistered:', isRegistered);
-
-    // 情况1: 已登录用户
+    // 1. 已登录用户：直接显示 VIEW ORDER
     if (isLoggedIn) {
       viewOrderBtnText.textContent = 'View Order';
       viewOrderBtn.style.display = 'inline-flex';
-
-      viewOrderBtn.onclick = () => {
-        window.location.href = '/account?tab=orders';
-      };
+      viewOrderBtn.onclick = () => { window.location.href = '/account?tab=orders'; };
       return;
     }
 
-    // 情况2: 未注册用户 - 自动注册
+    // 2. 未注册新用户：自动注册并由 register 接口直接签发登录态
     if (!isRegistered && userEmail) {
-      console.log('📝 情况2: 未注册用户，开始自动注册...');
-      try {
-        const registered = await autoRegisterUser(userEmail);
-        console.log('✅ 注册结果:', registered);
-        if (registered) {
-          // 注册成功，显示查看订单按钮
-          viewOrderBtnText.textContent = 'View Order';
-          viewOrderBtn.style.display = 'inline-flex';
-
-          viewOrderBtn.onclick = () => {
-            window.location.href = '/account?tab=orders';
-          };
-          console.log('✅ 按钮已显示');
-        } else {
-          // 注册失败，可能是邮箱已存在，显示登录按钮
-          console.log('⚠️ 注册失败（可能邮箱已存在），显示登录按钮');
-          viewOrderBtnText.textContent = 'Login to View Order';
-          viewOrderBtn.style.display = 'inline-flex';
-
-          viewOrderBtn.onclick = () => {
-            openAuthModal('signin', userEmail);
-          };
-          console.log('✅ 登录按钮已显示');
-        }
-      } catch (error) {
-        console.error('❌ 自动注册异常:', error);
+      const regSuccess = await handleAutoRegister(userEmail);
+      if (regSuccess) {
+        viewOrderBtnText.textContent = 'View Order';
+        viewOrderBtn.style.display = 'inline-flex';
+        viewOrderBtn.onclick = () => { window.location.href = '/account?tab=orders'; };
+        return;
       }
-      return;
     }
 
-    // 情况3: 已注册但未登录 - 显示登录按钮
-    if (isRegistered && userEmail) {
-      console.log('🔐 情况3: 已注册但未登录，显示登录按钮');
-      viewOrderBtnText.textContent = 'Login to View Order';
-      viewOrderBtn.style.display = 'inline-flex';
-
-      viewOrderBtn.onclick = () => {
-        openAuthModal('signin', userEmail);
-      };
-      console.log('✅ 登录按钮已显示');
-    }
+    // 3. 已有账号但未登录用户：引导登录
+    viewOrderBtnText.textContent = 'Login to View Order';
+    viewOrderBtn.style.display = 'inline-flex';
+    viewOrderBtn.onclick = () => {
+      if (typeof window.openAuthModal === 'function') {
+        window.openAuthModal('login');
+        setTimeout(() => {
+          const emailInput = document.getElementById('loginEmail');
+          if (emailInput && userEmail) emailInput.value = userEmail;
+        }, 100);
+      }
+    };
   }
 
-  // 检查用户是否已登录
-  function checkIfLoggedIn() {
-    // 检查 localStorage 中的用户信息（AuthModal 和自动注册都会设置这个）
-    const user = localStorage.getItem('user');
-
-    // 检查 cookies（通过 document.cookie）
-    const hasCookies = document.cookie.includes('user_id=') && document.cookie.includes('user_email=');
-
-    return !!(user || hasCookies);
-  }
-
-  // 自动注册用户
-  async function autoRegisterUser(email) {
+  // 注册并自动建立本地会话（不再调用 /api/auth/login）
+  async function handleAutoRegister(email) {
     try {
       const shippingInfoStr = sessionStorage.getItem('shippingInfo');
-      if (!shippingInfoStr) {
-        console.error('❌ 没有找到 shippingInfo');
-        return false;
-      }
+      const shippingInfo = shippingInfoStr ? JSON.parse(shippingInfoStr) : {};
 
-      const shippingInfo = JSON.parse(shippingInfoStr);
+      // 生成临时密码发给注册接口
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+      let tempPassword = '';
+      for (let i = 0; i < 12; i++) tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
 
-      // 生成临时密码（至少8位）
-      const tempPassword = generateTempPassword();
-
-      console.log('📤 发送注册请求:', {
-        email,
-        firstName: shippingInfo.firstName,
-        lastName: shippingInfo.lastName
-      });
-
-      // 步骤1: 注册用户
-      const registerResponse = await fetch('/api/auth/register', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email,
           firstName: shippingInfo.firstName || 'Customer',
@@ -822,178 +740,50 @@ if (orderId && orderKey) {
         })
       });
 
-      const registerData = await registerResponse.json();
-      console.log('📥 注册响应:', registerData);
+      const data = await res.json();
 
-      if (!registerData.success) {
-        console.error('❌ 注册失败:', registerData.message);
-        return false;
-      }
+      if (data.success && data.user) {
+        // 保存用户信息到本地
+        localStorage.setItem('user', JSON.stringify(data.user));
 
-      // 步骤2: 自动登录以设置 cookies
-      console.log('🔐 自动登录中...');
-      const loginResponse = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          password: tempPassword,
-          rememberMe: true
-        })
-      });
-
-      const loginData = await loginResponse.json();
-      console.log('📥 登录响应:', loginData);
-
-      if (loginData.success) {
-        // 保存用户信息到 localStorage（与 AuthModal 一致）
-        if (loginData.user) {
-          localStorage.setItem('user', JSON.stringify(loginData.user));
-        }
-
-        // 步骤3: 如果有订单ID，关联订单到新用户
+        // 绑定订单 customerId
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('order_id') || urlParams.get('orderId');
-
-        if (orderId && loginData.user && loginData.user.id) {
-          console.log('🔗 关联订单到用户:', orderId, '→', loginData.user.id);
-          await updateOrderCustomer(orderId, loginData.user.id);
+        if (orderId && data.user.id) {
+          fetch('/api/orders/update-customer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: orderId, customerId: data.user.id })
+          }).catch(() => {});
         }
 
-        // 发送欢迎邮件（包含临时密码）
-        await sendWelcomeEmail(email, tempPassword, shippingInfo.firstName);
-
-        // 注册和登录成功，清除临时数据
         sessionStorage.removeItem('shippingInfo');
         sessionStorage.removeItem('userEmailStatus');
-
-        console.log('✅ 自动注册和登录成功');
         return true;
       }
-
-      console.error('❌ 自动登录失败:', loginData.message);
       return false;
-    } catch (error) {
-      console.error('❌ 自动注册异常:', error);
+    } catch (e) {
+      console.error('自动注册异常:', e);
       return false;
     }
   }
 
-  // 更新订单的 customer_id
-  async function updateOrderCustomer(orderId, customerId) {
-    try {
-      console.log('📤 发送更新订单请求:', { orderId, customerId });
-
-      const response = await fetch('/api/orders/update-customer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId: orderId,
-          customerId: customerId
-        })
-      });
-
-      const data = await response.json();
-      console.log('📥 更新订单响应:', data);
-
-      if (data.success) {
-        console.log('✅ 订单已关联到用户账户');
-        return true;
-      } else {
-        console.error('❌ 订单关联失败:', data.message);
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ 更新订单异常:', error);
-      return false;
-    }
-  }
-
-  // 生成临时密码
-  function generateTempPassword() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-    let password = '';
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  }
-
-  // 发送欢迎邮件（临时实现：在控制台显示密码）
-  async function sendWelcomeEmail(email, tempPassword, firstName) {
-    console.log('📧 欢迎邮件信息:');
-    console.log('收件人:', email);
-    console.log('临时密码:', tempPassword);
-    console.log(`
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎉 Welcome to E.B.Belle!
-
-Hello ${firstName || 'Valued Customer'},
-
-Your account has been created successfully!
-
-Login Email: ${email}
-Temporary Password: ${tempPassword}
-
-For security, please change your password after logging in.
-You can log in at: ${window.location.origin}/account
-
-Thank you for shopping with us!
-
-Best regards,
-E.B.Belle Team
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    `);
-  }
-
-  // 打开登录模态框
-  function openAuthModal(mode, email) {
-    // 调用全局的 openAuthModal 函数（由 AuthModal 组件提供）
-    if (typeof window.openAuthModal === 'function') {
-      window.openAuthModal('login');
-
-      // 预填邮箱
-      setTimeout(() => {
-        const emailInput = document.getElementById('loginEmail');
-        if (emailInput && email) {
-          emailInput.value = email;
-        }
-      }, 100);
-    }
-  }
-
-  // 页面加载时初始化
   if (typeof window !== 'undefined') {
-    // 设置标记，告诉 AuthModal 登录后不要刷新页面
     window.isConfirmationPage = true;
-
     initOrderCompletion();
 
-    // 监听用户登录事件，更新按钮为"查看订单"
-    window.addEventListener('userLoggedIn', function(e) {
-      console.log('🎉 用户登录成功，更新按钮');
+    // 检查初始状态并按需触发轮询
+    const currentStatus = '{orderData ? orderData.status : "pending"}';
+    pollOrderStatusSafely(currentStatus);
 
+    window.addEventListener('userLoggedIn', function(e) {
       const viewOrderBtn = document.getElementById('viewOrderBtn');
       const viewOrderBtnText = document.getElementById('viewOrderBtnText');
-
       if (viewOrderBtn && viewOrderBtnText) {
-        // 更新按钮文本和行为
         viewOrderBtnText.textContent = 'View Order';
         viewOrderBtn.style.display = 'inline-flex';
-
-        viewOrderBtn.onclick = () => {
-          window.location.href = '/account?tab=orders';
-        };
-
-        console.log('✅ 按钮已更新为"查看订单"');
+        viewOrderBtn.onclick = () => { window.location.href = '/account?tab=orders'; };
       }
-
-      // 阻止 AuthModal 的默认刷新行为
-      // 我们在确认页不需要刷新
       e.preventDefault && e.preventDefault();
     });
   }
