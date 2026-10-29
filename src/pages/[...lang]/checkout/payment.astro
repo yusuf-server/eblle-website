@@ -707,7 +707,6 @@ const CURRENT_CURRENCY = 'USD';
         shipping = parseFloat(info.shippingCost) || 0;
       }
     } catch (e) {
-      console.error('读取运费失败:', e);
       shipping = 0;
     }
 
@@ -797,7 +796,6 @@ const CURRENT_CURRENCY = 'USD';
   function initPayPal(cart, totals) {
     // @ts-ignore
     if (typeof paypal === 'undefined') {
-      console.warn('PayPal SDK not loaded');
       return;
     }
 
@@ -817,8 +815,6 @@ const CURRENT_CURRENCY = 'USD';
 
         // 如果已有 pending 订单，先尝试复用
         if (existingOrderId && existingOrderKey) {
-          console.log(`🔄 检测到已有订单 ${existingOrderId}，尝试复用...`);
-
           try {
             // 调用后端检查订单状态
             const checkRes = await fetch(`/api/woocommerce/check-order?orderId=${existingOrderId}&orderKey=${existingOrderKey}`);
@@ -828,12 +824,11 @@ const CURRENT_CURRENCY = 'USD';
 
               // 如果订单仍然是 pending，复用它
               if (orderData.status === 'pending' && orderData.paypalOrderId) {
-                console.log(`✅ 复用现有 pending 订单 ${existingOrderId}`);
                 return orderData.paypalOrderId;
               }
             }
           } catch (err) {
-            console.warn('检查现有订单失败，将创建新订单:', err);
+            // 检查现有订单失败，将创建新订单
           }
 
           // 如果订单已经不是 pending 或检查失败，清理 sessionStorage
@@ -842,8 +837,6 @@ const CURRENT_CURRENCY = 'USD';
         }
 
         // 创建新订单
-        console.log('📦 创建新的 PayPal 订单...');
-
         const shippingInfoStr = sessionStorage.getItem('shippingInfo');
         if (!shippingInfoStr) {
           alert('Please provide shipping details first.');
@@ -898,12 +891,6 @@ const CURRENT_CURRENCY = 'USD';
         }
 
         const data = await res.json();
-        console.log('✅ PayPal 订单创建成功:', {
-          paypalOrderId: data.paypalOrderId,
-          wcOrderId: data.orderId,
-          amount: data.amount,
-          currency: data.currency
-        });
 
         sessionStorage.setItem('pendingOrderId', data.orderId.toString());
         sessionStorage.setItem('pendingOrderKey', data.orderKey);
@@ -912,12 +899,8 @@ const CURRENT_CURRENCY = 'USD';
       },
 
       onApprove: async function(data, actions) {
-        console.log('💳 PayPal onApprove triggered, orderID:', data.orderID);
-
         const orderId = sessionStorage.getItem('pendingOrderId');
         const orderKey = sessionStorage.getItem('pendingOrderKey');
-
-        console.log('📦 Capturing order:', orderId);
 
         try {
           const res = await fetch('/api/paypal/capture-order', {
@@ -930,10 +913,8 @@ const CURRENT_CURRENCY = 'USD';
           });
 
           const result = await res.json();
-          console.log('✅ Capture result:', result);
 
           if (!res.ok) {
-            console.error('❌ Capture failed:', result);
 
             // 存储支付失败状态
             sessionStorage.setItem('paymentStatus', JSON.stringify({
@@ -958,12 +939,9 @@ const CURRENT_CURRENCY = 'USD';
             status: 'success'
           }));
 
-          console.log('🔄 Redirecting to confirmation page...');
-
           // 跳转至统一确认页
           window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=success`;
         } catch (error) {
-          console.error('❌ Capture error:', error);
 
           // 存储错误状态
           sessionStorage.setItem('paymentStatus', JSON.stringify({
@@ -983,8 +961,6 @@ const CURRENT_CURRENCY = 'USD';
       },
 
       onError: function(err) {
-        console.error('❌ PayPal encounter error:', err);
-
         const orderId = sessionStorage.getItem('pendingOrderId');
         const orderKey = sessionStorage.getItem('pendingOrderKey');
 
@@ -999,8 +975,6 @@ const CURRENT_CURRENCY = 'USD';
       },
 
       onCancel: function(data) {
-        console.log('⚠️ 用户取消或关闭了 PayPal 弹窗:', data);
-
         const orderId = sessionStorage.getItem('pendingOrderId');
         const orderKey = sessionStorage.getItem('pendingOrderKey');
 

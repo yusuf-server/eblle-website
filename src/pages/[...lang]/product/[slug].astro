@@ -541,6 +541,47 @@ const giftProducts = giftProductIds.map((id, index) => {
                 </div>
               );
             })}
+
+            <!-- 追加固定的 FAQ 项 -->
+            <div class="accordion-item">
+              <button type="button" class="accordion-header" onclick="toggleAccordion('how-to-care')">
+                <span>HOW TO CARE</span>
+                <i class="fa-solid fa-chevron-down" id="icon-how-to-care"></i>
+              </button>
+              <div class="accordion-content" id="content-how-to-care">
+                <div class="accordion-body">
+                  <p>Our jewelry list their exact materials in the description, such as 316L stainless steel, stainless steel and more. All jewelry in our shop is tarnish-resistant, waterproof and hypoallergenic.</p>
+                  <p>To preserve its shine, gently wipe it with a soft jewelry cloth. While waterproof, we suggest taking it off before swimming in pools or the ocean.</p>
+                  <p>Please visit our Materials & Care page for further questions.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-header" onclick="toggleAccordion('shipping-returns')">
+                <span>SHIPPING & RETURNS</span>
+                <i class="fa-solid fa-chevron-down" id="icon-shipping-returns"></i>
+              </button>
+              <div class="accordion-content" id="content-shipping-returns">
+                <div class="accordion-body">
+                  <p>Buyers are responsible for shipping fees and applicable taxes. In most cases, taxes are already included in the shipping rate shown at checkout. Items with manufacturing defects are eligible for return or exchange within 30 days.</p>
+                  <p>For more information, please check our Shipping & Return Policy page.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-header" onclick="toggleAccordion('wholesale-customization')">
+                <span>WHOLESALE & CUSTOMIZATION</span>
+                <i class="fa-solid fa-chevron-down" id="icon-wholesale-customization"></i>
+              </button>
+              <div class="accordion-content" id="content-wholesale-customization">
+                <div class="accordion-body">
+                  <p>Additional discounts apply when you order 50pcs or 100pcs of the same style. Contact our account manager for wholesale.</p>
+                  <p>Find more info on our Wholesale and Customization pages.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

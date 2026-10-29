@@ -49,13 +49,13 @@ if (orderId && orderKey) {
               });
             }
           } catch (err) {
-            console.warn('⚠️ 清除产品缓存失败:', err);
+            // 清除产品缓存失败（不影响订单）
           }
         }
       }
     }
   } catch (err) {
-    console.error('Error fetching order in confirmation:', err);
+    // Error fetching order in confirmation
   }
 }
 
@@ -640,7 +640,7 @@ const status = orderData ? orderData.status : (urlStatus || 'pending');
           }
         }
       } catch (e) {
-        console.warn('轮询异常:', e);
+        // 轮询异常
       }
 
       if (attempts >= maxAttempts) {
@@ -763,7 +763,7 @@ const status = orderData ? orderData.status : (urlStatus || 'pending');
       }
       return false;
     } catch (e) {
-      console.error('自动注册异常:', e);
+      // 自动注册异常
       return false;
     }
   }

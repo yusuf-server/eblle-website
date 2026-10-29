@@ -996,22 +996,16 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       const cart = localStorage.getItem('ebbelle_cart');
       return cart ? JSON.parse(cart) : [];
     } catch (e) {
-      console.error('Failed to get cart:', e);
       return [];
     }
   }
 
   // 计算购物车总计
   function calculateCartTotals(cart) {
-    console.log('🛒 购物车数据:', cart);
-
     const subtotal = cart.reduce((sum, item) => {
       const price = parseFloat(item.price) || 0;
-      console.log(`商品: ${item.name}, 价格: ${item.price}, 解析后: ${price}, 数量: ${item.quantity}`);
       return sum + (price * item.quantity);
     }, 0);
-
-    console.log('💰 小计:', subtotal);
 
     const shipping = 0; // 待用户选择
     const total = subtotal + shipping;
@@ -1029,11 +1023,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   function renderCartItems(cart, containerId) {
     const container = document.getElementById(containerId);
     if (!container) {
-      console.error(`Container ${containerId} not found`);
       return;
     }
-
-    console.log(`Rendering ${cart.length} items to ${containerId}`);
 
     if (cart.length === 0) {
       container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Your cart is empty</p>';
@@ -1063,7 +1054,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     });
 
     container.innerHTML = html;
-    console.log(`Rendered HTML to ${containerId}:`, container.innerHTML.substring(0, 200));
   }
 
   // 更新总计
@@ -1112,7 +1102,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
     // 如果购物车为空，可以选择重定向到购物车页面
     if (cart.length === 0) {
-      console.warn('Cart is empty');
       // 可选：重定向到购物车页面
       // setTimeout(() => window.location.href = '/cart', 2000);
     }
@@ -1147,7 +1136,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       const data = await response.json();
       return data.exists || false;
     } catch (error) {
-      console.error('检测邮箱失败:', error);
       return false; // 失败时默认为未注册，允许继续流程
     }
   }
@@ -1183,11 +1171,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
           selectedShipping.setAttribute('data-cost', shippingCost);
         }
 
-        console.log('✅ 重新计算运费:', shippingCost);
       }
     }
-
-    console.log('📦 提交表单，运费:', shippingCost);
 
     // 检测邮箱是否已注册
     const isRegistered = await checkEmailRegistered(email);
@@ -1239,7 +1224,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     const shippingOption = document.getElementById('shippingOption');
 
     if (!countrySelect || !shippingPriceEl) {
-      console.error('Required elements not found');
       return;
     }
 
@@ -1290,12 +1274,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     } else if (shippingDetailsEl) {
       shippingDetailsEl.style.display = 'none';
     }
-
-    console.log('Shipping updated:', {
-      country: selectedCountry,
-      weight: totalWeight,
-      shipping: shipping
-    });
   }
 
   // 监听国家选择变化
