@@ -33,13 +33,16 @@ export const GET: APIRoute = async ({ cookies }) => {
       );
     }
 
-    // 获取用户订单
+    // 获取用户订单（添加时间戳避免 Cloudflare 和 WP REST Cache 缓存）
     const auth = Buffer.from(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`).toString('base64');
-    const ordersUrl = `${WC_URL}/wp-json/wc/v3/orders?customer=${userId}&per_page=100`;
+    const timestamp = Date.now();
+    const ordersUrl = `${WC_URL}/wp-json/wc/v3/orders?customer=${userId}&per_page=100&_t=${timestamp}`;
 
     const response = await fetch(ordersUrl, {
       headers: {
         Authorization: `Basic ${auth}`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
       },
     });
 

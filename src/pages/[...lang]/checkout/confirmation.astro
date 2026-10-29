@@ -23,8 +23,14 @@ if (orderId && orderKey) {
     const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET || '';
 
     const auth = btoa(`${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`);
-    const res = await fetch(`${WC_STORE_URL}/wp-json/wc/v3/orders/${orderId}`, {
-      headers: { 'Authorization': `Basic ${auth}` }
+    // 添加时间戳绕过缓存，确保获取最新订单状态
+    const timestamp = Date.now();
+    const res = await fetch(`${WC_STORE_URL}/wp-json/wc/v3/orders/${orderId}?_t=${timestamp}`, {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
     });
 
     if (res.ok) {
