@@ -31,7 +31,7 @@ async function tr(text: string): Promise<string> {
   return await translate(text, currentLocale, translateConfig, context);
 }
 
-// 4. 目标展示的 6 大核心分类
+// 4. 目标展示的 6 大核心分类配置
 const TARGET_CATEGORIES = [
   { name: 'RING', slug: 'ring' },
   { name: 'NECKLACE', slug: 'necklace' },
@@ -41,111 +41,358 @@ const TARGET_CATEGORIES = [
   { name: 'HAIR CLIP', slug: 'hair-clip' }
 ];
 
-// 5. 环境变量与授权
+// 5. 环境变量与安全 Base64 处理（纯 Web API，绝不引用 Node 模块）
 const storeUrl = (import.meta.env.WC_STORE_URL || 'https://api.ebbellejewelry.com').replace(/\/$/, '');
 const consumerKey = import.meta.env.WC_CONSUMER_KEY || '';
 const consumerSecret = import.meta.env.WC_CONSUMER_SECRET || '';
 
-// 6. 边缘安全的内存与本地隔离缓存
-let categoriesData: Array<{ category: string; slug: string; items: Array<{ name: string; slug: string }> }> = [];
+// 6. 全局内存缓存（Worker 实例间保活，零磁盘读写，零 Node 依赖，不打爆 SiteGround）
+// @ts-ignore
+globalThis.__EBBELLE_SITEMAP_CACHE__ = globalThis.__EBBELLE_SITEMAP_CACHE__ || null;
+// @ts-ignore
+let categoriesData = globalThis.__EBBELLE_SITEMAP_CACHE__;
 
-// 仅在本地开发环境动态加载 fs，生产 Worker 打包时彻底规避 node:fs 依赖
-if (import.meta.env.DEV) {
-  try {
-    const fs = await import('node:fs');
-    const path = await import('node:path');
-    const cacheFile = path.resolve('.cache', 'targeted-products-cache.json');
-    if (fs.existsSync(cacheFile)) {
-      categoriesData = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
-    }
-  } catch (e) {
-    // 忽略开发环境文件读取异常
-  }
-}
+if (!categoriesData) {
+  categoriesData = [];
+  
+  if (consumerKey && consumerSecret) {
+    const authHeader = 'Basic ' + btoa(`${consumerKey}:${consumerSecret}`);
 
-// 若无缓存，启动低负载单分类请求（避免打爆 SiteGround CPU）
-if (!categoriesData || categoriesData.length === 0) {
-  const authHeader = 'Basic ' + (typeof btoa !== 'undefined'
-    ? btoa(`${consumerKey}:${consumerSecret}`)
-    : Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64'));
-
-  // 1) 先查分类 ID 映射
-  let categoryIdMap = new Map<string, number>();
-  try {
-    const catRes = await fetch(`${storeUrl}/wp-json/wc/v3/products/categories?per_page=100&_fields=id,slug`, {
-      headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
+    // 1) 获取分类 ID 映射
+    let categoryIdMap = new Map<string, number>();
+    try {
+      const catRes = await fetch(`${storeUrl}/wp-json/wc/v3/products/categories?per_page=100&_fields=id,slug`, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (catRes.ok) {
+        const cats = await catRes.json();
+        if (Array.isArray(cats)) {
+          cats.forEach((c: any) => categoryIdMap.set(String(c.slug).toLowerCase(), c.id));
+        }
       }
-    });
-    if (catRes.ok) {
-      const cats = await catRes.json();
-      if (Array.isArray(cats)) {
-        cats.forEach((c: any) => categoryIdMap.set(c.slug.toLowerCase(), c.id));
-      }
+    } catch (e) {
+      console.warn('[Product Sitemap] Failed to fetch category mapping:', e);
     }
-  } catch (e) {
-    console.warn('Failed to fetch category mapping:', e);
-  }
 
-  // 2) 逐个分类精准抓取（串行节流）
-  for (const target of TARGET_CATEGORIES) {
-    const catId = categoryIdMap.get(target.slug.toLowerCase());
-    let items: Array<{ name: string; slug: string }> = [];
+    // 2) 逐个分类拉取商品（单次上限 100 条且仅查询 name,slug）
+    for (const target of TARGET_CATEGORIES) {
+      const catId = categoryIdMap.get(target.slug.toLowerCase());
+      let items: Array<{ name: string; slug: string }> = [];
 
-    if (catId) {
-      try {
-        const prodRes = await fetch(
-          `${storeUrl}/wp-json/wc/v3/products?category=${catId}&per_page=100&status=publish&_fields=name,slug`,
-          {
-            headers: {
-              'Authorization': authHeader,
-              'Content-Type': 'application/json'
+      if (catId) {
+        try {
+          const prodRes = await fetch(
+            `${storeUrl}/wp-json/wc/v3/products?category=${catId}&per_page=100&status=publish&_fields=name,slug`,
+            {
+              headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (prodRes.ok) {
+            const prods = await prodRes.json();
+            if (Array.isArray(prods)) {
+              items = prods.map((p: any) => ({ name: p.name, slug: p.slug }));
             }
           }
-        );
-
-        if (prodRes.ok) {
-          const prods = await prodRes.json();
-          if (Array.isArray(prods)) {
-            items = prods.map((p: any) => ({ name: p.name, slug: p.slug }));
-          }
+        } catch (err) {
+          console.warn(`[Product Sitemap] Error fetching category ${target.name}:`, err);
         }
-      } catch (err) {
-        console.warn(`Error fetching category ${target.name}:`, err);
       }
+
+      categoriesData.push({
+        category: target.name,
+        slug: target.slug,
+        items
+      });
+
+      // 节流避免突刺
+      await new Promise((r) => setTimeout(r, 40));
     }
 
-    categoriesData.push({
-      category: target.name,
-      slug: target.slug,
-      items
-    });
-
-    // 每次间隔 50ms 避免并发突刺
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-
-  // 开发环境下写入磁盘缓存
-  if (import.meta.env.DEV) {
-    try {
-      const fs = await import('node:fs');
-      const path = await import('node:path');
-      const cacheDir = path.resolve('.cache');
-      if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
-      fs.writeFileSync(path.join(cacheDir, 'targeted-products-cache.json'), JSON.stringify(categoriesData));
-    } catch (e) {}
+    // 存入全局内存
+    // @ts-ignore
+    globalThis.__EBBELLE_SITEMAP_CACHE__ = categoriesData;
   }
 }
 
-// 7. 标题国际化
+// 兜底保护：如果接口抓取失败或没查到数据，填充默认结构，100% 避免白屏
+if (!categoriesData || categoriesData.length === 0) {
+  categoriesData = TARGET_CATEGORIES.map(cat => ({
+    category: cat.name,
+    slug: cat.slug,
+    items: []
+  }));
+}
+
+// 7. 标题与分类国际化
 const pageTitle = await tr('PRODUCT SITEMAP');
 const subtitle = await tr('Explore our curated collections of handcrafted fine jewelry.');
 
 const categories = await Promise.all(
-  categoriesData.map(async (group) => ({
+  categoriesData.map(async (group: any) => ({
     ...group,
     categoryName: await tr(group.category)
   }))
 );
 ---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <Header />
+
+  <main class="sitemap-page">
+    <div class="sitemap-container">
+      <!-- 页面大标题 -->
+      <header class="page-header">
+        <h1 class="page-title">{pageTitle}</h1>
+        <p class="page-subtitle">{subtitle}</p>
+      </header>
+
+      <!-- 快捷跳转标签导航 -->
+      <nav class="category-anchor-nav" aria-label="Category Jump Navigation">
+        {categories.map((group: any) => (
+          <a href={`#${group.slug}`} class="anchor-tag">
+            {group.categoryName} ({group.items.length})
+          </a>
+        ))}
+      </nav>
+
+      <!-- 3 列平铺网格 -->
+      <div class="sitemap-columns-grid">
+        {categories.map((group: any) => (
+          <section class="sitemap-column" id={group.slug}>
+            <div class="column-header">
+              <h2 class="column-title">{group.categoryName}</h2>
+              <span class="count-badge">{group.items.length}</span>
+            </div>
+            <div class="column-divider"></div>
+
+            {group.items.length > 0 ? (
+              <ul class="product-links-list">
+                {group.items.map((prod: any) => (
+                  <li class="product-item">
+                    <a href={`/${currentLocale}/product/${prod.slug}`} class="product-link">
+                      {prod.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="empty-hint">No products currently available.</p>
+            )}
+          </section>
+        ))}
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .sitemap-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 24px 100px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .sitemap-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto 36px;
+  }
+
+  .page-title {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3.5px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    position: relative;
+    padding-bottom: 14px;
+  }
+
+  .page-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 1.5px;
+    background: #d4a04d;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    color: #666;
+    letter-spacing: 0.5px;
+    margin-top: 14px;
+  }
+
+  .category-anchor-nav {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 50px;
+    flex-wrap: wrap;
+  }
+
+  .anchor-tag {
+    display: inline-block;
+    padding: 8px 18px;
+    background: #fafaf8;
+    border: 1px solid #ebebeb;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #444;
+    text-decoration: none;
+    transition: all 0.25s ease;
+  }
+
+  .anchor-tag:hover {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+    transform: translateY(-1px);
+  }
+
+  .sitemap-columns-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px 36px;
+    align-items: start;
+  }
+
+  .sitemap-column {
+    background: #fff;
+  }
+
+  .column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .column-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    color: #111;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .column-title::before {
+    content: '✦';
+    font-size: 13px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+  }
+
+  .count-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    background: #f5f5f5;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .column-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 77, 0.7) 0%, rgba(212, 160, 77, 0.2) 40%, rgba(235, 235, 235, 0.5) 100%);
+    margin-bottom: 16px;
+  }
+
+  .product-links-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .product-item {
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .product-link {
+    color: #444;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-block;
+  }
+
+  .product-link:hover {
+    color: #d4a04d;
+    transform: translateX(3px);
+  }
+
+  .empty-hint {
+    font-size: 12px;
+    color: #999;
+    font-style: italic;
+  }
+
+  @media (max-width: 1024px) {
+    .sitemap-columns-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 36px 28px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .sitemap-page {
+      padding: 40px 16px 70px;
+    }
+    .page-title {
+      font-size: 22px;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    .sitemap-columns-grid {
+      grid-template-columns: 1fr;
+      gap: 36px;
+    }
+    .category-anchor-nav {
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    .anchor-tag {
+      font-size: 10.5px;
+      padding: 6px 14px;
+    }
+  }
+</style>
