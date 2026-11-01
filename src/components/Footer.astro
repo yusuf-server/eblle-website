@@ -33,7 +33,7 @@ for (const locale of SUPPORTED_LOCALES) {
           </div>
           <label class="newsletter-privacy">
             <input type="checkbox" required />
-            <span>{t(currentLocale, 'footer.privacyAgreement')} <a href={addLocalePrefix('/privacy', currentLocale)} class="privacy-link">{t(currentLocale, 'footer.securityPrivacy')}</a>.*</span>
+            <span>{t(currentLocale, 'footer.privacyAgreement')} <a href={addLocalePrefix('/privacy-policy', currentLocale)} class="privacy-link">{t(currentLocale, 'footer.securityPrivacy')}</a>.*</span>
           </label>
         </form>
       </div>
@@ -44,9 +44,9 @@ for (const locale of SUPPORTED_LOCALES) {
         <div class="footer-nav-col">
           <h4 class="nav-col-title">{t(currentLocale, 'footer.help')}</h4>
           <ul class="nav-links-list">
-            <li><a href={addLocalePrefix('/faqs', currentLocale)}>{t(currentLocale, 'footer.faqs')}</a></li>
+            <li><a href={addLocalePrefix('/help-faqs', currentLocale)}>{t(currentLocale, 'footer.faqs')}</a></li>
             <li><a href={addLocalePrefix('/shipping', currentLocale)}>{t(currentLocale, 'footer.shipping')}</a></li>
-            <li><a href={addLocalePrefix('/returns', currentLocale)}>{t(currentLocale, 'footer.returns')}</a></li>
+            <li><a href={addLocalePrefix('/returns-exchanges', currentLocale)}>{t(currentLocale, 'footer.returns')}</a></li>
             <li><a href={addLocalePrefix('/materials-care', currentLocale)}>{t(currentLocale, 'footer.materialsCare')}</a></li>
             <li><a href={addLocalePrefix('/ring-size-guide', currentLocale)}>{t(currentLocale, 'footer.ringSizeGuide')}</a></li>
             <li><a href={addLocalePrefix('/size-guide', currentLocale)}>{t(currentLocale, 'footer.sizeGuide')}</a></li>
@@ -58,7 +58,7 @@ for (const locale of SUPPORTED_LOCALES) {
         <div class="footer-nav-col">
           <h4 class="nav-col-title">{t(currentLocale, 'footer.aboutUs')}</h4>
           <ul class="nav-links-list">
-            <li><a href={addLocalePrefix('/about', currentLocale)}>{t(currentLocale, 'footer.about')}</a></li>
+            <li><a href={addLocalePrefix('/about-us', currentLocale)}>{t(currentLocale, 'footer.about')}</a></li>
             <li><a href={addLocalePrefix('/showroom', currentLocale)}>{t(currentLocale, 'footer.showroom')}</a></li>
             <li><a href={addLocalePrefix('/wholesale', currentLocale)}>{t(currentLocale, 'footer.wholesale')}</a></li>
             <li><a href={addLocalePrefix('/dropshipping', currentLocale)}>{t(currentLocale, 'footer.dropshipping')}</a></li>
@@ -71,12 +71,12 @@ for (const locale of SUPPORTED_LOCALES) {
         <div class="footer-nav-col">
           <h4 class="nav-col-title">{t(currentLocale, 'footer.moreInfo')}</h4>
           <ul class="nav-links-list">
-            <li><a href={addLocalePrefix('/offers', currentLocale)}>{t(currentLocale, 'footer.offers')}</a></li>
-            <li><a href={addLocalePrefix('/terms', currentLocale)}>{t(currentLocale, 'footer.terms')}</a></li>
-            <li><a href={addLocalePrefix('/privacy', currentLocale)}>{t(currentLocale, 'footer.privacy')}</a></li>
+            <li><a href={addLocalePrefix('/offers-promos', currentLocale)}>{t(currentLocale, 'footer.offers')}</a></li>
+            <li><a href={addLocalePrefix('/terms-conditions', currentLocale)}>{t(currentLocale, 'footer.terms')}</a></li>
+            <li><a href={addLocalePrefix('/privacy-policy', currentLocale)}>{t(currentLocale, 'footer.privacy')}</a></li>
             <li><a href={addLocalePrefix('/collection', currentLocale)}>{t(currentLocale, 'footer.collection')}</a></li>
             <li><a href={addLocalePrefix('/product', currentLocale)}>{t(currentLocale, 'footer.product')}</a></li>
-            <li><a href={addLocalePrefix('/order-tracking', currentLocale)}>{t(currentLocale, 'footer.trackingOrder')}</a></li>
+            <li><a href={addLocalePrefix('/tracking-order', currentLocale)}>{t(currentLocale, 'footer.trackingOrder')}</a></li>
           </ul>
         </div>
       </div>
@@ -87,46 +87,48 @@ for (const locale of SUPPORTED_LOCALES) {
     <div class="footer-bottom-row">
       <div class="payment-icons-group">
         <!-- Visa -->
-        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
-          <rect width="38" height="24" rx="3" fill="#1434CB"/>
-          <path d="M16.5 16.5L18.3 7.5H20.4L18.6 16.5H16.5ZM13.8 7.5L11.8 13.8L11.5 12.3C11.1 10.7 9.5 8.9 7.8 8L9.6 16.5H11.9L15.9 7.5H13.8ZM25.7 16.5H27.6L25.9 7.5H24.3C23.9 7.5 23.5 7.8 23.4 8.2L20.2 16.5H22.4L22.9 15.2H25.4L25.7 16.5ZM23.4 13.6L24.5 10.1L25.1 13.6H23.4ZM9.8 7.5H6.3L6.3 7.7C8.9 8.4 11.2 10.3 11.8 12.3L11.1 8.5C11 8 10.6 7.6 10.1 7.5H9.8Z" fill="#FFFFFF"/>
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24" aria-label="Visa">
+          <rect width="38" height="24" rx="3" fill="#ffffff" stroke="#e8e8e8" stroke-width="0.8"/>
+          <path d="M15.8 15.6l1.7-8.8h2.3l-1.7 8.8h-2.3zm8.9-8.6c-.5-.2-1.2-.4-2.1-.4-2.3 0-4 1.2-4 2.9 0 1.3 1.2 2 2.1 2.4.9.4 1.2.7 1.2 1.1 0 .6-.7.9-1.4.9-.9 0-1.5-.2-2.3-.6l-.3-.2-.3 1.8c.5.2 1.5.4 2.5.4 2.4 0 4-1.2 4-3 0-1-.6-1.8-2-2.4-.8-.4-1.3-.7-1.3-1.1 0-.4.4-.8 1.3-.8.7 0 1.3.1 1.7.3l.2.1.4-1.9zm5.9 5.6l1-2.6.5 2.6h-1.5zm2.2-5.8h-1.8c-.6 0-1 .2-1.3.8l-3.6 8.6h2.4l.5-1.3h3l.3 1.3h2.1l-1.6-9.4zm-19.4 0l-2.2 6-.2-1.2c-.4-1.4-1.6-2.9-3-3.6l2 7.6h2.4l3.6-8.8H13.4z" fill="#1434CB"/>
+          <path d="M8.7 6.8H5.1l-.1.3c2.8.7 4.7 2.4 5.4 4.5l-.8-4.1c-.1-.5-.5-.7-.9-.7z" fill="#F7B600"/>
         </svg>
 
         <!-- Mastercard -->
-        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
-          <rect width="38" height="24" rx="3" fill="#000000"/>
-          <circle cx="15" cy="12" r="7" fill="#EB001B"/>
-          <circle cx="23" cy="12" r="7" fill="#F79E1B"/>
-          <path d="M19 6.8a6.9 6.9 0 0 0-2.6 5.2 6.9 6.9 0 0 0 2.6 5.2 6.9 6.9 0 0 0 2.6-5.2A6.9 6.9 0 0 0 19 6.8z" fill="#FF5F00"/>
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24" aria-label="Mastercard">
+          <rect width="38" height="24" rx="3" fill="#ffffff" stroke="#e8e8e8" stroke-width="0.8"/>
+          <circle cx="14.5" cy="12" r="6.5" fill="#EB001B"/>
+          <circle cx="23.5" cy="12" r="6.5" fill="#F79E1B"/>
+          <path d="M19 7.2a6.45 6.45 0 0 0-2.5 4.8c0 1.9 1 3.7 2.5 4.8 1.5-1.1 2.5-2.9 2.5-4.8s-1-3.7-2.5-4.8z" fill="#FF5F00"/>
         </svg>
 
         <!-- American Express -->
-        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24" aria-label="American Express">
           <rect width="38" height="24" rx="3" fill="#006FCF"/>
-          <path d="M7 16.5L10 7.5H12.4L15.4 16.5H13.1L12.5 14.5H9.9L9.3 16.5H7ZM10.4 12.8H12L11.2 10L10.4 12.8ZM16.3 16.5V7.5H19.5L21.4 13.2L23.3 7.5H26.5V16.5H24.5V10.8L22.4 16.5H20.4L18.3 10.8V16.5H16.3ZM27.8 16.5V7.5H33.2V9.4H29.9V11.1H32.8V12.9H29.9V14.6H33.3V16.5H27.8Z" fill="#FFFFFF"/>
+          <path d="M6 8.2h3.3l1.8 4.2 1.8-4.2h3.3v7.6h-2.1v-4.9l-1.9 4.9h-2.2L8.1 10.9v4.9H6V8.2zm14.8 0h5.6v1.7h-3.7v1.2h3.5v1.7h-3.5v1.3h3.8v1.7h-5.7V8.2zm6.7 0h2.3l1.8 3.1 1.7-3.1h2.3l-2.8 4.6 3 4.2h-2.4l-1.8-3.1-1.8 3.1h-2.4l3-4.2-2.9-4.6z" fill="#ffffff"/>
         </svg>
 
         <!-- PayPal -->
-        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
-          <rect width="38" height="24" rx="3" fill="#F7F9FA"/>
-          <path d="M15.2 6.5h4.1c1.9 0 3.3.4 3.7 1.8.4 1.3.1 2.7-1.1 3.5 1.5.5 1.8 2 1.4 3.4-.5 1.9-2.3 2.8-4.5 2.8h-1.6l-.8 4h-2.3l2.8-15.5zm2.7 5.1h1.4c1 0 1.9-.3 2.1-1.2.2-.9-.4-1.4-1.5-1.4h-1.3l-.7 2.6zm-.9 4.3h1.6c1.1 0 2.1-.4 2.3-1.4.2-1-.5-1.5-1.7-1.5h-1.5l-.7 2.9z" fill="#003087"/>
-          <path d="M13.6 8.5h4.1c1.9 0 3.3.4 3.7 1.8.4 1.3.1 2.7-1.1 3.5 1.5.5 1.8 2 1.4 3.4-.5 1.9-2.3 2.8-4.5 2.8h-1.6l-.8 4H12.5l2.8-15.5z" fill="#0079C1" opacity="0.85"/>
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24" aria-label="PayPal">
+          <rect width="38" height="24" rx="3" fill="#ffffff" stroke="#e8e8e8" stroke-width="0.8"/>
+          <path d="M13.5 17.5h2.1l1.5-9.3h3.5c2.4 0 3.8 1.1 3.4 3.3-.4 2.3-2.1 3.6-4.5 3.6h-1.6l-.7 4.4h-3.7l0-2z" fill="#003087"/>
+          <path d="M15.8 15.5h2.3c2.4 0 4.1-1.3 4.5-3.6.4-2.2-1-3.3-3.4-3.3h-3.5l-1.5 9.3h1.6l0-2.4z" fill="#0079C1" opacity="0.85"/>
+          <path d="M14.9 11.9l.6-3.7h3.5c1.4 0 2.4.3 2.9.9.4.5.5 1.3.3 2.2-.4 2-1.9 3.2-3.8 3.2h-2.3l-.6 3.5h-1.8l1.2-6.1z" fill="#00457C" opacity="0.25"/>
         </svg>
 
         <!-- Apple Pay -->
-        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
-          <rect width="38" height="24" rx="3" fill="#FFFFFF"/>
-          <path d="M12.9 10.2c-.3.4-.8.7-1.3.6-.1-.5.2-1 .5-1.4.3-.4.8-.6 1.3-.6.1.5-.2 1-.5 1.4zm.5 1.4c-.7 0-1.3.4-1.7.4-.4 0-1-.4-1.6-.4-.8 0-1.6.5-2.1 1.3-.9 1.6-.2 3.9.7 5.2.4.6 1 1.3 1.7 1.3.7 0 .9-.4 1.7-.4.8 0 1 .4 1.7.4.7 0 1.2-.6 1.7-1.3.5-.7.7-1.4.7-1.4-.1 0-1.4-.5-1.4-2.1 0-1.3 1.1-1.9 1.1-2-.6-.9-1.5-1-1.8-1.1zm6.2-2.3h-2.3v9.5h1.5v-3.4h.8c2.2 0 3.6-1.4 3.6-3.1 0-1.8-1.4-3-3.6-3zm-.1 4.7h-.7V10.7h.7c1.3 0 2.1.7 2.1 1.6 0 1-.8 1.7-2.1 1.7zm6.7-.4c-1.3 0-2.3.9-2.3 2.2 0 1.3 1 2.2 2.3 2.2.6 0 1.2-.3 1.5-.7v.7h1.4v-4.3h-1.4v.6c-.3-.4-.9-.7-1.5-.7zm.2 3.1c-.6 0-1.1-.4-1.1-1 0-.6.5-1 1.1-1 .6 0 1.1.4 1.1 1 0 .6-.5 1-1.1 1zm4.8.8l-1.5-4h-1.6l2.3 5.4-1.7 3.5h1.5l4.3-8.9h-1.6l-1.7 4z" fill="#000000"/>
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24" aria-label="Apple Pay">
+          <rect width="38" height="24" rx="3" fill="#ffffff" stroke="#e8e8e8" stroke-width="0.8"/>
+          <path d="M13.8 9.8c-.3.4-.8.7-1.3.6-.1-.5.2-1 .5-1.4.3-.4.8-.6 1.3-.6.1.5-.2 1-.5 1.4zm.5 1.4c-.7 0-1.3.4-1.7.4-.4 0-1-.4-1.6-.4-.8 0-1.6.5-2.1 1.3-.9 1.6-.2 3.9.7 5.2.4.6 1 1.3 1.7 1.3.7 0 .9-.4 1.7-.4.8 0 1 .4 1.7.4.7 0 1.2-.6 1.7-1.3.5-.7.7-1.4.7-1.4-.1 0-1.4-.5-1.4-2.1 0-1.3 1.1-1.9 1.1-2-.6-.9-1.5-1-1.8-1.1zm5.9-2.2h-2.1v9.3h1.4v-3.3h.7c2.1 0 3.4-1.3 3.4-3 0-1.8-1.3-3-3.4-3zm-.1 4.5h-.6V10.3h.6c1.2 0 1.9.6 1.9 1.5 0 1-.7 1.7-1.9 1.7zm6.3-.4c-1.2 0-2.1.9-2.1 2.1 0 1.3 1 2.1 2.1 2.1.6 0 1.1-.3 1.4-.7v.6h1.3V11h-1.3v.6c-.3-.4-.8-.7-1.4-.7zm.2 3c-.5 0-1-.4-1-1s.4-1 1-1 1 .4 1 1c0 .5-.5 1-1 1zm4.6.8l-1.4-3.8h-1.5l2.2 5.1-1.6 3.3h1.4l4.1-8.4h-1.5l-1.7 3.8z" fill="#000000"/>
         </svg>
 
         <!-- Google Pay -->
-        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24">
-          <rect width="38" height="24" rx="3" fill="#FFFFFF"/>
-          <path d="M14.9 12.3c0-.3 0-.6-.1-.9h-4.3v1.7h2.5c-.1.6-.5 1.1-.9 1.5v1.2h1.5c.9-.8 1.3-2.1 1.3-3.5z" fill="#4285F4"/>
-          <path d="M10.5 16.7c1.2 0 2.2-.4 3-1.1l-1.5-1.2c-.4.3-.9.5-1.5.5-1.1 0-2.1-.8-2.5-1.8H6.5v1.2c.8 1.5 2.3 2.4 4 2.4z" fill="#34A853"/>
-          <path d="M8 13.1c-.1-.3-.2-.7-.2-1.1s.1-.8.2-1.1V9.7H6.5C6.2 10.4 6 11.2 6 12s.2 1.6.5 2.3l1.5-1.2z" fill="#FBBC04"/>
-          <path d="M10.5 8.9c.7 0 1.3.2 1.8.7l1.3-1.3c-.8-.8-1.9-1.2-3.1-1.2-1.7 0-3.2.9-4 2.4l1.5 1.2c.4-1 1.4-1.8 2.5-1.8z" fill="#EA4335"/>
-          <path d="M19.4 8.7h-1.4v7.7h1.4V8.7zm5.5 2.7c-1.1 0-2 .8-2 2 0 1.2.9 2 2 2 .5 0 1-.2 1.3-.6v.5h1.3v-5.6h-1.3v.6c-.3-.4-.8-.6-1.3-.6zm.2 2.8c-.5 0-.9-.4-.9-1s.4-1 .9-1 .9.4.9 1-.4 1-.9 1zm4.3.7l-1.4-3.5h-1.4l2.1 4.8-1.5 3.3h1.4l3.8-8.1h-1.4l-1.6 3.5z" fill="#5F6368"/>
+        <svg class="pay-card-svg" viewBox="0 0 38 24" width="38" height="24" aria-label="Google Pay">
+          <rect width="38" height="24" rx="3" fill="#ffffff" stroke="#e8e8e8" stroke-width="0.8"/>
+          <path d="M14.9 12.2c0-.3 0-.6-.1-.8H10.7v1.7h2.4c-.1.6-.4 1.1-.9 1.4v1.2h1.4c.9-.8 1.3-2.1 1.3-3.5z" fill="#4285F4"/>
+          <path d="M10.7 16.5c1.2 0 2.2-.4 2.9-1.1l-1.4-1.2c-.4.3-.9.5-1.5.5-1.1 0-2.1-.8-2.5-1.8H6.8v1.2c.8 1.5 2.2 2.4 3.9 2.4z" fill="#34A853"/>
+          <path d="M8.2 12.9c-.1-.3-.2-.7-.2-1s.1-.7.2-1V9.7H6.8c-.3.6-.5 1.4-.5 2.2s.2 1.6.5 2.2l1.4-1.2z" fill="#FBBC04"/>
+          <path d="M10.7 8.8c.7 0 1.3.2 1.7.7l1.3-1.3c-.8-.8-1.8-1.2-3-1.2-1.7 0-3.1.9-3.9 2.4l1.4 1.2c.4-1 1.4-1.8 2.5-1.8z" fill="#EA4335"/>
+          <path d="M19.1 8.7h-1.4v7.5h1.4V8.7zm5.3 2.6c-1 0-1.9.8-1.9 1.9s.9 1.9 1.9 1.9c.5 0 1-.2 1.3-.6v.5h1.3V9h-1.3v.6c-.3-.4-.8-.6-1.3-.6zm.2 2.7c-.5 0-.9-.4-.9-.9s.4-.9.9-.9.9.4.9.9c0 .6-.4.9-.9.9zm4.2.7l-1.3-3.4h-1.4l2.1 4.7-1.5 3.2h1.4l3.7-7.9h-1.4l-1.6 3.4z" fill="#5F6368"/>
         </svg>
       </div>
 
@@ -162,7 +164,7 @@ for (const locale of SUPPORTED_LOCALES) {
 
   /* 左侧：邮件订阅区块 */
   .footer-newsletter {
-    display:none;
+    display: none;
     max-width: 520px;
   }
 
@@ -316,9 +318,7 @@ for (const locale of SUPPORTED_LOCALES) {
     height: 24px;
     width: auto;
     border-radius: 3px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    background: #ffffff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     transition: transform 0.2s ease;
   }
 

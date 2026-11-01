@@ -1,0 +1,360 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 获取缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'returns-exchanges'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// 4. 从图片中精准提取的 Returns & Exchanges 问答与政策文本
+const pageTitle = await tr('RETURNS & EXCHANGES');
+const sectionTitle = await tr("RETURN FAQ'S");
+
+const rawReturnFaqs = [
+  {
+    q: 'RETURNS T&CS',
+    a: "If for any reason you are not satisfied with your order or simply change your mind, we accept returns on non-custom items within 15 days of delivery.\n\nPlease note: Items must be in their original condition and packaging. Custom-made items or personalized engraved pieces are non-returnable unless defective or incorrect upon arrival. However, if you receive a defective customized item, please contact us and we will work to make it right."
+  },
+  {
+    q: 'RETURNS CHARGES',
+    a: "Returns within 15 days:\nIf you encounter a quality issue with your order, you can get free return service. We will cover the return shipping costs and any applicable clearance/tariff fees. For non-quality-related returns (e.g., change of mind), return services are supported, but the buyer is responsible for the return shipping costs and any applicable taxes or duties.\n\nAfter 15 days but within 1 Year:\nIf a quality issue arises after the 15-day return window but within 1 Year of receipt, please contact our customer service team. We will review the situation and provide an appropriate solution."
+  },
+  {
+    q: 'EXCHANGES',
+    a: "After shipment, we no longer accept exchanges, including rings and other sizes. Please contact us if you have any questions about an item or order prior to placing it or getting dispatched."
+  },
+  {
+    q: 'RECEIVING YOUR REFUND',
+    a: "We will process your return and issue a refund within 14 days of receiving your returned order, or within 14 days of receiving valid proof that the order has been returned. All refunds will be credited back to the original payment method. Please note that for non-quality-related returns, we do not cover return shipping costs and duties."
+  }
+];
+
+// 批量异步翻译所有问答项
+const returnFaqs = await Promise.all(
+  rawReturnFaqs.map(async (item) => ({
+    q: await tr(item.q),
+    a: await tr(item.a)
+  }))
+);
+
+// 底部客服引导提示
+const noticePrefix = await tr("Need help starting a return or have questions? Please");
+const contactUsText = t(currentLocale, 'footer.contactUs') || await tr('Contact Us');
+const noticeSuffix = await tr('— our concierge team responds within 24 hours.');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" slot="head" />
+
+  <Header />
+
+  <main class="returns-page">
+    <div class="returns-container">
+      <h1 class="returns-page-heading">{pageTitle}</h1>
+
+      <section class="returns-faq-section">
+        <h2 class="returns-section-title">{sectionTitle}</h2>
+
+        <div class="faq-items-wrapper">
+          {returnFaqs.map((item) => (
+            <div class="faq-accordion-card">
+              <button type="button" class="faq-head-btn" aria-expanded="false">
+                <span class="faq-q-text">{item.q}</span>
+                <i class="fa-solid fa-chevron-down faq-arrow-icon"></i>
+              </button>
+              <div class="faq-body-collapse">
+                <div class="faq-body-inner">
+                  <p>{item.a}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- 底部客服联系引导提示 -->
+      <div class="returns-footer-hint">
+        <p>
+          {noticePrefix} <a href="/contact">{contactUsText}</a> {noticeSuffix}
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .returns-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 20px 90px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .returns-container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题：高级珠宝风 */
+  .returns-page-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #111;
+    margin-bottom: 50px;
+    text-transform: uppercase;
+    position: relative;
+    padding-bottom: 14px;
+  }
+
+  .returns-page-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 1.5px;
+    background: #d4a04d;
+  }
+
+  /* 💎 统一珠宝风分类标题（星芒 ✦ + 渐变金线） */
+  .returns-section-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    position: relative;
+    padding-bottom: 10px;
+  }
+
+  .returns-section-title::before {
+    content: '✦';
+    font-size: 14px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .returns-section-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 77, 0.6) 0%, rgba(212, 160, 77, 0.15) 30%, rgba(235, 235, 235, 0.4) 100%);
+  }
+
+  .returns-faq-section {
+    margin-top: 10px;
+  }
+
+  .faq-items-wrapper {
+    border-top: none;
+  }
+
+  .faq-accordion-card {
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .faq-head-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 18px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333333;
+    text-align: left;
+    cursor: pointer;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    transition: color 0.25s ease;
+  }
+
+  .faq-head-btn:hover {
+    color: #d4a04d;
+  }
+
+  .faq-accordion-card.active .faq-head-btn {
+    color: #d4a04d;
+  }
+
+  .faq-q-text {
+    flex: 1;
+    padding-right: 16px;
+    line-height: 1.5;
+  }
+
+  .faq-arrow-icon {
+    font-size: 11px;
+    color: #888;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+  }
+
+  .faq-accordion-card.active .faq-arrow-icon {
+    transform: rotate(180deg);
+    color: #d4a04d;
+  }
+
+  .faq-body-collapse {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .faq-body-inner {
+    padding-bottom: 24px;
+    padding-top: 2px;
+  }
+
+  .faq-body-inner p {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #555555;
+    margin: 0;
+    white-space: pre-line;
+  }
+
+  /* 底部客服提示 */
+  .returns-footer-hint {
+    margin-top: 60px;
+    padding-top: 28px;
+    border-top: 1px dashed #e5e5e5;
+    text-align: center;
+  }
+
+  .returns-footer-hint p {
+    font-size: 12.5px;
+    color: #777;
+    line-height: 1.6;
+  }
+
+  .returns-footer-hint a {
+    color: #111;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .returns-footer-hint a:hover {
+    color: #d4a04d;
+  }
+
+  /* 移动端响应式 */
+  @media (max-width: 768px) {
+    .returns-page {
+      padding: 40px 16px 60px;
+    }
+    .returns-page-heading {
+      font-size: 22px;
+      margin-bottom: 32px;
+      letter-spacing: 2px;
+    }
+    .returns-section-title {
+      font-size: 15px;
+      letter-spacing: 1.2px;
+      margin-bottom: 12px;
+    }
+    .returns-section-title::before {
+      font-size: 12px;
+    }
+    .faq-head-btn {
+      font-size: 11.5px;
+      padding: 15px 0;
+    }
+    .faq-body-inner p {
+      font-size: 12.5px;
+    }
+  }
+</style>
+
+<script>
+  function initReturnsFaq() {
+    const cards = document.querySelectorAll('.faq-accordion-card');
+
+    cards.forEach(card => {
+      const btn = card.querySelector('.faq-head-btn');
+      const collapse = card.querySelector('.faq-body-collapse') as HTMLElement;
+      if (!btn || !collapse) return;
+
+      btn.addEventListener('click', () => {
+        const isOpen = card.classList.contains('active');
+
+        // 关闭同组内的其他展开项
+        const parentWrapper = card.closest('.faq-items-wrapper');
+        if (parentWrapper) {
+          parentWrapper.querySelectorAll('.faq-accordion-card.active').forEach(otherCard => {
+            if (otherCard !== card) {
+              otherCard.classList.remove('active');
+              otherCard.querySelector('.faq-head-btn')?.setAttribute('aria-expanded', 'false');
+              const otherBody = otherCard.querySelector('.faq-body-collapse') as HTMLElement;
+              if (otherBody) otherBody.style.maxHeight = '0px';
+            }
+          });
+        }
+
+        if (isOpen) {
+          card.classList.remove('active');
+          btn.setAttribute('aria-expanded', 'false');
+          collapse.style.maxHeight = '0px';
+        } else {
+          card.classList.add('active');
+          btn.setAttribute('aria-expanded', 'true');
+          collapse.style.maxHeight = collapse.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initReturnsFaq);
+</script>

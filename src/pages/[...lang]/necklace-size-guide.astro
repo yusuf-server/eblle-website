@@ -1,0 +1,457 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'necklace-length-guide'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// ----------------------------------------------------
+// 🖼️ 项链佩戴示意图图片预留（在此替换图片 URL）
+// ----------------------------------------------------
+const necklaceGuideImg = 'https://api.ebbellejewelry.com/wp-content/uploads/2026/05/Comprehensive-necklace-length-guide-in-inches-and-centimeters-for-18k-gold-plated-chains-and-pendants.webp';
+
+// 4. 原始文案提取与翻译
+const pageTitle = await tr('NECKLACE LENGTH GUIDE');
+const subTitle = await tr('HOW TO FIND YOUR NECKLACE LENGTH SIZE');
+const introText = await tr("Finding the perfect length is essential for creating your signature look. Whether you're going for a bold solo statement or a delicate layered 'necklace stack,' use this guide to find your ideal fit.");
+
+// 5. THE STYLES 表格数据
+const stylesSectionTitle = await tr('THE STYLES');
+const tableHeaders = [
+  await tr('Style Name'),
+  await tr('Length (cm)'),
+  await tr('Length (in)'),
+  await tr('Where it Sits (Fit & Style)')
+];
+
+const stylesRows = [
+  {
+    name: await tr('Choker'),
+    cm: '35 - 38 cm',
+    inch: '14 - 15"',
+    desc: await tr('Sits snugly around the base of the neck. Perfect for high-fashion layering.')
+  },
+  {
+    name: await tr('Princess'),
+    cm: '40 - 45 cm',
+    inch: '16 - 18"',
+    desc: await tr('The most classic length; rests gracefully on the collarbone. Ideal for everyday wear.')
+  },
+  {
+    name: await tr('Matinee'),
+    cm: '50 - 55 cm',
+    inch: '20 - 22"',
+    desc: await tr('Falls just below the collarbone. Great for statement pendants and plunging necklines.')
+  },
+  {
+    name: await tr('Opera'),
+    cm: '60 - 75 cm',
+    inch: '24 - 30"',
+    desc: await tr('Sits at the bust level. Provides an elongated, elegant look—perfect for formal styles.')
+  },
+  {
+    name: await tr('Rope'),
+    cm: '80 cm +',
+    inch: '33" +',
+    desc: await tr('An extra-long length that can be doubled or wrapped for a multi-strand aesthetic.')
+  }
+];
+
+// 6. QUICK TIPS FOR YOUR BEST FIT (3条佩戴贴士)
+const tipsTitle = await tr('QUICK TIPS FOR YOUR BEST FIT');
+const tipsList = [
+  {
+    lead: await tr('Measure a Favorite:'),
+    text: await tr('If you already have a necklace you love, lay it flat and measure it from end to end (including the clasp) to find your preferred length.')
+  },
+  {
+    lead: await tr('The Layering Secret:'),
+    text: await tr('For the perfect "waterfall" effect, we recommend a 5 cm (2 inch) difference between each chain. This prevents tangling and ensures every piece shines.')
+  },
+  {
+    lead: await tr('Consider the Neckline:'),
+    text: await tr('A 40cm chain is the go-to for V-necks and open shirts, while a 50cm+ chain is ideal for layering over high-neck sweaters or hoodies.')
+  }
+];
+
+// 7. 底部叠戴选购引导横幅
+const stackCtaTitle = await tr('READY TO STACK? EXPLORE OUR COLLECTIONS.');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <Header />
+
+  <main class="necklace-guide-page">
+    <div class="necklace-container">
+      <!-- 页面大标题与引言 -->
+      <h1 class="page-title">{pageTitle}</h1>
+      <p class="page-subtitle">{subTitle}</p>
+      <p class="page-intro">{introText}</p>
+
+      <!-- 1. THE STYLES 长度风格表格 -->
+      <section class="styles-table-section">
+        <h2 class="section-heading">{stylesSectionTitle}</h2>
+        <div class="table-wrap">
+          <table class="styles-table">
+            <thead>
+              <tr>
+                {tableHeaders.map((head) => (
+                  <th>{head}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {stylesRows.map((row) => (
+                <tr>
+                  <td class="col-style-name"><strong>{row.name}</strong></td>
+                  <td class="col-measurement">{row.cm}</td>
+                  <td class="col-measurement">{row.inch}</td>
+                  <td class="col-desc">{row.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2. 图文对比版块：佩戴示意图 + 叠戴小贴士 -->
+      <section class="tips-showcase-section">
+        <div class="showcase-img-col">
+          <img src={necklaceGuideImg} alt="Your Comprehensive Necklace Length Guide" loading="lazy" />
+        </div>
+        <div class="showcase-text-col">
+          <h2 class="tips-heading">{tipsTitle}</h2>
+          <div class="tips-items-list">
+            {tipsList.map((tip) => (
+              <div class="tip-entry">
+                <p>
+                  <strong>{tip.lead}</strong> {tip.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 底部叠戴探索引导按钮 -->
+      <div class="stack-cta-wrap">
+        <a href={`/${currentLocale}/shop`} class="stack-cta-btn">
+          <span>{stackCtaTitle}</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .necklace-guide-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 20px 100px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .necklace-container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题：高级珠宝风 */
+  .page-title {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    color: #777;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .page-intro {
+    font-size: 13px;
+    color: #555;
+    text-align: center;
+    line-height: 1.7;
+    max-width: 760px;
+    margin: 0 auto 50px;
+  }
+
+  /* 统一大号饰品分类小标题（星芒 ✦ + 渐变金线） */
+  .styles-table-section {
+    margin-bottom: 60px;
+  }
+
+  .section-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+    position: relative;
+    padding-bottom: 10px;
+  }
+
+  .section-heading::before {
+    content: '✦';
+    font-size: 14px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .section-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 77, 0.6) 0%, rgba(212, 160, 77, 0.15) 30%, rgba(235, 235, 235, 0.4) 100%);
+  }
+
+  /* 风格表格 */
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e8e8e8;
+    background: #fff;
+  }
+
+  .styles-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    text-align: left;
+  }
+
+  .styles-table thead th {
+    background: #fafaf8;
+    padding: 14px 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #222;
+    border-bottom: 1px solid #e8e8e8;
+    white-space: nowrap;
+  }
+
+  .styles-table tbody td {
+    padding: 16px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  .styles-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .styles-table tbody tr:hover {
+    background: #fafaf8;
+  }
+
+  .col-style-name {
+    width: 18%;
+    color: #111;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .col-measurement {
+    width: 16%;
+    white-space: nowrap;
+    color: #333;
+    font-weight: 500;
+  }
+
+  .col-desc {
+    color: #555;
+  }
+
+  /* 图文版块：左图右文 */
+  .tips-showcase-section {
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    margin-bottom: 60px;
+    background: #fafaf8;
+    border: 1px solid #ebebeb;
+    border-radius: 6px;
+    padding: 32px 36px;
+  }
+
+  .showcase-img-col {
+    flex: 1.2;
+    min-width: 0;
+  }
+
+  .showcase-img-col img {
+    width: 100%;
+    height: auto;
+    max-height: 380px;
+    object-fit: contain;
+    display: block;
+    border-radius: 4px;
+    background: #fff;
+  }
+
+  .showcase-text-col {
+    flex: 1.2;
+    min-width: 0;
+  }
+
+  .tips-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+
+  .tips-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .tip-entry p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #555;
+    margin: 0;
+  }
+
+  .tip-entry strong {
+    color: #111;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* 底部引导栏 */
+  .stack-cta-wrap {
+    text-align: center;
+    padding-top: 10px;
+  }
+
+  .stack-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #111;
+    border-bottom: 1.5px solid #111;
+    padding-bottom: 6px;
+    transition: all 0.25s ease;
+  }
+
+  .stack-cta-btn:hover {
+    color: #d4a04d;
+    border-color: #d4a04d;
+    transform: translateY(-2px);
+  }
+
+  .stack-cta-btn i {
+    font-size: 11px;
+    transition: transform 0.25s ease;
+  }
+
+  .stack-cta-btn:hover i {
+    transform: translateX(4px);
+  }
+
+  /* 移动端与平板响应式适配 */
+  @media (max-width: 768px) {
+    .necklace-guide-page {
+      padding: 40px 16px 70px;
+    }
+    .page-title {
+      font-size: 22px;
+      letter-spacing: 2px;
+    }
+    .section-heading {
+      font-size: 15px;
+    }
+    .styles-table thead th,
+    .styles-table tbody td {
+      padding: 12px 14px;
+      font-size: 11.5px;
+    }
+    .tips-showcase-section {
+      flex-direction: column;
+      gap: 24px;
+      padding: 20px 16px;
+    }
+    .showcase-img-col, .showcase-text-col {
+      width: 100%;
+    }
+    .tips-heading {
+      font-size: 15px;
+      margin-bottom: 16px;
+    }
+    .tip-entry p {
+      font-size: 12.5px;
+    }
+  }
+</style>

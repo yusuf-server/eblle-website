@@ -1,0 +1,620 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'materials-care'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// 4. 原版文案精准提取与翻译
+const pageTitle = await tr('MATERIALS & CARE');
+const subTitle = await tr('Designed for real life. Made to last.');
+const introQuote = await tr("At E.B.belle, we believe that beautiful jewelry should also be worry-free. That's why we craft every piece with care, using only high-quality materials designed for real life.");
+
+// 5. OUR MATERIALS 表格数据
+const sectionMaterials = await tr('OUR MATERIALS');
+const thMaterial = await tr('MATERIAL');
+const thDescription = await tr('DESCRIPTION');
+
+const materialsList = [
+  {
+    name: await tr('316L STAINLESS STEEL'),
+    desc: await tr('Medical-grade stainless steel that is extremely durable, corrosion-resistant, and hypoallergenic. Unlike cheap metals, it will not rust, bend, or irritate the skin.')
+  },
+  {
+    name: await tr('PVD COATING'),
+    desc: await tr('Physical Vapor Deposition bonds color to metal at a molecular level. The finish remains bright, does not peel, and resists fading for years.')
+  },
+  {
+    name: await tr('CUBIC ZIRCONIA (CZ)'),
+    desc: await tr('Lab-created stones with diamond-like brilliance. Ethically sourced and carefully set for maximum sparkle.')
+  },
+  {
+    name: await tr('FAUX PEARL / IMITATION PEARL'),
+    desc: await tr('High-quality simulated pearls with a smooth, lustrous finish. Uniform in shape and color, offering elegance without the fragility of natural pearls.')
+  }
+];
+
+// 6. WHY CHOOSE E.B.BELLE 四卡片数据
+const sectionWhy = await tr('WHY CHOOSE E.B.BELLE');
+const features = [
+  {
+    type: 'diamond',
+    title: await tr('TARNISH-FREE'),
+    desc: await tr('PVD coating prevents discoloration. Years of shine without polishing.')
+  },
+  {
+    type: 'circle',
+    title: await tr('HYPOALLERGENIC'),
+    desc: await tr('316L stainless steel with virtually no nickel. Safe for sensitive skin.')
+  },
+  {
+    type: 'waterproof',
+    title: await tr('WATERPROOF'),
+    desc: await tr('Rain, gym, shower — wear it everywhere. Built for daily life.')
+  },
+  {
+    type: 'hexagon',
+    title: await tr('SWEAT-RESISTANT'),
+    desc: await tr('No green fingers. No irritation. Just lasting shine.')
+  }
+];
+
+// 7. HOW TO CARE FOR YOUR JEWELRY (DO'S & DON'TS)
+const sectionCare = await tr('HOW TO CARE FOR YOUR JEWELRY');
+const dosTitle = await tr("DO'S");
+const dosItems = [
+  await tr('Wipe clean with a soft, dry cloth after wearing.'),
+  await tr('Wash gently with mild soap and warm water. Dry thoroughly.'),
+  await tr('Store separately to avoid scratches.')
+];
+
+const dontsTitle = await tr("DON'TS");
+const dontsItems = [
+  await tr('Do not use harsh chemicals (bleach, acetone).'),
+  await tr('Do not use ultrasonic cleaners (unnecessary for stainless steel).'),
+  await tr('Do not worry about water, sweat, or daily wear.')
+];
+
+// 8. SPECIAL CARE FOR FAUX PEARLS
+const fauxPearlTitle = await tr('SPECIAL CARE FOR FAUX PEARLS');
+const fauxPearlText = await tr('Our faux pearls are designed for durability and lasting luster. To keep them looking their best, avoid prolonged contact with perfumes and lotions. Wipe gently with a soft, damp cloth after each wear and store in a soft pouch.');
+
+// 9. OUR PROMISE
+const promiseTitle = await tr('OUR PROMISE');
+const promiseText = await tr('Every piece of E.B.belle jewelry is crafted to be worn, loved, and never worried about.');
+
+// 10. 底部新增链接与致意文案
+const contactCsBtnText = await tr('CONTACT CUSTOMER SERVICE');
+const browseCollectionBtnText = await tr('BROWSE COLLECTION');
+const footerSupportNotice = await tr('NEED ASSISTANCE WITH JEWELRY CARE? OUR SUPPORT TEAM IS AVAILABLE 24 HOURS A DAY, 7 DAYS A WEEK.');
+const footerBrandSlogan = await tr('E.B.BELLE — QUIET LUXURY, WORN EVERY DAY.');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <Header />
+
+  <main class="materials-page">
+    <div class="materials-container">
+      <!-- 页面大标题 -->
+      <h1 class="page-title">{pageTitle}</h1>
+      <p class="page-subtitle">{subTitle}</p>
+
+      <!-- 顶部高亮引用块 -->
+      <div class="intro-callout">
+        <p>{introQuote}</p>
+      </div>
+
+      <!-- 1. OUR MATERIALS 表格 -->
+      <section class="content-section">
+        <h2 class="section-heading">{sectionMaterials}</h2>
+        <div class="table-wrap">
+          <table class="materials-table">
+            <thead>
+              <tr>
+                <th class="th-material">{thMaterial}</th>
+                <th class="th-desc">{thDescription}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {materialsList.map((m) => (
+                <tr>
+                  <td class="td-material">{m.name}</td>
+                  <td class="td-desc">{m.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2. WHY CHOOSE E.B.BELLE -->
+      <section class="content-section">
+        <h2 class="section-heading">{sectionWhy}</h2>
+        <div class="features-grid">
+          {features.map((f) => (
+            <div class="feature-card">
+              <div class="shape-icon-wrap">
+                {f.type === 'diamond' && (
+                  <svg viewBox="0 0 24 24" class="shape-svg" fill="none" stroke="currentColor" stroke-width="1.3">
+                    <rect x="12" y="2" width="14" height="14" transform="rotate(45 12 2)" />
+                  </svg>
+                )}
+                {f.type === 'circle' && (
+                  <svg viewBox="0 0 24 24" class="shape-svg" fill="none" stroke="currentColor" stroke-width="1.3">
+                    <circle cx="12" cy="12" r="8.5" />
+                  </svg>
+                )}
+                {f.type === 'waterproof' && (
+                  <svg viewBox="0 0 24 24" class="shape-svg" fill="none" stroke="currentColor" stroke-width="1.3">
+                    <path d="M12 2.5 L20 9.5 V20.5 H4 V9.5 Z" />
+                  </svg>
+                )}
+                {f.type === 'hexagon' && (
+                  <svg viewBox="0 0 24 24" class="shape-svg" fill="none" stroke="currentColor" stroke-width="1.3">
+                    <polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5" />
+                  </svg>
+                )}
+              </div>
+              <h3 class="feature-title">{f.title}</h3>
+              <p class="feature-desc">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- 3. HOW TO CARE FOR YOUR JEWELRY (DO'S & DON'TS) -->
+      <section class="content-section">
+        <h2 class="section-heading">{sectionCare}</h2>
+        <div class="dos-donts-container">
+          <!-- DO'S -->
+          <div class="care-column">
+            <h3 class="care-col-title">{dosTitle}</h3>
+            <ul class="care-bullet-list">
+              {dosItems.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </div>
+          <!-- DON'TS -->
+          <div class="care-column">
+            <h3 class="care-col-title">{dontsTitle}</h3>
+            <ul class="care-bullet-list">
+              {dontsItems.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. SPECIAL CARE FOR FAUX PEARLS -->
+      <section class="faux-pearls-section">
+        <h3 class="pearl-heading">{fauxPearlTitle}</h3>
+        <p class="pearl-text">{fauxPearlText}</p>
+      </section>
+
+      <!-- 5. OUR PROMISE -->
+      <section class="promise-box">
+        <h3 class="promise-heading">{promiseTitle}</h3>
+        <p class="promise-text">{promiseText}</p>
+      </section>
+
+      <!-- 6. 底部操作链接 -->
+      <div class="bottom-action-links">
+        <a href="/contact" class="action-link">{contactCsBtnText}</a>
+        <a href="/shop" class="action-link">{browseCollectionBtnText}</a>
+      </div>
+
+      <!-- 7. 底部精细分割线与 24/7 服务保障说明 -->
+      <div class="bottom-support-notice">
+        <p class="support-text">{footerSupportNotice}</p>
+        <p class="slogan-text">{footerBrandSlogan}</p>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .materials-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 20px 100px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .materials-container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题 */
+  .page-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    color: #666;
+    text-align: center;
+    letter-spacing: 0.5px;
+    margin-bottom: 36px;
+  }
+
+  /* 顶部引言高亮框（左侧香槟金条） */
+  .intro-callout {
+    background: #fafaf8;
+    border-left: 3px solid #d4a04d;
+    padding: 22px 26px;
+    margin-bottom: 48px;
+  }
+
+  .intro-callout p {
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: #444;
+  }
+
+  .content-section {
+    margin-bottom: 50px;
+  }
+
+  /* 统一大号饰品分类小标题（星芒 ✦ + 渐变金线） */
+  .section-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    position: relative;
+    padding-bottom: 10px;
+  }
+
+  .section-heading::before {
+    content: '✦';
+    font-size: 14px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .section-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 77, 0.6) 0%, rgba(212, 160, 77, 0.15) 30%, rgba(235, 235, 235, 0.4) 100%);
+  }
+
+  /* 表格样式 */
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e8e8e8;
+  }
+
+  .materials-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    text-align: left;
+  }
+
+  .materials-table thead th {
+    background: #fafaf8;
+    padding: 13px 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #222;
+    border-bottom: 1px solid #e8e8e8;
+  }
+
+  .th-material {
+    width: 32%;
+  }
+
+  .materials-table tbody td {
+    padding: 18px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: top;
+    line-height: 1.65;
+  }
+
+  .materials-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .td-material {
+    font-weight: 700;
+    color: #222;
+    letter-spacing: 0.4px;
+  }
+
+  .td-desc {
+    color: #555;
+  }
+
+  /* WHY CHOOSE 四大卡片 */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .feature-card {
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    padding: 30px 16px 24px;
+    text-align: center;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .shape-icon-wrap {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #777;
+    margin-bottom: 16px;
+  }
+
+  .shape-svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .feature-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .feature-desc {
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: #666;
+  }
+
+  /* DO'S & DON'TS 原图金线分栏 */
+  .dos-donts-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  .care-column {
+    border-left: 2px solid #d4a04d;
+    padding-left: 18px;
+  }
+
+  .care-col-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .care-bullet-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .care-bullet-list li {
+    font-size: 12.5px;
+    color: #555;
+    line-height: 1.6;
+    position: relative;
+    padding-left: 14px;
+  }
+
+  .care-bullet-list li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  /* SPECIAL CARE FOR FAUX PEARLS */
+  .faux-pearls-section {
+    margin-top: 36px;
+    margin-bottom: 46px;
+  }
+
+  .pearl-heading {
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .pearl-text {
+    font-size: 12.5px;
+    color: #555;
+    line-height: 1.7;
+  }
+
+  /* OUR PROMISE 底部大框 */
+  .promise-box {
+    background: #fafaf8;
+    border: 1px solid #ebebeb;
+    border-radius: 6px;
+    padding: 40px 30px;
+    text-align: center;
+    margin-bottom: 38px;
+  }
+
+  .promise-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .promise-text {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  /* 底部双按钮链接 */
+  .bottom-action-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 36px;
+    margin-bottom: 50px;
+    flex-wrap: wrap;
+  }
+
+  .action-link {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #111;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+  }
+
+  .action-link:hover {
+    color: #d4a04d;
+  }
+
+  /* 底部 24/7 服务与品牌 Slogan */
+  .bottom-support-notice {
+    border-top: 1px solid #ebebeb;
+    padding-top: 32px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .support-text {
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    color: #888;
+    text-transform: uppercase;
+  }
+
+  .slogan-text {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: #777;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* 移动端响应式适配 */
+  @media (max-width: 768px) {
+    .materials-page {
+      padding: 40px 16px 60px;
+    }
+    .page-title {
+      font-size: 22px;
+      letter-spacing: 2px;
+    }
+    .intro-callout {
+      padding: 16px;
+      margin-bottom: 32px;
+    }
+    .section-heading {
+      font-size: 15px;
+    }
+    .th-material {
+      width: 40%;
+    }
+    .materials-table tbody td {
+      padding: 14px;
+      font-size: 12px;
+    }
+    .features-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .feature-card {
+      padding: 20px 12px;
+    }
+    .dos-donts-container {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    .bottom-action-links {
+      gap: 20px;
+      margin-bottom: 36px;
+    }
+    .support-text, .slogan-text {
+      font-size: 10px;
+      line-height: 1.5;
+    }
+  }
+</style>

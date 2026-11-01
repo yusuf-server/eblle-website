@@ -1,0 +1,723 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'oem-odm'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// 4. 原版文案精准提取与翻译
+const pageTitle = await tr('OEM & ODM SERVICES');
+const introP1 = await tr('Thank you for considering E.B.belle as your manufacturing partner.');
+const introP2 = await tr('We specialize in custom jewelry production, from design development to bulk manufacturing. Whether you need a unique design or a simple logo engraving, we are here to bring your vision to life.');
+
+// MOQ 板块
+const moqSectionTitle = await tr('MINIMUM ORDER QUANTITY (MOQ)');
+const thServiceType = await tr('Service Type');
+const thMoq = await tr('MOQ');
+
+const rawMoqRows = [
+  {
+    title: 'STANDARD OEM/ODM',
+    sub: '(Full custom design)',
+    moq: '100 – 500 PCS per style'
+  },
+  {
+    title: 'LIGHT CUSTOMIZATION',
+    sub: '(Laser engraving logo only)',
+    moq: '50 PCS per style'
+  }
+];
+
+const moqRows = await Promise.all(
+  rawMoqRows.map(async (row) => ({
+    title: await tr(row.title),
+    sub: await tr(row.sub),
+    moq: await tr(row.moq)
+  }))
+);
+
+const moqFootnote = await tr('For standard OEM/ODM, the exact MOQ depends on the complexity of the design. More intricate styles require higher quantities. Please contact us for a specific quote based on your design.');
+
+// CUSTOMIZATION PROCESS 四步流程
+const processSectionTitle = await tr('CUSTOMIZATION PROCESS');
+const rawSteps = [
+  {
+    icon: '✧',
+    title: '1. SHARE CONCEPT',
+    desc: 'Design or reference images'
+  },
+  {
+    icon: '◌',
+    title: '2. GET QUOTE',
+    desc: 'Price & MOQ confirmation'
+  },
+  {
+    icon: '⊡',
+    title: '3. SAMPLE APPROVAL',
+    desc: 'Quality & detail check'
+  },
+  {
+    icon: '⌘',
+    title: '4. BULK PRODUCTION',
+    desc: 'Manufacturing & shipping'
+  }
+];
+
+const processSteps = await Promise.all(
+  rawSteps.map(async (s) => ({
+    icon: s.icon,
+    title: await tr(s.title),
+    desc: await tr(s.desc)
+  }))
+);
+
+// 手风琴折叠项 1: RETURN & EXCHANGE POLICY
+const item1Title = await tr('RETURN & EXCHANGE POLICY FOR CUSTOM ORDERS');
+const returnP1 = await tr('Custom-made products are generally non-returnable and non-exchangeable . This is because each piece is made specifically to your requirements.');
+const returnHighlight = await tr('WE STRONGLY RECOMMEND FULL COMMUNICATION WITH OUR CUSTOM SERVICE TEAM BEFORE FINALIZING YOUR DESIGN AND PRODUCTION PLAN.');
+const returnP2 = await tr('We want to ensure every detail meets your expectations before production begins.');
+
+// 手风琴折叠项 2: WHY CHOOSE E.B.BELLE FOR OEM & ODM?
+const item2Title = await tr('WHY CHOOSE E.B.BELLE FOR OEM & ODM?');
+const thAdvantage = await tr('Advantage');
+const thDetail = await tr('Detail');
+
+const rawAdvantages = [
+  {
+    title: 'QUALITY MATERIALS',
+    detail: '316L stainless steel with PVD coating — tarnish-free, waterproof, hypoallergenic.'
+  },
+  {
+    title: 'EXPERIENCED MANUFACTURING',
+    detail: 'Years of experience serving global brands and retailers.'
+  },
+  {
+    title: 'FLEXIBLE MOQ',
+    detail: 'From 50 pieces for light customization to higher volumes for complex designs.'
+  },
+  {
+    title: 'CERTIFIED QUALITY',
+    detail: 'BSCI, RoHS, SGS certified.'
+  }
+];
+
+const advantages = await Promise.all(
+  rawAdvantages.map(async (adv) => ({
+    title: await tr(adv.title),
+    detail: await tr(adv.detail)
+  }))
+);
+
+// 手风琴折叠项 3: OEM & ODM CONTACT
+const item3Title = await tr('OEM & ODM CONTACT');
+const contactPrefix = await tr('Please refer to our');
+const contactLinkText = t(currentLocale, 'footer.contactUs') || await tr('contact us');
+const contactSuffix = await tr('page');
+
+// 底部品牌横幅（原版文本）
+const bottomBanner = await tr('E.B.BELLE — YOUR DROPSHIPPING PARTNER');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" slot="head" />
+
+  <Header />
+
+  <main class="oem-odm-page">
+    <div class="oem-container">
+      <!-- 页面大标题 -->
+      <h1 class="page-heading">{pageTitle}</h1>
+
+      <!-- 顶部引言 -->
+      <div class="intro-box">
+        <p>{introP1}</p>
+        <p>{introP2}</p>
+      </div>
+
+      <!-- 1. MINIMUM ORDER QUANTITY (MOQ) 表格板块 -->
+      <section class="moq-section">
+        <h2 class="sub-section-title">{moqSectionTitle}</h2>
+        
+        <div class="table-scroll-wrapper">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th class="th-service">{thServiceType}</th>
+                <th class="th-moq">{thMoq}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {moqRows.map((row) => (
+                <tr>
+                  <td class="td-service">
+                    <strong>{row.title}</strong>
+                    <span class="sub-label">{row.sub}</span>
+                  </td>
+                  <td class="td-moq">{row.moq}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p class="section-footnote">{moqFootnote}</p>
+      </section>
+
+      <!-- 2. CUSTOMIZATION PROCESS 四步流程 -->
+      <section class="process-section">
+        <h2 class="process-heading">{processSectionTitle}</h2>
+        <div class="process-grid">
+          {processSteps.map((step) => (
+            <div class="process-card">
+              <div class="step-glyph">{step.icon}</div>
+              <h3 class="step-title">{step.title}</h3>
+              <p class="step-desc">{step.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- 3. 手风琴折叠板块 -->
+      <div class="oem-accordion-wrap">
+        <!-- 折叠项 1: 退换货政策 -->
+        <div class="oem-card active">
+          <button type="button" class="card-head-btn" aria-expanded="true">
+            <span class="card-q-text">{item1Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse" style="max-height: none;">
+            <div class="card-body-inner">
+              <p>{returnP1}</p>
+              <p class="strong-callout">{returnHighlight}</p>
+              <p>{returnP2}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 折叠项 2: 优势对比 -->
+        <div class="oem-card">
+          <button type="button" class="card-head-btn" aria-expanded="false">
+            <span class="card-q-text">{item2Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse">
+            <div class="card-body-inner">
+              <div class="table-scroll-wrapper">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th class="th-advantage">{thAdvantage}</th>
+                      <th class="th-detail">{thDetail}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {advantages.map((adv) => (
+                      <tr>
+                        <td class="td-advantage"><strong>{adv.title}</strong></td>
+                        <td class="td-detail">{adv.detail}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 折叠项 3: 联系方式 -->
+        <div class="oem-card">
+          <button type="button" class="card-head-btn" aria-expanded="false">
+            <span class="card-q-text">{item3Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse">
+            <div class="card-body-inner">
+              <p>
+                {contactPrefix} <a href={`/${currentLocale}/contact`} class="contact-link">{contactLinkText}</a> {contactSuffix}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部横幅 -->
+      <div class="bottom-slogan-wrap">
+        <h2 class="bottom-slogan">{bottomBanner}</h2>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .oem-odm-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 20px 90px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .oem-container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题：高级珠宝风 */
+  .page-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #111;
+    margin-bottom: 28px;
+    text-transform: uppercase;
+    position: relative;
+    padding-bottom: 14px;
+  }
+
+  .page-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 1.5px;
+    background: #d4a04d;
+  }
+
+  /* 顶部引言 */
+  .intro-box {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 50px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .intro-box p {
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: #555;
+    margin: 0;
+  }
+
+  /* 统一大号饰品分类小标题（星芒 ✦ + 渐变金线） */
+  .moq-section {
+    margin-bottom: 60px;
+  }
+
+  .sub-section-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    position: relative;
+    padding-bottom: 10px;
+  }
+
+  .sub-section-title::before {
+    content: '✦';
+    font-size: 14px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .sub-section-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 77, 0.6) 0%, rgba(212, 160, 77, 0.15) 30%, rgba(235, 235, 235, 0.4) 100%);
+  }
+
+  /* 表格样式通用 */
+  .table-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    margin: 12px 0 16px;
+    background: #fff;
+  }
+
+  .custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .custom-table th,
+  .custom-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #ebebeb;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  .custom-table thead th {
+    background-color: #fafaf8;
+    font-weight: 700;
+    color: #222;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-size: 12px;
+  }
+
+  .th-service {
+    width: 52%;
+  }
+
+  .td-service strong {
+    color: #111;
+    font-weight: 700;
+    display: block;
+  }
+
+  .sub-label {
+    font-size: 12px;
+    color: #666;
+  }
+
+  .td-moq {
+    color: #444;
+    font-weight: 500;
+  }
+
+  .th-advantage {
+    width: 38%;
+    white-space: nowrap;
+  }
+
+  .td-advantage strong {
+    color: #111;
+    font-weight: 700;
+  }
+
+  .td-detail {
+    color: #555;
+  }
+
+  .section-footnote {
+    font-size: 12.5px;
+    color: #666;
+    line-height: 1.7;
+    margin-top: 12px;
+  }
+
+  /* CUSTOMIZATION PROCESS 四步流程 */
+  .process-section {
+    margin-bottom: 60px;
+  }
+
+  .process-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-align: center;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .process-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .process-card {
+    text-align: center;
+    padding: 10px;
+  }
+
+  .step-glyph {
+    font-size: 2rem;
+    color: #9a9a9a;
+    line-height: 1;
+    margin-bottom: 12px;
+    transition: color 0.3s;
+  }
+
+  .process-card:hover .step-glyph {
+    color: #d4a04d;
+  }
+
+  .step-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #111;
+    margin-bottom: 6px;
+  }
+
+  .step-desc {
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: #666;
+    margin: 0;
+  }
+
+  /* 手风琴板块 */
+  .oem-accordion-wrap {
+    border-top: 1px solid #ebebeb;
+    margin-bottom: 60px;
+  }
+
+  .oem-card {
+    border-bottom: 1px solid #ebebeb;
+  }
+
+  .card-head-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 20px 0;
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: #1a1a1a;
+    text-align: left;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: color 0.25s ease;
+  }
+
+  .card-head-btn:hover {
+    color: #d4a04d;
+  }
+
+  .oem-card.active .card-head-btn {
+    color: #d4a04d;
+  }
+
+  .card-q-text {
+    flex: 1;
+    padding-right: 16px;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-q-text::before {
+    content: '✦';
+    font-size: 13px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .card-arrow-icon {
+    font-size: 11px;
+    color: #888;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+  }
+
+  .oem-card.active .card-arrow-icon {
+    transform: rotate(180deg);
+    color: #d4a04d;
+  }
+
+  .card-collapse {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-body-inner {
+    padding-bottom: 24px;
+    padding-top: 4px;
+  }
+
+  .card-body-inner p {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 12px;
+  }
+
+  .card-body-inner p:last-child {
+    margin-bottom: 0;
+  }
+
+  .strong-callout {
+    font-weight: 700;
+    color: #111 !important;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .contact-link {
+    color: #111;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .contact-link:hover {
+    color: #d4a04d;
+  }
+
+  /* 底部横幅 */
+  .bottom-slogan-wrap {
+    padding-top: 20px;
+    text-align: center;
+    border-top: 1px dashed #e8e8e8;
+  }
+
+  .bottom-slogan {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    color: #111;
+    text-transform: uppercase;
+  }
+
+  /* 移动端适配 */
+  @media (max-width: 768px) {
+    .oem-odm-page {
+      padding: 40px 16px 60px;
+    }
+    .page-heading {
+      font-size: 22px;
+      margin-bottom: 24px;
+      letter-spacing: 2px;
+    }
+    .intro-box {
+      margin-bottom: 36px;
+    }
+    .sub-section-title {
+      font-size: 15px;
+    }
+    .process-section {
+      margin-bottom: 40px;
+    }
+    .process-heading {
+      font-size: 15px;
+      margin-bottom: 20px;
+    }
+    .process-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px 12px;
+    }
+    .card-head-btn {
+      font-size: 14px;
+      padding: 16px 0;
+    }
+    .card-body-inner p {
+      font-size: 12.5px;
+    }
+    .custom-table th,
+    .custom-table td {
+      padding: 11px 12px;
+      font-size: 12px;
+    }
+    .th-service, .th-advantage {
+      width: 45%;
+    }
+    .bottom-slogan {
+      font-size: 13.5px;
+      letter-spacing: 1.5px;
+    }
+  }
+</style>
+
+<script>
+  function initOemAccordion() {
+    const cards = document.querySelectorAll('.oem-card');
+
+    cards.forEach(card => {
+      const btn = card.querySelector('.card-head-btn');
+      const collapse = card.querySelector('.card-collapse') as HTMLElement;
+      if (!btn || !collapse) return;
+
+      if (card.classList.contains('active')) {
+        collapse.style.maxHeight = collapse.scrollHeight + 'px';
+      }
+
+      btn.addEventListener('click', () => {
+        const isOpen = card.classList.contains('active');
+
+        // 关闭其他项
+        cards.forEach(otherCard => {
+          if (otherCard !== card && otherCard.classList.contains('active')) {
+            otherCard.classList.remove('active');
+            otherCard.querySelector('.card-head-btn')?.setAttribute('aria-expanded', 'false');
+            const otherBody = otherCard.querySelector('.card-collapse') as HTMLElement;
+            if (otherBody) otherBody.style.maxHeight = '0px';
+          }
+        });
+
+        if (isOpen) {
+          card.classList.remove('active');
+          btn.setAttribute('aria-expanded', 'false');
+          collapse.style.maxHeight = '0px';
+        } else {
+          card.classList.add('active');
+          btn.setAttribute('aria-expanded', 'true');
+          collapse.style.maxHeight = collapse.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initOemAccordion);
+</script>

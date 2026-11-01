@@ -1,0 +1,702 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'dropshipping'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// 4. 原版文案精准提取与翻译
+const pageTitle = await tr('DROPSHIPPING PROGRAM');
+const introP1 = await tr('Thank you for your interest in becoming a dropshipping partner with E.B.belle.');
+const introP2 = await tr('We offer a reliable, hassle-free dropshipping service for jewelry retailers and online store owners. Our team handles the inventory and shipping, so you can focus on growing your business.');
+
+// HOW DROPSHIPPING WORKS 四步流程
+const worksSectionTitle = await tr('HOW DROPSHIPPING WORKS');
+const rawSteps = [
+  {
+    icon: '◈',
+    title: '1. YOU RECEIVE ORDERS',
+    desc: 'Customers place orders on your store'
+  },
+  {
+    icon: '○',
+    title: '2. SEND CSV FILE',
+    desc: 'Send order details in CSV format'
+  },
+  {
+    icon: '⌂',
+    title: '3. WE SHIP FOR YOU',
+    desc: 'Pack and ship to your customers'
+  },
+  {
+    icon: '⎔',
+    title: '4. YOU KEEP PROFIT',
+    desc: 'No inventory, no upfront bulk purchase'
+  }
+];
+
+const steps = await Promise.all(
+  rawSteps.map(async (s) => ({
+    icon: s.icon,
+    title: await tr(s.title),
+    desc: await tr(s.desc)
+  }))
+);
+
+// 折叠项 1: PAYMENT TERMS
+const item1Title = await tr('PAYMENT TERMS');
+const thTerm = await tr('Term');
+const thDetail = await tr('Detail');
+
+const rawTerms = [
+  {
+    term: 'UPFRONT PAYMENT',
+    detail: 'Payment is required before we ship your orders. This applies to all new partners.'
+  },
+  {
+    term: 'WEEKLY SETTLEMENT (FOR LONG-TERM PARTNERS)',
+    detail: 'After we have a stable partnership, eligible partners can switch to weekly settlements. Contact us for qualification details.'
+  }
+];
+
+const paymentTerms = await Promise.all(
+  rawTerms.map(async (t) => ({
+    term: await tr(t.term),
+    detail: await tr(t.detail)
+  }))
+);
+
+// 折叠项 2: FREE RESOURCES FOR PARTNERS
+const item2Title = await tr('FREE RESOURCES FOR PARTNERS');
+const freeResIntro = await tr('We provide the following resources at no cost:');
+const freeResItems = [
+  await tr('1. Product Images — High-quality photos for your website'),
+  await tr('2. SKU List — Complete product codes to match your listings')
+];
+const freeResOutro = await tr('These materials help you set up your online store quickly and accurately.');
+
+// 折叠项 3: CUSTOM PACKAGING
+const item3Title = await tr('CUSTOM PACKAGING');
+const packagingIntro = await tr('We offer custom packaging services for dropshipping partners who want to strengthen their brand identity.');
+const packagingItems = [
+  await tr('1. Service Type: Print your logo or design on product packaging'),
+  await tr('2. Cost: Paid service. Fee varies depending on your packaging design and complexity'),
+  await tr('3. Process: Send us your packaging specification, and we will provide a quote'),
+  await tr('4. Please contact us for a custom quote based on your specific requirements.')
+];
+
+// 折叠项 4: WHY PARTNER WITH E.B.BELLE?
+const item4Title = await tr('WHY PARTNER WITH E.B.BELLE?');
+const thAdvantage = await tr('Advantage');
+
+const rawAdvantages = [
+  {
+    title: 'NO INVENTORY RISK',
+    detail: 'We stock and ship. You sell.'
+  },
+  {
+    title: 'FREE SHIPPING',
+    detail: 'Available on qualifying orders.'
+  },
+  {
+    title: 'QUALITY PRODUCTS',
+    detail: '316L stainless steel with PVD coating — tarnish-free, waterproof, hypoallergenic.'
+  },
+  {
+    title: '24/6 SUPPORT',
+    detail: 'Our team is always available to assist you.'
+  }
+];
+
+const advantages = await Promise.all(
+  rawAdvantages.map(async (adv) => ({
+    title: await tr(adv.title),
+    detail: await tr(adv.detail)
+  }))
+);
+
+// 折叠项 5: DROPSHIPPING CONTACT
+const item5Title = await tr('DROPSHIPPING CONTACT');
+const contactPrefix = await tr('Please refer to our');
+const contactLinkText = t(currentLocale, 'footer.contactUs') || await tr('contact us');
+const contactSuffix = await tr('page');
+
+// 底部品牌横幅
+const bottomBanner = await tr('E.B.BELLE — YOUR DROPSHIPPING PARTNER');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" slot="head" />
+
+  <Header />
+
+  <main class="dropshipping-page">
+    <div class="dropshipping-container">
+      <!-- 页面大标题 -->
+      <h1 class="page-heading">{pageTitle}</h1>
+
+      <!-- 顶部引言 -->
+      <div class="intro-box">
+        <p>{introP1}</p>
+        <p>{introP2}</p>
+      </div>
+
+      <!-- HOW DROPSHIPPING WORKS 四步流程 -->
+      <section class="works-section">
+        <h2 class="works-heading">{worksSectionTitle}</h2>
+        <div class="works-grid">
+          {steps.map((step) => (
+            <div class="step-card">
+              <div class="step-glyph">{step.icon}</div>
+              <h3 class="step-title">{step.title}</h3>
+              <p class="step-desc">{step.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- 手风琴列表 -->
+      <div class="ds-accordion-wrap">
+        <!-- 1. PAYMENT TERMS -->
+        <div class="ds-card active">
+          <button type="button" class="card-head-btn" aria-expanded="true">
+            <span class="card-q-text">{item1Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse" style="max-height: none;">
+            <div class="card-body-inner">
+              <div class="table-scroll-wrapper">
+                <table class="ds-table">
+                  <thead>
+                    <tr>
+                      <th class="th-term">{thTerm}</th>
+                      <th class="th-detail">{thDetail}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paymentTerms.map((t) => (
+                      <tr>
+                        <td class="td-term"><strong>{t.term}</strong></td>
+                        <td class="td-detail">{t.detail}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. FREE RESOURCES FOR PARTNERS -->
+        <div class="ds-card">
+          <button type="button" class="card-head-btn" aria-expanded="false">
+            <span class="card-q-text">{item2Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse">
+            <div class="card-body-inner">
+              <p class="section-lead-text">{freeResIntro}</p>
+              <ul class="numbered-list">
+                {freeResItems.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+              <p class="section-outro-text">{freeResOutro}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. CUSTOM PACKAGING -->
+        <div class="ds-card">
+          <button type="button" class="card-head-btn" aria-expanded="false">
+            <span class="card-q-text">{item3Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse">
+            <div class="card-body-inner">
+              <p class="section-lead-text">{packagingIntro}</p>
+              <ul class="numbered-list">
+                {packagingItems.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. WHY PARTNER WITH E.B.BELLE? -->
+        <div class="ds-card">
+          <button type="button" class="card-head-btn" aria-expanded="false">
+            <span class="card-q-text">{item4Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse">
+            <div class="card-body-inner">
+              <div class="table-scroll-wrapper">
+                <table class="ds-table">
+                  <thead>
+                    <tr>
+                      <th class="th-term">{thAdvantage}</th>
+                      <th class="th-detail">{thDetail}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {advantages.map((adv) => (
+                      <tr>
+                        <td class="td-term"><strong>{adv.title}</strong></td>
+                        <td class="td-detail">{adv.detail}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. DROPSHIPPING CONTACT -->
+        <div class="ds-card">
+          <button type="button" class="card-head-btn" aria-expanded="false">
+            <span class="card-q-text">{item5Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse">
+            <div class="card-body-inner">
+              <p>
+                {contactPrefix} <a href={`/${currentLocale}/contact`} class="contact-link">{contactLinkText}</a> {contactSuffix}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部横幅 -->
+      <div class="bottom-slogan-wrap">
+        <h2 class="bottom-slogan">{bottomBanner}</h2>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .dropshipping-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 20px 90px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .dropshipping-container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题：高级珠宝风 */
+  .page-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #111;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    position: relative;
+    padding-bottom: 14px;
+  }
+
+  .page-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 1.5px;
+    background: #d4a04d;
+  }
+
+  /* 顶部引言 */
+  .intro-box {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 50px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .intro-box p {
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: #555;
+    margin: 0;
+  }
+
+  /* HOW DROPSHIPPING WORKS 4 步骤横排 */
+  .works-section {
+    margin-bottom: 60px;
+  }
+
+  .works-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-align: center;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .works-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .step-card {
+    text-align: center;
+    padding: 10px;
+  }
+
+  .step-glyph {
+    font-size: 2rem;
+    color: #9a9a9a;
+    line-height: 1;
+    margin-bottom: 12px;
+    transition: color 0.3s;
+  }
+
+  .step-card:hover .step-glyph {
+    color: #d4a04d;
+  }
+
+  .step-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #111;
+    margin-bottom: 6px;
+  }
+
+  .step-desc {
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: #666;
+    margin: 0;
+  }
+
+  /* 手风琴板块 */
+  .ds-accordion-wrap {
+    border-top: 1px solid #ebebeb;
+    margin-bottom: 60px;
+  }
+
+  .ds-card {
+    border-bottom: 1px solid #ebebeb;
+  }
+
+  .card-head-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 20px 0;
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: #1a1a1a;
+    text-align: left;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: color 0.25s ease;
+  }
+
+  .card-head-btn:hover {
+    color: #d4a04d;
+  }
+
+  .ds-card.active .card-head-btn {
+    color: #d4a04d;
+  }
+
+  .card-q-text {
+    flex: 1;
+    padding-right: 16px;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-q-text::before {
+    content: '✦';
+    font-size: 13px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .card-arrow-icon {
+    font-size: 11px;
+    color: #888;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+  }
+
+  .ds-card.active .card-arrow-icon {
+    transform: rotate(180deg);
+    color: #d4a04d;
+  }
+
+  .card-collapse {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-body-inner {
+    padding-bottom: 24px;
+    padding-top: 4px;
+  }
+
+  .card-body-inner p {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 12px;
+  }
+
+  .card-body-inner p:last-child {
+    margin-bottom: 0;
+  }
+
+  .section-lead-text {
+    font-weight: 600;
+    color: #222 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .section-outro-text {
+    margin-top: 14px !important;
+    color: #666 !important;
+    font-style: italic;
+  }
+
+  .numbered-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .numbered-list li {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.7;
+  }
+
+  /* 表格样式 */
+  .table-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    margin: 12px 0 16px;
+    background: #fff;
+  }
+
+  .ds-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .ds-table th,
+  .ds-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #ebebeb;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  .ds-table thead th {
+    background-color: #fafaf8;
+    font-weight: 700;
+    color: #222;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-size: 12px;
+  }
+
+  .th-term {
+    width: 38%;
+    white-space: nowrap;
+  }
+
+  .td-term strong {
+    color: #111;
+    font-weight: 700;
+  }
+
+  .td-detail {
+    color: #555;
+  }
+
+  .contact-link {
+    color: #111;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .contact-link:hover {
+    color: #d4a04d;
+  }
+
+  /* 底部横幅 */
+  .bottom-slogan-wrap {
+    padding-top: 20px;
+    text-align: center;
+    border-top: 1px dashed #e8e8e8;
+  }
+
+  .bottom-slogan {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    color: #111;
+    text-transform: uppercase;
+  }
+
+  /* 移动端响应式适配 */
+  @media (max-width: 768px) {
+    .dropshipping-page {
+      padding: 40px 16px 60px;
+    }
+    .page-heading {
+      font-size: 22px;
+      margin-bottom: 24px;
+      letter-spacing: 2px;
+    }
+    .intro-box {
+      margin-bottom: 36px;
+    }
+    .works-section {
+      margin-bottom: 40px;
+    }
+    .works-heading {
+      font-size: 15px;
+      margin-bottom: 20px;
+    }
+    .works-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px 12px;
+    }
+    .card-head-btn {
+      font-size: 14px;
+      padding: 16px 0;
+    }
+    .card-body-inner p {
+      font-size: 12.5px;
+    }
+    .ds-table th,
+    .ds-table td {
+      padding: 11px 12px;
+      font-size: 12px;
+    }
+    .th-term {
+      width: 44%;
+    }
+    .bottom-slogan {
+      font-size: 13.5px;
+      letter-spacing: 1.5px;
+    }
+  }
+</style>
+
+<script>
+  function initDropshippingAccordion() {
+    const cards = document.querySelectorAll('.ds-card');
+
+    cards.forEach(card => {
+      const btn = card.querySelector('.card-head-btn');
+      const collapse = card.querySelector('.card-collapse') as HTMLElement;
+      if (!btn || !collapse) return;
+
+      if (card.classList.contains('active')) {
+        collapse.style.maxHeight = collapse.scrollHeight + 'px';
+      }
+
+      btn.addEventListener('click', () => {
+        const isOpen = card.classList.contains('active');
+
+        // 关闭其他项
+        cards.forEach(otherCard => {
+          if (otherCard !== card && otherCard.classList.contains('active')) {
+            otherCard.classList.remove('active');
+            otherCard.querySelector('.card-head-btn')?.setAttribute('aria-expanded', 'false');
+            const otherBody = otherCard.querySelector('.card-collapse') as HTMLElement;
+            if (otherBody) otherBody.style.maxHeight = '0px';
+          }
+        });
+
+        if (isOpen) {
+          card.classList.remove('active');
+          btn.setAttribute('aria-expanded', 'false');
+          collapse.style.maxHeight = '0px';
+        } else {
+          card.classList.add('active');
+          btn.setAttribute('aria-expanded', 'true');
+          collapse.style.maxHeight = collapse.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initDropshippingAccordion);
+</script>

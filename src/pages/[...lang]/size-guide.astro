@@ -1,0 +1,276 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'size-guide'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// ----------------------------------------------------
+// 🖼️ 6 张分类引导卡片数据（在此替换图片 URL 与链接）
+// ----------------------------------------------------
+const rawGuideCards = [
+  {
+    title: 'RING SIZE GUIDE',
+    actionText: 'Explore Now',
+    link: `/${currentLocale}/ring-size-guide`,
+    image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/04/RING-SIZE-GUIDE.webp'
+  },
+  {
+    title: 'NECKLACE LENGTH GUIDE',
+    actionText: 'Explore Now',
+    link: `/${currentLocale}/necklace-size-guide`,
+    image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/04/NECKLACE-LENGTH-GUIDE.webp'
+  },
+  {
+    title: 'BRACELET SIZE GUIDE',
+    actionText: 'Explore Now',
+    link: `/${currentLocale}/bracelet-size-guide`,
+    image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/04/BRACELET-SIZE-GUIDE.webp'
+  },
+  {
+    title: 'BANGLE & CUFF SIZE GUIDE',
+    actionText: 'Explore Now',
+    link: `/${currentLocale}/bangle-size-guide`,
+    image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/05/BANGLE-CUFF-SIZE-GUIDE.webp'
+  },
+  {
+    title: 'HOOP EARRINGS SIZE GUIDE',
+    actionText: 'Explore Now',
+    link: `/${currentLocale}/hoop-earrings-size-guide`,
+    image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/05/HOOP-EARRINGS-SIZE-GUIDE.webp'
+  },
+  {
+    title: "STILL CAN'T FIND YOUR FIT?",
+    actionText: 'Explore Now',
+    link: `/${currentLocale}/contact`,
+    image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/05/STILL-CANT-FIND-YOUR-FIT.webp'
+  }
+];
+
+// 4. 页面文案提取与翻译
+const pageTitle = await tr('SIZE GUIDE');
+const pageSubtitle = await tr('Looking for the ultimate jewellery size guides? You’ve come to the right place.');
+
+// 批量异步翻译卡片
+const guideCards = await Promise.all(
+  rawGuideCards.map(async (card) => ({
+    ...card,
+    title: await tr(card.title),
+    actionText: await tr(card.actionText)
+  }))
+);
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <Header />
+
+  <main class="size-guide-overview-page">
+    <div class="guide-container">
+      <!-- 页面大标题与引言 -->
+      <header class="page-header">
+        <h1 class="page-title">{pageTitle}</h1>
+        <p class="page-subtitle">{pageSubtitle}</p>
+      </header>
+
+      <!-- 6 宫格卡片网格 -->
+      <section class="guides-grid">
+        {guideCards.map((card) => (
+          <article class="guide-card">
+            <a href={card.link} class="card-link-wrapper">
+              <div class="card-img-wrap">
+                <img src={card.image} alt={card.title} loading="lazy" />
+              </div>
+              <div class="card-content">
+                <h2 class="card-title">{card.title}</h2>
+                <span class="card-action">
+                  {card.actionText}
+                </span>
+              </div>
+            </a>
+          </article>
+        ))}
+      </section>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .size-guide-overview-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 20px 100px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .guide-container {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  /* 页面头部大标题 */
+  .page-header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .page-title {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3.5px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    color: #666;
+    max-width: 680px;
+    margin: 0 auto;
+    line-height: 1.6;
+    letter-spacing: 0.3px;
+  }
+
+  /* 3列 x 2行 网格 */
+  .guides-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 36px 28px;
+  }
+
+  .guide-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-link-wrapper {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    group: card;
+  }
+
+  /* 正方形比例大图容器 + 优雅微放大动画 */
+  .card-img-wrap {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: #f7f7f7;
+    position: relative;
+    border-radius: 2px;
+  }
+
+  .card-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card-link-wrapper:hover .card-img-wrap img {
+    transform: scale(1.05);
+  }
+
+  /* 卡片下方文字排版 */
+  .card-content {
+    padding-top: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .card-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #1a1a1a;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    transition: color 0.25s ease;
+  }
+
+  .card-link-wrapper:hover .card-title {
+    color: #d4a04d;
+  }
+
+  /* Explore Now 带下划线链接 */
+  .card-action {
+    font-size: 11.5px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #666;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.25s ease;
+  }
+
+  .card-link-wrapper:hover .card-action {
+    color: #111;
+  }
+
+  /* 移动端与平板响应式适配 */
+  @media (max-width: 992px) {
+    .guides-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 30px 20px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .size-guide-overview-page {
+      padding: 40px 16px 70px;
+    }
+    .page-title {
+      font-size: 22px;
+      letter-spacing: 2px;
+    }
+    .guides-grid {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+    .card-title {
+      font-size: 14px;
+    }
+  }
+</style>

@@ -1,0 +1,585 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 获取缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'shipping'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// 4. 页面核心文案提取与翻译
+const pageTitle = await tr('SHIPPING INFORMATION');
+const noticeTitle = await tr('Important Note');
+const noticeLines = [
+  await tr("We're doing our best to ensure all orders are delivered on time, however there may be occasional delays due to regional customs checks."),
+  await tr('Orders placed on weekends or public holidays will be dispatched on the following business day.'),
+  await tr('Custom & Personalised Jewelry: Production typically takes 3-7 business days before dispatch.'),
+  await tr('If you have any questions about your delivery status, our Customer Care team is always here to assist.')
+];
+
+// 5. 运费与时效表格数据
+const tableHeading = await tr('Shipping Costs & Timeframes');
+const tableHeaders = [
+  await tr('Shipping Method'),
+  await tr('Destination'),
+  await tr('Shipping Cost'),
+  await tr('Delivery Time'),
+  await tr('Carrier')
+];
+
+const shippingRows = [
+  {
+    method: await tr('Standard Shipping'),
+    destination: await tr('Worldwide / All Countries'),
+    cost: await tr('Free'),
+    time: await tr('7-15 Business Days'),
+    carrier: await tr('Various Postal / YunExpress')
+  },
+  {
+    method: await tr('Express Shipping'),
+    destination: await tr('Worldwide / All Countries'),
+    cost: await tr('Calculated at checkout'),
+    time: await tr('3-7 Business Days'),
+    carrier: await tr('DHL / FedEx / UPS')
+  }
+];
+
+// 表格下方说明
+const dispatchNoteTitle = await tr('Dispatch Time & Production:');
+const dispatchNoteText = await tr('Most ready-to-ship jewelry orders are packaged and dispatched within 24 hours on business days.');
+const customNoteTitle = await tr('Custom Jewelry Orders:');
+const customNoteText = await tr('If your order includes personalised or engraved items, our atelier requires 3-7 business days to craft your pieces. Standard shipping transit times apply once completed.');
+
+// 6. SHIPPING FAQS 数据
+const rawFaqs = [
+  {
+    q: 'WILL I HAVE TO PAY CUSTOMS AND IMPORT TAXES ON MY ORDER?',
+    a: "Customs policies vary by country. All product prices on our website exclude local import taxes, customs tariffs, and VAT fees. Depending on destination regulations, you may be responsible for clearing customs duties upon package arrival."
+  },
+  {
+    q: 'HOW DO I KNOW IF MY ORDER HAS BEEN DISPATCHED?',
+    a: "As soon as your package leaves our fulfillment atelier, we will send an automated dispatch confirmation email containing your direct parcel tracking link and carrier details. Please check your spam folder if you do not receive it."
+  },
+  {
+    q: 'ARE THERE ANY COUNTRIES YOU DONT SHIP TO?',
+    a: "We proudly deliver worldwide to over 200 countries. In extremely rare instances where international couriers cannot reach a remote territory, our customer team will promptly contact you to arrange alternative solutions or a full refund."
+  },
+  {
+    q: 'CAN I CHANGE OR CANCEL MY ORDER?',
+    a: "If you need to make changes to your shipping address or order details, please notify us immediately within 2 hours of placing the order. Once processing or engraving has commenced, changes can no longer be applied."
+  },
+  {
+    q: 'CAN MY ORDER BE REDIRECTED?',
+    a: "Once an order has been picked up by the international courier and is in transit, we cannot redirect it to a different address. You may contact the local courier using your tracking number to request address hold options."
+  },
+  {
+    q: 'CAN YOU DELIVER MY ORDER TO A PO BOX ADDRESS?',
+    a: "Standard shipping can deliver to PO Boxes in most regions. However, Express courier delivery (DHL/FedEx/UPS) requires a physical address and an authorized signature upon delivery."
+  },
+  {
+    q: 'HOW CAN I TRACK MY ORDER?',
+    a: "You can track your package 24/7 by clicking the tracking number in your dispatch email, or by visiting our dedicated Order Tracking page and entering your order number and email address."
+  }
+];
+
+const faqHeading = await tr('SHIPPING FAQS');
+const faqs = await Promise.all(
+  rawFaqs.map(async (f) => ({
+    q: await tr(f.q),
+    a: await tr(f.a)
+  }))
+);
+
+// 底部客服引导提示
+const noticePrefix = await tr("Need further assistance with your shipment? Please");
+const contactUsText = t(currentLocale, 'footer.contactUs') || await tr('Contact Us');
+const noticeSuffix = await tr('— our concierge team responds within 24 hours.');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" slot="head" />
+
+  <Header />
+
+  <main class="shipping-page">
+    <div class="shipping-container">
+      <h1 class="shipping-page-heading">{pageTitle}</h1>
+
+      <!-- 1. 顶部重要提醒框 -->
+      <section class="shipping-notice-box">
+        <h3 class="notice-title">
+          <i class="fa-solid fa-circle-info"></i> {noticeTitle}
+        </h3>
+        <ul class="notice-list">
+          {noticeLines.map((line) => (
+            <li>{line}</li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- 2. 运费与时效表格板块 -->
+      <section class="shipping-table-section">
+        <h2 class="shipping-section-title">{tableHeading}</h2>
+        
+        <div class="table-responsive-wrapper">
+          <table class="shipping-table">
+            <thead>
+              <tr>
+                {tableHeaders.map((head) => (
+                  <th>{head}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {shippingRows.map((row) => (
+                <tr>
+                  <td class="col-method"><strong>{row.method}</strong></td>
+                  <td>{row.destination}</td>
+                  <td class="col-cost">{row.cost}</td>
+                  <td>{row.time}</td>
+                  <td class="col-carrier">{row.carrier}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-subnotes">
+          <p><strong>{dispatchNoteTitle}</strong> {dispatchNoteText}</p>
+          <p><strong>{customNoteTitle}</strong> {customNoteText}</p>
+        </div>
+      </section>
+
+      <!-- 3. SHIPPING FAQS 手风琴 -->
+      <section class="shipping-faq-section">
+        <h2 class="shipping-section-title">{faqHeading}</h2>
+
+        <div class="faq-items-wrapper">
+          {faqs.map((item) => (
+            <div class="faq-accordion-card">
+              <button type="button" class="faq-head-btn" aria-expanded="false">
+                <span class="faq-q-text">{item.q}</span>
+                <i class="fa-solid fa-chevron-down faq-arrow-icon"></i>
+              </button>
+              <div class="faq-body-collapse">
+                <div class="faq-body-inner">
+                  <p>{item.a}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- 4. 底部客服提示 -->
+      <div class="shipping-footer-hint">
+        <p>
+          {noticePrefix} <a href="/contact">{contactUsText}</a> {noticeSuffix}
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .shipping-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 20px 90px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .shipping-container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题：高级珠宝风 */
+  .shipping-page-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #111;
+    margin-bottom: 40px;
+    text-transform: uppercase;
+    position: relative;
+    padding-bottom: 14px;
+  }
+
+  .shipping-page-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 1.5px;
+    background: #d4a04d;
+  }
+
+  /* 💎 统一珠宝风分类标题（星芒 ✦ + 渐变金线） */
+  .shipping-section-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    position: relative;
+    padding-bottom: 10px;
+  }
+
+  .shipping-section-title::before {
+    content: '✦';
+    font-size: 14px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .shipping-section-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 77, 0.6) 0%, rgba(212, 160, 77, 0.15) 30%, rgba(235, 235, 235, 0.4) 100%);
+  }
+
+  /* 1. 顶部重要提醒框 */
+  .shipping-notice-box {
+    background: #faf8f5;
+    border: 1px solid rgba(212, 160, 77, 0.25);
+    border-left: 3px solid #d4a04d;
+    padding: 22px 26px;
+    border-radius: 4px;
+    margin-bottom: 46px;
+  }
+
+  .notice-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #b8822e;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .notice-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .notice-list li {
+    font-size: 12.5px;
+    color: #555;
+    line-height: 1.65;
+    position: relative;
+    padding-left: 14px;
+  }
+
+  .notice-list li::before {
+    content: '•';
+    color: #d4a04d;
+    position: absolute;
+    left: 0;
+    font-size: 14px;
+    top: -1px;
+  }
+
+  /* 2. 运费表格 */
+  .shipping-table-section {
+    margin-bottom: 50px;
+  }
+
+  .table-responsive-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #ebebeb;
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  }
+
+  .shipping-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    text-align: left;
+  }
+
+  .shipping-table thead th {
+    background: #fbfbfb;
+    padding: 14px 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #222;
+    font-size: 11.5px;
+    border-bottom: 1px solid #ebebeb;
+    white-space: nowrap;
+  }
+
+  .shipping-table tbody td {
+    padding: 16px 18px;
+    border-bottom: 1px solid #f2f2f2;
+    color: #555;
+    line-height: 1.5;
+  }
+
+  .shipping-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .shipping-table tbody tr:hover {
+    background: #fafaf8;
+  }
+
+  .col-method strong {
+    color: #111;
+  }
+
+  .col-cost {
+    color: #2e7d32;
+    font-weight: 600;
+  }
+
+  .table-subnotes {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .table-subnotes p {
+    font-size: 12.5px;
+    color: #666;
+    line-height: 1.65;
+  }
+
+  .table-subnotes strong {
+    color: #222;
+  }
+
+  /* 3. SHIPPING FAQS 手风琴 */
+  .shipping-faq-section {
+    margin-top: 40px;
+  }
+
+  .faq-items-wrapper {
+    border-top: none;
+  }
+
+  .faq-accordion-card {
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .faq-head-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 17px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333333;
+    text-align: left;
+    cursor: pointer;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    transition: color 0.25s ease;
+  }
+
+  .faq-head-btn:hover {
+    color: #d4a04d;
+  }
+
+  .faq-accordion-card.active .faq-head-btn {
+    color: #d4a04d;
+  }
+
+  .faq-q-text {
+    flex: 1;
+    padding-right: 16px;
+    line-height: 1.5;
+  }
+
+  .faq-arrow-icon {
+    font-size: 11px;
+    color: #888;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+  }
+
+  .faq-accordion-card.active .faq-arrow-icon {
+    transform: rotate(180deg);
+    color: #d4a04d;
+  }
+
+  .faq-body-collapse {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .faq-body-inner {
+    padding-bottom: 20px;
+    padding-top: 2px;
+  }
+
+  .faq-body-inner p {
+    font-size: 13px;
+    line-height: 1.75;
+    color: #666666;
+    margin: 0;
+    white-space: pre-line;
+  }
+
+  /* 4. 底部客服提示 */
+  .shipping-footer-hint {
+    margin-top: 60px;
+    padding-top: 28px;
+    border-top: 1px dashed #e5e5e5;
+    text-align: center;
+  }
+
+  .shipping-footer-hint p {
+    font-size: 12.5px;
+    color: #777;
+    line-height: 1.6;
+  }
+
+  .shipping-footer-hint a {
+    color: #111;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .shipping-footer-hint a:hover {
+    color: #d4a04d;
+  }
+
+  /* 移动端优化 */
+  @media (max-width: 768px) {
+    .shipping-page {
+      padding: 40px 16px 60px;
+    }
+    .shipping-page-heading {
+      font-size: 22px;
+      margin-bottom: 28px;
+      letter-spacing: 2px;
+    }
+    .shipping-section-title {
+      font-size: 15px;
+      letter-spacing: 1.2px;
+      margin-bottom: 12px;
+    }
+    .shipping-notice-box {
+      padding: 16px;
+      margin-bottom: 32px;
+    }
+    .shipping-table thead th,
+    .shipping-table tbody td {
+      padding: 12px 14px;
+      font-size: 11.5px;
+    }
+    .faq-head-btn {
+      font-size: 11.5px;
+      padding: 15px 0;
+    }
+    .faq-body-inner p {
+      font-size: 12.5px;
+    }
+  }
+</style>
+
+<script>
+  function initShippingFaq() {
+    const cards = document.querySelectorAll('.faq-accordion-card');
+
+    cards.forEach(card => {
+      const btn = card.querySelector('.faq-head-btn');
+      const collapse = card.querySelector('.faq-body-collapse') as HTMLElement;
+      if (!btn || !collapse) return;
+
+      btn.addEventListener('click', () => {
+        const isOpen = card.classList.contains('active');
+
+        // 关闭同组内的其他展开项
+        const parentWrapper = card.closest('.faq-items-wrapper');
+        if (parentWrapper) {
+          parentWrapper.querySelectorAll('.faq-accordion-card.active').forEach(otherCard => {
+            if (otherCard !== card) {
+              otherCard.classList.remove('active');
+              otherCard.querySelector('.faq-head-btn')?.setAttribute('aria-expanded', 'false');
+              const otherBody = otherCard.querySelector('.faq-body-collapse') as HTMLElement;
+              if (otherBody) otherBody.style.maxHeight = '0px';
+            }
+          });
+        }
+
+        if (isOpen) {
+          card.classList.remove('active');
+          btn.setAttribute('aria-expanded', 'false');
+          collapse.style.maxHeight = '0px';
+        } else {
+          card.classList.add('active');
+          btn.setAttribute('aria-expanded', 'true');
+          collapse.style.maxHeight = collapse.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initShippingFaq);
+</script>

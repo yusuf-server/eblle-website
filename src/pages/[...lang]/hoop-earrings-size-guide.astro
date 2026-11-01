@@ -1,0 +1,455 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'hoop-earrings-size-guide'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// ----------------------------------------------------
+// 🖼️ 图片链接预留处（在这里填入下半部分的实拍大图 URL）
+// ----------------------------------------------------
+const hoopMeasureImg = 'https://api.ebbellejewelry.com/wp-content/uploads/2026/05/Infographic-showing-different-hoop-earring-sizes-from-huggies-to-oversized-hoops-with-internal-diameter-measurements-in-millimeters.webp';
+
+// 4. 原始文案提取与翻译
+const pageTitle = await tr('HOOP EARRINGS SIZE GUIDE');
+const introText1 = await tr('From everyday huggies to bold statement hoops, finding the perfect size is key to completing your look.');
+const introText2 = await tr('Use our guide to understand the different hoop diameters and how they sit on the ear.');
+
+// 5. UNDERSTANDING HOOP SIZES 表格数据
+const sectionTableTitle = await tr('UNDERSTANDING HOOP SIZES');
+const sectionTableLead = await tr('Hoop sizes are typically measured by their Internal Diameter in millimeters (mm). Depending on your style preference and piercing placement, different diameters will create different effects.');
+
+const tableHeaders = [
+  await tr('HOOP CATEGORY'),
+  await tr('INTERNAL DIAMETER (MM)'),
+  await tr('STYLE & FIT')
+];
+
+const hoopRows = [
+  {
+    category: await tr('Huggies & Mini Hoops'),
+    diameter: '6mm - 10mm',
+    desc: await tr('Sit close to the earlobe. Perfect for second or third piercings and a minimalist look.')
+  },
+  {
+    category: await tr('Small Hoops'),
+    diameter: '11mm - 20mm',
+    desc: await tr('The classic everyday hoop. Versatile enough for the office or a casual weekend out.')
+  },
+  {
+    category: await tr('Medium Hoops'),
+    diameter: '21mm - 30mm',
+    desc: await tr('A noticeable addition to your ear stack. Ideal for adding a touch of glamour.')
+  },
+  {
+    category: await tr('Large Hoops'),
+    diameter: '31mm - 40mm',
+    desc: await tr('Bold and eye-catching. Perfect as a standalone statement piece.')
+  },
+  {
+    category: await tr('Oversized Hoops'),
+    diameter: '41mm+',
+    desc: await tr('Maximum impact. These dramatic hoops are made to be the center of attention.')
+  }
+];
+
+// 6. HOW TO MEASURE FOR THE PERFECT FIT 图文板块
+const measureSectionTitle = await tr('HOW TO MEASURE FOR THE PERFECT FIT');
+const measureSteps = [
+  {
+    label: await tr('1. Measure Your Current Hoops:'),
+    text: await tr('If you have a pair you love, measure the inside distance between the two widest points of the hoop.')
+  },
+  {
+    label: await tr('2. Check Your Piercing Height:'),
+    text: await tr('For huggies, measure the distance from your piercing hole to the edge of your earlobe. Ensure the internal diameter of the hoop is at least 1-2mm larger than this measurement for a comfortable fit.')
+  },
+  {
+    label: await tr('3. Consider Your Face Shape:'),
+    text: await tr('Smaller hoops tend to suit heart-shaped faces, while larger, more angular hoops can complement rounder face shapes.')
+  }
+];
+
+// 7. 底部叠戴小贴士
+const earStackFootnote = await tr("* If you're planning an ear stack, start with your largest hoops in your first piercing and decrease the size as you move up the ear.");
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <Header />
+
+  <main class="hoop-guide-page">
+    <div class="guide-container">
+      <!-- 页面大标题与引言 -->
+      <h1 class="page-title">{pageTitle}</h1>
+      <div class="page-intro-wrap">
+        <p>{introText1}</p>
+        <p>{introText2}</p>
+      </div>
+
+      <!-- 1. UNDERSTANDING HOOP SIZES 尺码表格 -->
+      <section class="chart-section">
+        <h2 class="section-heading">{sectionTableTitle}</h2>
+        <p class="chart-lead">{sectionTableLead}</p>
+
+        <div class="table-wrap">
+          <table class="hoop-size-table">
+            <thead>
+              <tr>
+                {tableHeaders.map((head) => (
+                  <th>{head}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {hoopRows.map((row) => (
+                <tr>
+                  <td class="col-category"><strong>{row.category}</strong></td>
+                  <td class="col-diameter">{row.diameter}</td>
+                  <td class="col-desc">{row.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2. HOW TO MEASURE FOR THE PERFECT FIT 图文板块 -->
+      <section class="guide-split-section">
+        <div class="split-col-img">
+          <div class="composite-img-box">
+            <img src={hoopMeasureImg} alt="How to measure for the perfect hoop fit" loading="lazy" />
+          </div>
+        </div>
+        <div class="split-col-text">
+          <h2 class="sub-block-title">{measureSectionTitle}</h2>
+          <ul class="steps-bullet-list">
+            {measureSteps.map((step) => (
+              <li>
+                <strong>{step.label}</strong> {step.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <!-- 3. 底部叠戴建议提示 -->
+      <div class="bottom-tip-box">
+        <p>{earStackFootnote}</p>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .hoop-guide-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 24px 100px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  /* 保持 1400px 宽屏容器 */
+  .guide-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题：高级珠宝风 */
+  .page-title {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3.5px;
+    text-align: center;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .page-intro-wrap {
+    text-align: center;
+    max-width: 860px;
+    margin: 0 auto 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .page-intro-wrap p {
+    font-size: 13.5px;
+    color: #555;
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  /* 表格板块 */
+  .chart-section {
+    margin-bottom: 80px;
+  }
+
+  /* 统一大号饰品分类小标题（星芒 ✦ + 渐变金线） */
+  .section-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    position: relative;
+    padding-bottom: 10px;
+  }
+
+  .section-heading::before {
+    content: '✦';
+    font-size: 14px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .section-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 77, 0.6) 0%, rgba(212, 160, 77, 0.15) 30%, rgba(235, 235, 235, 0.4) 100%);
+  }
+
+  .chart-lead {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 22px;
+    line-height: 1.6;
+  }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e8e8e8;
+    background: #fff;
+  }
+
+  .hoop-size-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .hoop-size-table thead th {
+    background: #fafaf8;
+    padding: 15px 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #222;
+    border-bottom: 1px solid #e8e8e8;
+    white-space: nowrap;
+  }
+
+  .hoop-size-table tbody td {
+    padding: 16px 18px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  .hoop-size-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .hoop-size-table tbody tr:hover {
+    background: #fafaf8;
+  }
+
+  .col-category {
+    width: 22%;
+    color: #111;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .col-diameter {
+    width: 20%;
+    color: #333;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .col-desc {
+    color: #555;
+  }
+
+  /* 图文分栏：左单张大图 右步骤 */
+  .guide-split-section {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    margin-bottom: 50px;
+  }
+
+  .split-col-img {
+    flex: 1.1;
+    min-width: 0;
+  }
+
+  .composite-img-box {
+    width: 100%;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fafaf8;
+    border: 1px solid #ebebeb;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02);
+  }
+
+  .composite-img-box img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+  }
+
+  .split-col-text {
+    flex: 1.1;
+    min-width: 0;
+  }
+
+  .sub-block-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .steps-bullet-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .steps-bullet-list li {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.7;
+    position: relative;
+    padding-left: 16px;
+  }
+
+  .steps-bullet-list li::before {
+    content: '•';
+    color: #d4a04d;
+    position: absolute;
+    left: 0;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .steps-bullet-list li strong {
+    color: #111;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* 底部叠戴说明 */
+  .bottom-tip-box {
+    margin-top: 10px;
+    padding-top: 24px;
+    border-top: 1px dashed #e5e5e5;
+    text-align: center;
+  }
+
+  .bottom-tip-box p {
+    font-size: 12.5px;
+    color: #777;
+    line-height: 1.65;
+    font-style: italic;
+  }
+
+  /* 移动端与平板响应式适配 */
+  @media (max-width: 1024px) {
+    .guide-split-section {
+      gap: 36px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hoop-guide-page {
+      padding: 40px 16px 70px;
+    }
+    .page-title {
+      font-size: 22px;
+      letter-spacing: 2px;
+    }
+    .chart-section {
+      margin-bottom: 50px;
+    }
+    .guide-split-section {
+      flex-direction: column;
+      gap: 28px;
+      margin-bottom: 40px;
+    }
+    .split-col-img, .split-col-text {
+      width: 100%;
+    }
+    .section-heading {
+      font-size: 15px;
+    }
+    .hoop-size-table thead th,
+    .hoop-size-table tbody td {
+      padding: 12px 14px;
+      font-size: 12px;
+    }
+    .col-category {
+      white-space: normal;
+    }
+  }
+</style>

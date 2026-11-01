@@ -1,0 +1,320 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'offers-promos'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// 4. HTML 原版文案精准提取并翻译
+const pageTitle = await tr('OFFERS & PROMOS');
+
+const rawPromos = [
+  {
+    q: '15% OFF YOUR FIRST ORDER',
+    a: 'Sign up for 15% off your first order. Keep an eye on your inbox for your unique code. Usage period: Within 30 days and can only be used once'
+  },
+  {
+    q: 'ARE THERE ANY OTHER DISCOUNTS AVAILABLE HERE?',
+    a: 'Stay tuned and join our family. We offer promotions regularly — and we reserve all rights to interpret the terms.'
+  },
+  {
+    q: 'FREE SHIPPING',
+    a: 'Free shipping on all items ! Buy more, save more. For bulk inquiries or custom orders, contact us anytime—we’re happy to assist.'
+  },
+  {
+    q: 'DO YOU SUPPORT BUY NOW PAY LATER?',
+    a: 'We don’t currently offer this service, but we‘d love to hear from you. If you have any ideas or special requirements for your order, please reach out — we’re here to help.'
+  }
+];
+
+const promos = await Promise.all(
+  rawPromos.map(async (item) => ({
+    q: await tr(item.q),
+    a: await tr(item.a)
+  }))
+);
+
+// 底部客服引导提示
+const noticePrefix = await tr("Have questions about our current offers? Please");
+const contactUsText = t(currentLocale, 'footer.contactUs') || await tr('Contact Us');
+const noticeSuffix = await tr('— our customer care team is delighted to help.');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" slot="head" />
+
+  <Header />
+
+  <main class="promos-page">
+    <div class="promos-container">
+      <h1 class="page-heading">{pageTitle}</h1>
+
+      <div class="promos-accordion-wrap">
+        {promos.map((item, index) => (
+          <div class={`promo-card ${index === 0 ? 'active' : ''}`}>
+            <button type="button" class="card-head-btn" aria-expanded={index === 0 ? 'true' : 'false'}>
+              <span class="card-q-text">{item.q}</span>
+              <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+            </button>
+            <div class="card-collapse" style={index === 0 ? 'max-height: none;' : ''}>
+              <div class="card-body-inner">
+                <p>{item.a}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- 底部客服联系引导提示 -->
+      <div class="promos-footer-hint">
+        <p>
+          {noticePrefix} <a href={`/${currentLocale}/contact`}>{contactUsText}</a> {noticeSuffix}
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .promos-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 20px 90px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .promos-container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题：高级珠宝风 */
+  .page-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #111;
+    margin-bottom: 50px;
+    text-transform: uppercase;
+    position: relative;
+    padding-bottom: 14px;
+  }
+
+  .page-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 1.5px;
+    background: #d4a04d;
+  }
+
+  .promos-accordion-wrap {
+    border-top: 1px solid #ebebeb;
+  }
+
+  .promo-card {
+    border-bottom: 1px solid #ebebeb;
+  }
+
+  .card-head-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 20px 0;
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: #1a1a1a;
+    text-align: left;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: color 0.25s ease;
+  }
+
+  .card-head-btn:hover {
+    color: #d4a04d;
+  }
+
+  .promo-card.active .card-head-btn {
+    color: #d4a04d;
+  }
+
+  .card-q-text {
+    flex: 1;
+    padding-right: 16px;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-q-text::before {
+    content: '✦';
+    font-size: 13px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .card-arrow-icon {
+    font-size: 11px;
+    color: #888;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+  }
+
+  .promo-card.active .card-arrow-icon {
+    transform: rotate(180deg);
+    color: #d4a04d;
+  }
+
+  .card-collapse {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-body-inner {
+    padding-bottom: 24px;
+    padding-top: 4px;
+  }
+
+  .card-body-inner p {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #555;
+    margin: 0;
+  }
+
+  /* 底部客服提示 */
+  .promos-footer-hint {
+    margin-top: 60px;
+    padding-top: 28px;
+    border-top: 1px dashed #e5e5e5;
+    text-align: center;
+  }
+
+  .promos-footer-hint p {
+    font-size: 12.5px;
+    color: #777;
+    line-height: 1.6;
+  }
+
+  .promos-footer-hint a {
+    color: #111;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .promos-footer-hint a:hover {
+    color: #d4a04d;
+  }
+
+  /* 移动端适配 */
+  @media (max-width: 768px) {
+    .promos-page {
+      padding: 40px 16px 60px;
+    }
+    .page-heading {
+      font-size: 22px;
+      margin-bottom: 32px;
+      letter-spacing: 2px;
+    }
+    .card-head-btn {
+      font-size: 14px;
+      padding: 16px 0;
+    }
+    .card-body-inner p {
+      font-size: 12.5px;
+    }
+  }
+</style>
+
+<script>
+  function initPromosAccordion() {
+    const cards = document.querySelectorAll('.promo-card');
+
+    cards.forEach(card => {
+      const btn = card.querySelector('.card-head-btn');
+      const collapse = card.querySelector('.card-collapse') as HTMLElement;
+      if (!btn || !collapse) return;
+
+      if (card.classList.contains('active')) {
+        collapse.style.maxHeight = collapse.scrollHeight + 'px';
+      }
+
+      btn.addEventListener('click', () => {
+        const isOpen = card.classList.contains('active');
+
+        // 关闭其他项
+        cards.forEach(otherCard => {
+          if (otherCard !== card && otherCard.classList.contains('active')) {
+            otherCard.classList.remove('active');
+            otherCard.querySelector('.card-head-btn')?.setAttribute('aria-expanded', 'false');
+            const otherBody = otherCard.querySelector('.card-collapse') as HTMLElement;
+            if (otherBody) otherBody.style.maxHeight = '0px';
+          }
+        });
+
+        if (isOpen) {
+          card.classList.remove('active');
+          btn.setAttribute('aria-expanded', 'false');
+          collapse.style.maxHeight = '0px';
+        } else {
+          card.classList.add('active');
+          btn.setAttribute('aria-expanded', 'true');
+          collapse.style.maxHeight = collapse.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initPromosAccordion);
+</script>

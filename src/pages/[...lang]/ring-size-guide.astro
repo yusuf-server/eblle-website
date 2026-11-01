@@ -1,0 +1,557 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'ring-size-guide'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// ----------------------------------------------------
+// 🖼️ 图片链接预留处（在这里填入你的实际图片 URL）
+// ----------------------------------------------------
+const imgMethod1 = 'https://api.ebbellejewelry.com/wp-content/uploads/2026/04/Method-1%E5%9B%BE.webp';
+const imgMethod2 = 'https://api.ebbellejewelry.com/wp-content/uploads/2026/04/Method-2-%E5%9B%BE.webp';
+
+// 4. 原始文案提取与翻译
+const pageTitle = await tr('RING SIZE GUIDE');
+const subTitle = await tr('HOW TO FIND YOUR RING SIZE');
+const introText = await tr('To ensure a comfortable fit, finding your accurate ring size is essential. Please follow these simple steps to measure at home, or visit a local jeweler for a professional measurement.');
+
+// Method 1
+const m1Title = await tr('Method 1: Measure an Existing Ring');
+const m1Subtitle = await tr('This is the easiest method if you already have a ring that fits the intended finger well.');
+const m1Steps = [
+  { label: await tr('1. Select a Ring:'), text: await tr('Choose a ring that fits comfortably on the finger you intend to wear your new ring on.') },
+  { label: await tr('2. Measure the Diameter:'), text: await tr('Use a ruler to precisely measure the inside diameter of the ring in millimeters.') },
+  { label: await tr('3. Consult the Size Chart:'), text: await tr('Find the standard ring size that corresponds to your measurement in the chart below.') }
+];
+
+// Method 2
+const m2Title = await tr('Method 2: Measure Your Finger Circumference');
+const m2Steps = [
+  { label: await tr('1. Prepare Your Tools:'), text: await tr('Get a thin strip of paper, a piece of non-stretchy string or thread, and a pen.') },
+  { label: await tr('2. Wrap Around Your Finger:'), text: await tr('Wrap the paper/string around the base of the finger where you plan to wear the ring. Ensure it fits snugly against your skin, but not too tight.') },
+  { label: await tr('3. Mark the Spot:'), text: await tr('Use the pen to draw a mark where the paper/string overlaps.') },
+  { label: await tr('4. Measure the Length:'), text: await tr('Straighten the paper/string and use a ruler to measure the length from the starting point to the mark in millimeters. This is your finger circumference.') },
+  { label: await tr('5. Consult the Size Chart:'), text: await tr('Find the standard ring size that corresponds to your finger circumference in the chart below.') }
+];
+
+// 5. 国际尺码对照表
+const tableHeading = await tr('International Ring Size Conversion Chart');
+const tableHeaders = [
+  await tr('Circumference (mm)'),
+  await tr('Diameter (mm)'),
+  await tr('US/Canada'),
+  await tr('UK/Australia'),
+  await tr('Europe'),
+  await tr('China/Japan')
+];
+
+const sizeChartRows = [
+  { circ: '49.3', diam: '15.7', us: '5', uk: 'J ½', eu: '49', cn: '9' },
+  { circ: '51.5', diam: '16.4', us: '6', uk: 'L ½', eu: '51', cn: '12' },
+  { circ: '54.4', diam: '17.3', us: '7', uk: 'N ½', eu: '54', cn: '14' },
+  { circ: '57.2', diam: '18.2', us: '8', uk: 'P ½', eu: '57', cn: '16' },
+  { circ: '60.0', diam: '19.1', us: '9', uk: 'R ½', eu: '60', cn: '18' },
+  { circ: '62.8', diam: '20.0', us: '10', uk: 'T ½', eu: '62', cn: '20' }
+];
+
+const chartNote1 = await tr('Please keep in mind that this is a general size chart. Ring sizes can vary a bit from brand to brand, so we recommend using this as a reference.');
+const chartNote2 = await tr('Our open rings are adjustable — they can flex about ±1 US size. The chart above is for closed-band rings, but it’s a good starting point for selecting your open ring size.');
+
+// 6. Measuring Tips
+const tipsHeading = await tr('Measuring Tips');
+const tipsList = [
+  {
+    num: 'TIP 01',
+    lead: await tr('When to Measure:'),
+    text: await tr('Measure your finger at the end of the day, as fingers tend to be slightly more swollen at this time.')
+  },
+  {
+    num: 'TIP 02',
+    lead: await tr('Temperature Matters:'),
+    text: await tr('Avoid measuring when your fingers are cold (when they are smallest) or immediately after intense exercise (when they may be swollen).')
+  },
+  {
+    num: 'TIP 03',
+    lead: await tr('Consider Ring Width:'),
+    text: await tr('When wearing a wide band, you typically need to choose a half to full size larger than your standard measurement for a comfortable fit.')
+  },
+  {
+    num: 'TIP 04',
+    lead: await tr('When in Doubt:'),
+    text: await tr('If your measurement falls between two sizes, always choose the larger size for a more comfortable fit.')
+  }
+];
+
+// 7. 底部 Still Unsure? 提示框
+const unsureTitle = await tr('Still Unsure?');
+const unsureDesc = await tr('Don’t worry! If you’re still uncertain about your size after measuring, or would like a second opinion, please feel free to contact us.');
+const unsureContact = await tr('Email: Send your measurements (photos or specific numbers) to support@ebbellejewelry.com or our whatsapp to +86 18458005614 and our experts will recommend the best size for you.');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <Header />
+
+  <main class="ring-size-page">
+    <div class="ring-container">
+      <!-- 页面大标题 -->
+      <h1 class="page-title">{pageTitle}</h1>
+      <p class="page-subtitle">{subTitle}</p>
+      <p class="page-intro">{introText}</p>
+
+      <!-- 1. Method 1 -->
+      <section class="method-card">
+        <div class="method-img-col">
+          <img src={imgMethod1} alt="Method 1: Measure an Existing Ring" loading="lazy" />
+        </div>
+        <div class="method-text-col">
+          <h2 class="method-title">{m1Title}</h2>
+          <p class="method-lead">{m1Subtitle}</p>
+          <ul class="method-list">
+            {m1Steps.map((step) => (
+              <li><strong>{step.label}</strong> {step.text}</li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <!-- 2. Method 2 -->
+      <section class="method-card">
+        <div class="method-img-col">
+          <img src={imgMethod2} alt="Method 2: Measure Your Finger Circumference" loading="lazy" />
+        </div>
+        <div class="method-text-col">
+          <h2 class="method-title">{m2Title}</h2>
+          <ul class="method-list">
+            {m2Steps.map((step) => (
+              <li><strong>{step.label}</strong> {step.text}</li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <!-- 3. International Ring Size Conversion Chart -->
+      <section class="chart-section">
+        <h2 class="section-heading">{tableHeading}</h2>
+        <div class="table-wrap">
+          <table class="size-chart-table">
+            <thead>
+              <tr>
+                {tableHeaders.map((head) => (
+                  <th>{head}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sizeChartRows.map((row) => (
+                <tr>
+                  <td>{row.circ}</td>
+                  <td>{row.diam}</td>
+                  <td class="col-highlight"><strong>{row.us}</strong></td>
+                  <td>{row.uk}</td>
+                  <td>{row.eu}</td>
+                  <td>{row.cn}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div class="chart-notes">
+          <p>{chartNote1}</p>
+          <p>{chartNote2}</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- 4. 原版焦糖棕色 TIPS 板块 -->
+    <section class="tips-fullbleed-strip">
+      <div class="ring-container">
+        <h2 class="tips-main-title">{tipsHeading}</h2>
+        <div class="tips-grid">
+          {tipsList.map((tip) => (
+            <div class="tip-card">
+              <span class="tip-badge">{tip.num}</span>
+              <p class="tip-desc">
+                <strong>{tip.lead}</strong> {tip.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 底部 Still Unsure? 提示框 -->
+    <div class="ring-container">
+      <div class="still-unsure-card">
+        <h3 class="unsure-title">{unsureTitle}</h3>
+        <p class="unsure-desc">{unsureDesc}</p>
+        <p class="unsure-contact">{unsureContact}</p>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .ring-size-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 0 100px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .ring-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* 页面大标题：高级珠宝风 */
+  .page-title {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    color: #777;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .page-intro {
+    font-size: 13px;
+    color: #555;
+    text-align: center;
+    line-height: 1.7;
+    max-width: 760px;
+    margin: 0 auto 50px;
+  }
+
+  /* 测量方法图文模块 */
+  .method-card {
+    display: flex;
+    align-items: center;
+    gap: 46px;
+    margin-bottom: 56px;
+  }
+
+  .method-img-col {
+    flex: 1.1;
+    min-width: 0;
+  }
+
+  .method-img-col img {
+    width: 100%;
+    height: 320px;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+    background: #f8f8f8;
+  }
+
+  .method-text-col {
+    flex: 1.3;
+    min-width: 0;
+  }
+
+  .method-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .method-lead {
+    font-size: 12.5px;
+    color: #666;
+    margin-bottom: 16px;
+    font-style: italic;
+    line-height: 1.6;
+  }
+
+  .method-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .method-list li {
+    font-size: 12.5px;
+    color: #444;
+    line-height: 1.65;
+  }
+
+  .method-list li strong {
+    color: #111;
+    font-weight: 700;
+  }
+
+  /* 国际尺码表 */
+  .chart-section {
+    margin-top: 30px;
+    margin-bottom: 60px;
+  }
+
+  .section-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+    position: relative;
+    padding-bottom: 10px;
+  }
+
+  .section-heading::before {
+    content: '✦';
+    font-size: 14px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .section-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 77, 0.6) 0%, rgba(212, 160, 77, 0.15) 30%, rgba(235, 235, 235, 0.4) 100%);
+  }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e8e8e8;
+    background: #fff;
+  }
+
+  .size-chart-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    text-align: center;
+  }
+
+  .size-chart-table thead th {
+    background: #fafaf8;
+    padding: 14px 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #222;
+    border-bottom: 1px solid #e8e8e8;
+    white-space: nowrap;
+  }
+
+  .size-chart-table tbody td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  .size-chart-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .size-chart-table tbody tr:hover {
+    background: #fafaf8;
+  }
+
+  .col-highlight {
+    color: #111;
+    font-weight: 700;
+  }
+
+  .chart-notes {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chart-notes p {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.65;
+  }
+
+  /* 4. 原版焦糖棕色 TIPS 满宽横幅 */
+  .tips-fullbleed-strip {
+    background: #8b4513;
+    background: linear-gradient(135deg, #8a4114 0%, #75340c 100%);
+    padding: 46px 0;
+    color: #ffffff;
+    margin-bottom: 50px;
+  }
+
+  .tips-main-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-align: center;
+    color: #ffffff;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+  }
+
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+  }
+
+  .tip-card {
+    text-align: center;
+  }
+
+  .tip-badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #f7d299;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(247, 210, 153, 0.4);
+    padding-bottom: 4px;
+    font-style: italic;
+  }
+
+  .tip-desc {
+    font-size: 11.5px;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .tip-desc strong {
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  /* 5. 底部 Still Unsure? 提示框 */
+  .still-unsure-card {
+    background: #fbfbf9;
+    border: 1px solid #ebebeb;
+    border-radius: 4px;
+    padding: 30px 24px;
+    text-align: center;
+    max-width: 820px;
+    margin: 0 auto;
+  }
+
+  .unsure-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #111;
+    margin-bottom: 10px;
+  }
+
+  .unsure-desc {
+    font-size: 12.5px;
+    color: #555;
+    line-height: 1.65;
+    margin-bottom: 12px;
+  }
+
+  .unsure-contact {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.65;
+  }
+
+  /* 移动端响应式适配 */
+  @media (max-width: 768px) {
+    .ring-size-page {
+      padding: 40px 0 60px;
+    }
+    .page-title {
+      font-size: 22px;
+      letter-spacing: 2px;
+    }
+    .method-card {
+      flex-direction: column;
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .method-img-col, .method-text-col {
+      width: 100%;
+    }
+    .method-img-col img {
+      height: 220px;
+    }
+    .section-heading {
+      font-size: 15px;
+    }
+    .tips-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .tips-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

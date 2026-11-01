@@ -1,0 +1,479 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'wholesale'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// 4. HTML 原始文案精准提取与翻译
+const pageTitle = await tr('WHOLESALE FAQs');
+
+// 折叠项 1: WHOLESALE INQUIRY
+const item1Title = await tr('WHOLESALE INQUIRY');
+const item1P1 = await tr('Thank you for your interest in partnering with E.B.belle.');
+const item1P2 = await tr('We are a trusted supplier of high-quality stainless steel jewelry, offering waterproof, tarnish-free, and hypoallergenic pieces at competitive prices. Our website prices are already set at wholesale rates — no hidden markups, no minimum order quantity required to enjoy wholesale pricing.');
+
+// 折叠项 2: WHY PARTNER WITH E.B.BELLE?
+const item2Title = await tr('WHY PARTNER WITH E.B.BELLE?');
+const thAdvantage = await tr('Advantage');
+const thDetail = await tr('Detail');
+
+const rawAdvantages = [
+  {
+    title: 'WHOLESALE PRICES, ALWAYS',
+    detail: 'Every price you see on our website is the wholesale price. No special login or approval needed.'
+  },
+  {
+    title: 'FREE SHIPPING',
+    detail: 'Enjoy free shipping on all orders with no minimum purchase'
+  },
+  {
+    title: 'EXTRA VOLUME DISCOUNTS',
+    detail: 'Additional discounts apply when you order 50+ or 100+ pieces of the same product.'
+  },
+  {
+    title: 'QUALITY GUARANTEED',
+    detail: '316L stainless steel with PVD coating — tarnish-free, waterproof, and hypoallergenic.'
+  },
+  {
+    title: 'LOW-RISK PARTNERSHIP',
+    detail: 'No membership fees. No complex applications. Just shop at wholesale prices instantly.'
+  }
+];
+
+const advantages = await Promise.all(
+  rawAdvantages.map(async (adv) => ({
+    title: await tr(adv.title),
+    detail: await tr(adv.detail)
+  }))
+);
+
+// 阶梯折扣小表
+const volumeSectionHeader = await tr('VOLUME DISCOUNTS (SAME PRODUCT)');
+const thQuantity = await tr('Quantity');
+const thDiscount = await tr('Extra Discount');
+
+const rawVolumes = [
+  { qty: '50+ PIECES', discount: '2% OFF' },
+  { qty: '100+ PIECES', discount: '5% OFF' }
+];
+
+const volumeDiscounts = await Promise.all(
+  rawVolumes.map(async (v) => ({
+    qty: await tr(v.qty),
+    discount: await tr(v.discount)
+  }))
+);
+
+const volumeFootnote = await tr('Discount applies to the same product style. Mix-and-match across different styles is not eligible for this volume discount at this time.');
+
+// 折叠项 3: WHOLESALE CONTACT
+const item3Title = await tr('WHOLESALE CONTACT');
+const contactPrefix = await tr('Please refer to our');
+const contactLinkText = t(currentLocale, 'footer.contactUs') || await tr('contact us');
+const contactSuffix = await tr('page');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" slot="head" />
+
+  <Header />
+
+  <main class="wholesale-page">
+    <div class="wholesale-container">
+      <h1 class="page-heading">{pageTitle}</h1>
+
+      <div class="wholesale-accordion-wrap">
+        <!-- 1. WHOLESALE INQUIRY -->
+        <div class="wholesale-card active">
+          <button type="button" class="card-head-btn" aria-expanded="true">
+            <span class="card-q-text">{item1Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse" style="max-height: none;">
+            <div class="card-body-inner">
+              <p>{item1P1}</p>
+              <p>{item1P2}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. WHY PARTNER WITH E.B.BELLE? -->
+        <div class="wholesale-card">
+          <button type="button" class="card-head-btn" aria-expanded="false">
+            <span class="card-q-text">{item2Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse">
+            <div class="card-body-inner">
+              <div class="table-scroll-wrapper">
+                <table class="wholesale-table">
+                  <thead>
+                    <tr>
+                      <th class="th-advantage">{thAdvantage}</th>
+                      <th class="th-detail">{thDetail}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {advantages.map((adv) => (
+                      <tr>
+                        <td class="td-advantage"><strong>{adv.title}</strong></td>
+                        <td class="td-detail">{adv.detail}</td>
+                      </tr>
+                    ))}
+                    <!-- 阶梯折扣小表嵌入 -->
+                    <tr class="tr-volume-header">
+                      <td colspan="2">{volumeSectionHeader}</td>
+                    </tr>
+                    <tr class="tr-sub-header">
+                      <td><strong>{thQuantity}</strong></td>
+                      <td><strong>{thDiscount}</strong></td>
+                    </tr>
+                    {volumeDiscounts.map((v) => (
+                      <tr>
+                        <td class="td-advantage">{v.qty}</td>
+                        <td class="td-detail">{v.discount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p class="volume-note">{volumeFootnote}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. WHOLESALE CONTACT -->
+        <div class="wholesale-card">
+          <button type="button" class="card-head-btn" aria-expanded="false">
+            <span class="card-q-text">{item3Title}</span>
+            <i class="fa-solid fa-chevron-down card-arrow-icon"></i>
+          </button>
+          <div class="card-collapse">
+            <div class="card-body-inner">
+              <p>
+                {contactPrefix} <a href={`/${currentLocale}/contact`} class="contact-link">{contactLinkText}</a> {contactSuffix}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .wholesale-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 20px 90px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .wholesale-container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题：高级珠宝风 */
+  .page-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #111;
+    margin-bottom: 50px;
+    text-transform: uppercase;
+    position: relative;
+    padding-bottom: 14px;
+  }
+
+  .page-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 1.5px;
+    background: #d4a04d;
+  }
+
+  .wholesale-accordion-wrap {
+    border-top: 1px solid #ebebeb;
+  }
+
+  .wholesale-card {
+    border-bottom: 1px solid #ebebeb;
+  }
+
+  .card-head-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 20px 0;
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: #1a1a1a;
+    text-align: left;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: color 0.25s ease;
+  }
+
+  .card-head-btn:hover {
+    color: #d4a04d;
+  }
+
+  .wholesale-card.active .card-head-btn {
+    color: #d4a04d;
+  }
+
+  .card-q-text {
+    flex: 1;
+    padding-right: 16px;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-q-text::before {
+    content: '✦';
+    font-size: 13px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .card-arrow-icon {
+    font-size: 11px;
+    color: #888;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+  }
+
+  .wholesale-card.active .card-arrow-icon {
+    transform: rotate(180deg);
+    color: #d4a04d;
+  }
+
+  .card-collapse {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-body-inner {
+    padding-bottom: 24px;
+    padding-top: 4px;
+  }
+
+  .card-body-inner p {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 12px;
+  }
+
+  .card-body-inner p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* 优势表格样式 */
+  .table-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    margin: 16px 0 18px;
+    background: #fff;
+  }
+
+  .wholesale-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .wholesale-table th,
+  .wholesale-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #ebebeb;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  .wholesale-table thead th {
+    background-color: #fafaf8;
+    font-weight: 700;
+    color: #222;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-size: 12px;
+  }
+
+  .th-advantage {
+    width: 36%;
+  }
+
+  .td-advantage strong {
+    color: #111;
+    font-weight: 700;
+  }
+
+  .td-detail {
+    color: #555;
+  }
+
+  .tr-volume-header td {
+    background-color: #fafaf8;
+    font-weight: 700;
+    text-align: center;
+    color: #111;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 12.5px;
+    padding: 14px 16px;
+  }
+
+  .tr-sub-header td {
+    background-color: #fff;
+    color: #333;
+    font-size: 12.5px;
+    border-bottom: 1px solid #ebebeb;
+  }
+
+  .volume-note {
+    font-size: 12.5px !important;
+    color: #777 !important;
+    line-height: 1.65;
+    font-style: italic;
+    margin-top: 8px;
+  }
+
+  .contact-link {
+    color: #111;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .contact-link:hover {
+    color: #d4a04d;
+  }
+
+  /* 移动端适配 */
+  @media (max-width: 768px) {
+    .wholesale-page {
+      padding: 40px 16px 60px;
+    }
+    .page-heading {
+      font-size: 22px;
+      margin-bottom: 32px;
+      letter-spacing: 2px;
+    }
+    .card-head-btn {
+      font-size: 14px;
+      padding: 16px 0;
+    }
+    .card-body-inner p {
+      font-size: 12.5px;
+    }
+    .wholesale-table th,
+    .wholesale-table td {
+      padding: 11px 12px;
+      font-size: 12px;
+    }
+    .th-advantage {
+      width: 42%;
+    }
+  }
+</style>
+
+<script>
+  function initWholesaleAccordion() {
+    const cards = document.querySelectorAll('.wholesale-card');
+
+    cards.forEach(card => {
+      const btn = card.querySelector('.card-head-btn');
+      const collapse = card.querySelector('.card-collapse') as HTMLElement;
+      if (!btn || !collapse) return;
+
+      // 如果初始化带有 active 类，则展开
+      if (card.classList.contains('active')) {
+        collapse.style.maxHeight = collapse.scrollHeight + 'px';
+      }
+
+      btn.addEventListener('click', () => {
+        const isOpen = card.classList.contains('active');
+
+        // 关闭其他同级项
+        cards.forEach(otherCard => {
+          if (otherCard !== card && otherCard.classList.contains('active')) {
+            otherCard.classList.remove('active');
+            otherCard.querySelector('.card-head-btn')?.setAttribute('aria-expanded', 'false');
+            const otherBody = otherCard.querySelector('.card-collapse') as HTMLElement;
+            if (otherBody) otherBody.style.maxHeight = '0px';
+          }
+        });
+
+        if (isOpen) {
+          card.classList.remove('active');
+          btn.setAttribute('aria-expanded', 'false');
+          collapse.style.maxHeight = '0px';
+        } else {
+          card.classList.add('active');
+          btn.setAttribute('aria-expanded', 'true');
+          collapse.style.maxHeight = collapse.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initWholesaleAccordion);
+</script>

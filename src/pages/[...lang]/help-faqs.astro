@@ -1,0 +1,448 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 获取缓存和上下文配置（匹配 Cloudflare AI 架构）
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'help-faqs'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// 4. 从图片提取的完整 Q&A 分组数据
+const rawFaqSections = [
+  {
+    category: 'ORDER & PAYMENT',
+    items: [
+      {
+        q: 'HOW DO I KNOW MY ORDER IS CONFIRMED?',
+        a: "Once you've completed your purchase, we will send you an Order Confirmation email. Please check your junk mail or spam folders if you can't find it. Otherwise, contact customer service on +86 184 5800 5614 for whatsapp or via our sales02@ebbellejewelry.com, and we will be able to re-send your confirmation email to you for your reference."
+      },
+      {
+        q: 'CAN I AMEND MY ORDER?',
+        a: "If you need to change your order, please contact us immediately after placing it. Once the order has entered our production or dispatch process, we may not be able to modify or cancel it."
+      },
+      {
+        q: 'HOW CAN I PAY?',
+        a: "We accept all major credit cards (Visa, MasterCard, American Express), PayPal, and Apple Pay. For bulk and wholesale orders, wire transfer (T/T) and Western Union are also supported."
+      },
+      {
+        q: 'IS IT SAFE TO BUY ONLINE?',
+        a: "Yes, shopping with us is completely safe and secure. All payment transactions are processed through encrypted 256-bit SSL gateways. We do not store your complete card details on our servers."
+      },
+      {
+        q: 'VAT / TAX',
+        a: "All prices shown on the website exclude local import taxes and VAT duties where applicable. Depending on your country's regulations, you may be responsible for paying customs clearance fees upon arrival."
+      },
+      {
+        q: 'WHO DO I CONTACT ABOUT MY INVOICE?',
+        a: "If you require a formal commercial invoice or have any billing inquiries, please contact our financial department via sales02@ebbellejewelry.com with your order number."
+      }
+    ]
+  },
+  {
+    category: 'SHIPPING',
+    items: [
+      {
+        q: 'WHAT ARE SHIPPING COSTS AND TIMEFRAMES?',
+        a: "Standard shipping typically takes 7-15 business days depending on destination. Express courier (DHL/FedEx/UPS) takes 3-7 business days. Shipping costs are calculated at checkout based on weight and destination."
+      },
+      {
+        q: 'INTERNATIONAL ORDERS - SHIPPING COSTS AND TIMEFRAMES',
+        a: "We ship worldwide. Most international destinations take 5-20 business days. Full tracking information will be provided once your package is dispatched from our fulfillment facility."
+      }
+    ]
+  },
+  {
+    category: 'RETURNS',
+    items: [
+      {
+        q: 'WHAT IS YOUR RETURNS PROCESS?',
+        a: "We offer a 14-day return policy for unused items in original packaging. Please contact our support team at sales02@ebbellejewelry.com to obtain a Return Authorization before sending any items back."
+      }
+    ]
+  },
+  {
+    category: 'PERSONALIZED ORDERS',
+    items: [
+      {
+        q: 'DELIVERY',
+        a: "Custom engraved or personalized pieces require 3-7 business days for craft manufacturing prior to shipping. Once completed, standard transit times apply."
+      },
+      {
+        q: 'REFUNDS',
+        a: "Because personalized and custom engraved items are crafted uniquely for you, they are final sale and non-refundable unless there is a manufacturer defect or spelling error made by our atelier."
+      }
+    ]
+  },
+  {
+    category: 'WARRANTY AND CARE',
+    items: [
+      {
+        q: 'HOW TO CARE FOR YOUR JEWELRY',
+        a: "Keep your jewelry away from harsh chemicals, perfumes, and heavy sweat. Store pieces separately in a soft pouch to avoid scratching. Use a dry microfiber cloth to polish and restore shine."
+      },
+      {
+        q: '1 YEAR WARRANTY',
+        a: "All E.B.belle jewelry comes with an extensive 1-year warranty covering manufacturing defects and plating issues under normal wear conditions. Contact our customer care with proof of purchase."
+      }
+    ]
+  },
+  {
+    category: 'PRODUCT SIZING',
+    items: [
+      {
+        q: 'HOW DO I FIND MY RING SIZE?',
+        a: "Measure the circumference of your finger using a flexible strip of paper or string, then check our Ring Size Guide. For the most accurate fit, we recommend measuring at room temperature when your fingers are not swollen."
+      }
+    ]
+  }
+];
+
+// 5. 统一批量异步翻译问答列表
+const faqSections = await Promise.all(
+  rawFaqSections.map(async (sec) => ({
+    category: await tr(sec.category),
+    items: await Promise.all(
+      sec.items.map(async (item) => ({
+        q: await tr(item.q),
+        a: await tr(item.a)
+      }))
+    )
+  }))
+);
+
+// 6. 辅助文案翻译
+const pageTitle = await tr('HELP & FAQS');
+const noticePrefix = await tr("If you didn't find an answer to your query, please");
+const contactUsText = t(currentLocale, 'footer.contactUs') || await tr('Contact Us');
+const noticeSuffix = await tr('— we aim to respond to all queries in up to 48 hours.');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" slot="head" />
+
+  <Header />
+
+  <main class="help-faq-page">
+    <div class="faq-container">
+      <h1 class="faq-page-heading">{pageTitle}</h1>
+
+      <div class="faq-sections-list">
+        {faqSections.map((sec) => (
+          <div class="faq-group-block">
+            <h2 class="faq-group-title">{sec.category}</h2>
+            <div class="faq-items-wrapper">
+              {sec.items.map((item) => (
+                <div class="faq-accordion-card">
+                  <button type="button" class="faq-head-btn" aria-expanded="false">
+                    <span class="faq-q-text">{item.q}</span>
+                    <i class="fa-solid fa-chevron-down faq-arrow-icon"></i>
+                  </button>
+                  <div class="faq-body-collapse">
+                    <div class="faq-body-inner">
+                      <p>{item.a}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- 底部客服联系引导提示 -->
+      <div class="faq-contact-footer">
+        <p>
+          {noticePrefix} <a href="/contact">{contactUsText}</a> {noticeSuffix}
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .help-faq-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 20px 90px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .faq-container {
+    max-width: 840px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题：高级衬线珠宝风 */
+  .faq-page-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #111;
+    margin-bottom: 56px;
+    text-transform: uppercase;
+    position: relative;
+    padding-bottom: 14px;
+  }
+  .faq-page-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 1.5px;
+    background: #d4a04d;
+  }
+
+  .faq-sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 46px;
+  }
+
+  .faq-group-block {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 💎 珠宝饰品风分类标题：放大字号 + 优雅星芒点缀 + 渐变金线 */
+  .faq-group-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    position: relative;
+    padding-bottom: 10px;
+  }
+
+  /* 标题左侧精致八芒星/钻石感小图标 */
+  .faq-group-title::before {
+    content: '✦';
+    font-size: 14px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  /* 标题下方细致的香槟金渐变细线 */
+  .faq-group-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 77, 0.6) 0%, rgba(212, 160, 77, 0.15) 30%, rgba(235, 235, 235, 0.4) 100%);
+  }
+
+  .faq-items-wrapper {
+    /* 顶部已有渐变线，因此这里直接与卡片边框衔接 */
+    border-top: none;
+  }
+
+  .faq-accordion-card {
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .faq-head-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 17px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333333;
+    text-align: left;
+    cursor: pointer;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    transition: color 0.25s ease;
+  }
+
+  .faq-head-btn:hover {
+    color: #d4a04d;
+  }
+
+  .faq-accordion-card.active .faq-head-btn {
+    color: #d4a04d;
+  }
+
+  .faq-q-text {
+    flex: 1;
+    padding-right: 16px;
+    line-height: 1.5;
+  }
+
+  .faq-arrow-icon {
+    font-size: 11px;
+    color: #888;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+  }
+
+  .faq-accordion-card.active .faq-arrow-icon {
+    transform: rotate(180deg);
+    color: #d4a04d;
+  }
+
+  .faq-body-collapse {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .faq-body-inner {
+    padding-bottom: 20px;
+    padding-top: 2px;
+  }
+
+  .faq-body-inner p {
+    font-size: 13px;
+    line-height: 1.75;
+    color: #666666;
+    margin: 0;
+    white-space: pre-line;
+  }
+
+  /* 底部客服提示 */
+  .faq-contact-footer {
+    margin-top: 60px;
+    padding-top: 28px;
+    border-top: 1px dashed #e5e5e5;
+    text-align: center;
+  }
+
+  .faq-contact-footer p {
+    font-size: 12.5px;
+    color: #777;
+    line-height: 1.6;
+  }
+
+  .faq-contact-footer a {
+    color: #111;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .faq-contact-footer a:hover {
+    color: #d4a04d;
+  }
+
+  /* 移动端响应式调整 */
+  @media (max-width: 768px) {
+    .help-faq-page {
+      padding: 40px 16px 60px;
+    }
+    .faq-page-heading {
+      font-size: 22px;
+      margin-bottom: 36px;
+      letter-spacing: 2px;
+    }
+    .faq-sections-list {
+      gap: 36px;
+    }
+    .faq-group-title {
+      font-size: 15px;
+      letter-spacing: 1.2px;
+      margin-bottom: 12px;
+    }
+    .faq-group-title::before {
+      font-size: 12px;
+    }
+    .faq-head-btn {
+      font-size: 11.5px;
+      padding: 15px 0;
+    }
+    .faq-body-inner p {
+      font-size: 12.5px;
+    }
+  }
+</style>
+
+<script>
+  function initHelpFaqAccordion() {
+    const cards = document.querySelectorAll('.faq-accordion-card');
+
+    cards.forEach(card => {
+      const btn = card.querySelector('.faq-head-btn');
+      const collapse = card.querySelector('.faq-body-collapse') as HTMLElement;
+      if (!btn || !collapse) return;
+
+      btn.addEventListener('click', () => {
+        const isOpen = card.classList.contains('active');
+
+        // 关闭同组内的其他展开项
+        const parentWrapper = card.closest('.faq-items-wrapper');
+        if (parentWrapper) {
+          parentWrapper.querySelectorAll('.faq-accordion-card.active').forEach(otherCard => {
+            if (otherCard !== card) {
+              otherCard.classList.remove('active');
+              otherCard.querySelector('.faq-head-btn')?.setAttribute('aria-expanded', 'false');
+              const otherBody = otherCard.querySelector('.faq-body-collapse') as HTMLElement;
+              if (otherBody) otherBody.style.maxHeight = '0px';
+            }
+          });
+        }
+
+        if (isOpen) {
+          card.classList.remove('active');
+          btn.setAttribute('aria-expanded', 'false');
+          collapse.style.maxHeight = '0px';
+        } else {
+          card.classList.add('active');
+          btn.setAttribute('aria-expanded', 'true');
+          collapse.style.maxHeight = collapse.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initHelpFaqAccordion);
+</script>

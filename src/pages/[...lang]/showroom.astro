@@ -1,0 +1,460 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'showroom'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// ----------------------------------------------------
+// 🖼️ 展厅图片预留（已按原版 HTML 填入对应路径，如需更换域名直接修改前缀）
+// ----------------------------------------------------
+const imgBase = 'https://api.ebbellejewelry.com/wp-content/uploads/';
+const heroShowroomImg = `https://api.ebbellejewelry.com/wp-content/uploads/2026/03/S1.webp`;
+
+const rawZones = [
+  {
+    title: 'Necklace Wall',
+    desc: 'Rows of vibrant beaded strands, sleek metal chains, and whimsical scarf-style necklaces hang neatly, offering a spectrum of colors and texturesperfect for layering or making a bold solo statement.',
+    img1: `https://api.ebbellejewelry.com/wp-content/uploads/2026/03/S3-scaled.webp`,
+    img2: `https://api.ebbellejewelry.com/wp-content/uploads/2026/03/S2-scaled.webp`,
+    isReversed: false // 文字在左，图片在右
+  },
+  {
+    title: 'Earring Gallery',
+    desc: 'A stunning wall of gold and silver earrings spans classic hoops, delicate drops, and ornate studs, each piece reflecting meticulous attention to detail and on-trend aesthetics.',
+    img1: `https://api.ebbellejewelry.com/wp-content/uploads/2026/03/S4-scaled.webp`,
+    img2: `https://api.ebbellejewelry.com/wp-content/uploads/2026/03/S5-scaled.webp`,
+    isReversed: true // 图片在左，文字在右
+  },
+  {
+    title: 'Ring Displays',
+    desc: 'Luxurious wooden trays showcase our ring collection, featuring natural gemstones like turquoise, malachite, and tiger’s eye set in warm gold tones, alongside minimalist designs that celebrate understated beauty.',
+    img1: `https://api.ebbellejewelry.com/wp-content/uploads/2026/03/S6-scaled.webp`,
+    img2: `https://api.ebbellejewelry.com/wp-content/uploads/2026/03/S7-scaled.webp`,
+    isReversed: false // 文字在左，图片在右
+  },
+  {
+    title: 'Sleek Display Counters',
+    desc: 'Bright, modern glass counters and clean white shelving provide an elegant backdrop, letting the jewelry take center stage while making it easy to browse and appreciate every finish and detail.',
+    img1: `https://api.ebbellejewelry.com/wp-content/uploads/2026/03/S8-scaled.webp`,
+    img2: `https://api.ebbellejewelry.com/wp-content/uploads/2026/03/S9-scaled.webp`,
+    isReversed: true // 图片在左，文字在右
+  }
+];
+
+// 4. HTML 原版文案精准提取并翻译
+const pageTitle = await tr('Step into E.B.belle Showroom: Where Jewelry Dreams Take Shape');
+const introP1 = await tr('Welcome to the E.B.belle showroom—a curated haven where craftsmanship meets creativity, and everypiece tells a story of timeless elegance.');
+const introP2 = await tr('Designed to inspire and showcase our full range of jewelry collections, this space is more than a showroom; it’s a window into the heart of our brand.');
+
+const displaySectionTitle = await tr('A Curated Display of Craftsmanship');
+const displaySectionDesc = await tr('Our showroom is thoughtfully organized to highlight the diversity of our designs, from delicate necklaces to statement rings and intricate earrings.');
+
+const zones = await Promise.all(
+  rawZones.map(async (zone) => ({
+    ...zone,
+    title: await tr(zone.title),
+    desc: await tr(zone.desc)
+  }))
+);
+
+// 底部 The E.B.belle Difference
+const diffTitle = await tr('The E.B.belle Difference');
+const diffP1 = await tr('Every piece in our showroom is crafted with premium materials and a commitment to quality that defines the E.B.belle ethos. Whether you’re drawn to bohemian charm, minimalist sophistication, or bold, eye-catching designs, our collections are made to empower self-expression and elevate any look.');
+const diffP2 = await tr('This space is where ideas become tangible, where trends are born, and where we invite our partners and clients to explore the full potential of our jewelry. It’s a testament to our passion for creating pieces that are not just accessories, but cherished keepsakes.');
+const diffQuote = await tr('"Come discover the magic of E.B.belle—where every design is a celebration of beauty, craftsmanship, and individuality."');
+const contactBtnText = t(currentLocale, 'footer.contactUs') || await tr('Contact us');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <Header />
+
+  <main class="showroom-page">
+    <div class="showroom-container">
+      <!-- 1. 顶部大标题与引言 -->
+      <header class="page-header">
+        <h1 class="page-title">{pageTitle}</h1>
+        <p class="page-intro-p">{introP1}</p>
+        <p class="page-intro-p">{introP2}</p>
+      </header>
+
+      <!-- 2. 全景主展示大图 S1 -->
+      <section class="hero-panorama-section">
+        <div class="panorama-img-wrap">
+          <img src={heroShowroomImg} alt="E.B.belle Showroom Overview" loading="lazy" />
+        </div>
+      </section>
+
+      <!-- 3. 过渡标题与说明 -->
+      <section class="curated-intro-section">
+        <h2 class="curated-title">{displaySectionTitle}</h2>
+        <p class="curated-desc">{displaySectionDesc}</p>
+      </section>
+
+      <!-- 4. 四大陈列展区（左右交替图文展示） -->
+      <section class="display-zones-section">
+        {zones.map((zone) => (
+          <div class={`zone-row ${zone.isReversed ? 'row-reversed' : ''}`}>
+            <!-- 文字列 -->
+            <div class="zone-text-col">
+              <h2 class="zone-title">{zone.title}</h2>
+              <div class="zone-gold-line"></div>
+              <p class="zone-desc">{zone.desc}</p>
+            </div>
+            <!-- 双图列 -->
+            <div class="zone-imgs-col">
+              <div class="pair-img-box">
+                <img src={zone.img1} alt={`${zone.title} 1`} loading="lazy" />
+              </div>
+              <div class="pair-img-box">
+                <img src={zone.img2} alt={`${zone.title} 2`} loading="lazy" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <!-- 5. 底部 The E.B.belle Difference 品牌理念与联系按钮 -->
+      <section class="difference-section">
+        <div class="difference-inner">
+          <h3 class="difference-title">{diffTitle}</h3>
+          <p class="difference-p">{diffP1}</p>
+          <p class="difference-p">{diffP2}</p>
+          <h2 class="difference-quote">{diffQuote}</h2>
+          <div class="btn-wrap">
+            <a href={`/${currentLocale}/contact`} class="btn-contact-us">{contactBtnText}</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .showroom-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 24px 100px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  /* 保持 1400px 宽屏主容器 */
+  .showroom-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* 页面头部 */
+  .page-header {
+    text-align: center;
+    max-width: 960px;
+    margin: 0 auto 46px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .page-title {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 30px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: #111;
+    line-height: 1.35;
+    margin-bottom: 6px;
+  }
+
+  .page-intro-p {
+    font-size: 13.5px;
+    color: #555;
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  /* 展厅全景大图 S1 */
+  .hero-panorama-section {
+    margin-bottom: 56px;
+  }
+
+  .panorama-img-wrap {
+    width: 100%;
+    max-height: 600px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fafaf8;
+    border: 1px solid #ebebeb;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  }
+
+  .panorama-img-wrap img {
+    width: 100%;
+    height: 100%;
+    max-height: 600px;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.6s ease;
+  }
+
+  .panorama-img-wrap:hover img {
+    transform: scale(1.02);
+  }
+
+  /* 过渡小标题 */
+  .curated-intro-section {
+    text-align: center;
+    max-width: 860px;
+    margin: 0 auto 60px;
+  }
+
+  .curated-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #111;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  .curated-desc {
+    font-size: 13.5px;
+    color: #666;
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  /* 四大陈列展区（左右交替） */
+  .display-zones-section {
+    display: flex;
+    flex-direction: column;
+    gap: 75px;
+    margin-bottom: 90px;
+  }
+
+  .zone-row {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+  }
+
+  .zone-row.row-reversed {
+    flex-direction: row-reverse;
+  }
+
+  /* 文字列 */
+  .zone-text-col {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .zone-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .zone-gold-line {
+    width: 38px;
+    height: 1.5px;
+    background: #d4a04d;
+    margin-bottom: 16px;
+  }
+
+  .zone-desc {
+    font-size: 13.5px;
+    color: #555;
+    line-height: 1.8;
+  }
+
+  /* 双图列 */
+  .zone-imgs-col {
+    flex: 1.35;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .pair-img-box {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #f7f7f7;
+    border: 1px solid #ebebeb;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  }
+
+  .pair-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+  }
+
+  .pair-img-box:hover img {
+    transform: scale(1.05);
+  }
+
+  /* 底部 The E.B.belle Difference 模块 */
+  .difference-section {
+    background: #fcfbf9;
+    border: 1px solid #ebebeb;
+    border-radius: 6px;
+    padding: 60px 30px;
+    text-align: center;
+  }
+
+  .difference-inner {
+    max-width: 880px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .difference-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .difference-p {
+    font-size: 13.5px;
+    color: #555;
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  .difference-quote {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: #b8822e;
+    line-height: 1.65;
+    margin: 12px auto 16px;
+    max-width: 800px;
+  }
+
+  .btn-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .btn-contact-us {
+    display: inline-block;
+    background: #111111;
+    color: #ffffff;
+    padding: 12px 36px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-contact-us:hover {
+    background: #d4a04d;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(212, 160, 77, 0.25);
+  }
+
+  /* 移动端与平板响应式适配 */
+  @media (max-width: 1024px) {
+    .zone-row {
+      gap: 36px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .showroom-page {
+      padding: 40px 16px 70px;
+    }
+    .page-title {
+      font-size: 22px;
+      letter-spacing: 1.5px;
+    }
+    .panorama-img-wrap {
+      max-height: 320px;
+    }
+    .display-zones-section {
+      gap: 48px;
+      margin-bottom: 60px;
+    }
+    .zone-row, .zone-row.row-reversed {
+      flex-direction: column;
+      gap: 20px;
+    }
+    .zone-text-col, .zone-imgs-col {
+      width: 100%;
+    }
+    .zone-title {
+      font-size: 17px;
+    }
+    .difference-section {
+      padding: 36px 16px;
+    }
+    .difference-title {
+      font-size: 18px;
+    }
+    .difference-quote {
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .zone-imgs-col {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+  }
+</style>

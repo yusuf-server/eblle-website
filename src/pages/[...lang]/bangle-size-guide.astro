@@ -1,0 +1,484 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'bangle-cuff-size-guide'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// ----------------------------------------------------
+// 🖼️ 图片链接预留处（直接填入你的整张 4 宫格实拍图 URL）
+// ----------------------------------------------------
+// 上半部分：手腕测量整张图（自带4格）
+const wristMeasureImg = 'https://api.ebbellejewelry.com/wp-content/uploads/2026/05/A-4-step-visual-guide-on-how-to-measure-wrist-size-for-bracelets-using-a-strip-of-paper-a-ruler-and-a-size-chart-for-the-perfect-jewelry-fit.webp';
+
+// 下半部分：闭口手镯测量整张图（自带4格）
+const bangleMeasureImg = 'https://api.ebbellejewelry.com/wp-content/uploads/2026/05/A-step-by-step-visual-guide-on-how-to-find-your-bangle-size-by-measuring-the-hand-circumference-across-knuckles-including-a-bangle-diameter-conversion-chart.webp';
+
+// 4. 页面文案提取与翻译
+const pageTitle = await tr('BANGLE & CUFF SIZE GUIDE');
+const introText1 = await tr('Selecting the right size for your bangle or cuff is essential for both comfort and effortless style.');
+const introText2 = await tr('Whether you prefer a snug fit for a delicate chain or a looser drape for a statement bangle, follow our guide to find your perfect fit.');
+
+// 上半部分：HOW TO MEASURE YOUR WRIST
+const wristSectionTitle = await tr('HOW TO MEASURE YOUR WRIST');
+const wristSectionLead = await tr("To determine your wrist size, you'll need to measure your Wrist Circumference. Follow these simple steps:");
+const wristSteps = [
+  { label: await tr('Step 1:'), text: await tr('Use a flexible measuring tape or a strip of paper.') },
+  { label: await tr('Step 2:'), text: await tr('Wrap it around your wrist bone—the widest part of your wrist—so it fits snugly without pulling too tight.') },
+  { label: await tr('Step 3:'), text: await tr('If using a strip of paper, mark the point where the paper overlaps and measure the length against a ruler in centimeters.') },
+  { label: await tr('Step 4:'), text: await tr('This measurement is your wrist circumference. Use the chart below to find your recommended size.') }
+];
+
+// 中间部分：BRACELET & CUFF SIZE CHART
+const chartSectionTitle = await tr('BRACELET & CUFF SIZE CHART');
+const chartSectionLead = await tr('Our sizing is based on your exact wrist circumference. Depending on how you like your jewelry to fit, you can choose from the following fits:');
+
+const tableHeaders = [
+  await tr('WRIST SIZE (CM)'),
+  await tr('WRIST SIZE (INCHES)'),
+  await tr('RECOMMENDED SIZE'),
+  await tr('FIT STYLE')
+];
+
+const sizeChartRows = [
+  { cm: '14cm - 15.5cm', inch: '5.5" - 6.1"', size: 'S / SMALL', fit: await tr('Snug Fit') },
+  { cm: '15.5cm - 17.5cm', inch: '6.1" - 6.9"', size: 'M / MEDIUM', fit: await tr('Comfort Fit') },
+  { cm: '17.5cm - 19.5cm', inch: '6.9" - 7.7"', size: 'L / LARGE', fit: await tr('Loose Fit') }
+];
+
+// 下半部分：HOW TO FIND YOUR BANGLE SIZE
+const bangleSectionTitle = await tr('HOW TO FIND YOUR BANGLE SIZE');
+const bangleSectionLead = await tr('Unlike cuffs, closed bangles must fit over your hand. To find your bangle size:');
+const bangleSteps = [
+  { label: await tr('Step 1:'), text: await tr('Tuck your thumb into your palm as if slipping on a closed bangle.') },
+  { label: await tr('Step 2:'), text: await tr('Measure the circumference around the widest part of your hand (across the knuckles and thumb).') },
+  { label: await tr('Step 3:'), text: await tr('Compare this measurement to our bangle diameter specifications to ensure a smooth fit.') }
+];
+
+// 下半部分：CHOOSING YOUR PREFERRED FIT
+const prefFitTitle = await tr('CHOOSING YOUR PREFERRED FIT');
+const prefFitLead = await tr('Select how you want your cuff or bangle to sit on your wrist:');
+const prefFits = [
+  { label: await tr('Snug Fit:'), text: await tr('Add 1cm to your wrist measurement. Ideal for delicate chains and cuffs that stay in place.') },
+  { label: await tr('Standard Fit:'), text: await tr('Add 1.5cm to your wrist measurement. This is the most common fit for everyday wear.') },
+  { label: await tr('Statement Fit:'), text: await tr('Add 2cm to your wrist measurement. Perfect for chunky bangles with a loose movement.') }
+];
+
+// 底部提示
+const bottomFootnote = await tr('Tip: If you are between sizes, we always suggest sizing up. Most of our cuffs can be slightly adjusted by gently squeezing the ends for a more secure fit.');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <Header />
+
+  <main class="bangle-guide-page">
+    <div class="guide-container">
+      <!-- 页面大标题与引言 -->
+      <h1 class="page-title">{pageTitle}</h1>
+      <div class="page-intro-wrap">
+        <p>{introText1}</p>
+        <p>{introText2}</p>
+      </div>
+
+      <!-- 1. 上半部分：手腕测量整图 + 右侧步骤 -->
+      <section class="guide-split-section">
+        <div class="split-col-img">
+          <div class="composite-img-box">
+            <img src={wristMeasureImg} alt="How to measure your wrist" loading="lazy" />
+          </div>
+        </div>
+        <div class="split-col-text">
+          <h2 class="sub-block-title">{wristSectionTitle}</h2>
+          <p class="sub-block-lead">{wristSectionLead}</p>
+          <ul class="steps-bullet-list">
+            {wristSteps.map((step) => (
+              <li>
+                <strong>{step.label}</strong> {step.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <!-- 2. 中间部分：BRACELET & CUFF SIZE CHART -->
+      <section class="chart-section">
+        <h2 class="section-heading">{chartSectionTitle}</h2>
+        <p class="chart-lead">{chartSectionLead}</p>
+
+        <div class="table-wrap">
+          <table class="size-chart-table">
+            <thead>
+              <tr>
+                {tableHeaders.map((h) => (
+                  <th>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sizeChartRows.map((row) => (
+                <tr>
+                  <td class="col-cm">{row.cm}</td>
+                  <td class="col-inch">{row.inch}</td>
+                  <td class="col-size"><strong>{row.size}</strong></td>
+                  <td class="col-fit">{row.fit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 3. 下半部分：闭口手镯测量整图 + 右侧两组说明 -->
+      <section class="guide-split-section">
+        <div class="split-col-img">
+          <div class="composite-img-box">
+            <img src={bangleMeasureImg} alt="How to find your bangle size" loading="lazy" />
+          </div>
+        </div>
+        <div class="split-col-text">
+          <!-- 闭口手镯步骤 -->
+          <div class="sub-block">
+            <h2 class="sub-block-title">{bangleSectionTitle}</h2>
+            <p class="sub-block-lead">{bangleSectionLead}</p>
+            <ul class="steps-bullet-list">
+              {bangleSteps.map((step) => (
+                <li>
+                  <strong>{step.label}</strong> {step.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <!-- 松紧偏好 -->
+          <div class="sub-block mt-block">
+            <h2 class="sub-block-title">{prefFitTitle}</h2>
+            <p class="sub-block-lead">{prefFitLead}</p>
+            <ul class="steps-bullet-list">
+              {prefFits.map((fit) => (
+                <li>
+                  <strong>{fit.label}</strong> {fit.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. 底部微调提示 -->
+      <div class="bottom-tip-box">
+        <p>{bottomFootnote}</p>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .bangle-guide-page {
+    width: 100%;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 60px 24px 100px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  /* 内容区域主容器调整为 1400px */
+  .guide-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* 页面大标题：高级珠宝风 */
+  .page-title {
+    font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 3.5px;
+    text-align: center;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .page-intro-wrap {
+    text-align: center;
+    max-width: 860px;
+    margin: 0 auto 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .page-intro-wrap p {
+    font-size: 13.5px;
+    color: #555;
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  /* 图文分栏布局：左单张大图，右文字 */
+  .guide-split-section {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    margin-bottom: 80px;
+  }
+
+  .split-col-img {
+    flex: 1.1;
+    min-width: 0;
+  }
+
+  /* 单张四宫格大图容器 */
+  .composite-img-box {
+    width: 100%;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fafaf8;
+    border: 1px solid #ebebeb;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02);
+  }
+
+  .composite-img-box img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+  }
+
+  .split-col-text {
+    flex: 1.1;
+    min-width: 0;
+  }
+
+  .sub-block-title {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #111;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .sub-block-lead {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+
+  .steps-bullet-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .steps-bullet-list li {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.65;
+    position: relative;
+    padding-left: 16px;
+  }
+
+  .steps-bullet-list li::before {
+    content: '•';
+    color: #d4a04d;
+    position: absolute;
+    left: 0;
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .steps-bullet-list li strong {
+    color: #111;
+    font-weight: 700;
+  }
+
+  .mt-block {
+    margin-top: 30px;
+    padding-top: 24px;
+    border-top: 1px dashed #e8e8e8;
+  }
+
+  /* 表格板块 */
+  .chart-section {
+    margin-bottom: 80px;
+  }
+
+  /* 统一大号饰品分类小标题（星芒 ✦ + 渐变金线） */
+  .section-heading {
+    font-family: 'Cinzel', 'Bodoni Moda', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    position: relative;
+    padding-bottom: 10px;
+  }
+
+  .section-heading::before {
+    content: '✦';
+    font-size: 14px;
+    color: #d4a04d;
+    line-height: 1;
+    transform: translateY(-0.5px);
+    text-shadow: 0 0 6px rgba(212, 160, 77, 0.35);
+  }
+
+  .section-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 77, 0.6) 0%, rgba(212, 160, 77, 0.15) 30%, rgba(235, 235, 235, 0.4) 100%);
+  }
+
+  .chart-lead {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 22px;
+    line-height: 1.6;
+  }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e8e8e8;
+    background: #fff;
+  }
+
+  .size-chart-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .size-chart-table thead th {
+    background: #fafaf8;
+    padding: 15px 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #222;
+    border-bottom: 1px solid #e8e8e8;
+    white-space: nowrap;
+  }
+
+  .size-chart-table tbody td {
+    padding: 16px 18px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  .size-chart-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .size-chart-table tbody tr:hover {
+    background: #fafaf8;
+  }
+
+  .col-size strong {
+    color: #111;
+  }
+
+  .col-fit {
+    color: #333;
+    font-weight: 500;
+  }
+
+  /* 底部提示横幅 */
+  .bottom-tip-box {
+    margin-top: 10px;
+    padding-top: 28px;
+    border-top: 1px dashed #e5e5e5;
+    text-align: center;
+  }
+
+  .bottom-tip-box p {
+    font-size: 12.5px;
+    color: #777;
+    line-height: 1.65;
+    font-style: italic;
+  }
+
+  /* 移动端与平板响应式适配 */
+  @media (max-width: 1024px) {
+    .guide-split-section {
+      gap: 36px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .bangle-guide-page {
+      padding: 40px 16px 70px;
+    }
+    .page-title {
+      font-size: 22px;
+      letter-spacing: 2px;
+    }
+    .guide-split-section {
+      flex-direction: column;
+      gap: 28px;
+      margin-bottom: 50px;
+    }
+    .split-col-img, .split-col-text {
+      width: 100%;
+    }
+    .section-heading {
+      font-size: 15px;
+    }
+    .size-chart-table thead th,
+    .size-chart-table tbody td {
+      padding: 12px 14px;
+      font-size: 12px;
+    }
+  }
+</style>
