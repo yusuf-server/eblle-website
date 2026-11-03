@@ -3252,6 +3252,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initReviewsSlider();
   initMobileReviewsSlider();
 
+  // 检查登录状态
+  checkAuthState();
+
   // 桌面端 FAQ 手风琴
   document.querySelectorAll('.faq-gallery-section .accordion-header').forEach((header) => {
     header.addEventListener('click', () => {
@@ -3289,4 +3292,58 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+// 检查登录状态并切换显示
+function checkAuthState() {
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      updateAuthBoxToLoggedIn(user);
+    } catch (e) {
+      // 解析失败，保持未登录状态
+    }
+  }
+}
+
+// 更新为登录状态
+function updateAuthBoxToLoggedIn(user) {
+  const authBoxGuest = document.getElementById('authBoxGuest');
+  const authBoxLoggedIn = document.getElementById('authBoxLoggedIn');
+  const userName = document.getElementById('userName');
+
+  if (authBoxGuest && authBoxLoggedIn) {
+    authBoxGuest.style.display = 'none';
+    authBoxLoggedIn.style.display = 'block';
+
+    if (userName && user) {
+      userName.textContent = user.firstName || user.displayName || 'User';
+    }
+  }
+}
+
+// 监听登录事件
+window.addEventListener('userLoggedIn', (e) => {
+  updateAuthBoxToLoggedIn(e.detail);
+});
+
+// 处理登出
+function handleLogout() {
+  localStorage.removeItem('user');
+
+  const authBoxGuest = document.getElementById('authBoxGuest');
+  const authBoxLoggedIn = document.getElementById('authBoxLoggedIn');
+
+  if (authBoxGuest && authBoxLoggedIn) {
+    authBoxGuest.style.display = 'block';
+    authBoxLoggedIn.style.display = 'none';
+  }
+
+  // 触发全局登出事件
+  window.dispatchEvent(new Event('userLoggedOut'));
+
+  // 可选：刷新页面
+  // window.location.reload();
+}
+
 </script>

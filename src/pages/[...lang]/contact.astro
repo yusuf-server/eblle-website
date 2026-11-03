@@ -1,0 +1,1826 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+import { t } from '../../lib/i18n/translations';
+import { translate } from '../../lib/i18n/translator';
+import { getCacheFromContext } from '../../lib/i18n/cache';
+
+// 1. 获取语言参数
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+// 2. 缓存和上下文配置
+const cache = getCacheFromContext(Astro.locals);
+const translateConfig = {
+  engine: 'cloudflare-ai' as const,
+  cache,
+  cachePrefix: 'contact-page'
+};
+const context = {
+  AI: Astro.locals.AI
+};
+
+// 3. 动态翻译辅助函数
+async function tr(text: string): Promise<string> {
+  if (currentLocale === 'en' || !text) return text;
+  return await translate(text, currentLocale, translateConfig, context);
+}
+
+// 4. 文案提取与翻译
+const pageTitle = await tr('Contact Us');
+const badgeScopeDesktop = await tr('Global Client & B2B Concierge · Paris / Yiwu / Hong Kong');
+const badgeScopeMobile = await tr('Client & B2B Concierge · Paris / Yiwu / HK');
+const subtitle = await tr('We’re here to help. Reach out anytime — our atelier directors and B2B client advisors typically respond within 24 hours.');
+
+const instantWhatsappLabel = await tr('Instant WhatsApp');
+const directDeskLabel = await tr('Direct Desk');
+
+const atelierBadge = await tr('Haute Joaillerie Atelier');
+const atelierSubBadge = await tr('Crafted Precision');
+const atelierTitle = await tr('Dedicated Concierge & Global Manufacturing Bureau');
+const atelierDesc = await tr('From bespoke private creations to international high-volume OEM/ODM collections, engineered with architectural precision.');
+
+const departmentalDesksText = await tr('Departmental Desks');
+const specializedUnitsText = await tr('4 SPECIALIZED UNITS');
+
+const div1Tag = await tr('DIVISION 01');
+const div1Title = await tr('CUSTOMER SERVICE');
+const div1Badge = await tr('PRIVATE CLIENTS');
+const div1Desc = await tr('For retail orders, custom sizing, authentication certificates, or post-purchase maintenance:');
+const div1EmailLabel = await tr('CLIENT SUPPORT EMAIL');
+const div1WaLabel = await tr('CUSTOMER WHATSAPP DESK');
+const div1RepTitle = await tr('Senior Representative');
+
+const div2Tag = await tr('DIVISION 02');
+const div2Title = await tr('WHOLESALE & OEM/ODM');
+const div2Desc = await tr('For volume procurement, private label fabrication, 3D CAD modeling, or bespoke showroom partnerships:');
+const div2SalesEmailLabel = await tr('PRODUCTION SALES EMAIL');
+const div2LogisticsLabel = await tr('ATELIER LOGISTICS WHATSAPP');
+const div2DirectorTitle = await tr('DIRECT TRADE DIRECTOR');
+const div2DirectorSub = await tr('High Jewelry Sourcing & Contract Lead');
+
+const div3Tag = await tr('DIVISION 03');
+const div3Title = await tr('PRESS & MEDIA');
+const div3Badge = await tr('EDITORIAL');
+const div3Desc = await tr('For press loans, magazine features, lookbooks, or editorial collaborations:');
+const div3Label = await tr('EDITORIAL RELATIONS');
+
+const div4Tag = await tr('DIVISION 04');
+const div4Title = await tr('GLOBAL HUB · HEAD OFFICE');
+const div4Badge = await tr('ZHEJIANG, CN');
+const div4Desc = await tr('Yiwu, China — The world’s epicentre of specialized jewelry crafting, stone setting, and international distribution.');
+
+const formDeskTitle = await tr('Concierge Desk');
+const formActiveTag = await tr('Active Dispatch');
+const formHeading = await tr('Send Us a Message');
+const formSubtitle = await tr('Complete the details below and our team will get in touch promptly with comprehensive specs and pricing.');
+
+const labelFullName = await tr('Full Name *');
+const labelEmail = await tr('Business / Client Email *');
+const labelPhone = await tr('WhatsApp / Phone Number');
+const labelInquiry = await tr('Nature of Inquiry *');
+const labelVolume = await tr('Estimated Volume / Scope');
+const labelMessage = await tr('Message / Technical Specifications *');
+const btnSend = await tr('SEND MESSAGE');
+const trustNotice = await tr('Guaranteed 24-hr response • Strict NDA & OEM specs protected');
+
+// 底部 4 栏承诺
+const guarantees = [
+  {
+    icon: 'fa-regular fa-file-lines',
+    title: await tr('OEM / ODM SUPPORT'),
+    desc: await tr('Full custom jewelry development & 3D bespoke design engineering.')
+  },
+  {
+    icon: 'fa-solid fa-tag',
+    title: await tr('PRIVATE LABEL'),
+    desc: await tr('Bespoke laser hallmarks, velvet packaging & brand identity kits.')
+  },
+  {
+    icon: 'fa-solid fa-plane-departure',
+    title: await tr('GLOBAL SHIPPING'),
+    desc: await tr('Insured tracked delivery worldwide, secure priority dispatch.')
+  },
+  {
+    icon: 'fa-solid fa-headset',
+    title: await tr('VIP CONCIERGE'),
+    desc: await tr('Multilingual assistance across Europe, Asia, Americas & the Middle East.')
+  }
+];
+
+const storeUrl = (import.meta.env.WC_STORE_URL || 'https://api.ebbellejewelry.com').replace(/\/$/, '');
+---
+
+<Layout title={`${pageTitle} - E.B.Belle`}>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" slot="head" />
+
+  <Header />
+
+  <main class="contact-root-main" data-api-url={`${storeUrl}/wp-json/ebbelle/v1/contact`}>
+    
+    <!-- Top Editorial Header & Quick Contacts Strip -->
+    <section class="editorial-hero-strip">
+      <div class="site-width-container">
+        
+        <!-- Eyebrow Pill -->
+        <div class="eyebrow-container">
+          <div class="scope-pill-bubble">
+            <span class="pulsing-amber-dot"></span>
+            <span class="pill-text desktop-pill">{badgeScopeDesktop}</span>
+            <span class="pill-text mobile-pill">{badgeScopeMobile}</span>
+          </div>
+        </div>
+
+        <!-- 标题与副标题 -->
+        <div class="hero-layout-split">
+          <div class="hero-copy-left">
+            <h1 class="contact-main-h1">{pageTitle}</h1>
+            <p class="contact-subtitle-p">{subtitle}</p>
+          </div>
+
+          <!-- 快捷联系卡片 -->
+          <div class="quick-cards-cluster">
+            <a class="fast-access-card" href="https://wa.me/8618072387577" target="_blank" rel="noopener noreferrer">
+              <div class="card-left-part">
+                <div class="icon-avatar">
+                  <i class="fa-brands fa-whatsapp"></i>
+                </div>
+                <div class="text-meta">
+                  <span class="meta-kicker">{instantWhatsappLabel}</span>
+                  <span class="meta-primary">+86 180 7238 7577</span>
+                </div>
+              </div>
+              <div class="card-right-status">
+                <span class="live-desk-tag">LIVE DESK</span>
+                <i class="fa-solid fa-arrow-right card-arrow"></i>
+              </div>
+            </a>
+
+            <a class="fast-access-card" href="mailto:sales01@ebbellejewelry.com">
+              <div class="card-left-part">
+                <div class="icon-avatar">
+                  <i class="fa-regular fa-envelope"></i>
+                </div>
+                <div class="text-meta">
+                  <span class="meta-kicker">{directDeskLabel}</span>
+                  <span class="meta-primary truncate-email">sales01@ebbelle...</span>
+                </div>
+              </div>
+              <div class="card-right-status">
+                <span class="direct-tag">DIRECT</span>
+                <i class="fa-solid fa-arrow-right card-arrow"></i>
+              </div>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 主体双栏区域 (左 7 栏名录, 右 5 栏 Sticky 表单) -->
+    <section class="content-body-section">
+      <div class="site-width-container">
+        <div class="editorial-columns-grid">
+
+          <!-- 左侧：部门名录栏 -->
+          <div class="departments-col-left">
+            
+            <!-- Atelier 视觉大 Banner -->
+            <div class="atelier-visual-card">
+              <div class="atelier-overlay-box">
+                <div class="atelier-eyebrow-line">
+                  <span class="gold-caps">{atelierBadge}</span>
+                  <span class="slash-divide">/</span>
+                  <span class="light-caps">{atelierSubBadge}</span>
+                  <i class="fa-regular fa-gem gem-icon"></i>
+                </div>
+                <h3 class="atelier-title-h3">{atelierTitle}</h3>
+                <p class="atelier-desc-p">{atelierDesc}</p>
+              </div>
+            </div>
+
+            <!-- 移动端专属部门分类计数条 -->
+            <div class="mobile-departmental-bar">
+              <span class="dept-bar-left">{departmentalDesksText}</span>
+              <span class="dept-bar-right">{specializedUnitsText}</span>
+            </div>
+
+            <!-- Division 01: Customer Service -->
+            <div class="division-card">
+              <div class="division-card-header">
+                <div class="header-left-title-group">
+                  <span class="div-seq-tag">{div1Tag}</span>
+                  <span class="div-dot-sep">·</span>
+                  <h2 class="div-title-text">{div1Title}</h2>
+                </div>
+                <span class="role-chip champagne">{div1Badge}</span>
+              </div>
+              <p class="div-explainer-p">{div1Desc}</p>
+
+              <div class="duo-fields-grid">
+                <div class="info-pill-field">
+                  <span class="field-kicker">{div1EmailLabel}</span>
+                  <a href="mailto:sales01@ebbellejewelry.com" class="field-bold-value">sales01@ebbellejewelry.com</a>
+                </div>
+                <div class="info-pill-field">
+                  <span class="field-kicker">{div1WaLabel}</span>
+                  <a href="https://wa.me/8618072387577" target="_blank" rel="noopener noreferrer" class="field-bold-value">+86 180 7238 7577</a>
+                </div>
+              </div>
+
+              <!-- Senior Rep Bar -->
+              <div class="signature-manager-box">
+                <div class="rep-bar-inline">
+                  <div class="rep-bar-left">
+                    <i class="fa-regular fa-circle-check text-gold"></i>
+                    <span class="spec-label">{div1RepTitle}: <strong class="text-black">Echo Wong</strong></span>
+                  </div>
+                  <div class="rep-bar-right">
+                    <a href="mailto:ds@ebbellejewelry.com" class="spec-action-link">EMAIL ECHO</a>
+                    <span class="spec-slash">/</span>
+                    <a href="tel:+8613777809587" class="spec-action-link">+86 13777809587</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Division 02: Wholesale & OEM/ODM -->
+            <div class="division-card">
+              <div class="division-card-header">
+                <div class="header-left-title-group">
+                  <span class="div-seq-tag">{div2Tag}</span>
+                  <span class="div-dot-sep">·</span>
+                  <h2 class="div-title-text">{div2Title}</h2>
+                </div>
+                <div class="dual-role-chips">
+                  <span class="role-chip black">WHOLESALE</span>
+                  <span class="role-chip gold">OEM / ODM</span>
+                </div>
+              </div>
+              <p class="div-explainer-p">{div2Desc}</p>
+
+              <div class="duo-fields-grid">
+                <div class="info-pill-field">
+                  <span class="field-kicker">{div2SalesEmailLabel}</span>
+                  <a href="mailto:sales01@ebbellejewelry.com" class="field-bold-value">sales01@ebbellejewelry.com</a>
+                </div>
+                <div class="info-pill-field">
+                  <span class="field-kicker">{div2LogisticsLabel}</span>
+                  <a href="https://wa.me/8618072387577" target="_blank" rel="noopener noreferrer" class="field-bold-value">+86 180 7238 7577</a>
+                </div>
+              </div>
+
+              <!-- Director Box -->
+              <div class="director-executive-box">
+                <div class="dir-left-meta">
+                  <span class="dir-role-kicker">{div2DirectorTitle}</span>
+                  <h3 class="dir-name-h3">Echo Wong</h3>
+                  <span class="dir-sub-title">{div2DirectorSub}</span>
+                </div>
+                <div class="dir-right-meta">
+                  <a href="mailto:ds@ebbellejewelry.com" class="dir-email-line">ds@ebbellejewelry.com</a>
+                  <a href="https://wa.me/8613777809587" target="_blank" rel="noopener noreferrer" class="dir-wa-line">+86 13777809587 (WhatsApp Direct)</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Division 03 & 04 -->
+            <div class="split-sub-divisions-grid">
+              <!-- Division 03: Press & Media -->
+              <div class="division-card sub-unit-card">
+                <div class="division-card-header">
+                  <div class="header-left-title-group">
+                    <span class="div-seq-tag">{div3Tag}</span>
+                    <span class="div-dot-sep">·</span>
+                    <h3 class="div-title-text-sm">{div3Title}</h3>
+                  </div>
+                  <span class="role-chip gray">{div3Badge}</span>
+                </div>
+                <p class="div-explainer-p-sm">{div3Desc}</p>
+
+                <div class="info-pill-field mt-auto-box">
+                  <span class="field-kicker">{div3Label}</span>
+                  <div class="email-stack-list">
+                    <a href="mailto:ebbellejewelry@outlook.com" class="field-bold-value">ebbellejewelry@outlook.com</a>
+                    <a href="mailto:belleeb82@gmail.com" class="field-bold-value">belleeb82@gmail.com</a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Division 04: Head Office & 真实 Google 地图 -->
+              <div class="division-card sub-unit-card">
+                <div class="division-card-header">
+                  <div class="header-left-title-group">
+                    <span class="div-seq-tag">{div4Tag}</span>
+                    <span class="div-dot-sep">·</span>
+                    <h3 class="div-title-text-sm">{div4Title}</h3>
+                  </div>
+                  <span class="role-chip champagne">{div4Badge}</span>
+                </div>
+                <p class="div-explainer-p-sm">{div4Desc}</p>
+
+                <!-- 真实 Google Maps 嵌入 -->
+                <div class="real-gmap-embed-wrapper">
+                  <iframe
+                    title="E.B.belle Atelier Hub Map"
+                    class="gmap-embed-iframe"
+                    src="https://maps.google.com/maps?q=Danchen%201st%20Rd,%20Yiwu,%20Zhejiang&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                    loading="lazy"
+                    allowfullscreen
+                  ></iframe>
+                  <div class="gmap-overlay-footer">
+                    <div class="gmap-footer-text">
+                      <span class="gmap-hub-title"><i class="fa-solid fa-location-dot text-gold"></i> E.B.BELLE ATELIER HUB</span>
+                      <span class="gmap-hub-desc">Danchen 1st Rd, Yiwu, Zhejiang Province</span>
+                    </div>
+                    <a href="https://maps.google.com/?q=Danchen+1st+Rd+Yiwu" target="_blank" rel="noopener noreferrer" class="btn-open-gmaps">
+                      <i class="fa-solid fa-map-location-dot"></i>
+                      <span>OPEN IN GOOGLE MAPS</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 右侧：贴壁 Sticky 咨询表单 (随鼠标滚动自适应跟随) -->
+          <div class="concierge-sticky-col-right">
+            <div class="concierge-inquiry-box">
+              
+              <div class="concierge-header-block">
+                <div class="concierge-status-row">
+                  <span class="concierge-kicker-gold">{formDeskTitle}</span>
+                  <span class="active-dispatch-badge">
+                    <span class="emerald-dot"></span>
+                    <span class="dispatch-text">{formActiveTag}</span>
+                  </span>
+                </div>
+                <h2 class="concierge-h2-title">{formHeading}</h2>
+                <p class="concierge-subtitle-txt">{formSubtitle}</p>
+              </div>
+
+              <!-- 交互式表单 -->
+              <form id="contactConciergeForm" class="inquiry-fields-stack">
+                <div class="form-group">
+                  <label for="fullName" class="styled-label">{labelFullName}</label>
+                  <input type="text" id="fullName" class="styled-input" placeholder="e.g. Eleanor Vance" required />
+                </div>
+
+                <div class="form-group">
+                  <label for="businessEmail" class="styled-label">{labelEmail}</label>
+                  <input type="email" id="businessEmail" class="styled-input" placeholder="e.g. buyer@boutique.com" required />
+                </div>
+
+                <div class="form-group">
+                  <label for="phoneContact" class="styled-label">{labelPhone}</label>
+                  <input type="tel" id="phoneContact" class="styled-input" placeholder="+86 / +1 (555) 000-0000" />
+                </div>
+
+                <!-- 需求类型下拉选择：严格按照图 1 更新选项 -->
+                <div class="form-group">
+                  <label for="inquiryType" class="styled-label">{labelInquiry}</label>
+                  <div class="select-field-box">
+                    <select id="inquiryType" class="styled-select" required>
+                      <option value="" disabled selected>Select an inquiry path...</option>
+                      <option value="Wholesale Order & Catalog Access">Wholesale Order &amp; Catalog Access</option>
+                      <option value="OEM / ODM Custom Manufacturing Project">OEM / ODM Custom Manufacturing Project</option>
+                      <option value="Customer Care & Private Order Inquiry">Customer Care &amp; Private Order Inquiry</option>
+                      <option value="Press, Editorial & Media Partnership">Press, Editorial &amp; Media Partnership</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-arrow-caret"></i>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="styled-label">{labelVolume}</label>
+                  <div class="chips-selector-grid" id="volumeButtonGroup">
+                    <button type="button" class="volume-btn" data-val="1-5 Pcs">1–5 PCS</button>
+                    <button type="button" class="volume-btn active" data-val="50-200 Pcs">50–200 PCS</button>
+                    <button type="button" class="volume-btn" data-val="500+ Pcs">500+ PCS</button>
+                    <button type="button" class="volume-btn" data-val="Full ODM">FULL ODM</button>
+                  </div>
+                  <input id="selectedVolume" type="hidden" value="50-200 Pcs" />
+                </div>
+
+                <div class="form-group">
+                  <label for="messageField" class="styled-label">{labelMessage}</label>
+                  <textarea id="messageField" class="styled-textarea" placeholder="Tell us about your requirements, precious metals, carat preferences, target delivery dates, or general questions..." required rows="4"></textarea>
+                </div>
+
+                <button type="submit" id="submitBtn" class="submit-action-btn">
+                  <span>{btnSend}</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+
+                <div class="security-nda-row">
+                  <i class="fa-solid fa-shield-halved nda-icon"></i>
+                  <span class="nda-text">{trustNotice}</span>
+                </div>
+
+                <!-- 成功提示 -->
+                <div id="formSuccessToast" class="form-toast-alert success hidden">
+                  <div class="toast-head">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Inquiry Dispatched</span>
+                  </div>
+                  <p class="toast-body">
+                    A dedicated atelier manager will review your submission shortly.
+                  </p>
+                </div>
+
+                <!-- 失败提示 -->
+                <div id="formErrorToast" class="form-toast-alert error hidden">
+                  <div class="toast-head text-red">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Transmission Failed</span>
+                  </div>
+                  <p class="toast-body" id="formErrorDesc">
+                    Please try again or email us directly at sales01@ebbellejewelry.com.
+                  </p>
+                </div>
+              </form>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Editorial Brand Footer Reassurance Bar -->
+    <section class="reassurance-brand-bar">
+      <div class="site-width-container">
+        <div class="reassurance-quad-grid">
+          {guarantees.map((item) => (
+            <div class="reassurance-card-item">
+              <div class="card-icon-gold">
+                <i class={item.icon}></i>
+              </div>
+              <h4 class="card-title-text">{item.title}</h4>
+              <p class="card-desc-text">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style>
+  /* ----------------------------------------------------
+     BASE RESETS & SITE ARCHITECTURE
+     ---------------------------------------------------- */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .contact-root-main {
+    width: 100%;
+    background-color: #faf9f6;
+    color: #1b1c1a;
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .site-width-container {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 4rem;
+  }
+
+  .text-gold {
+    color: #9e6d28;
+  }
+
+  .text-black {
+    color: #000000;
+  }
+
+  /* ----------------------------------------------------
+     1. TOP HERO & QUICK CONTACT STRIP
+     ---------------------------------------------------- */
+  .editorial-hero-strip {
+    width: 100%;
+    background-color: rgba(253, 248, 240, 0.4);
+    border-bottom: 1px solid #ebe7df;
+    padding: 3.5rem 0;
+  }
+
+  .eyebrow-container {
+    margin-bottom: 1rem;
+  }
+
+  .scope-pill-bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.85rem;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .pulsing-amber-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #9e6d28;
+    animation: amberPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    flex-shrink: 0;
+  }
+
+  .pill-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #1b1c1a;
+  }
+
+  .mobile-pill {
+    display: none;
+  }
+
+  .hero-layout-split {
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: 1.5rem;
+    align-items: flex-end;
+  }
+
+  .hero-copy-left {
+    max-width: 42rem;
+  }
+
+  .contact-main-h1 {
+    font-family: 'Bodoni Moda', Georgia, serif;
+    font-size: 40px;
+    line-height: 48px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: #000000;
+  }
+
+  .contact-subtitle-p {
+    font-size: 16px;
+    line-height: 26px;
+    font-weight: 300;
+    color: #6e6d6a;
+    margin-top: 0.25rem;
+  }
+
+  .quick-cards-cluster {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .fast-access-card {
+    flex: 1;
+    background: #ffffff;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid #ebebeb;
+    transition: all 0.3s ease;
+    min-width: 0;
+  }
+
+  .fast-access-card:hover {
+    background-color: #f9f9f8;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    border-color: #d8d6d1;
+  }
+
+  .card-left-part {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .icon-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #efeeeb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+    font-size: 18px;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+  }
+
+  .fast-access-card:hover .icon-avatar {
+    background-color: #000000;
+    color: #ffffff;
+  }
+
+  .text-meta {
+    display: flex;
+    flex-direction: column;
+    margin: 0 0.75rem;
+    min-width: 0;
+  }
+
+  .meta-kicker {
+    font-size: 10px;
+    line-height: 14px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6e6d6a;
+  }
+
+  .meta-primary {
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    color: #000000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-right-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .live-desk-tag, .direct-tag {
+    display: none;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+  }
+
+  .live-desk-tag { color: #9e6d28; }
+  .direct-tag { color: #6e6d6a; }
+
+  .card-arrow {
+    font-size: 14px;
+    color: #747878;
+    transition: transform 0.25s ease, color 0.25s ease;
+  }
+
+  .fast-access-card:hover .card-arrow {
+    transform: translateX(3px);
+    color: #000000;
+  }
+
+  /* ----------------------------------------------------
+     2. DUAL COLUMN ARCHITECTURE
+     ---------------------------------------------------- */
+  .content-body-section {
+    width: 100%;
+    padding: 3.5rem 0;
+  }
+
+  .editorial-columns-grid {
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: 1.5rem;
+    align-items: start;
+    position: relative;
+  }
+
+  .departments-col-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    min-width: 0;
+  }
+
+  /* Atelier 大视觉卡片 */
+  .atelier-visual-card {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 21 / 9;
+    background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBN4tHUNMy-GQQ2CjOd-9NGTyRV2eCEzWjYgSZMX-mkoBr25pS_SHNHRaVK2XxujRiC8oLhQmpzl9U2lwWmNha3gT_i9WAlRG0Ra3ABz2Cqq0o4mV9xe0uxBMurf2MYxxKEZF_-dzwHsrMgA78jt-tF8IpELpeSFMKcXOO1FajU5ro7dUG9LBXPLPXVQDXjLOA6UEgCydsxme0xv7I8kem8CDs_FMQn0CQfDHWt9zk');
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .atelier-overlay-box {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.25rem 1.5rem;
+    color: #ffffff;
+  }
+
+  .atelier-eyebrow-line {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 2px;
+  }
+
+  .gold-caps {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #e2b878;
+  }
+
+  .slash-divide {
+    color: #dbdad7;
+    font-weight: 300;
+  }
+
+  .light-caps {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #f4f3f0;
+  }
+
+  .gem-icon {
+    font-size: 14px;
+    color: #e2b878;
+    margin-left: 0.25rem;
+  }
+
+  .atelier-title-h3 {
+    font-family: 'Bodoni Moda', Georgia, serif;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 400;
+    color: #ffffff;
+  }
+
+  .atelier-desc-p {
+    font-size: 12px;
+    line-height: 18px;
+    color: rgba(242, 241, 238, 0.85);
+    font-weight: 300;
+    margin-top: 2px;
+  }
+
+  .mobile-departmental-bar {
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0.25rem;
+  }
+
+  .dept-bar-left {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #6e6d6a;
+  }
+
+  .dept-bar-right {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #9e6d28;
+  }
+
+  /* 部门标准卡片 */
+  .division-card {
+    background: #ffffff;
+    padding: 2.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    border: 1px solid #ebebeb;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* 图 5 风格排版：左侧水平线并排显示标签+标题，右侧放 Badge */
+  .division-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .header-left-title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    min-width: 0;
+    flex-wrap:wrap;
+  }
+
+  .div-seq-tag {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #6e6d6a;
+    white-space: nowrap;
+  }
+
+  .div-dot-sep {
+    color: #747878;
+    font-size: 14px;
+  }
+
+  .div-title-text {
+    font-family: 'Bodoni Moda', Georgia, serif;
+    font-size: 22px;
+    line-height: 30px;
+    font-weight: 400;
+    color: #000000;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: normal;
+  }
+
+  .div-title-text-sm {
+    font-family: 'Bodoni Moda', Georgia, serif;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+    color: #000000;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: normal;
+  }
+
+  .role-chip {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    white-space: nowrap;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .role-chip.champagne {
+    background-color: #fdf8f0;
+    color: #835503;
+  }
+
+  .role-chip.black {
+    background-color: #000000;
+    color: #ffffff;
+  }
+
+  .role-chip.gold {
+    background-color: #835503;
+    color: #ffffff;
+  }
+
+  .role-chip.gray {
+    background-color: #efeeeb;
+    color: #444748;
+  }
+
+  .dual-role-chips {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .div-explainer-p {
+    font-size: 14px;
+    line-height: 22px;
+    color: #6e6d6a;
+    font-weight: 300;
+    margin-bottom: 1.25rem;
+  }
+
+  .div-explainer-p-sm {
+    font-size: 12px;
+    line-height: 18px;
+    color: #6e6d6a;
+    font-weight: 300;
+    margin-bottom: 1rem;
+  }
+
+  .duo-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .info-pill-field {
+    background-color: #f9f9f8;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #f0eee8;
+    min-width: 0;
+  }
+
+  .field-kicker {
+    font-size: 10px;
+    line-height: 14px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6e6d6a;
+    margin-bottom: 2px;
+  }
+
+  .field-bold-value {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #000000;
+    text-decoration: none;
+    margin-top: 2px;
+    transition: color 0.2s;
+    word-break: break-all;
+  }
+
+  .field-bold-value:hover {
+    color: #835503;
+  }
+
+  /* 图 5：Senior Representative 条状设计 */
+  .signature-manager-box {
+    margin-top: 0.5rem;
+    padding: 0.85rem 1rem;
+    background-color: rgba(253, 248, 240, 0.6);
+    border: 1px solid rgba(226, 184, 120, 0.25);
+  }
+
+  .rep-bar-inline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .rep-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 12px;
+    color: #1b1c1a;
+  }
+
+  .spec-label strong {
+    font-weight: 600;
+  }
+
+  .rep-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .spec-action-link {
+    color: #000000;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .spec-action-link:hover {
+    color: #835503;
+  }
+
+  .spec-slash {
+    color: #747878;
+  }
+
+  /* 图 5：Direct Trade Director 大卡片 */
+  .director-executive-box {
+    margin-top: 0.5rem;
+    padding: 1.25rem 1rem;
+    background-color: #f4f3f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .dir-left-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .dir-role-kicker {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #835503;
+  }
+
+  .dir-name-h3 {
+    font-family: 'Bodoni Moda', Georgia, serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: #000000;
+    margin: 2px 0;
+  }
+
+  .dir-sub-title {
+    font-size: 12px;
+    color: #6e6d6a;
+    font-weight: 300;
+  }
+
+  .dir-right-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+  }
+
+  .dir-email-line {
+    font-size: 14px;
+    color: #000000;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .dir-wa-line {
+    font-size: 14px;
+    color: #000000;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .dir-email-line:hover, .dir-wa-line:hover {
+    color: #835503;
+  }
+
+  .split-sub-divisions-grid {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+    gap: 1rem;
+  }
+
+  .sub-unit-card {
+    padding: 1.25rem;
+  }
+
+  .mt-auto-box {
+    margin-top: auto;
+  }
+
+  .email-stack-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  /* 真实 Google Maps 嵌入卡片 */
+  .real-gmap-embed-wrapper {
+    position: relative;
+    width: 100%;
+    height: 12rem;
+    background-color: #e9e8e5;
+    border: 1px solid #e5e5e5;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gmap-embed-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  .gmap-overlay-footer {
+    position: absolute;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    padding: 0.35rem 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .gmap-footer-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .gmap-hub-title {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #000000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gmap-hub-desc {
+    font-size: 11px;
+    color: #6e6d6a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .btn-open-gmaps {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.65rem;
+    background: #000000;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .btn-open-gmaps:hover {
+    background-color: #835503;
+  }
+
+  /* ----------------------------------------------------
+     3. STICKY INQUIRY DESK (桌面端随鼠标滚动平滑跟随)
+     ---------------------------------------------------- */
+  .concierge-sticky-col-right {
+    position: sticky;
+    top: 100px;
+    align-self: start;
+    min-width: 0;
+    z-index: 20;
+  }
+
+  .concierge-inquiry-box {
+    background: #ffffff;
+    padding: 2.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    border: 1px solid #ebebeb;
+  }
+
+  .concierge-header-block {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .concierge-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+  }
+
+  .concierge-kicker-gold {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #9e6d28;
+  }
+
+  .active-dispatch-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .emerald-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #047857;
+  }
+
+  .dispatch-text {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6e6d6a;
+  }
+
+  .concierge-h2-title {
+    font-family: 'Bodoni Moda', Georgia, serif;
+    font-size: 26px;
+    line-height: 34px;
+    font-weight: 400;
+    color: #000000;
+  }
+
+  .concierge-subtitle-txt {
+    font-size: 12px;
+    line-height: 18px;
+    color: #6e6d6a;
+    font-weight: 300;
+    margin-top: 0.25rem;
+  }
+
+  .inquiry-fields-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .styled-label {
+    font-size: 10px;
+    line-height: 14px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6e6d6a;
+  }
+
+  /* 彻底去除边框 + 加上柔和聚焦动画 */
+  .styled-input, .styled-select, .styled-textarea {
+    width: 100%;
+    height: 48px;
+    padding: 0 1rem;
+    background-color: #f7f6f3;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    color: #1b1c1a;
+    font-family: inherit;
+    border-radius: 4px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .styled-input:focus, .styled-select:focus, .styled-textarea:focus {
+    background-color: #ffffff;
+    box-shadow: 0 4px 16px rgba(158, 109, 40, 0.12), inset 0 0 0 1.5px rgba(158, 109, 40, 0.85);
+    transform: translateY(-1px);
+  }
+
+  .select-field-box {
+    position: relative;
+    width: 100%;
+  }
+
+  .styled-select {
+    appearance: none;
+    cursor: pointer;
+    padding-right: 2.5rem;
+  }
+
+  .select-arrow-caret {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #6e6d6a;
+    font-size: 12px;
+  }
+
+  .chips-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.35rem;
+  }
+
+  .volume-btn {
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    background-color: #f9f9f8;
+    border: 1px solid #e5e5e5;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #1b1c1a;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .volume-btn:hover {
+    background-color: #efeeeb;
+  }
+
+  .volume-btn.active {
+    background-color: #000000;
+    border-color: #000000;
+    color: #ffffff;
+  }
+
+  .styled-textarea {
+    height: auto;
+    padding: 0.75rem 1rem;
+    resize: none;
+  }
+
+  .submit-action-btn {
+    width: 100%;
+    height: 48px;
+    background-color: #000000;
+    color: #ffffff;
+    border: none;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+  }
+
+  .submit-action-btn:hover {
+    background-color: #835503;
+  }
+
+  .submit-action-btn i {
+    font-size: 12px;
+    transition: transform 0.25s ease;
+  }
+
+  .submit-action-btn:hover i {
+    transform: translateX(4px);
+  }
+
+  .security-nda-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: #6e6d6a;
+    text-align: center;
+  }
+
+  .nda-icon {
+    color: #9e6d28;
+    font-size: 12px;
+  }
+
+  .form-toast-alert {
+    padding: 1rem;
+    font-size: 12px;
+    animation: simpleFade 0.3s ease;
+  }
+
+  .form-toast-alert.success {
+    background-color: #fdf8f0;
+    border: 1px solid rgba(158, 109, 40, 0.25);
+  }
+
+  .form-toast-alert.error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+  }
+
+  .form-toast-alert.hidden {
+    display: none;
+  }
+
+  .toast-head {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #000000;
+    margin-bottom: 0.25rem;
+  }
+
+  .toast-head.text-red {
+    color: #b91c1c;
+  }
+
+  .toast-body {
+    color: #6e6d6a;
+    font-weight: 300;
+    line-height: 1.5;
+  }
+
+  /* ----------------------------------------------------
+     4. 底部 4 栏保障（严格还原图 2 样式：2×2 独立圆角卡片）
+     ---------------------------------------------------- */
+  .reassurance-brand-bar {
+    width: 100%;
+    background-color: #faf9f6;
+    border-top: 1px solid #ebe7df;
+    padding: 3rem 0;
+  }
+
+  .reassurance-quad-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+
+  .reassurance-card-item {
+    background: #ffffff;
+    padding: 1.5rem 1.25rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    border: 1px solid #ebebeb;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .card-icon-gold {
+    font-size: 22px;
+    color: #9e6d28;
+    margin-bottom: 0.75rem;
+  }
+
+  .card-title-text {
+    font-size: 13.5px;
+    line-height: 20px;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: #000000;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+  }
+
+  .card-desc-text {
+    font-size: 12px;
+    line-height: 18px;
+    color: #6e6d6a;
+    font-weight: 300;
+  }
+
+  @keyframes amberPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  @keyframes simpleFade {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ----------------------------------------------------
+     5. RESPONSIVE BREAKPOINTS (TABLET & MOBILE)
+     ---------------------------------------------------- */
+  @media (max-width: 1024px) {
+    .site-width-container {
+      padding: 0 1.5rem;
+    }
+
+    .hero-layout-split {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .editorial-columns-grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .concierge-sticky-col-right {
+      position: static;
+    }
+
+    .reassurance-quad-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .site-width-container {
+      padding: 0 1.25rem;
+    }
+
+    .editorial-hero-strip {
+      padding: 1.5rem 0 1rem;
+      text-align: center;
+    }
+
+    .eyebrow-container {
+      display: flex;
+      justify-content: center;
+    }
+
+    .desktop-pill {
+      display: none;
+    }
+
+    .mobile-pill {
+      display: inline-block;
+      font-size:8px;
+    }
+
+    .contact-main-h1 {
+      font-size: 28px;
+      line-height: 36px;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .contact-subtitle-p {
+      font-size: 14px;
+      line-height: 22px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .quick-cards-cluster {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+      margin-top: 1rem;
+    }
+
+    .fast-access-card {
+      padding: 0.85rem 0.75rem;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: space-between;
+      min-height: 90px;
+    }
+
+    .card-left-part {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      width: 100%;
+    }
+
+    .icon-avatar {
+      width: 32px;
+      height: 32px;
+      font-size: 15px;
+    }
+
+    .text-meta {
+      margin: 0;
+      width: 100%;
+    }
+
+    .meta-kicker {
+      font-size: 9px;
+    }
+
+    .meta-primary {
+      font-size: 12px;
+    }
+
+    .card-right-status {
+      width: 100%;
+      justify-content: flex-end;
+      margin-top: 0.25rem;
+    }
+
+    .card-arrow {
+      display: none;
+    }
+
+    .live-desk-tag, .direct-tag {
+      display: inline-block;
+    }
+
+    .atelier-visual-card {
+      border-radius: 0.5rem;
+      aspect-ratio:4/3;
+    }
+    .dir-name-h3{
+        font-size:16px;
+    }
+    .mobile-departmental-bar {
+      display: flex;
+      margin-top: -0.5rem;
+      margin-bottom: -0.5rem;
+    }
+
+    .division-card {
+      padding: 1.25rem 1rem;
+      border-radius: 0.5rem;
+    }
+
+    /* 移动端标题与标签优雅两行，防止拥挤重叠 */
+    .division-card-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
+    }
+
+    .header-left-title-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .div-title-text {
+      font-size: 18px;
+      line-height: 24px;
+    }
+
+    .div-title-text-sm {
+      font-size: 16px;
+      line-height: 22px;
+    }
+
+    .role-chip {
+      font-size: 9.5px;
+      padding: 2px 7px;
+    }
+
+    .duo-fields-grid {
+      grid-template-columns: 1fr;
+      gap: 0.6rem;
+    }
+
+    .split-sub-divisions-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .mgr-name-email {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .chips-selector-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .concierge-inquiry-box {
+      padding: 1.25rem 1rem;
+      border-radius: 0.5rem;
+    }
+
+    /* 图 2 移动端 2×2 独立圆角卡片 */
+    .reassurance-quad-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .reassurance-card-item {
+      padding: 1.15rem 1rem;
+      border-radius: 0.75rem;
+    }
+
+    .card-icon-gold {
+      font-size: 20px;
+      margin-bottom: 0.6rem;
+    }
+
+    .card-title-text {
+      font-size: 12px;
+      line-height: 16px;
+      margin-bottom: 2px;
+    }
+
+    .card-desc-text {
+      font-size: 11px;
+      line-height: 15px;
+    }
+
+    .gmap-overlay-footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .btn-open-gmaps {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  function initContactPage() {
+    // 1. 数量范围标签单选
+    const volumeButtons = document.querySelectorAll('#volumeButtonGroup .volume-btn');
+    const selectedVolumeInput = document.getElementById('selectedVolume') as HTMLInputElement;
+
+    volumeButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        volumeButtons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (selectedVolumeInput) {
+          selectedVolumeInput.value = btn.getAttribute('data-val') || '';
+        }
+      });
+    });
+
+    // 2. 表单发送请求给 WordPress 后端的 wp_mail 接口
+    const contactForm = document.getElementById('contactConciergeForm') as HTMLFormElement;
+    const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
+    const successToast = document.getElementById('formSuccessToast');
+    const errorToast = document.getElementById('formErrorToast');
+    const errorDesc = document.getElementById('formErrorDesc');
+
+    const mainEl = document.querySelector('main[data-api-url]') as HTMLElement;
+    const apiUrl = mainEl?.getAttribute('data-api-url') || '';
+
+    if (contactForm && submitBtn) {
+      contactForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const originalBtnHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>TRANSMITTING...</span>';
+
+        if (successToast) successToast.classList.add('hidden');
+        if (errorToast) errorToast.classList.add('hidden');
+
+        const payload = {
+          name: (document.getElementById('fullName') as HTMLInputElement)?.value.trim(),
+          email: (document.getElementById('businessEmail') as HTMLInputElement)?.value.trim(),
+          phone: (document.getElementById('phoneContact') as HTMLInputElement)?.value.trim(),
+          inquiry_type: (document.getElementById('inquiryType') as HTMLSelectElement)?.value,
+          volume: selectedVolumeInput ? selectedVolumeInput.value : '',
+          message: (document.getElementById('messageField') as HTMLTextAreaElement)?.value.trim()
+        };
+
+        try {
+          const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            submitBtn.innerHTML = '<span>MESSAGE DELIVERED</span><i class="fa-solid fa-check"></i>';
+            submitBtn.style.backgroundColor = '#835503';
+
+            if (successToast) successToast.classList.remove('hidden');
+            contactForm.reset();
+
+            volumeButtons.forEach((b, idx) => {
+              if (idx === 1) b.classList.add('active');
+              else b.classList.remove('active');
+            });
+            if (selectedVolumeInput) selectedVolumeInput.value = '50-200 Pcs';
+
+            setTimeout(() => {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = originalBtnHtml;
+              submitBtn.style.backgroundColor = '';
+            }, 4000);
+          } else {
+            throw new Error(data.message || 'Server error while sending email.');
+          }
+        } catch (err: any) {
+          console.error('Contact Form error:', err);
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHtml;
+          if (errorToast) {
+            if (errorDesc) errorDesc.textContent = err.message || 'Please try again or email us directly at sales01@ebbellejewelry.com.';
+            errorToast.classList.remove('hidden');
+          }
+        }
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initContactPage);
+</script>
