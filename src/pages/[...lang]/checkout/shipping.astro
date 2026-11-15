@@ -18,12 +18,12 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
         <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
           <path clip-rule="evenodd" d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
         </svg>
-        <span>E.B.Belle</span>
+        <span>E.B.belle</span>
       </a>
-      <a href="/shop" class="back-btn">
-        <i class="fa-solid fa-arrow-left"></i>
-        {t(currentLocale, 'cart.continueShopping')}
-      </a>
+      <a href={currentLocale === 'en' ? '/cart' : `/${currentLocale}/cart`} class="back-btn">
+  <i class="fa-solid fa-arrow-left"></i>
+  {t(currentLocale, 'checkout.returnToCart') !== 'checkout.returnToCart' ? t(currentLocale, 'checkout.returnToCart') : 'Return to Cart'}
+</a>
     </div>
   </header>
 
@@ -47,41 +47,63 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
             <button type="button" class="summary-toggle" id="summaryToggle">
               <div class="summary-header-left">
                 <i class="fa-solid fa-shopping-bag"></i>
-                <h2>{t(currentLocale, 'checkout.orderSummary')} (2 items)</h2>
+                <h2>{t(currentLocale, 'checkout.orderSummary')}</h2>
                 <i class="fa-solid fa-chevron-down toggle-icon"></i>
               </div>
-              <span class="summary-total">$1,782.00</span>
+              <span class="summary-total">$0.00</span>
             </button>
 
-            <!-- Collapsible Content -->
+            <!-- Collapsible Content (仅折叠商品列表与价格明细) -->
             <div class="summary-content" id="summaryContent">
               <div class="summary-items" id="mobileCartItems">
                 <!-- 商品将动态加载 -->
               </div>
 
-              <!-- Discount Code -->
-              <div class="discount-code-section">
-                <input type="text" class="discount-input" placeholder="Discount code or gift card">
-                <button type="button" class="apply-btn">Apply</button>
-              </div>
-
               <div class="summary-totals">
-                <div class="total-line">
+                <div class="total-line subtotal-line">
                   <span>Subtotal</span>
-                  <span>$1,650.00</span>
+                  <span>$0.00</span>
                 </div>
-                <div class="total-line">
+                
+                <!-- 偏远附加费提示行 -->
+                <div class="total-line remote-fee-line" style="display: none; color: #b76e28;">
+                  <span><i class="fa-solid fa-truck-ramp-box"></i> Remote Surcharge</span>
+                  <span class="remote-fee-val">+$0.00</span>
+                </div>
+
+                <!-- 折扣抵扣行 -->
+                <div class="total-line discount-line" style="display: none; color: #2e7d32;">
+                  <span>Discount</span>
+                  <span class="discount-val">-$0.00</span>
+                </div>
+
+                <div class="total-line shipping-line">
                   <span>Shipping</span>
-                  <span class="calculated-text">Calculated at next step</span>
+                  <span class="calculated-text shipping-status-text">Calculated at next step</span>
                 </div>
+
+                <!-- 免邮及达标提示条 -->
+                <div class="shipping-notice-box" style="display: none;"></div>
+
                 <div class="total-line grand">
                   <span>Total</span>
                   <span class="total-amount">
-                    <span class="currency">USD</span> $1,782.00
+                    <span class="currency">USD</span> $0.00
                   </span>
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- 移动端外置醒目区：特权进度条、积分抵扣与折扣码直接暴露在首屏，无需点开折叠栏 -->
+          <div class="mobile-exposed-rewards">
+            <div class="checkout-privilege-box mobile-privilege-box" style="display: none;"></div>
+
+            <div class="discount-code-section mobile-discount-section">
+              <input type="text" class="discount-input manual-discount-input" placeholder="Discount code or gift card">
+              <button type="button" class="apply-btn manual-apply-btn">Apply</button>
+            </div>
+            <div class="coupon-feedback-msg mobile-coupon-feedback" style="display: none; font-size: 12px; margin-top: 8px; padding: 6px 10px; border-radius: 4px;"></div>
           </div>
         </aside>
 
@@ -315,7 +337,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
           <!-- Actions -->
           <div class="form-actions">
             <button type="submit" class="btn-submit">{t(currentLocale, 'checkout.continueToPayment')}</button>
-            <a href="/shop" class="link-return">Return to Shop</a>
+           <a href="/cart" class="link-return">Return to Cart</a>
           </div>
         </form>
       </div>
@@ -323,7 +345,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       <!-- Right: Order Summary (5 columns) - Desktop Only -->
       <aside class="checkout-right desktop-order-summary">
         <div class="order-summary">
-          <h2>Order summary (2 items)</h2>
+          <h2>Order summary</h2>
 
           <div class="summary-items" id="desktopCartItems">
             <!-- 商品将动态加载 -->
@@ -331,23 +353,43 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
           <!-- Discount Code -->
           <div class="discount-code-section">
-            <input type="text" class="discount-input" placeholder="Discount code or gift card">
-            <button type="button" class="apply-btn">Apply</button>
+            <input type="text" class="discount-input manual-discount-input" placeholder="Discount code or gift card">
+            <button type="button" class="apply-btn manual-apply-btn">Apply</button>
           </div>
+         <div class="coupon-feedback-msg" style="display: none; font-size: 12px; margin-top: -14px; margin-bottom: 18px; padding: 6px 10px; border-radius: 4px;"></div>
+          <!-- 桌面端优惠方案选择器容器 -->
+          <div class="checkout-privilege-box desktop-privilege-box" style="display: none;"></div>
 
           <div class="summary-totals">
-            <div class="total-line">
+            <div class="total-line subtotal-line">
               <span>Subtotal</span>
-              <span>$1,650.00</span>
+              <span>$0.00</span>
             </div>
-            <div class="total-line">
+
+            <!-- 偏远附加费提示行 -->
+            <div class="total-line remote-fee-line" style="display: none; color: #b76e28;">
+              <span><i class="fa-solid fa-truck-ramp-box"></i> Remote Surcharge</span>
+              <span class="remote-fee-val">+$0.00</span>
+            </div>
+
+            <!-- 折扣抵扣行 -->
+            <div class="total-line discount-line" style="display: none; color: #2e7d32;">
+              <span>Discount</span>
+              <span class="discount-val">-$0.00</span>
+            </div>
+
+            <div class="total-line shipping-line">
               <span>Shipping</span>
-              <span class="calculated-text">Calculated at next step</span>
+              <span class="calculated-text shipping-status-text">Calculated at next step</span>
             </div>
+
+            <!-- 免邮及达标提示条 -->
+            <div class="shipping-notice-box" style="display: none;"></div>
+
             <div class="total-line grand">
               <span>Total</span>
               <span class="total-amount">
-                <span class="currency">USD</span> $1,782.00
+                <span class="currency">USD</span> $0.00
               </span>
             </div>
           </div>
@@ -807,22 +849,180 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     margin-right: 4px;
   }
 
+  /* ============================================================
+     特权方案与香槟金动效进度条 (高定黑金视觉)
+     ============================================================ */
+  .checkout-privilege-box {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: linear-gradient(135deg, #fdfbf7 0%, #f6efe2 100%);
+    border: 1px solid #d4af67;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(163, 130, 76, 0.09);
+    transition: all 0.3s ease;
+  }
+  .privilege-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed rgba(163, 130, 76, 0.3);
+    padding-bottom: 8px;
+  }
+  .privilege-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8c631a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .free-gift-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #2e7d32;
+    background: rgba(46, 125, 50, 0.12);
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(46, 125, 50, 0.25);
+  }
+
+  /* 动效进度条容器 */
+  .privilege-progress-card {
+    background: #ffffff;
+    border: 1px solid rgba(212, 175, 103, 0.4);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .progress-card-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    color: #66522e;
+    margin-bottom: 6px;
+  }
+  .progress-track {
+    width: 100%;
+    height: 7px;
+    background: #eee8dc;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #d4af67 0%, #a87928 100%);
+    border-radius: 10px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+  /* 流光闪烁动效 */
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);
+    animation: goldShimmer 2.2s infinite;
+  }
+  @keyframes goldShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .progress-card-footer {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #8c631a;
+    line-height: 1.35;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+  }
+
+  .privilege-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .privilege-radio-label {
+    display: flex;
+    flex-direction: column;
+    font-size: 12.5px;
+    color: #222;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+  }
+  .privilege-radio-label:hover {
+    background: rgba(212, 175, 103, 0.1);
+  }
+  .privilege-radio-label.disabled-option {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+  .privilege-radio-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .privilege-radio-row input[type="radio"] {
+    accent-color: #8c631a;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+  }
+  .privilege-radio-label.disabled-option input[type="radio"] {
+    cursor: not-allowed;
+  }
+  .lock-badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: #8c631a;
+    background: #faebd7;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+  }
+  .option-subtext {
+    font-size: 11px;
+    color: #777;
+    margin-left: 23px;
+    margin-top: 2px;
+  }
+  .shipping-notice-box {
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin: 4px 0 8px;
+    line-height: 1.4;
+  }
+  .shipping-notice-box.unlocked {
+    background: #edf7ee;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+  }
+  .shipping-notice-box.need-more {
+    background: #fff8ec;
+    color: #8c631a;
+    border: 1px solid #ffe0b2;
+  }
+
   /* Mobile Responsive */
   @media (max-width: 968px) {
     .checkout-container {
       grid-template-columns: 1fr;
     }
-
-    /* Hide desktop summary, show mobile summary */
     .desktop-order-summary {
       display: none;
     }
     .mobile-order-summary {
       display: block;
-      
     }
-
-    /* Mobile summary styling */
     .mobile-order-summary .order-summary {
       position: static;
       padding: 0;
@@ -833,8 +1033,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     .summary-toggle {
       display: flex;
     }
-
-    /* Adjust items in mobile */
     .mobile-order-summary .summary-items {
       padding-bottom: 16px;
       margin-bottom: 16px;
@@ -852,51 +1050,99 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     .mobile-order-summary .item-price {
       font-size: 14px;
     }
-    .mobile-order-summary .discount-code-section {
-      margin-bottom: 16px;
-      padding-bottom: 16px;
+    /* 移动端外置特权与优惠码区域样式 */
+    .mobile-exposed-rewards {
+      margin-top: 14px;
+    }
+    .mobile-exposed-rewards .mobile-privilege-box {
+      margin-bottom: 12px;
+    }
+    .mobile-discount-section {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
     }
   }
 </style>
 
 <script is:inline>
   // ============================================================
-  // 运费计算函数
+  // 全局试算与特权状态机
   // ============================================================
+  let selectedOfferKey = ''; // 'welcome_15' | 'bundle_tier'
+  let manualCouponCode = '';
+  let activeCalculationData = null;
+  let isPointsRedeemed = false; // 是否使用积分抵扣
 
-  /**
-   * 计算基础运费
-   * @param totalWeight 订单商品总重量（kg）
-   * @returns 基础运费（USD）
-   */
+  window.handlePointsToggle = function(checkbox) {
+    isPointsRedeemed = Boolean(checkbox.checked);
+    performCheckoutRecalculation();
+  };
+  // 免运费特殊赠品 ID 名单
+  const FREE_SHIPPING_PRODUCT_IDS = [57994, '57994'];
+
+  function isExcludedFromShipping(item) {
+    const id = item.id || item.product_id;
+    return FREE_SHIPPING_PRODUCT_IDS.includes(id) || FREE_SHIPPING_PRODUCT_IDS.includes(String(id));
+  }
+
+  // 国家标准 ISO 代码对照映射
+  const COUNTRY_ISO_MAP = {
+    'Albania': 'AL', 'Algeria': 'DZ', 'American Samoa': 'AS', 'Andorra': 'AD', 'Angola': 'AO',
+    'Argentina': 'AR', 'Armenia': 'AM', 'Australia': 'AU', 'Austria': 'AT', 'Bahrain': 'BH',
+    'Bangladesh': 'BD', 'Barbados': 'BB', 'Belarus': 'BY', 'Belgium': 'BE', 'Benin': 'BJ',
+    'Bolivia': 'BO', 'Brazil': 'BR', 'Brunei': 'BN', 'Bulgaria': 'BG', 'Canada': 'CA',
+    'Cape Verde': 'CV', 'Chad': 'TD', 'Chile': 'CL', 'China (Hong Kong)': 'HK', 'China (Macao)': 'MO',
+    'Collectivity of Saint Martin': 'MF', 'Colombia': 'CO', 'Costa Rica': 'CR', 'Croatia': 'HR',
+    'Cyprus': 'CY', 'Czech Republic': 'CZ', 'Côte d\'Ivoire': 'CI', 'Democratic Republic of the Congo': 'CD',
+    'Denmark': 'DK', 'Ecuador': 'EC', 'Egypt': 'EG', 'El Salvador': 'SV', 'Estonia': 'EE',
+    'Eswatini': 'SZ', 'Faroe Islands': 'FO', 'Fiji': 'FJ', 'Finland': 'FI', 'France': 'FR',
+    'French Guiana': 'GF', 'French Polynesia': 'PF', 'Gambia': 'GM', 'Georgia': 'GE', 'Germany': 'DE',
+    'Ghana': 'GH', 'Greece': 'GR', 'Grenada': 'GD', 'Guadeloupe': 'GP', 'Guatemala': 'GT',
+    'Honduras': 'HN', 'Hungary': 'HU', 'Iceland': 'IS', 'Indonesia': 'ID', 'Iraq': 'IQ',
+    'Ireland': 'IE', 'Israel': 'IL', 'Italy': 'IT', 'Japan': 'JP', 'Jordan': 'JO',
+    'Kazakhstan': 'KZ', 'Kenya': 'KE', 'Kuwait': 'KW', 'Laos': 'LA', 'Latvia': 'LV',
+    'Lebanon': 'LB', 'Lesotho': 'LS', 'Liberia': 'LR', 'Libya': 'LY', 'Liechtenstein': 'LI',
+    'Lithuania': 'LT', 'Luxembourg': 'LU', 'Madagascar': 'MG', 'Malawi': 'MW', 'Malaysia': 'MY',
+    'Maldives': 'MV', 'Mali': 'ML', 'Malta': 'MT', 'Marshall Islands': 'MH', 'Martinique': 'MQ',
+    'Mauritania': 'MR', 'Mauritius': 'MU', 'Mayotte': 'YT', 'Mexico': 'MX', 'Micronesia': 'FM',
+    'Moldova': 'MD', 'Morocco': 'MA', 'Mozambique': 'MZ', 'Namibia': 'NA', 'Nepal': 'NP',
+    'Netherlands': 'NL', 'New Caledonia': 'NC', 'New Zealand': 'NZ', 'Nicaragua': 'NI', 'Niger': 'NE',
+    'Nigeria': 'NG', 'North Macedonia': 'MK', 'Norway': 'NO', 'Oman': 'OM', 'Pakistan': 'PK',
+    'Palau': 'PW', 'Panama': 'PA', 'Papua New Guinea': 'PG', 'Paraguay': 'PY', 'Peru': 'PE',
+    'Philippines': 'PH', 'Poland': 'PL', 'Portugal': 'PT', 'Puerto Rico': 'PR', 'Qatar': 'QA',
+    'Romania': 'RO', 'Rwanda': 'RW', 'Réunion': 'RE', 'Saudi Arabia': 'SA', 'Senegal': 'SN',
+    'Serbia': 'RS', 'Seychelles': 'SC', 'Singapore': 'SG', 'Sint Maarten': 'SX', 'Slovakia': 'SK',
+    'Slovenia': 'SI', 'South Africa': 'ZA', 'South Korea': 'KR', 'Spain': 'ES', 'Sri Lanka': 'LK',
+    'Suriname': 'SR', 'Sweden': 'SE', 'Switzerland': 'CH', 'Syria': 'SY', 'Tanzania': 'TZ',
+    'Thailand': 'TH', 'Trinidad and Tobago': 'TT', 'Tunisia': 'TN', 'Turkey': 'TR', 'Uganda': 'UG',
+    'United Arab Emirates': 'AE', 'United Kingdom': 'GB', 'United States': 'US', 'Uruguay': 'UY',
+    'Venezuela': 'VE', 'Vietnam': 'VN', 'Western Samoa': 'WS', 'Zambia': 'ZM'
+  };
+
+  // ============================================================
+  // 原有运费与重量计算核心
+  // ============================================================
   function calculateBaseShipping(totalWeight) {
-    const weight = Math.max(0.03, totalWeight); // 最小重量 0.03kg
+    const weight = Math.max(0.03, totalWeight);
     const baseShipping = (161 * weight + 27) / 6.3 / 0.95;
     return parseFloat(baseShipping.toFixed(2));
   }
 
-  /**
-   * 国家附加费配置
-   */
   const COUNTRY_SURCHARGES = {
-    // 特殊国家订单附加费
     'Argentina': 6, 'Australia': 5, 'Bahrain': 5, 'Indonesia': 4,
     'Jordan': 2, 'Kuwait': 5, 'Mayotte': 35, 'Morocco': 3,
     'Qatar': 3, 'Saudi Arabia': 3, 'Senegal': 20, 'Seychelles': 35, 'Zambia': 3,
-
-    // 偏远地区附加费 +$30
     'Albania': 30, 'Algeria': 30, 'Andorra': 30, 'Belarus': 30, 'Benin': 30,
     'Bulgaria': 30, 'Cape Verde': 30, 'Chad': 30, 'Croatia': 30, 'Cyprus': 30,
     'Czech Republic': 30, 'Côte d\'Ivoire': 30, 'Democratic Republic of the Congo': 30,
     'Egypt': 30, 'Eswatini': 30, 'Faroe Islands': 30, 'Gambia': 30, 'Georgia': 30,
     'Ghana': 30, 'Greece': 30, 'Iceland': 30, 'Iraq': 30, 'Kenya': 30, 'Laos': 30,
     'Lebanon': 30, 'Lesotho': 30, 'Liberia': 30, 'Libya': 30, 'Liechtenstein': 30,
-    'Madagascar': 30, 'Malawi': 30, 'Maldives': 30, 'Mali': 30, 'Mauritania': 30,
+    'Malawi': 30, 'Maldives': 30, 'Mali': 30, 'Mauritania': 30,
     'Mauritius': 30, 'Micronesia': 30, 'Moldova': 30, 'Mozambique': 30, 'Namibia': 30,
     'Nepal': 30, 'Niger': 30, 'Nigeria': 30, 'North Macedonia': 30, 'Rwanda': 30,
     'Syria': 30, 'Tanzania': 30, 'Tunisia': 30, 'Turkey': 30, 'Uganda': 30,
-
-    // 偏远/特殊区域附加费 +$43
     'American Samoa': 43, 'Angola': 43, 'Armenia': 43, 'Bangladesh': 43, 'Barbados': 43,
     'Bolivia': 43, 'Collectivity of Saint Martin': 43, 'Costa Rica': 43, 'Ecuador': 43,
     'El Salvador': 43, 'Fiji': 43, 'French Guiana': 43, 'French Polynesia': 43,
@@ -906,34 +1152,34 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     'Trinidad and Tobago': 43, 'Uruguay': 43, 'Venezuela': 43, 'Western Samoa': 43
   };
 
-  /**
-   * 获取国家附加费
-   * @param country 国家名称
-   * @returns 附加费（USD）
-   */
   function getCountrySurcharge(country) {
     return COUNTRY_SURCHARGES[country] || 0;
   }
 
-  /**
-   * 计算购物车总重量
-   * @param cart 购物车数组
-   * @returns 总重量（kg）
-   */
   function calculateTotalWeight(cart) {
     return cart.reduce((total, item) => {
+      if (isExcludedFromShipping(item)) {
+        return total;
+      }
       const weight = parseFloat(item.weight) || 0;
       return total + (weight * item.quantity);
     }, 0);
   }
 
-  /**
-   * 计算总运费（基础运费 + 国家附加费）
-   * @param totalWeight 订单商品总重量（kg）
-   * @param country 国家名称
-   * @returns 运费详情对象
-   */
   function calculateShipping(totalWeight, country) {
+    const cart = getCart();
+    const hasOnlyFreeShippingItems = cart.length > 0 && cart.every(item => isExcludedFromShipping(item));
+
+    if (hasOnlyFreeShippingItems) {
+      return {
+        totalWeight: 0,
+        baseShipping: 0,
+        surcharge: 0,
+        totalShipping: 0,
+        hasSurcharge: false
+      };
+    }
+
     const baseShipping = calculateBaseShipping(totalWeight);
     const surcharge = getCountrySurcharge(country);
     const totalShipping = baseShipping + surcharge;
@@ -948,49 +1194,31 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   }
 
   // ============================================================
-  // 货币处理函数
+  // 货币换算工具
   // ============================================================
-  const CURRENCY_SYMBOLS = {
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    CAD: 'C$'
-  };
-
-  const CURRENCY_RATES = {
-    USD: 1.0,
-    EUR: 0.92,
-    GBP: 0.79,
-    CAD: 1.36
-  };
+  const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', CAD: 'C$' };
+  const CURRENCY_RATES = { USD: 1.0, EUR: 0.92, GBP: 0.79, CAD: 1.36 };
 
   function getCurrentCurrency() {
     return localStorage.getItem('ebbelle_currency') || 'USD';
   }
-
   function getCurrencySymbol(currency) {
     return CURRENCY_SYMBOLS[currency || getCurrentCurrency()] || '$';
   }
-
   function convertPrice(priceUSD, targetCurrency) {
     const currency = targetCurrency || getCurrentCurrency();
     const rate = CURRENCY_RATES[currency] || 1.0;
     return priceUSD * rate;
   }
-
   function formatPrice(priceUSD, targetCurrency) {
     const currency = targetCurrency || getCurrentCurrency();
     const converted = convertPrice(priceUSD, currency);
     const symbol = getCurrencySymbol(currency);
     const formatted = converted.toFixed(2);
-
-    if (currency === 'EUR') {
-      return `${formatted}${symbol}`;
-    }
+    if (currency === 'EUR') return `${formatted}${symbol}`;
     return `${symbol}${formatted}`;
   }
 
-  // 从localStorage读取购物车
   function getCart() {
     try {
       const cart = localStorage.getItem('ebbelle_cart');
@@ -1000,31 +1228,13 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     }
   }
 
-  // 计算购物车总计
-  function calculateCartTotals(cart) {
-    const subtotal = cart.reduce((sum, item) => {
-      const price = parseFloat(item.price) || 0;
-      return sum + (price * item.quantity);
-    }, 0);
-
-    const shipping = 0; // 待用户选择
-    const total = subtotal + shipping;
-
-    return {
-      subtotal: subtotal.toFixed(2),
-      shipping: shipping.toFixed(2),
-      total: total.toFixed(2),
-      currency: getCurrentCurrency(),
-      itemCount: cart.reduce((sum, item) => sum + item.quantity, 0)
-    };
+  function getPreDiscountSubtotal(cart) {
+    return cart.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (item.quantity || 1)), 0);
   }
 
-  // 渲染购物车项
   function renderCartItems(cart, containerId) {
     const container = document.getElementById(containerId);
-    if (!container) {
-      return;
-    }
+    if (!container) return;
 
     if (cart.length === 0) {
       container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Your cart is empty</p>';
@@ -1035,85 +1245,537 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     cart.forEach(item => {
       const price = parseFloat(item.price) || 0;
       const itemTotal = price * item.quantity;
-      const variants = item.selectedVariants ?
-        Object.values(item.selectedVariants).filter(v => v).join(' / ') : '';
+      const variants = item.selectedVariants ? Object.values(item.selectedVariants).filter(v => v).join(' / ') : '';
 
       html += '<div class="item">';
       html += `<img src="${item.image || '/placeholder.jpg'}" alt="${item.name}" onerror="this.src='/placeholder.jpg'">`;
       html += '<div class="item-details">';
       html += `<h3>${item.name}</h3>`;
-      if (variants) {
-        html += `<p>${variants}</p>`;
-      }
-      if (item.quantity > 1) {
-        html += `<p>Qty: ${item.quantity}</p>`;
-      }
+      if (variants) html += `<p>${variants}</p>`;
+      if (item.quantity > 1) html += `<p>Qty: ${item.quantity}</p>`;
       html += '</div>';
       html += `<span class="item-price">${formatPrice(itemTotal)}</span>`;
       html += '</div>';
     });
-
     container.innerHTML = html;
   }
 
-  // 更新总计
-  function updateTotals(totals) {
-    const currency = totals.currency || getCurrentCurrency();
+  // ============================================================
+  // 核心业务：统一调度结账试算接口（api/woocommerce/calculate）
+  // ============================================================
+  async function performCheckoutRecalculation() {
+    const cart = getCart();
+    const subtotal = getPreDiscountSubtotal(cart);
+    const countryName = document.getElementById('country')?.value || '';
+    const email = document.getElementById('email')?.value.trim() || '';
+    const countryIso = COUNTRY_ISO_MAP[countryName] || 'US';
 
-    // 更新移动端
-    const mobileItemCount = document.querySelector('.mobile-order-summary h2');
-    if (mobileItemCount) {
-      mobileItemCount.textContent = `Order summary (${totals.itemCount} items)`;
-    }
-    const mobileTotalAmount = document.querySelector('.mobile-order-summary .summary-total');
-    if (mobileTotalAmount) {
-      mobileTotalAmount.textContent = formatPrice(parseFloat(totals.total));
-    }
+    if (cart.length === 0) return;
 
-    // 更新桌面端
-    const desktopItemCount = document.querySelector('.desktop-order-summary h2');
-    if (desktopItemCount) {
-      desktopItemCount.textContent = `Order summary (${totals.itemCount} items)`;
-    }
+    const totalWeight = calculateTotalWeight(cart);
+    const localShipping = calculateShipping(totalWeight, countryName);
 
-    // 更新金额显示
-    document.querySelectorAll('.summary-totals').forEach(container => {
-      const subtotalEl = container.querySelector('.total-line:nth-child(1) span:last-child');
-      const totalEl = container.querySelector('.total-amount');
+    try {
+      const res = await fetch('/api/woocommerce/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          subtotal: subtotal,
+          country: countryIso,
+          selected_offer: selectedOfferKey,
+          use_points: isPointsRedeemed,
+          manual_coupon: manualCouponCode
+        })
+      });
 
-      if (subtotalEl) subtotalEl.textContent = formatPrice(parseFloat(totals.subtotal));
-      if (totalEl) {
-        totalEl.innerHTML = `<span class="currency">${currency}</span> ${formatPrice(parseFloat(totals.total))}`;
+      const data = await res.json();
+      if (data && data.success) {
+        activeCalculationData = data;
+        renderCalculationOutcome(data, localShipping);
+        return;
       }
+    } catch (e) {
+      console.warn('API calculate fallback to local calculation:', e);
+    }
+
+    renderFallbackOutcome(subtotal, localShipping);
+  }
+
+  // ============================================================
+  // 核心渲染：包含香槟金动效进度条与严格解锁逻辑
+  // ============================================================
+  // ============================================================
+  // 核心渲染：完全由后端动态配置驱动（零硬编码）
+  // ============================================================
+  function renderCalculationOutcome(data, localShipping) {
+    const privilegeBoxes = document.querySelectorAll('.checkout-privilege-box');
+    const remoteFeeLines = document.querySelectorAll('.remote-fee-line');
+    const remoteFeeVals = document.querySelectorAll('.remote-fee-val');
+    const discountLines = document.querySelectorAll('.discount-line');
+    const discountVals = document.querySelectorAll('.discount-val');
+    const shippingStatusTexts = document.querySelectorAll('.shipping-status-text');
+    const noticeBoxes = document.querySelectorAll('.shipping-notice-box');
+    const shippingPriceEl = document.getElementById('shippingPrice');
+    const shippingOption = document.getElementById('shippingOption');
+    const shippingDetailsEl = document.getElementById('shippingDetails');
+
+    const cart = getCart();
+    const hasOnlyFreeShippingItems = cart.length > 0 && cart.every(item => isExcludedFromShipping(item));
+
+    // A. 纯免运费赠品订单：彻底隐身
+    if (hasOnlyFreeShippingItems) {
+      if (shippingDetailsEl) {
+        shippingDetailsEl.style.display = 'none';
+        shippingDetailsEl.innerHTML = '';
+      }
+      remoteFeeLines.forEach(l => { l.style.display = 'none'; });
+      noticeBoxes.forEach(n => { n.style.display = 'none'; });
+      privilegeBoxes.forEach(b => { b.style.display = 'none'; });
+      discountLines.forEach(l => { l.style.display = 'none'; });
+
+      shippingStatusTexts.forEach(s => { s.textContent = 'FREE'; });
+      if (shippingPriceEl) shippingPriceEl.textContent = 'FREE';
+      if (shippingOption) shippingOption.setAttribute('data-cost', '0.00');
+
+      applyFinalTotalsToDom(data.final_subtotal);
+      return;
+    }
+
+    // B. 极偏远排除国家（不参与促销与包邮）
+    if (data.is_extreme_remote) {
+      privilegeBoxes.forEach(b => { b.style.display = 'none'; b.innerHTML = ''; });
+      discountLines.forEach(l => { l.style.display = 'none'; });
+      noticeBoxes.forEach(n => { n.style.display = 'none'; });
+
+      remoteFeeLines.forEach(l => { l.style.display = 'flex'; });
+      remoteFeeVals.forEach(v => { v.textContent = `+${formatPrice(data.remote_surcharge)}`; });
+
+      const actualShipping = localShipping.baseShipping + data.remote_surcharge;
+      const grandTotal = data.final_subtotal + actualShipping;
+
+      shippingStatusTexts.forEach(s => { s.textContent = formatPrice(actualShipping); });
+      if (shippingPriceEl) shippingPriceEl.textContent = formatPrice(actualShipping);
+      if (shippingOption) shippingOption.setAttribute('data-cost', actualShipping.toFixed(2));
+
+      if (shippingDetailsEl) {
+        shippingDetailsEl.style.display = 'block';
+        shippingDetailsEl.innerHTML = `
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span>Standard Courier:</span><span>${formatPrice(localShipping.baseShipping)}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; color:#b76e28;">
+            <span>Remote Surcharge:</span><span>+${formatPrice(data.remote_surcharge)}</span>
+          </div>
+        `;
+      }
+      applyFinalTotalsToDom(grandTotal);
+      return;
+    }
+
+    if (shippingDetailsEl) {
+      shippingDetailsEl.style.display = 'none';
+      shippingDetailsEl.innerHTML = '';
+    }
+
+    // C. 偏远起付线国家运费行处理
+    if (data.is_remote) {
+      if (data.base_shipping_free) {
+        remoteFeeLines.forEach(l => { l.style.display = 'none'; });
+        noticeBoxes.forEach(n => {
+          n.className = 'shipping-notice-box unlocked';
+          n.style.display = 'block';
+          n.innerHTML = `<i class="fa-solid fa-circle-check"></i> Free Shipping Unlocked! (${formatPrice(data.remote_surcharge || 0)} remote fee waived)`;
+        });
+      } else {
+        remoteFeeLines.forEach(l => { l.style.display = 'flex'; });
+        remoteFeeVals.forEach(v => { v.textContent = `+${formatPrice(data.remote_surcharge)}`; });
+        noticeBoxes.forEach(n => { n.style.display = 'none'; });
+      }
+    } else {
+      remoteFeeLines.forEach(l => { l.style.display = 'none'; });
+      if (data.base_shipping_free) {
+        noticeBoxes.forEach(n => {
+          n.className = 'shipping-notice-box unlocked';
+          n.style.display = 'block';
+          n.innerHTML = `<i class="fa-solid fa-circle-check"></i> Free Shipping Applied!`;
+        });
+      } else {
+        noticeBoxes.forEach(n => { n.style.display = 'none'; });
+      }
+    }
+
+    // D. 运费最终计算
+    let effectiveShipping = 0;
+    if (!data.base_shipping_free) {
+      effectiveShipping += localShipping.baseShipping;
+      effectiveShipping += (data.remote_surcharge || 0);
+    }
+
+    shippingStatusTexts.forEach(s => {
+      s.textContent = effectiveShipping === 0 ? 'FREE' : formatPrice(effectiveShipping);
+    });
+    if (shippingPriceEl) shippingPriceEl.textContent = effectiveShipping === 0 ? 'FREE' : formatPrice(effectiveShipping);
+    if (shippingOption) shippingOption.setAttribute('data-cost', effectiveShipping.toFixed(2));
+
+    // E. 动态读取后端配置参数（彻底消除前端硬编码）
+    const isNewCustomer = typeof data.is_new_customer === 'boolean' ? data.is_new_customer : Boolean(data.free_gift_included);
+    const canChooseWelcome15 = Boolean(data.base_shipping_free);
+    const subtotal = parseFloat(data.original_subtotal) || 0;
+    const freeShippingTarget = (typeof data.free_shipping_min === 'number')
+      ? data.free_shipping_min
+      : (data.is_remote ? (data.remote_free_min || 150) : (isNewCustomer ? 25.0 : 0));
+    // 动态读取后台配置的大礼包阶梯（已按门槛从低到高排序）
+    // 动态读取后台配置的大礼包剩余可用阶梯（已按门槛从低到高排序；若全部用完则为 []）
+    const bundleTiers = Array.isArray(data.bundle_tiers) ? data.bundle_tiers : [];
+    const tier1Min = bundleTiers.length > 0 ? (parseFloat(bundleTiers[0].min) || 60) : 0;
+    const tier1Off = bundleTiers.length > 0 ? (parseFloat(bundleTiers[0].off) || 10) : 0;
+    const nextTier = bundleTiers.find(t => subtotal < parseFloat(t.min)) || null;
+    const tierSummaryText = bundleTiers.slice(0, 2).map(t => `Orders $${t.min}+ (-$${t.off})`).join(' | ');
+
+    // 动态积分汇率与可用积分
+    const availablePts = parseFloat(data.available_points) || 0;
+    const ptsFor1Usd = parseFloat(data.pts_for_1usd) || 10.0;
+    const ptsValueUsd = ptsFor1Usd > 0 ? (availablePts / ptsFor1Usd) : 0;
+
+    // 积分兑换组件模板（新客/老客只要账号有积分且汇率正常即可通用）
+    const pointsRedeemHtml = (availablePts > 0 && ptsValueUsd > 0) ? `
+      <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(212,175,103,0.3);">
+        <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 12px; color: #66522e;">
+          <span style="display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" id="pointsRedeemToggle" ${isPointsRedeemed ? 'checked' : ''} onchange="handlePointsToggle(this)" style="accent-color: #8c631a; width: 14px; height: 14px; cursor: pointer;">
+            <span>Redeem <strong>${availablePts}</strong> Reward Points (Save ${formatPrice(ptsValueUsd)})</span>
+          </span>
+          <span style="font-weight: 700; color: #2e7d32;">-${formatPrice(ptsValueUsd)}</span>
+        </label>
+      </div>
+    ` : '';
+
+    let privilegeHtml = '';
+
+    if (isNewCustomer) {
+      // ============================================================
+      // 新客首单特权分支（含已注册但 0 笔已付款订单的 Pearl 新会员）
+      // ============================================================
+      if (!selectedOfferKey) {
+        selectedOfferKey = canChooseWelcome15 ? 'welcome_15' : 'bundle_tier';
+      } else if (selectedOfferKey === 'welcome_15' && !canChooseWelcome15) {
+        selectedOfferKey = 'bundle_tier';
+      }
+
+      const progressPercent = freeShippingTarget > 0 ? Math.min(100, Math.round((subtotal / freeShippingTarget) * 100)) : 100;
+      const distanceToFree = Math.max(0, freeShippingTarget - subtotal);
+      const distanceToTier1 = Math.max(0, tier1Min - subtotal);
+
+      privilegeHtml = `
+        <div class="privilege-header">
+          <span class="privilege-title"><i class="fa-solid fa-gift"></i> New Guest Welcome Privileges</span>
+          ${data.free_gift_included ? '<span class="free-gift-badge">✓ Free Gift Included</span>' : ''}
+        </div>
+      `;
+
+      if (!canChooseWelcome15) {
+        privilegeHtml += `
+          <div class="privilege-progress-card">
+            <div class="progress-card-header">
+              <span><i class="fa-solid fa-rocket"></i> Progress to Free Shipping & 15% OFF</span>
+              <span><strong>${formatPrice(subtotal)}</strong> / ${formatPrice(freeShippingTarget)}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width: ${progressPercent}%;"></div>
+            </div>
+            <div class="progress-card-footer">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Add <strong>${formatPrice(distanceToFree)}</strong> more to unlock <strong>FREE SHIPPING & 15% OFF</strong>!</span>
+            </div>
+          </div>
+        `;
+      } else if (selectedOfferKey === 'bundle_tier' && subtotal < tier1Min) {
+        const bundlePercent = Math.min(100, Math.round((subtotal / tier1Min) * 100));
+        privilegeHtml += `
+          <div class="privilege-progress-card">
+            <div class="progress-card-header">
+              <span><i class="fa-solid fa-tags"></i> Progress to ${formatPrice(tier1Off)} OFF Voucher</span>
+              <span><strong>${formatPrice(subtotal)}</strong> / ${formatPrice(tier1Min)}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width: ${bundlePercent}%;"></div>
+            </div>
+            <div class="progress-card-footer">
+              <i class="fa-solid fa-circle-exclamation"></i>
+              <span>Add <strong>${formatPrice(distanceToTier1)}</strong> more to activate Tier 1 <strong>(${formatPrice(tier1Off)} OFF)</strong>!</span>
+            </div>
+          </div>
+        `;
+      }
+
+      privilegeHtml += `
+        <div class="privilege-options">
+          <label class="privilege-radio-label ${canChooseWelcome15 ? '' : 'disabled-option'}">
+            <div class="privilege-radio-row">
+              <input type="radio" name="vip_offer_choice" value="welcome_15" 
+                ${selectedOfferKey === 'welcome_15' && canChooseWelcome15 ? 'checked' : ''} 
+                ${canChooseWelcome15 ? '' : 'disabled'} 
+                onchange="handleOfferSelection('welcome_15')">
+              <span><strong>15% OFF First Order</strong> (Exclusive Welcome)</span>
+              ${!canChooseWelcome15 ? `<span class="lock-badge"><i class="fa-solid fa-lock"></i> Unlocks at ${formatPrice(freeShippingTarget)}</span>` : ''}
+            </div>
+            ${canChooseWelcome15 ? '<div class="option-subtext">Save 15% instantly on your entire order</div>' : ''}
+          </label>
+
+          <label class="privilege-radio-label">
+            <div class="privilege-radio-row">
+              <input type="radio" name="vip_offer_choice" value="bundle_tier" 
+                ${selectedOfferKey === 'bundle_tier' ? 'checked' : ''} 
+                onchange="handleOfferSelection('bundle_tier')">
+              <span><strong>$200 Multi-tier Bundle Pack</strong></span>
+              ${subtotal < tier1Min ? `<span class="lock-badge"><i class="fa-solid fa-circle-info"></i> Tier 1 at ${formatPrice(tier1Min)}</span>` : ''}
+            </div>
+            <div class="option-subtext">
+              ${subtotal >= tier1Min 
+                ? 'Multi-tier vouchers automatically applied' 
+                : `${tierSummaryText} | Add ${formatPrice(distanceToTier1)} to activate`}
+            </div>
+          </label>
+
+          ${pointsRedeemHtml}
+        </div>
+      `;
+    } else {
+      // ============================================================
+      // 老客户及 VIP 会员专属权益看板（全量读取后端返回数据）
+      // ============================================================
+      selectedOfferKey = 'bundle_tier';
+      const progressPercent = freeShippingTarget > 0 ? Math.min(100, Math.round((subtotal / freeShippingTarget) * 100)) : 100;
+      const distanceToFree = Math.max(0, freeShippingTarget - subtotal);
+      const hasReachedFree = Boolean(data.base_shipping_free);
+
+      const appliedBundleOffer = (data.applied_offers || []).find(o => o.includes('Bundle') || o.includes('Orders $'));
+      const appliedMemberTier = (data.applied_offers || []).find(o => o.includes('Exclusive') || o.includes('% OFF'));
+      const appliedBirthday = (data.applied_offers || []).find(o => o.includes('Birthday'));
+
+      privilegeHtml = `
+        <div class="privilege-header">
+          <span class="privilege-title"><i class="fa-solid fa-gem"></i> VIP Member Rewards Active</span>
+          ${appliedMemberTier ? `<span class="free-gift-badge">${appliedMemberTier}</span>` : ''}
+        </div>
+      `;
+
+      // 1. 动态包邮进度条
+      if (!hasReachedFree && freeShippingTarget > 0) {
+        privilegeHtml += `
+          <div class="privilege-progress-card">
+            <div class="progress-card-header">
+              <span><i class="fa-solid fa-truck-fast"></i> Progress to Free Shipping</span>
+              <span><strong>${formatPrice(subtotal)}</strong> / ${formatPrice(freeShippingTarget)}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width: ${progressPercent}%;"></div>
+            </div>
+            <div class="progress-card-footer">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Add <strong>${formatPrice(distanceToFree)}</strong> more to unlock <strong>FREE SHIPPING</strong>!</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // 2. 权益明细、动态大礼包阶梯与积分抵扣卡
+      privilegeHtml += `
+        <div class="privilege-options">
+          ${appliedMemberTier ? `
+            <div style="font-size: 12px; color: #2e7d32; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-check"></i> <strong>${appliedMemberTier} Applied</strong>
+            </div>
+          ` : ''}
+
+          ${appliedBirthday ? `
+            <div style="font-size: 12px; color: #2e7d32; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-cake-candles"></i> <strong>${appliedBirthday} Applied</strong>
+            </div>
+          ` : ''}
+
+          <div style="font-size: 12px; color: #444; border-top: 1px dashed rgba(212,175,103,0.3); padding-top: 6px; margin-top: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span><strong>🎁 $200 Multi-tier Bundle Pack</strong></span>
+              ${appliedBundleOffer
+                ? '<span style="color:#2e7d32; font-weight:600;">Active</span>'
+                : (nextTier ? `<span class="lock-badge">Next at ${formatPrice(nextTier.min)}</span>` : '')}
+            </div>
+            <div class="option-subtext" style="margin-left: 0; margin-top: 4px;">
+              ${appliedBundleOffer ? `<div>✓ ${appliedBundleOffer}</div>` : ''}
+              ${nextTier
+                ? `Add <strong>${formatPrice(Math.max(0, parseFloat(nextTier.min) - subtotal))}</strong> more to save <strong>${formatPrice(nextTier.off)}</strong> instantly!`
+                : 'Maximum tier discount unlocked!'}
+            </div>
+          </div>
+
+          ${pointsRedeemHtml}
+        </div>
+      `;
+    }
+
+    privilegeBoxes.forEach(b => {
+      b.style.display = 'block';
+      b.innerHTML = privilegeHtml;
+    });
+
+    // F. 折扣金额渲染
+    if (data.discount_total > 0) {
+      discountLines.forEach(l => { l.style.display = 'flex'; });
+      discountVals.forEach(v => { v.textContent = `-${formatPrice(data.discount_total)}`; });
+    } else {
+      discountLines.forEach(l => { l.style.display = 'none'; });
+    }
+
+    // G. 最终总额
+    const grandFinal = Math.max(0, data.final_subtotal + effectiveShipping);
+    applyFinalTotalsToDom(grandFinal);
+
+    // 渲染手动折扣码校验状态与一键移除按钮
+    const feedbackEls = document.querySelectorAll('.coupon-feedback-msg');
+    if (manualCouponCode && data.coupon_message) {
+      feedbackEls.forEach(el => {
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.justifyContent = 'space-between';
+        if (data.coupon_status === 'valid') {
+          el.style.background = '#edf7ee';
+          el.style.color = '#2e7d32';
+          el.style.border = '1px solid #c8e6c9';
+          el.innerHTML = `
+            <span><i class="fa-solid fa-tag"></i> ${data.coupon_message}</span>
+            <button type="button" onclick="removeManualCoupon()" style="background:none; border:none; color:#555; cursor:pointer; font-size:12px; text-decoration:underline;">Remove</button>
+          `;
+        } else {
+          el.style.background = '#fdecea';
+          el.style.color = '#c62828';
+          el.style.border = '1px solid #ffcdd2';
+          el.innerHTML = `<span><i class="fa-solid fa-circle-exclamation"></i> ${data.coupon_message}</span>`;
+        }
+      });
+    } else {
+      feedbackEls.forEach(el => { el.style.display = 'none'; });
+    }
+
+    // H. 保存完整结算快照（供 payment 页与创建订单接口使用）
+    const actualPointsSpent = (isPointsRedeemed && data.points_discount > 0) ? (data.available_points || 0) : 0;
+    const validManualCoupon = (manualCouponCode && data.coupon_status === 'valid') ? manualCouponCode : '';
+
+    sessionStorage.setItem('ebbelle_checkout_calculation', JSON.stringify({
+      original_subtotal: data.original_subtotal,
+      final_subtotal: data.final_subtotal,
+      discount_total: data.discount_total,
+      points_spent: actualPointsSpent,
+      points_discount: data.points_discount || 0,
+      points_earned: data.points_earned || 0,
+      points_multiplier: data.points_multiplier || 1.0,
+      manual_coupon: validManualCoupon,
+      shipping_cost: effectiveShipping,
+      remote_surcharge: data.remote_surcharge || 0,
+      selected_offer: selectedOfferKey,
+      is_extreme_remote: data.is_extreme_remote || false,
+      free_gift: data.free_gift_included || false,
+      applied_offers: data.applied_offers || []
+    }));
+  }
+
+  function renderFallbackOutcome(subtotal, localShipping) {
+    const grand = subtotal + localShipping.totalShipping;
+    applyFinalTotalsToDom(grand);
+  }
+
+  function applyFinalTotalsToDom(totalUSD) {
+    const currency = getCurrentCurrency();
+    const formatted = formatPrice(totalUSD);
+    const mobileTotalAmount = document.querySelector('.mobile-order-summary .summary-total');
+    if (mobileTotalAmount) mobileTotalAmount.textContent = formatted;
+
+    document.querySelectorAll('.total-amount').forEach(el => {
+      el.innerHTML = `<span class="currency">${currency}</span> ${formatted}`;
     });
   }
 
-  // 初始化购物车显示
-  function initializeCart() {
-    const cart = getCart();
-    const totals = calculateCartTotals(cart);
+  window.handleOfferSelection = function(choice) {
+    selectedOfferKey = choice;
+    performCheckoutRecalculation();
+  };
 
-    // 渲染移动端
-    renderCartItems(cart, 'mobileCartItems');
-    // 渲染桌面端
-    renderCartItems(cart, 'desktopCartItems');
-    // 更新总计
-    updateTotals(totals);
+  // 移除已应用的折扣码
+  window.removeManualCoupon = function() {
+    manualCouponCode = '';
+    document.querySelectorAll('.manual-discount-input').forEach(inp => { inp.value = ''; });
+    document.querySelectorAll('.coupon-feedback-msg').forEach(el => { el.style.display = 'none'; });
+    performCheckoutRecalculation();
+  };
 
-    // 如果购物车为空，可以选择重定向到购物车页面
-    if (cart.length === 0) {
-      // 可选：重定向到购物车页面
-      // setTimeout(() => window.location.href = '/cart', 2000);
-    }
+  // 手动优惠券 Apply 事件
+  document.querySelectorAll('.manual-apply-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const wrap = btn.closest('.discount-code-section');
+      const input = wrap?.querySelector('.manual-discount-input');
+      const code = input?.value.trim() || '';
+      if (!code) return;
+
+      manualCouponCode = code;
+      // 同步移动端和桌面端两个输入框的内容
+      document.querySelectorAll('.manual-discount-input').forEach(inp => { inp.value = code; });
+
+      const origText = btn.textContent;
+      btn.textContent = '...';
+      btn.disabled = true;
+
+      performCheckoutRecalculation().finally(() => {
+        btn.textContent = origText;
+        btn.disabled = false;
+      });
+    });
+  });
+
+  // ============================================================
+  // 原有初始化与事件监听（含浏览器后退 BFCache / 表单恢复修复）
+  // ============================================================
+  function restoreSavedShippingForm() {
+    try {
+      const savedRaw = sessionStorage.getItem('shippingInfo');
+      if (!savedRaw) return;
+      const saved = JSON.parse(savedRaw);
+      const fieldMap = ['email', 'firstName', 'lastName', 'address', 'apartment', 'city', 'state', 'zip', 'country', 'phone'];
+      fieldMap.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && saved[id]) {
+          el.value = saved[id];
+        }
+      });
+    } catch (e) {}
   }
 
-  // 页面加载时初始化
-  initializeCart();
+  function initializeCart() {
+    restoreSavedShippingForm();
 
-  // Mobile Order Summary Toggle
+    const cart = getCart();
+    const subtotal = getPreDiscountSubtotal(cart);
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+    renderCartItems(cart, 'mobileCartItems');
+    renderCartItems(cart, 'desktopCartItems');
+
+    const mobileH2 = document.querySelector('.mobile-order-summary h2');
+    if (mobileH2) mobileH2.textContent = `Order summary (${count} items)`;
+
+    const desktopH2 = document.querySelector('.desktop-order-summary h2');
+    if (desktopH2) desktopH2.textContent = `Order summary (${count} items)`;
+
+    document.querySelectorAll('.subtotal-line span:last-child').forEach(el => {
+      el.textContent = formatPrice(subtotal);
+    });
+
+    performCheckoutRecalculation();
+  }
+
   const summaryToggle = document.getElementById('summaryToggle');
   const summaryContent = document.getElementById('summaryContent');
-
   if (summaryToggle && summaryContent) {
     summaryToggle.addEventListener('click', () => {
       summaryToggle.classList.toggle('active');
@@ -1121,63 +1783,47 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     });
   }
 
-  // Form submission
-  // 检测邮箱是否已注册
   async function checkEmailRegistered(email) {
     try {
       const response = await fetch('/api/auth/check-email', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
-
       const data = await response.json();
       return data.exists || false;
     } catch (error) {
-      return false; // 失败时默认为未注册，允许继续流程
+      return false;
     }
+  }
+
+  const countrySelect = document.getElementById('country');
+  if (countrySelect) {
+    countrySelect.addEventListener('change', performCheckoutRecalculation);
+  }
+
+  const emailInput = document.getElementById('email');
+  if (emailInput) {
+    emailInput.addEventListener('blur', performCheckoutRecalculation);
+    emailInput.addEventListener('change', performCheckoutRecalculation);
   }
 
   document.getElementById('shippingForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // 获取邮箱
     const email = document.getElementById('email').value;
-
-    // 验证是否选择了国家
     const country = document.getElementById('country').value;
     if (!country || country === '') {
       alert('Please select a country');
       return;
     }
 
-    // 获取选中的运费方式并确保运费已计算
     const selectedShipping = document.querySelector('.shipping-option.active');
     const shippingMethod = selectedShipping?.getAttribute('data-method') || 'standard';
     let shippingCost = selectedShipping?.getAttribute('data-cost') || '0.00';
 
-    // 如果运费为 0 或未计算，重新计算
-    if (!shippingCost || shippingCost === '0.00' || shippingCost === 'undefined') {
-      const cart = JSON.parse(localStorage.getItem('ebbelle_cart') || '[]');
-      if (cart.length > 0) {
-        const totalWeight = calculateTotalWeight(cart);
-        const shipping = calculateShipping(totalWeight, country);
-        shippingCost = shipping.totalShipping.toFixed(2);
-
-        // 更新 data-cost
-        if (selectedShipping) {
-          selectedShipping.setAttribute('data-cost', shippingCost);
-        }
-
-      }
-    }
-
-    // 检测邮箱是否已注册
     const isRegistered = await checkEmailRegistered(email);
 
-    // 存储用户状态到 sessionStorage
     sessionStorage.setItem('userEmailStatus', JSON.stringify({
       email: email,
       isRegistered: isRegistered,
@@ -1199,10 +1845,11 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       shippingCost: shippingCost
     };
     sessionStorage.setItem('shippingInfo', JSON.stringify(formData));
+    sessionStorage.removeItem('pendingOrderId');
+    sessionStorage.removeItem('pendingOrderKey');
     window.location.href = '/checkout/payment';
   });
 
-  // Shipping selection
   document.querySelectorAll('.shipping-option').forEach(opt => {
     opt.addEventListener('click', () => {
       document.querySelectorAll('.shipping-option').forEach(o => o.classList.remove('active'));
@@ -1210,86 +1857,14 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     });
   });
 
-  // ============================================================
-  // 运费更新逻辑
-  // ============================================================
+  window.addEventListener('cartUpdated', performCheckoutRecalculation);
+  document.addEventListener('DOMContentLoaded', initializeCart);
 
-  /**
-   * 更新运费显示
-   */
-  function updateShippingDisplay() {
-    const countrySelect = document.getElementById('country');
-    const shippingPriceEl = document.getElementById('shippingPrice');
-    const shippingDetailsEl = document.getElementById('shippingDetails');
-    const shippingOption = document.getElementById('shippingOption');
-
-    if (!countrySelect || !shippingPriceEl) {
-      return;
-    }
-
-    const selectedCountry = countrySelect.value;
-
-    // 如果没有选择国家，显示提示
-    if (!selectedCountry || selectedCountry === '') {
-      shippingPriceEl.textContent = 'Select country';
-      if (shippingDetailsEl) shippingDetailsEl.style.display = 'none';
-      return;
-    }
-
-    // 获取购物车
-    const cart = JSON.parse(localStorage.getItem('ebbelle_cart') || '[]');
-    if (cart.length === 0) {
-      shippingPriceEl.textContent = '$0.00';
-      if (shippingDetailsEl) shippingDetailsEl.style.display = 'none';
-      return;
-    }
-
-    // 计算总重量
-    const totalWeight = calculateTotalWeight(cart);
-
-    // 计算运费
-    const shipping = calculateShipping(totalWeight, selectedCountry);
-
-    // 更新运费价格显示
-    shippingPriceEl.textContent = formatPrice(shipping.totalShipping);
-
-    // 更新 data-cost 属性
-    if (shippingOption) {
-      shippingOption.setAttribute('data-cost', shipping.totalShipping.toFixed(2));
-    }
-
-    // 显示运费详情（如果有附加费）
-    if (shippingDetailsEl && shipping.hasSurcharge) {
-      shippingDetailsEl.style.display = 'block';
-      shippingDetailsEl.innerHTML = `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <span>Base Shipping (${totalWeight.toFixed(3)}kg):</span>
-          <span>${formatPrice(shipping.baseShipping)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span>Additional Fee (${selectedCountry}):</span>
-          <span>${formatPrice(shipping.surcharge)}</span>
-        </div>
-      `;
-    } else if (shippingDetailsEl) {
-      shippingDetailsEl.style.display = 'none';
-    }
-  }
-
-  // 监听国家选择变化
-  const countrySelect = document.getElementById('country');
-  if (countrySelect) {
-    countrySelect.addEventListener('change', updateShippingDisplay);
-  }
-
-  // 监听购物车更新
-  window.addEventListener('cartUpdated', updateShippingDisplay);
-
-  // 页面加载时更新运费
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', updateShippingDisplay);
-  } else {
-    updateShippingDisplay();
-  }
-
+  // 捕获浏览器前进/后退返回（含 BFCache），等浏览器自动填充结束后用真实地址重新试算
+  window.addEventListener('pageshow', (event) => {
+    setTimeout(() => {
+      restoreSavedShippingForm();
+      performCheckoutRecalculation();
+    }, event.persisted ? 0 : 60);
+  });
 </script>

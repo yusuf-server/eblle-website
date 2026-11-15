@@ -76,9 +76,10 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
           <div class="sidebar-card">
             <h3 class="sidebar-heading">{t(currentLocale, 'cart.promoCode')}</h3>
             <div class="coupon-form">
-              <input type="text" class="coupon-field" placeholder={t(currentLocale, 'cart.enterCouponCode')} />
-              <button type="button" class="coupon-apply-btn">{t(currentLocale, 'cart.apply')}</button>
+              <input type="text" id="cartCouponInput" class="coupon-field" placeholder={t(currentLocale, 'cart.enterCouponCode')} />
+              <button type="button" id="cartCouponApplyBtn" class="coupon-apply-btn">{t(currentLocale, 'cart.apply')}</button>
             </div>
+            <div id="cartCouponFeedback" style="display: none; font-size: 12px; margin-top: 10px; padding: 8px 10px; border-radius: 4px; align-items: center; justify-content: space-between; gap: 8px;"></div>
           </div>
 
           <!-- Summary Block -->
@@ -90,9 +91,14 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
               <span class="fee-value" id="cartSubtotalVal">$0.00</span>
             </div>
 
+            <div class="fee-row" id="cartDiscountRow" style="display: none; color: #2e7d32;">
+              <span class="fee-name" id="cartDiscountLabel" style="color: #2e7d32;">Discount</span>
+              <span class="fee-value" id="cartDiscountVal" style="color: #2e7d32;">-$0.00</span>
+            </div>
+
             <div class="fee-row">
               <span class="fee-name">{t(currentLocale, 'cart.shipping')}</span>
-              <span class="fee-tag font-accent">{t(currentLocale, 'cartDrawer.calculatedNextStep')}</span>
+              <span class="fee-tag font-accent" id="cartShippingStatusTag">{t(currentLocale, 'cartDrawer.calculatedNextStep')}</span>
             </div>
 
             <div class="fee-divider"></div>
@@ -214,14 +220,28 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     align-items: flex-start;
   }
 
-  /* Progress Banner */
+  /* Progress Banner (动态双门槛 & 热烈流光激励动效) */
   .shipping-progress-banner {
-    background: #ffffff;
-    border: 1px solid #e6ded3;
-    border-radius: 4px;
+    background: linear-gradient(135deg, #fffdf9 0%, #fbf5ea 100%);
+    border: 1px solid #e2c99b;
+    border-radius: 6px;
     padding: 16px 20px;
     margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 4px 14px rgba(163, 130, 76, 0.08);
+    transition: all 0.35s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .shipping-progress-banner.unlocked {
+    background: linear-gradient(135deg, #f3faf4 0%, #e6f5e8 100%);
+    border-color: #81c784;
+    box-shadow: 0 4px 16px rgba(46, 125, 50, 0.14);
+    animation: cartBannerCelebrate 0.6s ease;
+  }
+  @keyframes cartBannerCelebrate {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.012); }
+    100% { transform: scale(1); }
   }
   .progress-header {
     display: flex;
@@ -241,28 +261,72 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     color: #a3824c;
     font-size: 14px;
   }
+  .shipping-progress-banner.unlocked .progress-message i {
+    color: #2e7d32;
+  }
   .highlight {
-    color: #a3824c;
-    font-weight: 700;
+    color: #9e6d28;
+    font-weight: 800;
   }
   .progress-percent {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
-    color: #a3824c;
+    color: #8a6218;
+    background: #ffffff;
+    border: 1px solid rgba(163, 130, 76, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+  }
+  .shipping-progress-banner.unlocked .progress-percent {
+    color: #2e7d32;
+    border-color: rgba(46, 125, 50, 0.3);
   }
   .progress-bar-track {
     width: 100%;
-    height: 6px;
-    background: #ece7de;
+    height: 7px;
+    background: #eadfce;
     border-radius: 99px;
     overflow: hidden;
     margin-bottom: 8px;
+    position: relative;
   }
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #bfa16b 0%, #947137 100%);
+    background: linear-gradient(90deg, #d4af67 0%, #b07d2b 50%, #e2b878 100%);
+    background-size: 200% 100%;
     border-radius: 99px;
-    transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: width 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    animation: cartGoldFlow 2.4s linear infinite;
+  }
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.32) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.32) 50%,
+      rgba(255, 255, 255, 0.32) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: 20px 20px;
+    animation: cartStripeMove 1.1s linear infinite;
+  }
+  .shipping-progress-banner.unlocked .progress-fill {
+    background: linear-gradient(90deg, #43a047 0%, #2e7d32 50%, #66bb6a 100%);
+    background-size: 200% 100%;
+  }
+  @keyframes cartGoldFlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  @keyframes cartStripeMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 20px 0; }
   }
   .progress-labels {
     display: flex;
@@ -1006,6 +1070,143 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     updateCartSummary();
   }
 
+  // 购物车页状态：动态包邮门槛 + 优惠券码计算（与 shipping.astro 保持同一套后端校验接口）
+  let cartUserEmail = '';
+  let cartFreeShippingThreshold = 25;
+  let cartManualCoupon = sessionStorage.getItem('ebbelle_cart_manual_coupon') || '';
+  let cartDiscountAmount = 0;
+  let cartCouponFreeShipping = false;
+
+  async function initCartUserContext() {
+    try {
+      const meRes = await fetch('/api/auth/me');
+      const meData = await meRes.json();
+      if (meData && meData.authenticated && meData.user && meData.user.email) {
+        cartUserEmail = meData.user.email;
+      }
+    } catch (e) {}
+
+    const couponInput = document.getElementById('cartCouponInput');
+    if (couponInput && cartManualCoupon) {
+      couponInput.value = cartManualCoupon;
+    }
+    await syncCartWithBackend();
+  }
+
+  async function syncCartWithBackend() {
+    const cart = getCart();
+    const subtotal = cart.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * item.quantity), 0);
+    const feedbackEl = document.getElementById('cartCouponFeedback');
+
+    try {
+      const res = await fetch('/api/woocommerce/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cartUserEmail,
+          subtotal: subtotal > 0 ? subtotal : 10,
+          country: 'US',
+          selected_offer: 'bundle_tier',
+          manual_coupon: cartManualCoupon
+        })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        if (typeof data.free_shipping_min === 'number' && data.free_shipping_min > 0) {
+          cartFreeShippingThreshold = data.free_shipping_min;
+        } else {
+          cartFreeShippingThreshold = data.is_new_customer ? 25 : 50;
+        }
+
+        if (cartManualCoupon && subtotal > 0) {
+          if (data.coupon_status === 'valid') {
+            // 仅计算手动券本身带来的折扣金额（或免邮）
+            const baseRes = await fetch('/api/woocommerce/calculate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: cartUserEmail,
+                subtotal: subtotal,
+                country: 'US',
+                selected_offer: 'bundle_tier',
+                manual_coupon: ''
+              })
+            });
+            const baseData = await baseRes.json();
+            const baseDiscount = (baseData && baseData.success) ? (parseFloat(baseData.discount_total) || 0) : 0;
+            cartDiscountAmount = Math.max(0, parseFloat(((parseFloat(data.discount_total) || 0) - baseDiscount).toFixed(2)));
+            cartCouponFreeShipping = Boolean(data.base_shipping_free && !(baseData && baseData.base_shipping_free));
+
+            if (feedbackEl) {
+              feedbackEl.style.display = 'flex';
+              feedbackEl.style.background = '#edf7ee';
+              feedbackEl.style.color = '#2e7d32';
+              feedbackEl.style.border = '1px solid #c8e6c9';
+              feedbackEl.innerHTML = `
+                <span><i class="fa-solid fa-tag"></i> ${data.coupon_message}</span>
+                <button type="button" onclick="removeCartPromoCode()" style="background:none; border:none; color:#555; cursor:pointer; font-size:11.5px; text-decoration:underline; padding:0;">Remove</button>
+              `;
+            }
+          } else {
+            cartDiscountAmount = 0;
+            cartCouponFreeShipping = false;
+            sessionStorage.removeItem('ebbelle_cart_manual_coupon');
+            if (feedbackEl && data.coupon_message) {
+              feedbackEl.style.display = 'flex';
+              feedbackEl.style.background = '#fdecea';
+              feedbackEl.style.color = '#c62828';
+              feedbackEl.style.border = '1px solid #ffcdd2';
+              feedbackEl.innerHTML = `<span><i class="fa-solid fa-circle-exclamation"></i> ${data.coupon_message}</span>`;
+            }
+          }
+        } else {
+          cartDiscountAmount = 0;
+          cartCouponFreeShipping = false;
+          if (feedbackEl) feedbackEl.style.display = 'none';
+        }
+      }
+    } catch (e) {
+      // 降级本地计算
+    }
+
+    updateCartSummary();
+  }
+
+  window.removeCartPromoCode = function() {
+    cartManualCoupon = '';
+    cartDiscountAmount = 0;
+    cartCouponFreeShipping = false;
+    sessionStorage.removeItem('ebbelle_cart_manual_coupon');
+    const inp = document.getElementById('cartCouponInput');
+    if (inp) inp.value = '';
+    const feedbackEl = document.getElementById('cartCouponFeedback');
+    if (feedbackEl) feedbackEl.style.display = 'none';
+    updateCartSummary();
+  };
+
+  document.getElementById('cartCouponApplyBtn')?.addEventListener('click', async () => {
+    const inp = document.getElementById('cartCouponInput');
+    const btn = document.getElementById('cartCouponApplyBtn');
+    const code = inp ? inp.value.trim() : '';
+    if (!code) return;
+
+    cartManualCoupon = code;
+    sessionStorage.setItem('ebbelle_cart_manual_coupon', code);
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '...';
+    }
+    try {
+      await syncCartWithBackend();
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'APPLY';
+      }
+    }
+  });
+
   // 更新总览价格与免邮条
   function updateCartSummary() {
     const cart = getCart();
@@ -1017,6 +1218,10 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
     const subtotalSpan = document.getElementById('cartSubtotalVal');
     const subtotalName = document.getElementById('subtotalLabel');
+    const discountRow = document.getElementById('cartDiscountRow');
+    const discountLabel = document.getElementById('cartDiscountLabel');
+    const discountVal = document.getElementById('cartDiscountVal');
+    const shippingTag = document.getElementById('cartShippingStatusTag');
     const totalSpan = document.getElementById('cartTotalVal');
 
     if (subtotalName) {
@@ -1025,27 +1230,49 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     if (subtotalSpan) {
       subtotalSpan.textContent = formatPrice(subtotal);
     }
-    if (totalSpan) {
-      totalSpan.textContent = formatPrice(subtotal);
+
+    const effectiveDiscount = subtotal > 0 ? Math.min(subtotal, cartDiscountAmount) : 0;
+    if (discountRow && discountVal && discountLabel) {
+      if (effectiveDiscount > 0) {
+        discountRow.style.display = 'flex';
+        discountLabel.textContent = `Promo (${cartManualCoupon.toUpperCase()})`;
+        discountVal.textContent = `-${formatPrice(effectiveDiscount)}`;
+      } else {
+        discountRow.style.display = 'none';
+      }
     }
 
-    // 免邮进度 ($50 门槛)
-    const freeShippingThreshold = 50;
-    const remaining = Math.max(0, freeShippingThreshold - subtotal);
-    const progress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+    const estimatedTotal = Math.max(0, subtotal - effectiveDiscount);
+    if (totalSpan) {
+      totalSpan.textContent = formatPrice(estimatedTotal);
+    }
 
+    // 动态免邮进度（未登录或首单新客 $25；已付款复购老客 $50）
+    const freeShippingThreshold = cartFreeShippingThreshold || 25;
+    const remaining = Math.max(0, freeShippingThreshold - subtotal);
+    const unlocked = (remaining <= 0 && subtotal > 0) || (cartCouponFreeShipping && subtotal > 0);
+    const progress = unlocked ? 100 : Math.min(100, (subtotal / freeShippingThreshold) * 100);
+
+    if (shippingTag) {
+      shippingTag.textContent = unlocked ? 'FREE' : 'Calculated next step';
+    }
+
+    const bannerEl = document.querySelector('.shipping-progress-banner');
     const progressFill = document.querySelector('.shipping-progress-banner .progress-fill');
     const progressPercent = document.querySelector('.shipping-progress-banner .progress-percent');
     const progressMessage = document.querySelector('.shipping-progress-banner .progress-message');
     const progressLabels = document.querySelector('.shipping-progress-banner .progress-labels');
 
+    if (bannerEl) bannerEl.classList.toggle('unlocked', unlocked);
     if (progressFill) progressFill.style.width = `${progress}%`;
     if (progressPercent) progressPercent.textContent = `${Math.round(progress)}%`;
     if (progressMessage) {
-      if (remaining > 0) {
+      if (!unlocked && remaining > 0) {
         progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> You're <span class="highlight">${formatPrice(remaining)}</span> away from <strong>FREE SHIPPING!</strong>`;
-      } else {
+      } else if (subtotal > 0) {
         progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> <strong>Congratulations! You've unlocked FREE SHIPPING!</strong>`;
+      } else {
+        progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> You're <span class="highlight">${formatPrice(freeShippingThreshold)}</span> away from <strong>FREE SHIPPING!</strong>`;
       }
     }
     if (progressLabels) {
@@ -1134,6 +1361,14 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     renderCartPage();
   });
 
-  window.addEventListener('cartUpdated', renderCartPage);
-  document.addEventListener('DOMContentLoaded', renderCartPage);
+  window.addEventListener('cartUpdated', () => {
+    renderCartPage();
+    if (cartManualCoupon) {
+      syncCartWithBackend();
+    }
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    renderCartPage();
+    initCartUserContext();
+  });
 </script>

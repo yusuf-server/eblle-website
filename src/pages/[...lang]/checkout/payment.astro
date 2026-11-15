@@ -63,15 +63,17 @@ const CURRENT_CURRENCY = 'USD';
             <div class="summary-content" id="summaryContent">
               <div class="summary-items" id="mobileCartItems"></div>
 
-              <div class="discount-code-section">
-                <input type="text" class="discount-input" placeholder="Discount code or gift card">
-                <button type="button" class="apply-btn">Apply</button>
-              </div>
+              <!-- 已生效的特权与预计获取积分横幅 -->
+              <div class="applied-privileges-banner" style="display: none;"></div>
 
               <div class="summary-totals">
                 <div class="total-line">
                   <span>Subtotal</span>
                   <span class="subtotal-val">$0.00</span>
+                </div>
+                <div class="total-line discount-row" style="display: none; color: #2e7d32;">
+                  <span>Discount & Rewards</span>
+                  <span class="discount-val">-$0.00</span>
                 </div>
                 <div class="total-line">
                   <span>Shipping</span>
@@ -170,15 +172,17 @@ const CURRENT_CURRENCY = 'USD';
           <h2 id="desktopOrderTitle">Order summary</h2>
           <div class="summary-items" id="desktopCartItems"></div>
 
-          <div class="discount-code-section">
-            <input type="text" class="discount-input" placeholder="Discount code or gift card">
-            <button type="button" class="apply-btn">Apply</button>
-          </div>
+          <!-- 已生效的特权与预计获取积分横幅 -->
+          <div class="applied-privileges-banner" style="display: none;"></div>
 
           <div class="summary-totals">
             <div class="total-line">
               <span>Subtotal</span>
               <span class="subtotal-val">$0.00</span>
+            </div>
+            <div class="total-line discount-row" style="display: none; color: #2e7d32;">
+              <span>Discount & Rewards</span>
+              <span class="discount-val">-$0.00</span>
             </div>
             <div class="total-line">
               <span>Shipping</span>
@@ -462,32 +466,18 @@ const CURRENT_CURRENCY = 'USD';
   }
   .summary-items .item-details p { font-size: 11.5px; color: #777; }
   .summary-items .item-price { font-size: 14px; font-weight: 600; }
-  .discount-code-section {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #ddd8ce;
-  }
-  .discount-input {
-    flex: 1;
-    height: 40px;
-    padding: 0 12px;
-    border: 1px solid #ddd8ce;
-    border-radius: 4px;
-    background: #fff;
-    font-size: 13px;
-  }
-  .apply-btn {
-    padding: 0 18px;
-    background: #111;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
+
+  .applied-privileges-banner {
+    background: linear-gradient(135deg, #fdfbf7 0%, #f6efe2 100%);
+    border: 1px solid #d4af67;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
     font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
+    color: #66522e;
+    line-height: 1.5;
   }
+
   .summary-totals {
     display: flex;
     flex-direction: column;
@@ -573,8 +563,6 @@ const CURRENT_CURRENCY = 'USD';
       max-width: 100%;
       overflow: hidden;
     }
-
-    /* Mobile summary styling */
     .mobile-order-summary .order-summary {
       position: static;
       padding: 0;
@@ -593,8 +581,6 @@ const CURRENT_CURRENCY = 'USD';
       max-width: 100%;
       box-sizing: border-box;
     }
-
-    /* Adjust items in mobile */
     .mobile-order-summary .summary-items {
       padding-bottom: 16px;
       margin-bottom: 16px;
@@ -628,21 +614,11 @@ const CURRENT_CURRENCY = 'USD';
       font-size: 14px;
       flex-shrink: 0;
     }
-    .mobile-order-summary .discount-code-section {
-      margin-bottom: 16px;
-      padding-bottom: 16px;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .mobile-order-summary .discount-input {
-      min-width: 0;
-    }
     .payment-methods { grid-template-columns: 1fr; }
   }
 </style>
 
 <script define:vars={{ CURRENT_CURRENCY }}>
-  // 货币处理函数
   const CURRENCY_SYMBOLS = {
     USD: '$',
     EUR: '€',
@@ -692,13 +668,21 @@ const CURRENT_CURRENCY = 'USD';
     }
   }
 
+  function getCheckoutCalculation() {
+    try {
+      const str = sessionStorage.getItem('ebbelle_checkout_calculation');
+      return str ? JSON.parse(str) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function calculateCartTotals(cart) {
-    const subtotal = cart.reduce((sum, item) => {
+    const rawSubtotal = cart.reduce((sum, item) => {
       const price = parseFloat(item.price) || 0;
       return sum + (price * item.quantity);
     }, 0);
 
-    // 从 sessionStorage 读取用户选择的运费
     let shipping = 0;
     try {
       const shippingInfo = sessionStorage.getItem('shippingInfo');
@@ -710,15 +694,22 @@ const CURRENT_CURRENCY = 'USD';
       shipping = 0;
     }
 
-    // 移除税务计算
-    const total = subtotal + shipping;
+    const calc = getCheckoutCalculation();
+    const discount = calc ? (parseFloat(calc.discount_total) || 0) : 0;
+    if (calc && !isNaN(parseFloat(calc.shipping_cost))) {
+      shipping = parseFloat(calc.shipping_cost);
+    }
+
+    const total = Math.max(0, rawSubtotal - discount) + shipping;
 
     return {
-      subtotal: subtotal.toFixed(2),
+      subtotal: rawSubtotal.toFixed(2),
+      discount: discount.toFixed(2),
       shipping: shipping.toFixed(2),
       total: total.toFixed(2),
       currency: CURRENT_CURRENCY,
-      itemCount: cart.reduce((sum, item) => sum + item.quantity, 0)
+      itemCount: cart.reduce((sum, item) => sum + item.quantity, 0),
+      calcData: calc
     };
   }
 
@@ -749,8 +740,57 @@ const CURRENT_CURRENCY = 'USD';
     renderBox('mobileCartItems');
     renderBox('desktopCartItems');
 
+    // 渲染生效特权及预计获取积分提示
+    const banners = document.querySelectorAll('.applied-privileges-banner');
+    const calc = totals.calcData;
+    const hasOffers = calc && calc.applied_offers && calc.applied_offers.length > 0;
+    const earnedPts = calc ? (parseFloat(calc.points_earned) || 0) : parseFloat((parseFloat(totals.subtotal) / 10).toFixed(1));
+    const multiplier = calc ? (parseFloat(calc.points_multiplier) || 1.0) : 1.0;
+
+    if (hasOffers || earnedPts > 0) {
+      banners.forEach(b => {
+        b.style.display = 'block';
+        let html = '';
+        if (hasOffers) {
+          html += `
+            <div style="font-weight:700; color:#8c631a; margin-bottom:4px; text-transform:uppercase; font-size:11px; letter-spacing:0.06em;">
+              <i class="fa-solid fa-crown"></i> Active Rewards & Discounts
+            </div>
+            <div style="margin-bottom: ${earnedPts > 0 ? '8px' : '0'};">
+              ${calc.applied_offers.map(o => `<div>✓ ${o}</div>`).join('')}
+            </div>
+          `;
+        }
+        if (earnedPts > 0) {
+          html += `
+            <div style="display:flex; align-items:center; justify-content:space-between; ${hasOffers ? 'padding-top:8px; border-top:1px dashed rgba(163,130,76,0.3);' : ''} color:#66522e; font-size:12px;">
+              <span>
+                <i class="fa-solid fa-coins" style="color:#b8860b; margin-right:4px;"></i>
+                Points to Earn ${multiplier > 1 ? `<span style="background:#faebd7; color:#8c631a; padding:1px 5px; border-radius:4px; font-size:10px; font-weight:700;">${multiplier}x VIP</span>` : ''}
+              </span>
+              <strong style="color:#2e7d32;">+${earnedPts} PTS</strong>
+            </div>
+          `;
+        }
+        b.innerHTML = html;
+      });
+    } else {
+      banners.forEach(b => { b.style.display = 'none'; });
+    }
+
     document.querySelectorAll('.subtotal-val').forEach(el => el.textContent = formatPrice(parseFloat(totals.subtotal)));
-    document.querySelectorAll('.shipping-val').forEach(el => el.textContent = formatPrice(parseFloat(totals.shipping)));
+
+    const discountNum = parseFloat(totals.discount);
+    document.querySelectorAll('.discount-row').forEach(row => {
+      row.style.display = discountNum > 0 ? 'flex' : 'none';
+    });
+    document.querySelectorAll('.discount-val').forEach(el => el.textContent = `-${formatPrice(discountNum)}`);
+
+    const shippingNum = parseFloat(totals.shipping);
+    document.querySelectorAll('.shipping-val').forEach(el => {
+      el.textContent = shippingNum === 0 ? 'FREE' : formatPrice(shippingNum);
+    });
+
     document.querySelectorAll('.total-val').forEach(el => el.textContent = formatPrice(parseFloat(totals.total)));
 
     const mobileSummary = document.getElementById('mobileSummaryTotal');
@@ -765,7 +805,6 @@ const CURRENT_CURRENCY = 'USD';
     const totals = calculateCartTotals(cart);
     renderCart(cart, totals);
 
-    // 读取地址
     const shippingInfoStr = sessionStorage.getItem('shippingInfo');
     if (shippingInfoStr) {
       const s = JSON.parse(shippingInfoStr);
@@ -779,7 +818,6 @@ const CURRENT_CURRENCY = 'USD';
       }
     }
 
-    // 移动端折叠菜单
     const toggleBtn = document.getElementById('summaryToggle');
     const toggleContent = document.getElementById('summaryContent');
     if (toggleBtn && toggleContent) {
@@ -789,7 +827,6 @@ const CURRENT_CURRENCY = 'USD';
       });
     }
 
-    // 初始化 PayPal 按钮
     initPayPal(cart, totals);
   }
 
@@ -797,6 +834,15 @@ const CURRENT_CURRENCY = 'USD';
     // @ts-ignore
     if (typeof paypal === 'undefined') {
       return;
+    }
+
+    // 支持从订单详情页 "Complete Payment" 链接 (?order_id=123&order_key=wc_order_xxx) 传入待支付订单
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryOrderId = urlParams.get('order_id');
+    const queryOrderKey = urlParams.get('order_key');
+    if (queryOrderId) {
+      sessionStorage.setItem('pendingOrderId', queryOrderId);
+      if (queryOrderKey) sessionStorage.setItem('pendingOrderKey', queryOrderKey);
     }
 
     // @ts-ignore
@@ -809,44 +855,33 @@ const CURRENT_CURRENCY = 'USD';
       },
 
       createOrder: async function() {
-        // 检查是否已有 pending 订单
-        const existingOrderId = sessionStorage.getItem('pendingOrderId');
-        const existingOrderKey = sessionStorage.getItem('pendingOrderKey');
+        const existingOrderId = parseInt(sessionStorage.getItem('pendingOrderId') || '0', 10);
+        const existingOrderKey = sessionStorage.getItem('pendingOrderKey') || '';
 
-        // 如果已有 pending 订单，先尝试复用
-        if (existingOrderId && existingOrderKey) {
-          try {
-            // 调用后端检查订单状态
-            const checkRes = await fetch(`/api/woocommerce/check-order?orderId=${existingOrderId}&orderKey=${existingOrderKey}`);
-
-            if (checkRes.ok) {
-              const orderData = await checkRes.json();
-
-              // 如果订单仍然是 pending，复用它
-              if (orderData.status === 'pending' && orderData.paypalOrderId) {
-                return orderData.paypalOrderId;
-              }
-            }
-          } catch (err) {
-            // 检查现有订单失败，将创建新订单
-          }
-
-          // 如果订单已经不是 pending 或检查失败，清理 sessionStorage
-          sessionStorage.removeItem('pendingOrderId');
-          sessionStorage.removeItem('pendingOrderKey');
-        }
-
-        // 创建新订单
         const shippingInfoStr = sessionStorage.getItem('shippingInfo');
-        if (!shippingInfoStr) {
-          alert('Please provide shipping details first.');
-          window.location.href = '/checkout/shipping';
-          return;
+        const latestCart = getCart();
+
+        // 若既没有待复用的 pending 订单，又没有地址或购物车，才拦截跳回
+        if (!existingOrderId) {
+          if (!shippingInfoStr) {
+            alert('Please provide shipping details first.');
+            window.location.href = '/checkout/shipping';
+            throw new Error('Missing shipping info');
+          }
+          if (!latestCart || latestCart.length === 0) {
+            alert('Your cart is empty. Please add products first.');
+            window.location.href = '/shop';
+            throw new Error('Cart is empty');
+          }
         }
 
-        const shipping = JSON.parse(shippingInfoStr);
+        const shipping = shippingInfoStr ? JSON.parse(shippingInfoStr) : {};
+        const calc = getCheckoutCalculation();
+        const earnedPts = calc ? (parseFloat(calc.points_earned) || 0) : parseFloat((parseFloat(totals.subtotal) / 10).toFixed(1));
 
         const payload = {
+          existingOrderId: existingOrderId > 0 ? existingOrderId : undefined,
+          existingOrderKey: existingOrderKey || undefined,
           currency: CURRENT_CURRENCY,
           billing: {
             first_name: shipping.firstName || '',
@@ -871,8 +906,13 @@ const CURRENT_CURRENCY = 'USD';
             country: shipping.country || 'US',
           },
           shippingMethod: shipping.shippingMethod || 'standard',
-          shippingCost: shipping.shippingCost || totals.shipping,
-          line_items: cart.map(item => ({
+          shippingCost: totals.shipping,
+          discountTotal: parseFloat(totals.discount) || 0,
+          pointsSpent: calc?.points_spent || 0,
+          pointsEarned: earnedPts,
+          appliedOffers: calc?.applied_offers || [],
+          coupon_lines: calc?.manual_coupon ? [{ code: calc.manual_coupon }] : [],
+          line_items: latestCart.map(item => ({
             product_id: item.productId || item.product_id || item.id,
             variation_id: item.variationId || item.variation_id || undefined,
             quantity: item.quantity
@@ -885,12 +925,13 @@ const CURRENT_CURRENCY = 'USD';
           body: JSON.stringify(payload)
         });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.details || 'Failed to create PayPal order');
-        }
+        const data = await res.json().catch(() => ({}));
 
-        const data = await res.json();
+        if (!res.ok) {
+          const detailMsg = data.details || data.message || data.error || 'Failed to create PayPal order';
+          alert('Order creation failed: ' + detailMsg);
+          throw new Error(detailMsg);
+        }
 
         sessionStorage.setItem('pendingOrderId', data.orderId.toString());
         sessionStorage.setItem('pendingOrderKey', data.orderKey);
@@ -915,35 +956,26 @@ const CURRENT_CURRENCY = 'USD';
           const result = await res.json();
 
           if (!res.ok) {
-
-            // 存储支付失败状态
             sessionStorage.setItem('paymentStatus', JSON.stringify({
               status: 'failed',
               reason: result.paypalError?.name || 'unknown',
               details: result.paypalError?.details || []
             }));
-
-            // 清空本地购物车
-            localStorage.removeItem('ebbelle_cart');
-
-            // 跳转到确认页显示失败状态
             window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=failed`;
             return;
           }
 
-          // 清空本地购物车
+          // 真正支付成功：清理购物车、计算快照与 pendingOrderId
           localStorage.removeItem('ebbelle_cart');
-
-          // 存储支付成功状态
+          sessionStorage.removeItem('ebbelle_checkout_calculation');
+          sessionStorage.removeItem('pendingOrderId');
+          sessionStorage.removeItem('pendingOrderKey');
           sessionStorage.setItem('paymentStatus', JSON.stringify({
             status: 'success'
           }));
 
-          // 跳转至统一确认页
           window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=success`;
         } catch (error) {
-
-          // 存储错误状态
           sessionStorage.setItem('paymentStatus', JSON.stringify({
             status: 'error',
             message: error.message
@@ -951,27 +983,12 @@ const CURRENT_CURRENCY = 'USD';
 
           const orderId = sessionStorage.getItem('pendingOrderId');
           const orderKey = sessionStorage.getItem('pendingOrderKey');
-
-          // 清空本地购物车
-          localStorage.removeItem('ebbelle_cart');
-
-          // 跳转到确认页
           window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=error`;
         }
       },
 
       onError: function(err) {
-        const orderId = sessionStorage.getItem('pendingOrderId');
-        const orderKey = sessionStorage.getItem('pendingOrderKey');
-
-        sessionStorage.setItem('paymentStatus', JSON.stringify({
-          status: 'error',
-          message: 'PayPal encountered an error'
-        }));
-
-        localStorage.removeItem('ebbelle_cart');
-
-        window.top.location.href = `/checkout/confirmation?order_id=${orderId || ''}&order_key=${orderKey || ''}&payment=paypal&status=error`;
+        console.error('PayPal Error:', err);
       },
 
       onCancel: function(data) {
@@ -982,8 +999,7 @@ const CURRENT_CURRENCY = 'USD';
           status: 'cancelled'
         }));
 
-        localStorage.removeItem('ebbelle_cart');
-
+        // 跳转至确认页展示 Pending 状态并触发自动建号，同时保留 pendingOrderId 以便继续完成同一笔订单付款
         window.top.location.href = `/checkout/confirmation?order_id=${orderId || ''}&order_key=${orderKey || ''}&payment=paypal&status=cancelled`;
       }
     }).render('#paypal-button-container');

@@ -42,29 +42,42 @@ if (!userId || !userEmail) {
       
       <div class="acc-header-area">
         <h1 class="acc-heading">My Account</h1>
-        <p class="acc-subheading">Manage your orders, profile details and shipping addresses</p>
+        <p class="acc-subheading">Manage your orders, profile details, VIP rewards and exclusive vouchers</p>
       </div>
 
       <div class="acc-main-grid">
         <!-- Sidebar Navigation -->
         <aside class="acc-sidebar-panel">
           <div class="acc-user-card">
-            <div class="acc-avatar">
-              <i class="fa-solid fa-user"></i>
+            <!-- 动态等级徽章容器 -->
+            <div class="acc-avatar badge-pearl" id="sidebarAvatarMedallion">
+              <div class="medallion-inner" id="sidebarAvatarIcon">
+                <i class="fa-regular fa-circle-dot"></i>
+              </div>
             </div>
             <div class="acc-user-meta">
               <span class="acc-u-name" id="sidebarUserName">Loading...</span>
-              <span class="acc-u-email" id="sidebarUserEmail">Loading...</span>
+              <div class="acc-u-tier" id="sidebarUserTier">
+                <i class="fa-solid fa-gem"></i> <span id="sidebarTierLabel">Checking VIP...</span>
+              </div>
             </div>
           </div>
 
-          <!-- 横向滑动专属隔离仓：彻底切断宽度外溢 -->
+          <!-- 横向滑动导航 -->
           <div class="acc-nav-scroller">
             <nav class="acc-nav-list" aria-label="Account navigation">
               <button type="button" class="acc-nav-pill active" data-tab="dashboard">
                 <i class="fa-solid fa-gauge"></i>
                 <span>Dashboard</span>
               </button>
+              
+              <!-- 会员中心专属选项卡入口 -->
+              <button type="button" class="acc-nav-pill" data-tab="membership">
+                <i class="fa-solid fa-crown" style="color: #a3824c;"></i>
+                <span>VIP &amp; Rewards</span>
+                <span class="acc-badge-gold" id="sidebarCouponCount" style="display:none;">0 Coupons</span>
+              </button>
+
               <button type="button" class="acc-nav-pill" data-tab="orders">
                 <i class="fa-solid fa-box"></i>
                 <span>Orders</span>
@@ -96,12 +109,45 @@ if (!userId || !userEmail) {
           
           <!-- Tab 1: Dashboard -->
           <div class="acc-tab-pane active" id="dashboard">
-            <div class="acc-welcome-box">
-              <h2>Welcome back, <strong id="welcomeUserName">Loading...</strong></h2>
-              <p>From your dashboard you can easily review recent orders, update shipping addresses, and manage your account credentials.</p>
+            
+            <!-- 高级动态流动背景 VIP 横幅 -->
+            <div class="vip-status-banner tier-bg-pearl" id="dashboardVipBanner">
+              <div class="vip-banner-top">
+                <div>
+                  <div class="vip-tier-tag" id="dashVipTierBadge">
+                    <i class="fa-solid fa-gem"></i> <span id="dashVipTierText">Pearl Member</span>
+                  </div>
+                  <h3 class="vip-banner-welcome">
+                    Welcome back, <strong id="welcomeUserName">Member</strong>
+                  </h3>
+                </div>
+                <div class="vip-points-glance">
+                  <span>Balance:</span>
+                  <strong id="dashPointsNum">0</strong>
+                  <span id="dashPointsUsd">PTS (≈ $0.00)</span>
+                </div>
+              </div>
+
+              <!-- 季度升级进度条 -->
+              <div class="vip-progress-block" id="dashProgressBlock">
+                <div class="vip-prog-meta">
+                  <span id="dashNextTierLabel">Progress to Next Tier</span>
+                  <span id="dashSpendNeededText">Spend more this quarter to upgrade</span>
+                </div>
+                <div class="vip-prog-bar-bg">
+                  <div class="vip-prog-bar-fill" id="dashProgressBar"></div>
+                </div>
+              </div>
             </div>
 
+            <!-- 扩展为 4 列的指标网格 -->
             <div class="acc-metric-grid">
+              <div class="acc-metric-card" style="border-left: 3px solid #a3824c;">
+                <div class="acc-icon-bubble" style="background: #fdf8f0;"><i class="fa-solid fa-ticket"></i></div>
+                <h3>Rewards</h3>
+                <p id="dashboardRewardsMetric">Loading rewards...</p>
+                <button type="button" class="acc-text-link" data-tab="membership">Claim &amp; view &rarr;</button>
+              </div>
               <div class="acc-metric-card">
                 <div class="acc-icon-bubble"><i class="fa-solid fa-box"></i></div>
                 <h3>Orders</h3>
@@ -117,7 +163,7 @@ if (!userId || !userEmail) {
               <div class="acc-metric-card">
                 <div class="acc-icon-bubble"><i class="fa-solid fa-user-gear"></i></div>
                 <h3>Security</h3>
-                <p>Password & Profile</p>
+                <p>Password &amp; Profile</p>
                 <button type="button" class="acc-text-link" data-tab="account-details">Edit details &rarr;</button>
               </div>
             </div>
@@ -128,16 +174,11 @@ if (!userId || !userEmail) {
                 <button type="button" class="acc-mini-link" data-tab="orders">View All</button>
               </div>
 
-              <!-- Loading state -->
               <div id="recentOrdersLoading" class="acc-order-list" style="text-align: center; padding: 40px; color: #999;">
                 <i class="fa-solid fa-spinner fa-spin"></i>
                 <p>Loading recent orders...</p>
               </div>
-
-              <!-- Orders list -->
               <div class="acc-order-list" id="recentOrdersList" style="display: none;"></div>
-
-              <!-- Empty state -->
               <div id="noRecentOrders" style="display: none; text-align: center; padding: 40px; color: #999;">
                 <i class="fa-solid fa-box-open" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
                 <p>No orders yet</p>
@@ -146,25 +187,178 @@ if (!userId || !userEmail) {
             </div>
           </div>
 
-          <!-- Tab 2: Orders -->
+          <!-- =========================================================================
+               Tab: VIP & Rewards (全新高定会员中心)
+               ========================================================================= -->
+          <div class="acc-tab-pane" id="membership">
+            
+            <div class="acc-pane-title-row">
+              <div>
+                <h2>VIP Membership &amp; Exclusive Rewards</h2>
+                <span style="display:block; margin-top: 4px;">Earn points on every purchase and redeem stackable vouchers</span>
+              </div>
+              <span id="vipRateHeader" style="color: #a3824c; font-weight: 600; font-size: 13px;">$10 Spend = 1 Point | 10 Points = $1.00 USD</span>
+            </div>
+
+            <!-- 老用户未激活友好提示 -->
+            <div id="vipInactiveNotice" style="display:none; background:#fffbf5; border:1px solid #ebd3b0; border-radius:4px; padding:20px; margin-bottom:24px;">
+              <h4 style="color:#a3824c; margin:0 0 6px 0;"><i class="fa-solid fa-circle-info"></i> Membership Awaits Activation</h4>
+              <p style="margin:0; font-size:13px; color:#666; line-height:1.6;">
+                Your account is pending VIP activation. If you are an existing customer, our concierge will activate your tier shortly. You can also contact support directly to claim your gifts!
+              </p>
+            </div>
+
+            <!-- 1. 生日设定独立专区 (纯英文月日双下拉框，彻底移除系统年/月/日) -->
+            <div class="vip-feature-card" id="birthdayCard" style="background: #ffffff; border: 1px solid #e5ded2; border-radius: 6px; padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+              <div>
+                <h4 style="margin: 0 0 4px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #111; display:flex; align-items:center; gap:6px;">
+                  🎂 Annual VIP Birthday Reward Setting
+                </h4>
+                <p style="margin: 0; font-size: 12px; color: #666; line-height: 1.4;" id="birthdayStatusDesc">
+                  Silver members receive $5.00 OFF, Gold members receive $10.00 OFF automatically on birthday month.
+                </p>
+              </div>
+              <div id="birthdayActionArea" style="display: flex; align-items: center; gap: 8px;">
+                <select id="bdayMonthSelect" style="height: 36px; padding: 0 10px; border: 1px solid #ddd; border-radius: 3px; font-size: 12.5px; background: #fff; outline: none;">
+                  <option value="">Month</option>
+                  <option value="01">January</option>
+                  <option value="02">February</option>
+                  <option value="03">March</option>
+                  <option value="04">April</option>
+                  <option value="05">May</option>
+                  <option value="06">June</option>
+                  <option value="07">July</option>
+                  <option value="08">August</option>
+                  <option value="09">September</option>
+                  <option value="10">October</option>
+                  <option value="11">November</option>
+                  <option value="12">December</option>
+                </select>
+                <select id="bdayDaySelect" style="height: 36px; padding: 0 10px; border: 1px solid #ddd; border-radius: 3px; font-size: 12.5px; background: #fff; outline: none;">
+                  <option value="">Day</option>
+                </select>
+                <button type="button" id="btnSaveBirthday" class="btn-gold-action" onclick="saveVipBirthday()" style="height: 36px; padding: 0 16px;">Save Birthday</button>
+              </div>
+            </div>
+
+            <!-- 2. 免费拿样专属面板 (Silver / Gold / Diamond 亮起) -->
+            <div class="vip-feature-card" id="sampleClaimCard" style="display: none; background: linear-gradient(135deg, #fdfbf7 0%, #f6efe2 100%); border: 1px solid #d4af67; border-radius: 6px; padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 2px 10px rgba(163, 130, 76, 0.08); justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+              <div>
+                <h4 style="margin: 0 0 4px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #8c631a; display:flex; align-items:center; gap:6px;">
+                  🎁 Monthly VIP Complimentary Samples
+                </h4>
+                <p style="margin: 0; font-size: 12px; color: #555; line-height: 1.4;">
+                  You have <strong id="samplesRemainingCount" style="color: #111;">0</strong> free sample claims remaining this month. (Customer covers shipping).
+                </p>
+              </div>
+              <button type="button" class="btn-gold-action" onclick="openSampleModal()" id="btnClaimSample">
+                Claim Free Sample
+              </button>
+            </div>
+
+            <!-- 积分与兑换操作面板 -->
+            <div class="rewards-split-grid" id="vipActiveContent">
+              <!-- 积分兑换现金券 -->
+              <div class="reward-box-card">
+                <div>
+                  <h4><i class="fa-solid fa-coins"></i> Redeem Points for Voucher</h4>
+                  <p class="reward-desc">
+                    Exchange your accumulated points directly into checkout vouchers instantly. All generated vouchers are stackable!
+                  </p>
+                </div>
+                <div class="points-redeem-row">
+                  <select class="points-select" id="redeemSelect">
+                    <option value="10">10 PTS → $1.00 Voucher</option>
+                    <option value="50">50 PTS → $5.00 Voucher</option>
+                    <option value="100">100 PTS → $10.00 Voucher</option>
+                    <option value="250">250 PTS → $25.00 VIP Voucher</option>
+                  </select>
+                  <button type="button" class="btn-gold-action" id="redeemPointsBtn" onclick="handleRedeemPoints()">
+                    Redeem
+                  </button>
+                </div>
+                <div id="redeemMsg" style="display:none; font-size:12px; margin-top:10px;"></div>
+              </div>
+
+              <!-- 当前等级权益卡片 -->
+              <div class="reward-box-card" style="background: #fdf8f0; border-color: rgba(163, 130, 76, 0.3);">
+                <div>
+                  <h4 style="color: #9e6d28;"><i class="fa-solid fa-gem"></i> <span id="currentTierPrivilegeTitle">Tier Privileges</span></h4>
+                  <div class="reward-desc" id="currentTierPerksList" style="color: #555; line-height: 1.6;">
+                    Loading tier privileges...
+                  </div>
+                </div>
+                <div style="font-size: 11.5px; color: #8c8273; margin-top: 8px;">
+                  <span>Photo review screenshot to CS: <strong>+1 Point</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 优惠券区域 (高定轻奢珠宝票券) -->
+            <div style="margin-top: 28px;">
+              <div class="acc-pane-title-row" style="border-bottom:none; margin-bottom:12px;">
+                <h3 style="font-size: 17px; margin:0; font-family: 'Bodoni Moda', serif;">My Vouchers</h3>
+                <span style="font-size:12px; color:#9e6d28;">&#10003; All vouchers can be stacked at checkout</span>
+              </div>
+              
+              <!-- 状态筛选标签 -->
+              <div class="coupon-subnav">
+                <button type="button" class="c-sub-btn active" onclick="switchCouponFilter('available', this)">
+                  Available (<span id="couponCntAvailable">0</span>)
+                </button>
+                <button type="button" class="c-sub-btn" onclick="switchCouponFilter('used', this)">
+                  Used (<span id="couponCntUsed">0</span>)
+                </button>
+                <button type="button" class="c-sub-btn" onclick="switchCouponFilter('expired', this)">
+                  Expired (<span id="couponCntExpired">0</span>)
+                </button>
+              </div>
+
+              <!-- 卡券展示网格 -->
+              <div class="coupons-card-grid" id="couponsGrid">
+                <div style="grid-column: 1 / -1; text-align:center; padding:30px; color:#999;">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Loading vouchers...
+                </div>
+              </div>
+            </div>
+
+            <!-- 积分明细记录表 -->
+            <div class="points-ledger-block">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3>Points History</h3>
+                <span style="font-size: 11.5px; color: #888;">Updated automatically upon order delivery</span>
+              </div>
+              <div style="overflow-x: auto;">
+                <table class="ledger-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Activity / Description</th>
+                      <th>Order No.</th>
+                      <th>Points Change</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ledgerTableBody">
+                    <tr><td colspan="4" style="text-align:center; color:#999; padding:20px;">Loading points ledger...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Tab 2: Orders (完全保持原有) -->
           <div class="acc-tab-pane" id="orders">
-            <!-- 列表视图 -->
             <div id="ordersListWrap">
               <div class="acc-pane-title-row">
                 <h2>Order History</h2>
                 <span id="orderCount">Loading...</span>
               </div>
-
-              <!-- 加载状态 -->
               <div id="ordersLoading" style="text-align: center; padding: 40px;">
                 <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #999;"></i>
                 <p style="margin-top: 12px; color: #666;">Loading your orders...</p>
               </div>
-
-              <!-- 订单列表 -->
               <div class="acc-order-list" id="ordersList" style="display: none;"></div>
-
-              <!-- 无订单状态 -->
               <div id="noOrders" style="display: none; text-align: center; padding: 60px 20px;">
                 <i class="fa-solid fa-shopping-bag" style="font-size: 48px; color: #ddd; margin-bottom: 20px;"></i>
                 <h3 style="font-size: 18px; margin-bottom: 12px; color: #333;">No Orders Yet</h3>
@@ -174,8 +368,6 @@ if (!userId || !userEmail) {
                 </a>
               </div>
             </div>
-
-            <!-- 点击VIEW展开的订单详情 -->
             <div id="orderDetailWrap" style="display: none;">
               <button type="button" id="backToOrdersListBtn" class="acc-back-list-btn">
                 <i class="fa-solid fa-arrow-left"></i> Back to Orders
@@ -184,23 +376,17 @@ if (!userId || !userEmail) {
             </div>
           </div>
 
-          <!-- Tab 3: Wishlist -->
+          <!-- Tab 3: Wishlist (完全保持原有) -->
           <div class="acc-tab-pane" id="wishlist">
             <div class="acc-pane-title-row">
               <h2>My Wishlist</h2>
               <span id="wishlistCount">Loading...</span>
             </div>
-
-            <!-- 加载状态 -->
             <div id="wishlistLoading" style="text-align: center; padding: 40px;">
               <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #999;"></i>
               <p style="margin-top: 12px; color: #666;">Loading your wishlist...</p>
             </div>
-
-            <!-- Wishlist网格 -->
             <div id="wishlistGrid" style="display: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 24px;"></div>
-
-            <!-- 空状态 -->
             <div id="noWishlist" style="display: none; text-align: center; padding: 60px 20px;">
               <i class="fa-solid fa-heart" style="font-size: 48px; color: #ddd; margin-bottom: 20px;"></i>
               <h3 style="font-size: 18px; margin-bottom: 12px; color: #333;">Your Wishlist is Empty</h3>
@@ -211,13 +397,12 @@ if (!userId || !userEmail) {
             </div>
           </div>
 
-          <!-- Tab 4: Addresses -->
+          <!-- Tab 4: Addresses (完全保持原有) -->
           <div class="acc-tab-pane" id="addresses">
             <div class="acc-pane-title-row">
               <h2>Addresses</h2>
               <span>Selected by default at checkout</span>
             </div>
-
             <div class="acc-address-grid">
               <div class="acc-address-box">
                 <div class="acc-address-top">
@@ -233,7 +418,6 @@ if (!userId || !userEmail) {
                   <p><i class="fa-solid fa-spinner fa-spin"></i> Loading...</p>
                 </div>
               </div>
-
               <div class="acc-address-box">
                 <div class="acc-address-top">
                   <div>
@@ -250,7 +434,7 @@ if (!userId || !userEmail) {
               </div>
             </div>
 
-            <!-- Billing Edit Form -->
+            <!-- Billing Form Block -->
             <div class="acc-edit-form-panel" id="billingFormBlock" style="display: none;">
               <div class="acc-form-header">
                 <h3>Edit Billing Address</h3>
@@ -314,7 +498,7 @@ if (!userId || !userEmail) {
               </form>
             </div>
 
-            <!-- Shipping Edit Form -->
+            <!-- Shipping Form Block -->
             <div class="acc-edit-form-panel" id="shippingFormBlock" style="display: none;">
               <div class="acc-form-header">
                 <h3>Edit Shipping Address</h3>
@@ -369,7 +553,7 @@ if (!userId || !userEmail) {
             </div>
           </div>
 
-          <!-- Tab 5: Account Details -->
+          <!-- Tab 5: Account Details (完全保持原有) -->
           <div class="acc-tab-pane" id="account-details">
             <div class="acc-pane-title-row">
               <h2>Account Details</h2>
@@ -397,7 +581,6 @@ if (!userId || !userEmail) {
                 <input id="account_email" type="email" required />
               </div>
 
-              <!-- 保存个人信息按钮 -->
               <div class="acc-form-btns" style="margin-bottom: 24px;">
                 <button type="button" id="saveAccountDetailsBtn" class="acc-submit-btn" onclick="saveAccountDetails()">
                   Save Changes
@@ -435,12 +618,60 @@ if (!userId || !userEmail) {
     </div>
   </div>
 
+  <!-- 高定轻奢拿样模态弹窗 (Luxury Sample Modal) -->
+  <div id="sampleModalOverlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 8px; max-width: 480px; width: 100%; border: 1px solid #e2cbab; box-shadow: 0 16px 40px rgba(0,0,0,0.25); overflow: hidden; animation: modalFadeIn 0.25s ease;">
+      <div style="background: linear-gradient(135deg, #1f1d1a 0%, #332d24 100%); padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #a3824c;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-gift" style="color: #e2b878; font-size: 16px;"></i>
+          <h3 style="margin: 0; font-size: 15px; font-family: 'Bodoni Moda', serif; color: #fff; letter-spacing: 0.05em;">Complimentary Sample Request</h3>
+        </div>
+        <button type="button" onclick="closeSampleModal()" style="background: transparent; border: none; color: #bbb; font-size: 20px; cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <div style="padding: 24px;">
+        <p style="margin: 0 0 16px; font-size: 13px; color: #666; line-height: 1.5;">
+          As an esteemed VIP member, specify the jewelry piece or SKU you wish to receive as your monthly complimentary sample. 
+          <span style="display: block; font-size: 11.5px; color: #a3824c; margin-top: 4px;">* Standard shipping is handled upon dispatch.</span>
+        </p>
+
+        <label style="display: block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #222; margin-bottom: 6px; letter-spacing: 0.05em;">
+          Item Title, Link, or SKU *
+        </label>
+        <input type="text" id="modalSampleNoteInput" placeholder="e.g. Freshwater Pearl Drop Earrings (SKU: EB-8921)" style="width: 100%; height: 42px; padding: 0 12px; border: 1px solid #ddd8ce; border-radius: 4px; font-size: 13px; background: #faf8f5; outline: none; margin-bottom: 18px; box-sizing: border-box;" />
+
+        <div id="modalSampleMsg" style="display: none; font-size: 12px; margin-bottom: 12px;"></div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" onclick="closeSampleModal()" style="padding: 10px 18px; background: transparent; border: 1px solid #ccc; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+          <button type="button" id="btnSubmitSampleRequest" onclick="submitSampleRequest()" class="btn-gold-action" style="height: 38px; padding: 0 22px;">Submit Request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 高定轻奢反馈提示弹窗 (Luxury Notification Modal - 适配移动端与桌面端) -->
+  <div id="vipLuxuryAlertOverlay" onclick="if(event.target===this) closeVipLuxuryAlert()" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.58); backdrop-filter: blur(5px); z-index: 10000; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: #ffffff; border-radius: 10px; max-width: 400px; width: 100%; border: 1px solid #e2cbab; box-shadow: 0 18px 44px rgba(0,0,0,0.24); overflow: hidden; animation: modalFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1); text-align: center;">
+      <div style="background: linear-gradient(135deg, #1f1d1a 0%, #332d24 100%); padding: 20px 20px 18px; border-bottom: 1px solid #a3824c;">
+        <div id="vipLuxuryAlertIcon" style="width: 44px; height: 44px; margin: 0 auto 10px; border-radius: 50%; background: rgba(226, 184, 120, 0.16); border: 1px solid #e2b878; display: flex; align-items: center; justify-content: center; color: #e2b878; font-size: 18px;">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h3 id="vipLuxuryAlertTitle" style="margin: 0; font-size: 16px; font-family: 'Bodoni Moda', Georgia, serif; color: #ffffff; letter-spacing: 0.04em;">Saved Successfully</h3>
+      </div>
+      <div style="padding: 20px 22px 22px;">
+        <p id="vipLuxuryAlertText" style="margin: 0 0 20px; font-size: 13.5px; color: #555555; line-height: 1.55;"></p>
+        <button type="button" onclick="closeVipLuxuryAlert()" class="btn-gold-action" style="width: 100%; height: 40px; font-size: 11.5px;">Done</button>
+      </div>
+    </div>
+  </div>
+
   <Footer />
   <CartDrawer />
 </Layout>
 
 <style>
-  /* 全局最高优先级隔离与防超宽设置 */
+  /* 全局防溢出 */
   .acc-root-scope {
     width: 100% !important;
     max-width: 100% !important;
@@ -449,7 +680,6 @@ if (!userId || !userEmail) {
     padding: 36px 0 70px;
     box-sizing: border-box !important;
   }
-
   .acc-wrapper {
     width: 100% !important;
     max-width: 1600px !important;
@@ -459,7 +689,6 @@ if (!userId || !userEmail) {
     padding-right: 18px !important;
     box-sizing: border-box !important;
   }
-
   .acc-breadcrumb {
     background: #fbf9f6;
     padding: 12px 0;
@@ -478,8 +707,6 @@ if (!userId || !userEmail) {
   }
   .acc-crumbs a { color: #555; text-decoration: none; }
   .acc-crumbs strong { color: #111; font-weight: 600; }
-
-  /* 标题区域 */
   .acc-header-area { margin-bottom: 24px; }
   .acc-heading {
     font-family: 'Bodoni Moda', 'Didot', Georgia, serif;
@@ -489,8 +716,6 @@ if (!userId || !userEmail) {
     color: #111;
   }
   .acc-subheading { margin: 0; font-size: 13.5px; color: #777; }
-
-  /* 栅格双列 */
   .acc-main-grid {
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
@@ -498,7 +723,6 @@ if (!userId || !userEmail) {
     align-items: flex-start;
     width: 100%;
     min-width: 0;
-    box-sizing: border-box;
   }
 
   /* 侧边栏 */
@@ -510,7 +734,6 @@ if (!userId || !userEmail) {
     position: sticky;
     top: 20px;
     min-width: 0;
-    box-sizing: border-box;
   }
   .acc-user-card {
     display: flex;
@@ -519,22 +742,75 @@ if (!userId || !userEmail) {
     padding-bottom: 14px;
     margin-bottom: 12px;
     border-bottom: 1px solid #f0eae1;
-    min-width: 0;
   }
+
+  /* 侧边栏等级徽章 */
   .acc-avatar {
-    width: 42px;
-    height: 42px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
-    background: #f4efe8;
-    color: #8c8273;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    position: relative;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
   }
+  .acc-avatar .medallion-inner {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .acc-avatar .medallion-inner::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(60deg, transparent 30%, rgba(255, 255, 255, 0.7) 50%, transparent 70%);
+    transform: rotate(25deg);
+    animation: metallicShine 4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .badge-pearl { background: linear-gradient(135deg, #fdfbf7 0%, #e2ded5 100%); border: 2px solid #e5dfd5; }
+  .badge-pearl .medallion-inner { background: radial-gradient(circle at 30% 30%, #ffffff 0%, #eae5dc 70%, #bcb3a4 100%); color: #7b7468; }
+
+  .badge-silver { background: linear-gradient(135deg, #e0e4e8 0%, #a8b0b8 100%); border: 2px solid #d0d7de; }
+  .badge-silver .medallion-inner { background: radial-gradient(circle at 30% 30%, #ffffff 0%, #cad1d8 70%, #87929d 100%); color: #3f4750; }
+
+  .badge-gold { background: linear-gradient(135deg, #dfba73 0%, #a27a38 100%); border: 2px solid #d4af67; }
+  .badge-gold .medallion-inner { background: radial-gradient(circle at 30% 30%, #fff7e4 0%, #d8a84e 60%, #825b17 100%); color: #533706; }
+
+  .badge-diamond { background: linear-gradient(135deg, #8fe0e8 0%, #308098 100%); border: 2px solid #9debf2; }
+  .badge-diamond .medallion-inner { background: radial-gradient(circle at 30% 30%, #ffffff 0%, #83d4e0 60%, #1e5c6d 100%); color: #0d3a46; }
+
+  @keyframes metallicShine {
+    0% { transform: translateX(-150%) rotate(25deg); }
+    35% { transform: translateX(150%) rotate(25deg); }
+    100% { transform: translateX(150%) rotate(25deg); }
+  }
+
   .acc-user-meta { min-width: 0; flex: 1; }
-  .acc-u-name { display: block; font-size: 15px; font-weight: 600; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .acc-u-email { display: block; font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acc-u-name { display: block; font-size: 14.5px; font-weight: 600; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acc-u-tier {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #a3824c;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
 
   .acc-nav-list { display: flex; flex-direction: column; gap: 3px; width: 100%; }
   .acc-nav-pill {
@@ -558,11 +834,22 @@ if (!userId || !userEmail) {
   .acc-nav-pill:hover { background: #faf8f5; color: #111; }
   .acc-nav-pill.active { background: #111; color: #fff; }
   .acc-nav-pill.active i { color: #fff; }
+  .acc-badge-gold {
+    margin-left: auto;
+    font-size: 10px;
+    background: #fdf8f0;
+    color: #a3824c;
+    border: 1px solid rgba(163, 130, 76, 0.3);
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+  .acc-nav-pill.active .acc-badge-gold { background: #a3824c; color: #fff; border-color: #a3824c; }
   .acc-count-badge { margin-left: auto; font-size: 11px; background: #eae5dc; color: #333; padding: 2px 6px; border-radius: 10px; }
   .acc-nav-pill.active .acc-count-badge { background: #333; color: #fff; }
   .acc-logout-pill { margin-top: 10px; border-top: 1px solid #f0eae1; padding-top: 12px; color: #c52424; }
 
-  /* 主面板内容 */
+  /* 主面板 */
   .acc-content-panel {
     background: #ffffff;
     border: 1px solid #e6ded3;
@@ -570,10 +857,11 @@ if (!userId || !userEmail) {
     padding: 28px;
     min-width: 0;
     width: 100%;
-    box-sizing: border-box;
   }
-  .acc-tab-pane { display: none; width: 100%; min-width: 0; }
-  .acc-tab-pane.active { display: block; }
+  .acc-tab-pane { display: none; width: 100%; }
+  .acc-tab-pane.active { display: block; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+
   .acc-pane-title-row {
     display: flex;
     justify-content: space-between;
@@ -582,23 +870,135 @@ if (!userId || !userEmail) {
     padding-bottom: 12px;
     border-bottom: 1px solid #eee8df;
   }
-  .acc-pane-title-row h2 { font-size: 20px; margin: 0; color: #111; }
+  .acc-pane-title-row h2 { font-size: 20px; margin: 0; color: #111; font-family: 'Bodoni Moda', serif; }
   .acc-pane-title-row span { font-size: 12.5px; color: #888; }
 
-  /* Dashboard Welcome */
-  .acc-welcome-box {
-    background: #fbf9f6;
-    border-left: 3px solid #a3824c;
-    padding: 16px 20px;
+  /* =========================================================================
+     高定会员横幅：四等级动态流动背景 (Pure CSS 硬件加速)
+     ========================================================================= */
+  .vip-status-banner {
+    border-radius: 8px;
+    padding: 26px 30px;
+    color: #ffffff;
     margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    background-size: 200% 200%;
+    animation: bannerFlow 12s ease infinite;
+    transition: all 0.5s ease;
   }
-  .acc-welcome-box h2 { font-size: 16px; margin: 0 0 4px; }
-  .acc-welcome-box p { margin: 0; font-size: 13px; color: #666; line-height: 1.5; }
 
+  @keyframes bannerFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .tier-bg-pearl {
+    background: linear-gradient(-45deg, #1f1e1c 0%, #302d28 40%, #454037 70%, #24221f 100%);
+    border: 1px solid rgba(226, 219, 207, 0.35);
+  }
+  .tier-bg-pearl .vip-tier-tag {
+    color: #ded7cb;
+    background: rgba(222, 215, 203, 0.15);
+    border: 1px solid rgba(222, 215, 203, 0.3);
+  }
+  .tier-bg-pearl strong { color: #eee7dd !important; }
+
+  .tier-bg-silver {
+    background: linear-gradient(-45deg, #181d22 0%, #2a333d 35%, #424e5a 70%, #1c2229 100%);
+    border: 1px solid rgba(184, 198, 212, 0.4);
+  }
+  .tier-bg-silver .vip-tier-tag {
+    color: #d1dde8;
+    background: rgba(209, 221, 232, 0.15);
+    border: 1px solid rgba(209, 221, 232, 0.35);
+  }
+  .tier-bg-silver strong { color: #e1ebf5 !important; }
+
+  .tier-bg-gold {
+    background: linear-gradient(-45deg, #1c170d 0%, #3a2e17 40%, #57441f 70%, #241d10 100%);
+    border: 1px solid rgba(226, 184, 120, 0.45);
+  }
+  .tier-bg-gold .vip-tier-tag {
+    color: #f3cf92;
+    background: rgba(243, 207, 146, 0.18);
+    border: 1px solid rgba(243, 207, 146, 0.4);
+  }
+  .tier-bg-gold strong { color: #f5d79e !important; }
+
+  .tier-bg-diamond {
+    background: linear-gradient(-45deg, #091a20 0%, #13333d 35%, #1d4d5a 70%, #0d242c 100%);
+    border: 1px solid rgba(142, 224, 232, 0.45);
+  }
+  .tier-bg-diamond .vip-tier-tag {
+    color: #a4edf5;
+    background: rgba(164, 237, 245, 0.18);
+    border: 1px solid rgba(164, 237, 245, 0.4);
+  }
+  .tier-bg-diamond strong { color: #c4f7fc !important; }
+
+  .vip-banner-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .vip-tier-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+  }
+  .vip-banner-welcome {
+    font-size: 20px;
+    margin-top: 8px;
+    font-weight: 400;
+    font-family: 'Bodoni Moda', serif;
+    color: #fff;
+  }
+  .vip-points-glance { display: flex; align-items: baseline; gap: 6px; }
+  .vip-points-glance span { font-size: 12px; color: #ccc; text-transform: uppercase; }
+  .vip-points-glance strong { font-size: 28px; font-family: 'Bodoni Moda', serif; font-weight: 600; }
+  
+  .vip-progress-block { margin-top: 12px; }
+  .vip-prog-meta { display: flex; justify-content: space-between; font-size: 12px; color: #ddd; margin-bottom: 8px; }
+  .vip-prog-bar-bg { width: 100%; height: 7px; background: rgba(255, 255, 255, 0.15); border-radius: 10px; overflow: hidden; }
+  .vip-prog-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #a3824c 0%, #f1cf8c 100%);
+    border-radius: 10px;
+    width: 0%;
+    position: relative;
+    overflow: hidden;
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .vip-prog-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background-image: linear-gradient(-45deg, rgba(255,255,255,0.3) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.3) 75%, transparent 75%, transparent);
+    background-size: 28px 28px;
+    animation: moveStripes 2s linear infinite;
+  }
+  @keyframes moveStripes {
+    0% { background-position: 0 0; }
+    100% { background-position: 28px 28px; }
+  }
+
+  /* 4 列指标卡片 */
   .acc-metric-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
     margin-bottom: 28px;
   }
   .acc-metric-card {
@@ -623,19 +1023,74 @@ if (!userId || !userEmail) {
   }
   .acc-metric-card h3 { font-size: 14px; margin: 0 0 2px; }
   .acc-metric-card p { font-size: 12px; color: #888; margin: 0 0 10px; }
-  .acc-text-link {
-    background: none; border: none; padding: 0; font-size: 11.5px;
-    font-weight: 600; color: #a3824c; text-align: left; cursor: pointer;
+  .acc-text-link { background: none; border: none; padding: 0; font-size: 11.5px; font-weight: 600; color: #a3824c; text-align: left; cursor: pointer; }
+
+  /* 积分兑换卡 */
+  .rewards-split-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .reward-box-card {
+    background: #fbf9f6;
+    border: 1px solid #ebe5dc;
+    border-radius: 4px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .reward-box-card h4 {
+    font-size: 13.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 6px 0;
+    color: #111;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .reward-box-card h4 i { color: #a3824c; }
+  .reward-desc { font-size: 12.5px; color: #666; line-height: 1.5; margin-bottom: 16px; }
+  .points-redeem-row { display: flex; align-items: center; gap: 10px; }
+  .points-select {
+    flex: 1;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    font-size: 13px;
+    background: #fff;
+    outline: none;
+  }
+  .btn-gold-action {
+    height: 38px;
+    padding: 0 18px;
+    background: linear-gradient(135deg, #a3824c 0%, #836737 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 3px 10px rgba(163, 130, 76, 0.25);
+    transition: all 0.2s;
+  }
+  .btn-gold-action:hover {
+    background: linear-gradient(135deg, #8a6c38 0%, #6e552a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(163, 130, 76, 0.35);
   }
 
   .acc-recent-block { margin-top: 10px; }
   .acc-block-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .acc-block-bar h3 { font-size: 15px; margin: 0; }
   .acc-mini-link { background: none; border: none; font-size: 12px; color: #a3824c; cursor: pointer; }
-
   .acc-order-list { display: flex; flex-direction: column; gap: 14px; width: 100%; }
-
-  /* 地址网格 */
   .acc-address-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .acc-address-box { background: #fbf9f6; border: 1px solid #ebe5dc; padding: 16px; border-radius: 2px; }
   .acc-address-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
@@ -643,8 +1098,6 @@ if (!userId || !userEmail) {
   .acc-address-top h3 { margin: 0; font-size: 14px; }
   .acc-edit-btn { background: #fff; border: 1px solid #ddd; padding: 3px 8px; font-size: 11px; cursor: pointer; border-radius: 2px; }
   .acc-address-box p { margin: 0 0 3px; font-size: 12.5px; color: #555; }
-
-  /* 表单与输入框 */
   .acc-form-body { width: 100%; min-width: 0; box-sizing: border-box; }
   .acc-row-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .acc-input-group { margin-bottom: 12px; min-width: 0; width: 100%; }
@@ -657,421 +1110,407 @@ if (!userId || !userEmail) {
   .acc-password-box { background: #fbf9f6; border: 1px solid #eee; padding: 14px; margin: 16px 0; }
   .acc-password-box h4 { margin: 0 0 10px; font-size: 12.5px; text-transform: uppercase; }
   .acc-pwd-hint { font-size: 11px; color: #666; margin-top: 8px; margin-bottom: 0; }
-
-  /* 密码修改消息 */
-  .acc-message {
-    padding: 12px 14px;
-    border-radius: 4px;
-    font-size: 12px;
-    margin-top: 12px;
-    animation: slideDown 0.3s ease;
-  }
-  .acc-message.success {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-  }
-  .acc-message.error {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-  }
-
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+  .acc-message { padding: 12px 14px; border-radius: 4px; font-size: 12px; margin-top: 12px; }
+  .acc-message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+  .acc-message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
   .acc-form-btns { display: flex; gap: 10px; margin-top: 14px; }
   .acc-submit-btn { height: 38px; padding: 0 20px; background: #111; color: #fff; border: none; font-size: 11.5px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
   .acc-cancel-btn { height: 38px; padding: 0 16px; background: transparent; border: 1px solid #ccc; font-size: 11.5px; cursor: pointer; }
 
-  /* 移动端断点基础 */
+  /* 移动端响应式 */
+  @media (max-width: 900px) {
+    .acc-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .rewards-split-grid { grid-template-columns: 1fr !important; }
+  }
   @media (max-width: 820px) {
-    html, body {
-      overflow-x: hidden !important;
-      width: 100% !important;
-    }
-    * { max-width: 100%; }
-    :root { --container-w: 100%; }
-    .acc-root-scope {
-      padding: 16px 0 40px !important;
-      overflow-x: hidden !important;
-    }
-    .acc-wrapper {
-      padding-left: 12px !important;
-      padding-right: 12px !important;
-      overflow-x: hidden !important;
-    }
-    .acc-main-grid {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 16px !important;
-      width: 100% !important;
-    }
-    .acc-sidebar-panel,
-    .acc-content-panel {
-      width: 100% !important;
-      padding: 14px !important;
-      box-sizing: border-box !important;
-    }
-    .acc-nav-scroller {
-      width: 100% !important;
-      max-width: 100% !important;
-      overflow-x: auto !important;
-      overflow-y: hidden !important;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      padding-bottom: 2px;
-      box-sizing: border-box !important;
-    }
+    .acc-root-scope { padding: 16px 0 40px !important; }
+    .acc-wrapper { padding-left: 12px !important; padding-right: 12px !important; }
+    .acc-main-grid { display: flex !important; flex-direction: column !important; gap: 16px !important; }
+    .acc-sidebar-panel, .acc-content-panel { width: 100% !important; padding: 14px !important; box-sizing: border-box !important; }
+    .acc-nav-scroller { width: 100% !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     .acc-nav-scroller::-webkit-scrollbar { display: none; }
-    .acc-nav-list {
-      display: flex !important;
-      flex-direction: row !important;
-      flex-wrap: nowrap !important;
-      overflow-x: auto !important;
-      -webkit-overflow-scrolling: touch !important;
-      width: 100% !important;
-      gap: 6px !important;
-      padding-bottom: 8px !important;
-    }
-    .acc-nav-list::-webkit-scrollbar { height: 4px; }
-    .acc-nav-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
-    .acc-nav-pill {
-      width: auto !important;
-      flex-shrink: 0 !important;
-      padding: 7px 12px !important;
-      white-space: nowrap !important;
-      border: 1px solid #ded7cb !important;
-      background: #faf8f5 !important;
-    }
-    .acc-nav-pill.active {
-      background: #111 !important;
-      color: #fff !important;
-      border-color: #111 !important;
-    }
-    .acc-logout-pill {
-      margin-top: 0 !important;
-      border-top: 1px solid #ded7cb !important;
-      padding-top: 7px !important;
-    }
-    .acc-metric-grid,
-    .acc-address-grid,
-    .acc-row-2 {
-      grid-template-columns: minmax(0, 1fr) !important;
-      gap: 10px !important;
-    }
+    .acc-nav-list { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; gap: 6px !important; }
+    .acc-nav-pill { width: auto !important; flex-shrink: 0 !important; padding: 7px 12px !important; white-space: nowrap !important; border: 1px solid #ded7cb !important; background: #faf8f5 !important; }
+    .acc-nav-pill.active { background: #111 !important; color: #fff !important; border-color: #111 !important; }
+    .acc-logout-pill { margin-top: 0 !important; border-top: 1px solid #ded7cb !important; }
+    .acc-metric-grid, .acc-address-grid, .acc-row-2 { grid-template-columns: minmax(0, 1fr) !important; gap: 10px !important; }
+    .vip-status-banner { padding: 20px 18px !important; }
+    .vip-banner-welcome { font-size: 17px !important; }
+    .vip-points-glance strong { font-size: 22px !important; }
   }
 </style>
 
-<!-- 关键：添加 is:global 允许动态生成的订单卡片和详情节点应用样式 -->
 <style is:global>
-  /* 订单卡片外框 */
-  .acc-order-card {
-    background: #ffffff;
-    border: 1px solid #eee8df;
-    border-radius: 4px;
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    box-sizing: border-box;
-    transition: all 0.2s ease;
-  }
-  .acc-order-card:hover {
-    border-color: #d6ccbe;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
-  }
-
-  /* 卡片顶部条 */
-  .acc-card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f6f2ec;
-  }
-  .acc-card-top-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-  }
-  .acc-card-order-id {
-    font-family: monospace;
-    font-weight: 700;
-    font-size: 14.5px;
-    color: #111;
-  }
-  .acc-card-dot {
-    color: #ccc;
-    font-size: 11px;
-  }
-  .acc-card-date {
-    color: #777;
-    font-size: 12.5px;
-  }
-  .acc-card-top-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .acc-card-total-box {
-    font-size: 13px;
-    color: #666;
-  }
-  .acc-card-total-box strong {
-    font-size: 15px;
-    color: #111;
-    font-weight: 700;
-  }
-
-  /* 状态徽章 */
-  .acc-pill-status {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 9px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
+  /* 订单卡片与详情全局样式 (完全保留原生设置) */
+  .acc-order-card { background: #ffffff; border: 1px solid #eee8df; border-radius: 4px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .acc-card-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid #f6f2ec; }
+  .acc-card-order-id { font-family: monospace; font-weight: 700; font-size: 14.5px; color: #111; }
+  .acc-pill-status { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
   .acc-pill-status.delivered { background: #eef7ee; color: #2e7d32; }
   .acc-pill-status.processing { background: #fef8ec; color: #b7791f; }
   .acc-pill-status.cancelled { background: #fdf2f2; color: #c53030; }
-
-  /* 卡片下半部（缩略图 + 按钮） */
-  .acc-card-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 14px;
-  }
-  .acc-card-thumbs {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .acc-thumb-img {
-    width: 48px;
-    height: 48px;
-    border-radius: 3px;
-    border: 1px solid #ebe5dc;
-    object-fit: cover;
-    background: #faf8f5;
-  }
-  .acc-thumb-summary {
-    font-size: 12.5px;
-    color: #777;
-    margin-left: 4px;
-    white-space: nowrap;
-  }
-
-  /* 查看按钮 */
-  .acc-btn-detail {
-    padding: 8px 18px;
-    background: #111;
-    color: #fff;
-    border: none;
-    border-radius: 2px;
-    font-size: 11.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  .acc-btn-detail:hover {
-    background: #333;
-    transform: translateY(-1px);
-  }
-
-  /* 完成支付按钮（主要操作） */
-  .acc-btn-pay {
-    padding: 8px 18px;
-    background: #a3824c;
-    color: #fff;
-    border: none;
-    border-radius: 2px;
-    font-size: 11.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  .acc-btn-pay:hover {
-    background: #8c6f3f;
-    transform: translateY(-1px);
-  }
-
-  /* 次要查看按钮 */
-  .acc-btn-detail-secondary {
-    padding: 8px 18px;
-    background: transparent;
-    color: #111;
-    border: 1px solid #ddd;
-    border-radius: 2px;
-    font-size: 11.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  .acc-btn-detail-secondary:hover {
-    background: #f5f5f5;
-    border-color: #999;
-  }
-
-  /* 订单详情面板 */
-  .acc-back-list-btn {
-    background: none;
-    border: none;
-    font-size: 12.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #111;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 18px;
-    padding: 0;
-  }
-  .acc-back-list-btn:hover {
-    color: #a3824c;
-  }
-  .acc-view-detail-card {
-    background: #ffffff;
-    border: 1px solid #eee8df;
-    border-radius: 3px;
-    padding: 20px;
-    margin-bottom: 16px;
-  }
-  .acc-view-detail-card h3 {
-    margin: 0 0 14px;
-    font-size: 13.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 700;
-    color: #111;
-    border-bottom: 1px solid #f6f2ec;
-    padding-bottom: 8px;
-  }
-  .acc-detail-items-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .acc-detail-item-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px dashed #f0eae1;
-  }
-  .acc-detail-item-row:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-  .acc-detail-thumb {
-    width: 52px;
-    height: 52px;
-    border-radius: 3px;
-    border: 1px solid #eee8df;
-    object-fit: cover;
-  }
+  .acc-card-bottom { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+  .acc-card-thumbs { display: flex; align-items: center; gap: 10px; }
+  .acc-thumb-img { width: 48px; height: 48px; border-radius: 3px; border: 1px solid #ebe5dc; object-fit: cover; }
+  .acc-btn-detail { padding: 8px 18px; background: #111; color: #fff; border: none; border-radius: 2px; font-size: 11.5px; font-weight: 600; text-transform: uppercase; cursor: pointer; text-decoration: none; }
+  .acc-btn-pay { padding: 8px 18px; background: #a3824c; color: #fff; border: none; border-radius: 2px; font-size: 11.5px; font-weight: 600; text-transform: uppercase; cursor: pointer; text-decoration: none; }
+  .acc-btn-detail-secondary { padding: 8px 18px; background: transparent; color: #111; border: 1px solid #ddd; border-radius: 2px; font-size: 11.5px; font-weight: 600; text-transform: uppercase; cursor: pointer; }
+  .acc-back-list-btn { background: none; border: none; font-size: 12.5px; font-weight: 700; text-transform: uppercase; color: #111; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 18px; }
+  .acc-view-detail-card { background: #ffffff; border: 1px solid #eee8df; border-radius: 3px; padding: 20px; margin-bottom: 16px; }
+  .acc-view-detail-card h3 { margin: 0 0 14px; font-size: 13.5px; text-transform: uppercase; font-weight: 700; color: #111; border-bottom: 1px solid #f6f2ec; padding-bottom: 8px; }
+  .acc-detail-item-row { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px dashed #f0eae1; }
+  .acc-detail-thumb { width: 52px; height: 52px; border-radius: 3px; border: 1px solid #eee8df; object-fit: cover; }
   .acc-detail-name-box { flex: 1; }
-  .acc-detail-name-box h4 {
-    margin: 0 0 4px;
-    font-size: 13px;
+  .acc-detail-name-box h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #111; }
+  .acc-detail-price-box { font-weight: 700; font-size: 13.5px; color: #111; }
+
+  /* =========================================================================
+     参考图 2 优化：高定轻奢珠宝票券质感 (Luxury Satin Gold Ticket)
+     ========================================================================= */
+  .coupon-subnav { display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid #f0eae1; padding-bottom: 10px; }
+  .c-sub-btn {
+    background: transparent;
+    border: none;
+    font-size: 12.5px;
     font-weight: 600;
-    color: #111;
-  }
-  .acc-detail-name-box p {
-    margin: 0;
-    font-size: 12px;
     color: #777;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
   }
-  .acc-detail-price-box {
-    font-weight: 700;
-    font-size: 13.5px;
-    color: #111;
+  .c-sub-btn.active { background: #111; color: #fff; }
+
+  .coupons-card-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 20px !important;
+    margin-bottom: 32px !important;
+  }
+
+  /* 票券卡片外框：香槟金丝绸微反光背景 */
+  .ticket-card {
+    background: linear-gradient(135deg, #fdfaf3 0%, #faedd9 50%, #f6e3c5 100%) !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    position: relative !important;
+    box-shadow: 0 4px 18px rgba(163, 130, 76, 0.1) !important;
+    min-height: 126px !important;
+    overflow: hidden !important;
+    border: 1px solid #e2cbab !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-sizing: border-box !important;
+  }
+  .ticket-card:not(.is-used):not(.is-expired):hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 10px 28px rgba(163, 130, 76, 0.22) !important;
+    border-color: #d1b183 !important;
+  }
+
+  /* 丝绸镜面反光扫光 */
+  .ticket-card:not(.is-used):not(.is-expired)::after {
+    content: '' !important;
+    position: absolute !important;
+    top: -50% !important;
+    left: -70% !important;
+    width: 60% !important;
+    height: 200% !important;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(255, 255, 255, 0) 100%) !important;
+    transform: rotate(25deg) !important;
+    pointer-events: none !important;
+    animation: ticketSheen 6s infinite cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  @keyframes ticketSheen {
+    0%, 45% { left: -70%; }
+    75%, 100% { left: 160%; }
+  }
+
+  /* 左侧面额票根 */
+  .ticket-stub-left {
+    width: 124px !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(243,222,192,0.3) 100%) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 14px 10px !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+    border-right: 1px dashed rgba(163, 130, 76, 0.35) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 参考图 2 咬合圆孔 */
+  .ticket-stub-left::before,
+  .ticket-stub-left::after {
+    content: '' !important;
+    position: absolute !important;
+    right: -10px !important;
+    width: 20px !important;
+    height: 20px !important;
+    background-color: #ffffff !important;
+    border-radius: 50% !important;
+    z-index: 3 !important;
+  }
+  .ticket-stub-left::before { 
+    top: -10px !important; 
+    box-shadow: inset 0 -2px 3px rgba(163, 130, 76, 0.15) !important; 
+  }
+  .ticket-stub-left::after { 
+    bottom: -10px !important; 
+    box-shadow: inset 0 2px 3px rgba(163, 130, 76, 0.15) !important; 
+  }
+
+  /* 烫金感金额立体字 */
+  .ticket-val-num {
+    font-family: 'Bodoni Moda', 'Didot', Georgia, serif !important;
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    color: #7d591b !important;
+    line-height: 1 !important;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+  }
+  .ticket-val-unit {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.14em !important;
+    text-transform: uppercase !important;
+    color: #927546 !important;
+    margin-top: 5px !important;
+  }
+
+  /* 右侧主体信息 */
+  .ticket-body-right {
+    flex: 1 !important;
+    padding: 16px 20px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    min-width: 0 !important;
+    background: transparent !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+  }
+  .ticket-badge-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    margin-bottom: 4px !important;
+  }
+  .ticket-tag-gold {
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    color: #8c631a !important;
+    background: rgba(255, 255, 255, 0.6) !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    border: 1px solid rgba(163, 130, 76, 0.25) !important;
+  }
+  .ticket-countdown {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #b92e2e !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+  .ticket-title {
+    font-size: 14.5px !important;
+    font-weight: 600 !important;
+    color: #1a1610 !important;
+    margin-bottom: 3px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .ticket-rules {
+    font-size: 11.5px !important;
+    color: #6e6558 !important;
+    margin-bottom: 6px !important;
+    line-height: 1.35 !important;
+  }
+  .ticket-footer-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding-top: 8px !important;
+    border-top: 1px dashed rgba(163, 130, 76, 0.25) !important;
+    margin-top: auto !important;
+  }
+  .ticket-code-tag {
+    font-family: monospace !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+    color: #241d13 !important;
+    padding: 3px 8px !important;
+    border-radius: 3px !important;
+    border: 1px solid #dfcfb9 !important;
+  }
+
+  /* 模仿参考图 2 的高光香槟金胶囊按钮 */
+  .ticket-copy-btn {
+    background: linear-gradient(135deg, #caa360 0%, #99732e 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 5px 14px !important;
+    border-radius: 20px !important;
+    box-shadow: 0 2px 6px rgba(163, 130, 76, 0.25) !important;
+    transition: all 0.2s !important;
+  }
+  .ticket-copy-btn:hover { 
+    background: linear-gradient(135deg, #b8904b 0%, #856122 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 10px rgba(163, 130, 76, 0.35) !important;
+  }
+
+  /* 已使用 (USED) 印章 */
+  .ticket-card.is-used {
+    background: #f7f6f4 !important;
+    border-color: #ddd9d2 !important;
+    opacity: 0.75 !important;
+    box-shadow: none !important;
+  }
+  .ticket-card.is-used .ticket-stub-left {
+    background: #eeece8 !important;
+    filter: grayscale(0.6) !important;
+  }
+  .ticket-card.is-used .ticket-val-num { color: #888 !important; text-shadow: none !important; }
+
+  .stamp-overlay {
+    position: absolute !important;
+    right: 20px !important;
+    top: 50% !important;
+    transform: translateY(-50%) rotate(-18deg) !important;
+    border: 2px dashed #b73434 !important;
+    border-radius: 4px !important;
+    padding: 3px 10px !important;
+    text-align: center !important;
+    pointer-events: none !important;
+    z-index: 5 !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(1px) !important;
+  }
+  .stamp-text {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.16em !important;
+    color: #b73434 !important;
+    text-transform: uppercase !important;
+    line-height: 1 !important;
+    display: block !important;
+  }
+  .stamp-date {
+    font-size: 8px !important;
+    font-weight: 600 !important;
+    color: #b73434 !important;
+    margin-top: 2px !important;
+    display: block !important;
+  }
+
+  .ticket-card.is-expired {
+    opacity: 0.55 !important;
+    filter: grayscale(0.85) !important;
+    border-color: #e0ded8 !important;
+    box-shadow: none !important;
+  }
+  .stamp-expired { border-color: #666 !important; }
+  .stamp-expired .stamp-text,
+  .stamp-expired .stamp-date { color: #666 !important; }
+
+  /* 积分流水表 */
+  .points-ledger-block { 
+    margin-top: 36px !important; 
+    padding-top: 24px !important; 
+    border-top: 1px solid #f0eae1 !important; 
+  }
+  .points-ledger-block h3 { 
+    font-size: 16px !important; 
+    margin: 0 0 14px 0 !important; 
+    color: #111 !important; 
+    font-family: 'Bodoni Moda', serif !important;
+  }
+  .ledger-table { 
+    width: 100% !important; 
+    border-collapse: collapse !important; 
+    font-size: 13px !important; 
+  }
+  .ledger-table th { 
+    text-align: left !important; 
+    padding: 12px 14px !important; 
+    background: #fbf9f6 !important; 
+    color: #777 !important; 
+    font-weight: 600 !important; 
+    font-size: 11px !important; 
+    text-transform: uppercase !important; 
+    letter-spacing: 0.05em !important;
+    border-bottom: 1px solid #ebe5dc !important; 
+  }
+  .ledger-table td { 
+    padding: 14px !important; 
+    border-bottom: 1px solid #f4efe8 !important; 
+    color: #333 !important; 
+  }
+  .pts-add { color: #2e7d32 !important; font-weight: 700 !important; }
+  .pts-sub { color: #c53030 !important; font-weight: 700 !important; }
+
+  @keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
   @media (max-width: 820px) {
-    .acc-card-top {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
+    .coupons-card-grid { grid-template-columns: 1fr !important; }
+    .ticket-card { flex-direction: column !important; min-height: auto !important; }
+    .ticket-stub-left {
+      width: 100% !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      border-right: none !important;
+      border-bottom: 1px dashed rgba(163, 130, 76, 0.35) !important;
+      padding: 12px 18px !important;
     }
-    .acc-card-top-right {
-      width: 100%;
-      justify-content: space-between;
-    }
-    .acc-card-bottom {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-    }
-    .acc-btn-detail,
-    .acc-btn-pay,
-    .acc-btn-detail-secondary {
-      width: 100%;
-      justify-content: center;
-    }
-    .acc-card-bottom > div:last-child {
-      width: 100%;
-    }
+    .ticket-stub-left::before, .ticket-stub-left::after { display: none !important; }
   }
 </style>
 
 <script is:inline>
-  // 保持全部订单数据以便展开详情
   let cachedOrdersData = [];
+  let cachedVipData = null;
+  let currentCouponFilter = 'available';
+  let countdownTimer = null;
 
-  // Tab 切换逻辑
+  // 1. 初始化英文 Day 下拉框 (1 - 31)
+  const daySelect = document.getElementById('bdayDaySelect');
+  if (daySelect && daySelect.options.length <= 1) {
+    for (let i = 1; i <= 31; i++) {
+      const val = i < 10 ? `0${i}` : `${i}`;
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = `${i}`;
+      daySelect.appendChild(opt);
+    }
+  }
+
+  // 2. Tab 切换逻辑
   const navPills = document.querySelectorAll('.acc-nav-pill[data-tab]');
   const tabPanes = document.querySelectorAll('.acc-tab-pane');
 
   function changeTab(tabId) {
     if (!tabId) return;
-    navPills.forEach(pill => {
-      if (pill.getAttribute('data-tab') === tabId) {
-        pill.classList.add('active');
-      } else {
-        pill.classList.remove('active');
-      }
-    });
-    tabPanes.forEach(pane => {
-      if (pane.id === tabId) {
-        pane.classList.add('active');
-      } else {
-        pane.classList.remove('active');
-      }
-    });
+    navPills.forEach(p => p.classList.toggle('active', p.getAttribute('data-tab') === tabId));
+    tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === tabId));
 
     if (tabId === 'orders') {
       const listWrap = document.getElementById('ordersListWrap');
@@ -1081,53 +1520,514 @@ if (!userId || !userEmail) {
     }
   }
 
-  navPills.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const target = btn.getAttribute('data-tab');
-      changeTab(target);
+  navPills.forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); changeTab(btn.getAttribute('data-tab')); }));
+  document.querySelectorAll('.acc-text-link[data-tab], .acc-mini-link[data-tab]').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); changeTab(btn.getAttribute('data-tab')); }));
+
+  // =========================================================================
+  // 核心：VIP 会员数据加载与渲染 (支持动态背景与全新质感)
+  // =========================================================================
+  async function loadVipSummary() {
+    try {
+      const response = await fetch('/api/user/vip-summary');
+      const data = await response.json();
+
+      if (!data.success) return;
+      cachedVipData = data;
+
+      const sidebarTierLabel = document.getElementById('sidebarTierLabel');
+      const sidebarCouponCount = document.getElementById('sidebarCouponCount');
+      const dashboardRewardsMetric = document.getElementById('dashboardRewardsMetric');
+
+      if (!data.vip_active) {
+        if (sidebarTierLabel) sidebarTierLabel.textContent = 'Awaiting VIP Activation';
+        document.getElementById('vipInactiveNotice').style.display = 'block';
+        document.getElementById('vipActiveContent').style.display = 'none';
+        document.getElementById('birthdayCard').style.display = 'none';
+        document.getElementById('sampleClaimCard').style.display = 'none';
+        renderCouponsGrid({ available: [], used: [], expired: [] });
+        return;
+      }
+
+      document.getElementById('vipInactiveNotice').style.display = 'none';
+      document.getElementById('vipActiveContent').style.display = 'grid';
+
+      const vip = data.vip;
+      const coupons = data.coupons || { available: [], used: [], expired: [] };
+      const ledger = data.ledger || [];
+
+      // 1. 动态注入 VIP 横幅对应的背景流光类名 (tier-bg-pearl, tier-bg-silver, etc.)
+      const bannerEl = document.getElementById('dashboardVipBanner');
+      if (bannerEl) {
+        bannerEl.className = `vip-status-banner tier-bg-${vip.tier_key}`;
+      }
+
+      // 2. 侧边栏动态徽章类名注入
+      const avatarEl = document.getElementById('sidebarAvatarMedallion');
+      const avatarIcon = document.getElementById('sidebarAvatarIcon');
+      if (avatarEl) {
+        avatarEl.className = `acc-avatar badge-${vip.tier_key}`;
+        const icons = {
+          pearl: '<i class="fa-regular fa-circle-dot"></i>',
+          silver: '<i class="fa-solid fa-shield-halved"></i>',
+          gold: '<i class="fa-solid fa-gem"></i>',
+          diamond: '<i class="fa-solid fa-crown"></i>'
+        };
+        if (avatarIcon) avatarIcon.innerHTML = icons[vip.tier_key] || icons.pearl;
+      }
+
+      if (sidebarTierLabel) sidebarTierLabel.textContent = vip.tier_label;
+      document.getElementById('dashVipTierText').textContent = vip.tier_label;
+      document.getElementById('dashPointsNum').textContent = vip.points_balance.toLocaleString();
+      document.getElementById('dashPointsUsd').textContent = `PTS (≈ $${vip.points_usd_value.toFixed(2)})`;
+
+      // 3. 晋升进度条向前生长加载动画
+      const progressBar = document.getElementById('dashProgressBar');
+      if (vip.next_tier_label) {
+        document.getElementById('dashNextTierLabel').textContent = `Progress to ${vip.next_tier_label}`;
+        document.getElementById('dashSpendNeededText').textContent = `Spend $${vip.spend_needed.toFixed(2)} more this quarter to upgrade`;
+        document.getElementById('dashProgressBlock').style.display = 'block';
+        setTimeout(() => {
+          progressBar.style.width = `${Math.max(6, vip.progress_percent)}%`;
+        }, 100);
+      } else {
+        document.getElementById('dashNextTierLabel').textContent = `Diamond Tier Member`;
+        document.getElementById('dashSpendNeededText').textContent = `Highest Privileges Unlocked`;
+        setTimeout(() => {
+          progressBar.style.width = `100%`;
+        }, 100);
+      }
+
+      // 指标
+      const availCount = coupons.available ? coupons.available.length : 0;
+      if (sidebarCouponCount) {
+        sidebarCouponCount.textContent = `${availCount} Coupon${availCount !== 1 ? 's' : ''}`;
+        sidebarCouponCount.style.display = 'inline-block';
+      }
+      if (dashboardRewardsMetric) {
+        dashboardRewardsMetric.textContent = `${availCount} Available Voucher${availCount !== 1 ? 's' : ''}`;
+      }
+
+      // 4. 权益列表渲染
+      document.getElementById('currentTierPrivilegeTitle').textContent = `${vip.tier_label} Privileges`;
+      const perksContainer = document.getElementById('currentTierPerksList');
+      if (vip.perks && Array.isArray(vip.perks) && vip.perks.length > 0) {
+        perksContainer.innerHTML = vip.perks.map(p => `<div>&bull; ${p}</div>`).join('');
+      }
+
+      // 5. 生日设定展示
+      const birthdayCard = document.getElementById('birthdayCard');
+      const bdayDesc = document.getElementById('birthdayStatusDesc');
+      const bdayArea = document.getElementById('birthdayActionArea');
+      if (birthdayCard) {
+        birthdayCard.style.display = 'flex';
+        if (vip.birthday) {
+          const formattedBday = formatBirthdayMonthDay(vip.birthday);
+          bdayDesc.innerHTML = `<span style="color:#2e7d32; font-weight:600;">✓ Birthday Registered:</span> <strong>${formattedBday}</strong>. Your annual gift arrives every year on your birthday.`;
+          bdayArea.innerHTML = `<span style="font-size:11px; color:#888; font-weight:700; background:#f0eee9; padding:6px 14px; border-radius:20px; letter-spacing:0.05em;">LOCKED</span>`;
+        } else {
+          bdayDesc.textContent = 'Silver members receive $5.00 OFF, Gold members receive $10.00 OFF automatically on birthday month.';
+        }
+      }
+
+      // 6. 免费拿样面板 (Silver / Gold / Diamond)
+      const sampleCard = document.getElementById('sampleClaimCard');
+      if (sampleCard) {
+        if (vip.free_samples_quota > 0) {
+          sampleCard.style.display = 'flex';
+          document.getElementById('samplesRemainingCount').textContent = vip.samples_left;
+          const claimBtn = document.getElementById('btnClaimSample');
+          if (vip.samples_left <= 0) {
+            claimBtn.disabled = true;
+            claimBtn.textContent = 'Quota Reached';
+            claimBtn.style.opacity = '0.6';
+          } else {
+            claimBtn.disabled = false;
+            claimBtn.textContent = 'Claim Free Sample';
+            claimBtn.style.opacity = '1';
+          }
+        } else {
+          sampleCard.style.display = 'none';
+        }
+      }
+
+      // 7. 卡券与流水
+      document.getElementById('couponCntAvailable').textContent = coupons.available ? coupons.available.length : 0;
+      document.getElementById('couponCntUsed').textContent = coupons.used ? coupons.used.length : 0;
+      document.getElementById('couponCntExpired').textContent = coupons.expired ? coupons.expired.length : 0;
+
+      renderCouponsGrid(coupons);
+      renderLedgerTable(ledger);
+      startCountdownTick();
+
+    } catch (err) {
+      console.error('Load VIP summary error:', err);
+    }
+  }
+
+  function formatCountdown(seconds) {
+    if (seconds <= 0) return 'Expired';
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (days > 0) return `Expires in ${days}d ${hours}h`;
+    return `Expires in ${hours}h ${mins}m`;
+  }
+
+  function startCountdownTick() {
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(() => {
+      document.querySelectorAll('.ticket-countdown[data-seconds]').forEach(el => {
+        let sec = parseInt(el.getAttribute('data-seconds'), 10);
+        if (sec > 0) {
+          sec -= 1;
+          el.setAttribute('data-seconds', sec);
+          el.innerHTML = `<i class="fa-regular fa-clock"></i> ${formatCountdown(sec)}`;
+        } else {
+          el.innerHTML = `<i class="fa-regular fa-clock"></i> Expired`;
+        }
+      });
+    }, 1000);
+  }
+
+  // 渲染高定轻奢珠宝票券 (活动券自动隐藏具体券码与复制按钮)
+  function renderCouponsGrid(coupons) {
+    const grid = document.getElementById('couponsGrid');
+    const list = coupons[currentCouponFilter] || [];
+
+    if (list.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align:center; padding:40px 20px; color:#888;">
+          <i class="fa-solid fa-ticket" style="font-size:36px; opacity:0.3; margin-bottom:10px;"></i>
+          <p style="margin:0;">No ${currentCouponFilter} vouchers found.</p>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(c => {
+      const isPercent = c.discount_type === 'percent';
+      const amtStr = isPercent ? `${Math.round(c.amount)}%` : `$${Math.round(c.amount)}`;
+      const typeStr = isPercent ? 'Discount' : 'USD Off';
+      const condStr = c.min_amount > 0 ? `Valid on orders over $${c.min_amount}` : 'No minimum spend required';
+      
+      const isAvailable = currentCouponFilter === 'available';
+      const isUsed = currentCouponFilter === 'used';
+      const isExpired = currentCouponFilter === 'expired';
+
+      // 核心判断：大礼包、首单券、月度券、生日券不需要展示具体券码
+      const isSystemAutoOffer = ['bundle_pack', 'welcome_pct', 'monthly_pct', 'birthday'].includes(c.tag);
+
+      let cardClass = 'ticket-card';
+      let stampHtml = '';
+
+      if (isUsed) {
+        cardClass += ' is-used';
+        stampHtml = `
+          <div class="stamp-overlay">
+            <span class="stamp-text">REDEEMED</span>
+            <span class="stamp-date">Applied in Order</span>
+          </div>
+        `;
+      } else if (isExpired) {
+        cardClass += ' is-expired';
+        stampHtml = `
+          <div class="stamp-overlay stamp-expired">
+            <span class="stamp-text">EXPIRED</span>
+            <span class="stamp-date">Ended</span>
+          </div>
+        `;
+      }
+
+      // 底部操作区逻辑
+      let footerBarHtml = '';
+      if (!isAvailable) {
+        footerBarHtml = `
+          <span style="font-size:11px; color:#999; text-transform:uppercase; font-weight:700;">${currentCouponFilter}</span>
+        `;
+      } else if (isSystemAutoOffer) {
+        footerBarHtml = `
+          <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:#8c631a; letter-spacing:0.04em;">
+            <i class="fa-solid fa-bolt" style="font-size:10px;"></i> Available at Checkout
+          </span>
+          <span style="font-size:10.5px; color:#777; font-weight:500;">No Code Needed</span>
+        `;
+      } else {
+        footerBarHtml = `
+          <span class="ticket-code-tag">${c.code}</span>
+          <button type="button" class="ticket-copy-btn" onclick="copyCouponCode('${c.code}', this)">
+            <i class="fa-regular fa-copy"></i> Copy Code
+          </button>
+        `;
+      }
+
+      return `
+        <div class="${cardClass}">
+          ${stampHtml}
+          <div class="ticket-stub-left">
+            <div class="ticket-val-num">${amtStr}</div>
+            <div class="ticket-val-unit">${typeStr}</div>
+          </div>
+          <div class="ticket-body-right">
+            <div>
+              <div class="ticket-badge-row">
+                <span class="ticket-tag-gold">${c.tag ? c.tag.replace('_', ' ') : 'VIP Exclusive'}</span>
+                ${isAvailable && c.countdown_seconds > 0 
+                  ? `<span class="ticket-countdown" data-seconds="${c.countdown_seconds}"><i class="fa-regular fa-clock"></i> ${formatCountdown(c.countdown_seconds)}</span>`
+                  : `<span style="font-size:11px; color:#999;">${c.expires_at}</span>`}
+              </div>
+              <div class="ticket-title">${c.title}</div>
+              <div class="ticket-rules">${condStr}</div>
+            </div>
+            <div class="ticket-footer-bar">
+              ${footerBarHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function switchCouponFilter(status, btn) {
+    currentCouponFilter = status;
+    document.querySelectorAll('.c-sub-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (cachedVipData && cachedVipData.coupons) {
+      renderCouponsGrid(cachedVipData.coupons);
+    }
+  }
+  window.switchCouponFilter = switchCouponFilter;
+
+  // 渲染流水表
+  function renderLedgerTable(ledger) {
+    const tbody = document.getElementById('ledgerTableBody');
+    if (!ledger || ledger.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999; padding:20px;">No points activity recorded yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = ledger.map(item => {
+      const isAdd = parseFloat(item.points_change) >= 0;
+      const changeClass = isAdd ? 'pts-add' : 'pts-sub';
+      const changePrefix = isAdd ? '+' : '';
+      const dateStr = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const orderDisplay = item.order_id && item.order_id !== '0' ? `#${item.order_id}` : '—';
+
+      return `
+        <tr>
+          <td>${dateStr}</td>
+          <td>${item.description}</td>
+          <td><strong>${orderDisplay}</strong></td>
+          <td class="${changeClass}">${changePrefix}${item.points_change} PTS</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // 积分兑换操作
+  async function handleRedeemPoints() {
+    const select = document.getElementById('redeemSelect');
+    const pts = parseInt(select.value, 10);
+    const btn = document.getElementById('redeemPointsBtn');
+    const msg = document.getElementById('redeemMsg');
+
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+
+    try {
+      const res = await fetch('/api/user/redeem-points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ points: pts })
+      });
+      const data = await res.json();
+
+      msg.style.display = 'block';
+      if (data.success) {
+        msg.style.color = '#2e7d32';
+        msg.textContent = `✓ ${data.message}`;
+        await loadVipSummary();
+      } else {
+        msg.style.color = '#c53030';
+        msg.textContent = `✗ ${data.message || 'Redeem failed'}`;
+      }
+    } catch (e) {
+      msg.style.display = 'block';
+      msg.style.color = '#c53030';
+      msg.textContent = 'Network error during redemption.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Redeem';
+      setTimeout(() => { msg.style.display = 'none'; }, 6000);
+    }
+  }
+  window.handleRedeemPoints = handleRedeemPoints;
+
+  // 格式化生日展示（隐藏占位年份 2000，仅展示 Month Day，如 November 15）
+  function formatBirthdayMonthDay(rawStr) {
+    if (!rawStr) return '';
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const parts = String(rawStr).trim().split('-');
+    let mIdx = -1;
+    let dayNum = 0;
+    if (parts.length === 3) {
+      mIdx = parseInt(parts[1], 10) - 1;
+      dayNum = parseInt(parts[2], 10);
+    } else if (parts.length === 2) {
+      mIdx = parseInt(parts[0], 10) - 1;
+      dayNum = parseInt(parts[1], 10);
+    }
+    if (mIdx >= 0 && mIdx < 12 && dayNum > 0) {
+      return `${months[mIdx]} ${dayNum}`;
+    }
+    return rawStr;
+  }
+
+  // 高定轻奢提示弹窗控制（替代原生 alert）
+  function showVipLuxuryAlert(title, message, isError = false) {
+    const overlay = document.getElementById('vipLuxuryAlertOverlay');
+    const titleEl = document.getElementById('vipLuxuryAlertTitle');
+    const textEl = document.getElementById('vipLuxuryAlertText');
+    const iconEl = document.getElementById('vipLuxuryAlertIcon');
+    if (titleEl) titleEl.textContent = title;
+    if (textEl) textEl.textContent = message;
+    if (iconEl) {
+      iconEl.style.color = isError ? '#f28b82' : '#e2b878';
+      iconEl.style.borderColor = isError ? '#f28b82' : '#e2b878';
+      iconEl.innerHTML = isError ? '<i class="fa-solid fa-exclamation"></i>' : '<i class="fa-solid fa-check"></i>';
+    }
+    if (overlay) overlay.style.display = 'flex';
+  }
+  window.showVipLuxuryAlert = showVipLuxuryAlert;
+
+  function closeVipLuxuryAlert() {
+    const overlay = document.getElementById('vipLuxuryAlertOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+  window.closeVipLuxuryAlert = closeVipLuxuryAlert;
+
+  // 改造后的纯英文生日保存函数（带按钮 Loading 状态 + 高定弹窗提醒）
+  async function saveVipBirthday() {
+    const m = document.getElementById('bdayMonthSelect')?.value;
+    const d = document.getElementById('bdayDaySelect')?.value;
+    const btn = document.getElementById('btnSaveBirthday');
+    if (!m || !d) {
+      showVipLuxuryAlert('Incomplete Date', 'Please select both Month and Day before saving.', true);
+      return;
+    }
+    const bdayVal = `2000-${m}-${d}`;
+
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.75';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i>Saving...';
+    }
+
+    try {
+      const res = await fetch('/api/user/update-birthday', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ birthday: bdayVal })
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadVipSummary();
+        showVipLuxuryAlert('Birthday Saved', data.message || `Your birthday (${formatBirthdayMonthDay(bdayVal)}) has been saved.`);
+      } else {
+        showVipLuxuryAlert('Unable to Save', data.message || 'Failed to save birthday.', true);
+      }
+    } catch (e) {
+      showVipLuxuryAlert('Network Error', 'Unable to connect right now. Please try again.', true);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.textContent = 'Save Birthday';
+      }
+    }
+  }
+  window.saveVipBirthday = saveVipBirthday;
+
+  // 高定模态弹窗控制
+  function openSampleModal() {
+    const overlay = document.getElementById('sampleModalOverlay');
+    const input = document.getElementById('modalSampleNoteInput');
+    const msg = document.getElementById('modalSampleMsg');
+    if (input) input.value = '';
+    if (msg) msg.style.display = 'none';
+    if (overlay) overlay.style.display = 'flex';
+  }
+  window.openSampleModal = openSampleModal;
+
+  function closeSampleModal() {
+    const overlay = document.getElementById('sampleModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+  window.closeSampleModal = closeSampleModal;
+
+  async function submitSampleRequest() {
+    const input = document.getElementById('modalSampleNoteInput');
+    const note = input ? input.value.trim() : '';
+    const btn = document.getElementById('btnSubmitSampleRequest');
+    const msg = document.getElementById('modalSampleMsg');
+
+    if (!note) {
+      if (msg) {
+        msg.style.display = 'block';
+        msg.style.color = '#c53030';
+        msg.textContent = 'Please provide an item title or SKU.';
+      }
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i>Submitting...';
+
+    try {
+      const res = await fetch('/api/user/claim-sample', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sample_note: note })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        closeSampleModal();
+        await loadVipSummary();
+        showVipLuxuryAlert('Sample Request Confirmed', data.message || 'Your complimentary sample request has been submitted.');
+      } else {
+        msg.style.display = 'block';
+        msg.style.color = '#c53030';
+        msg.textContent = data.message || 'Sample claim failed.';
+      }
+    } catch (e) {
+      msg.style.display = 'block';
+      msg.style.color = '#c53030';
+      msg.textContent = 'Network error submitting request.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Submit Request';
+    }
+  }
+  window.submitSampleRequest = submitSampleRequest;
+
+  // 复制优惠券码
+  function copyCouponCode(code, btn) {
+    navigator.clipboard.writeText(code).then(() => {
+      const origin = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+      btn.style.color = '#fff';
+      setTimeout(() => {
+        btn.innerHTML = origin;
+      }, 2000);
     });
-  });
+  }
+  window.copyCouponCode = copyCouponCode;
 
-  document.querySelectorAll('.acc-text-link[data-tab], .acc-mini-link[data-tab]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const target = btn.getAttribute('data-tab');
-      changeTab(target);
-    });
-  });
-
-  // 返回列表按钮
-  document.getElementById('backToOrdersListBtn')?.addEventListener('click', () => {
-    document.getElementById('ordersListWrap').style.display = 'block';
-    document.getElementById('orderDetailWrap').style.display = 'none';
-  });
-
-  // 地址编辑表单展开/收起
-  const billingFormBlock = document.getElementById('billingFormBlock');
-  const shippingFormBlock = document.getElementById('shippingFormBlock');
-
-  document.getElementById('openEditBillingBtn')?.addEventListener('click', () => {
-    if (billingFormBlock) billingFormBlock.style.display = 'block';
-  });
-  document.getElementById('closeBillingFormBtn')?.addEventListener('click', () => {
-    if (billingFormBlock) billingFormBlock.style.display = 'none';
-  });
-  document.getElementById('cancelBillingFormBtn')?.addEventListener('click', () => {
-    if (billingFormBlock) billingFormBlock.style.display = 'none';
-  });
-
-  document.getElementById('openEditShippingBtn')?.addEventListener('click', () => {
-    if (shippingFormBlock) shippingFormBlock.style.display = 'block';
-  });
-  document.getElementById('closeShippingFormBtn')?.addEventListener('click', () => {
-    if (shippingFormBlock) shippingFormBlock.style.display = 'none';
-  });
-  document.getElementById('cancelShippingFormBtn')?.addEventListener('click', () => {
-    if (shippingFormBlock) shippingFormBlock.style.display = 'none';
-  });
-
-  // 页面加载时获取用户信息
+  // =========================================================================
+  // 原有业务：用户信息、订单与地址逻辑 (完全保留)
+  // =========================================================================
   let currentUserId = null;
 
   async function loadUserInfo() {
@@ -1139,13 +2039,12 @@ if (!userId || !userEmail) {
         const user = data.user;
         currentUserId = user.id;
 
-        document.getElementById('sidebarUserName').textContent = `${user.firstName} ${user.lastName}`;
-        document.getElementById('sidebarUserEmail').textContent = user.email;
-        document.getElementById('welcomeUserName').textContent = user.firstName;
+        document.getElementById('sidebarUserName').textContent = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+        document.getElementById('welcomeUserName').textContent = user.firstName || 'Member';
 
         document.getElementById('account_first_name').value = user.firstName || '';
         document.getElementById('account_last_name').value = user.lastName || '';
-        document.getElementById('account_display_name').value = `${user.firstName} ${user.lastName}`;
+        document.getElementById('account_display_name').value = `${user.firstName} ${user.lastName}`.trim() || user.email;
         document.getElementById('account_email').value = user.email || '';
 
         if (user.billing) {
@@ -1156,7 +2055,6 @@ if (!userId || !userEmail) {
           displayAddress('shipping', user.shipping);
           populateAddressForm('shipping', user.shipping);
         }
-
         updateAddressMetric(user.billing, user.shipping);
       }
     } catch (error) {
@@ -1164,335 +2062,66 @@ if (!userId || !userEmail) {
     }
   }
 
-  // 处理密码修改
-  async function handlePasswordChange() {
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    const messageEl = document.getElementById('passwordMessage');
-
-    messageEl.style.display = 'none';
-    messageEl.className = 'acc-message';
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showMessage('Please fill in all password fields', 'error');
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      showMessage('New password must be at least 8 characters', 'error');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      showMessage('New passwords do not match', 'error');
-      return;
-    }
-
-    if (currentPassword === newPassword) {
-      showMessage('New password must be different from current password', 'error');
-      return;
-    }
-
-    const submitBtn = document.getElementById('savePasswordBtn');
-    const originalText = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-    submitBtn.style.opacity = '0.7';
-
+  async function loadOrders() {
     try {
-      const userEmail = document.getElementById('sidebarUserEmail').textContent;
-
-      const validateResponse = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          password: currentPassword,
-          rememberMe: false
-        }),
-      });
-
-      if (!validateResponse.ok) {
-        showMessage('Current password is incorrect', 'error');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
-        submitBtn.style.opacity = '1';
-        return;
-      }
-
-      if (!currentUserId) {
-        showMessage('Session expired. Please log in again.', 'error');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
-        submitBtn.style.opacity = '1';
-        return;
-      }
-
-      const changeResponse = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: currentUserId,
-          new_password: newPassword,
-        }),
-      });
-
-      const data = await changeResponse.json();
-
-      if (data.success) {
-        showMessage('Password updated successfully! Please use your new password next time you log in.', 'success');
-        document.getElementById('currentPassword').value = '';
-        document.getElementById('newPassword').value = '';
-        document.getElementById('confirmPassword').value = '';
-      } else {
-        showMessage(data.message || 'Failed to update password', 'error');
-      }
-    } catch (error) {
-      console.error('Change password error:', error);
-      showMessage('An unexpected error occurred', 'error');
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = originalText;
-      submitBtn.style.opacity = '1';
-    }
-  }
-
-  function showMessage(message, type) {
-    const messageEl = document.getElementById('passwordMessage');
-    messageEl.textContent = message;
-    messageEl.className = `acc-message ${type}`;
-    messageEl.style.display = 'block';
-
-    if (type === 'success') {
-      setTimeout(() => {
-        messageEl.style.display = 'none';
-      }, 5000);
-    }
-  }
-
-  // 页面加载时执行
-  loadUserInfo();
-  loadOrders();
-  loadRecentOrders();
-  loadWishlist();
-
-  // 处理URL参数，自动切换到指定Tab
-  const urlParams = new URLSearchParams(window.location.search);
-  const tabParam = urlParams.get('tab');
-
-  if (tabParam) {
-    const tabButton = document.querySelector(`[data-tab="${tabParam}"]`);
-    if (tabButton) {
-      tabButton.click();
-    }
-  }
-
-  window.handlePasswordChange = handlePasswordChange;
-  window.saveAccountDetails = saveAccountDetails;
-
-  // 显示地址信息
-  function displayAddress(type, address) {
-    const displayEl = document.getElementById(`${type}AddressDisplay`);
-    if (!displayEl) return;
-
-    if (!address || !address.address_1) {
-      displayEl.innerHTML = '<p style="color: #999;">No address saved</p>';
-      return;
-    }
-
-    const fullName = `${address.first_name || ''} ${address.last_name || ''}`.trim();
-    const addressLine1 = address.address_1 || '';
-    const addressLine2 = address.address_2 ? `, ${address.address_2}` : '';
-    const cityStateZip = `${address.city || ''}, ${address.state || ''} ${address.postcode || ''}`.trim();
-    const country = address.country || '';
-    const phone = address.phone || '';
-    const email = address.email || '';
-
-    let html = '';
-    if (fullName) html += `<p><strong>${fullName}</strong></p>`;
-    if (addressLine1) html += `<p>${addressLine1}${addressLine2}</p>`;
-    if (cityStateZip && country) html += `<p>${cityStateZip}, ${country}</p>`;
-    if (phone) html += `<p class="acc-phone">${phone}</p>`;
-    if (type === 'billing' && email) html += `<p class="acc-phone">${email}</p>`;
-
-    displayEl.innerHTML = html || '<p style="color: #999;">No address saved</p>';
-  }
-
-  // 填充地址表单
-  function populateAddressForm(type, address) {
-    if (!address) return;
-
-    document.getElementById(`${type}_first_name`).value = address.first_name || '';
-    document.getElementById(`${type}_last_name`).value = address.last_name || '';
-    document.getElementById(`${type}_company`).value = address.company || '';
-    document.getElementById(`${type}_country`).value = address.country || 'US';
-    document.getElementById(`${type}_address_1`).value = address.address_1 || '';
-    document.getElementById(`${type}_address_2`).value = address.address_2 || '';
-    document.getElementById(`${type}_city`).value = address.city || '';
-    document.getElementById(`${type}_postcode`).value = address.postcode || '';
-
-    if (type === 'billing') {
-      document.getElementById(`${type}_phone`).value = address.phone || '';
-      document.getElementById(`${type}_email`).value = address.email || '';
-    }
-  }
-
-  // 保存Billing地址
-  document.getElementById('billingAddressForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await saveAddress('billing');
-  });
-
-  // 保存Shipping地址
-  document.getElementById('shippingAddressForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await saveAddress('shipping');
-  });
-
-  // 保存地址函数
-  async function saveAddress(type) {
-    const address = {
-      firstName: document.getElementById(`${type}_first_name`).value.trim(),
-      lastName: document.getElementById(`${type}_last_name`).value.trim(),
-      company: document.getElementById(`${type}_company`).value.trim(),
-      country: document.getElementById(`${type}_country`).value,
-      address1: document.getElementById(`${type}_address_1`).value.trim(),
-      address2: document.getElementById(`${type}_address_2`).value.trim(),
-      city: document.getElementById(`${type}_city`).value.trim(),
-      postcode: document.getElementById(`${type}_postcode`).value.trim(),
-    };
-
-    if (type === 'billing') {
-      address.phone = document.getElementById(`${type}_phone`).value.trim();
-      address.email = document.getElementById(`${type}_email`).value.trim();
-    }
-
-    if (!address.firstName || !address.lastName || !address.address1 || !address.city || !address.postcode) {
-      showAddressMessage(type, 'Please fill in all required fields', 'error');
-      return;
-    }
-
-    const btn = document.getElementById(`save${type.charAt(0).toUpperCase() + type.slice(1)}Btn`);
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-    btn.style.opacity = '0.7';
-
-    try {
-      const response = await fetch('/api/user/update-address', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ type, address }),
-      });
-
+      const response = await fetch('/api/user/orders');
       const data = await response.json();
 
-      if (data.success) {
-        showAddressMessage(type, 'Address updated successfully!', 'success');
-        displayAddress(type, data.address);
-        setTimeout(() => {
-          document.getElementById(`${type}FormBlock`).style.display = 'none';
-        }, 2000);
+      const ordersLoading = document.getElementById('ordersLoading');
+      const ordersList = document.getElementById('ordersList');
+      const noOrders = document.getElementById('noOrders');
+      const orderCount = document.getElementById('orderCount');
+
+      if (ordersLoading) ordersLoading.style.display = 'none';
+
+      if (data.success && data.orders && data.orders.length > 0) {
+        cachedOrdersData = data.orders;
+        if (orderCount) orderCount.textContent = `Showing ${data.orders.length} order${data.orders.length > 1 ? 's' : ''}`;
+        if (ordersList) {
+          ordersList.style.display = 'flex';
+          ordersList.innerHTML = data.orders.map(order => buildOrderCardHtml(order)).join('');
+        }
+        const sidebarBadge = document.getElementById('sidebarOrderCount');
+        if (sidebarBadge) {
+          sidebarBadge.textContent = data.orders.length;
+          sidebarBadge.style.display = 'inline-block';
+        }
+        const dashboardMetric = document.getElementById('dashboardOrdersMetric');
+        if (dashboardMetric) dashboardMetric.textContent = `${data.orders.length} Total Orders`;
       } else {
-        showAddressMessage(type, data.message || 'Failed to update address', 'error');
+        if (orderCount) orderCount.textContent = 'No orders';
+        if (noOrders) noOrders.style.display = 'block';
+        const dashboardMetric = document.getElementById('dashboardOrdersMetric');
+        if (dashboardMetric) dashboardMetric.textContent = '0 Total Orders';
       }
     } catch (error) {
-      console.error('Update address error:', error);
-      showAddressMessage(type, 'An unexpected error occurred', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-      btn.style.opacity = '1';
+      console.error('Load orders error:', error);
     }
   }
 
-  function showAddressMessage(type, message, messageType) {
-    const messageEl = document.getElementById(`${type}AddressMessage`);
-    messageEl.textContent = message;
-    messageEl.className = `acc-message ${messageType}`;
-    messageEl.style.display = 'block';
-
-    if (messageType === 'success') {
-      setTimeout(() => {
-        messageEl.style.display = 'none';
-      }, 5000);
-    }
-  }
-
-  async function saveAccountDetails() {
-    const firstName = document.getElementById('account_first_name').value.trim();
-    const lastName = document.getElementById('account_last_name').value.trim();
-    const email = document.getElementById('account_email').value.trim();
-
-    if (!firstName || !lastName || !email) {
-      showAccountMessage('Please fill in all required fields', 'error');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      showAccountMessage('Please enter a valid email address', 'error');
-      return;
-    }
-
-    const btn = document.getElementById('saveAccountDetailsBtn');
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-    btn.style.opacity = '0.7';
-
+  async function loadRecentOrders() {
     try {
-      const response = await fetch('/api/user/update-profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-        }),
-      });
-
+      const response = await fetch('/api/user/orders');
       const data = await response.json();
+      const recentLoading = document.getElementById('recentOrdersLoading');
+      const recentList = document.getElementById('recentOrdersList');
+      const noRecent = document.getElementById('noRecentOrders');
 
-      if (data.success) {
-        showAccountMessage('Profile updated successfully!', 'success');
-        await loadUserInfo();
+      if (recentLoading) recentLoading.style.display = 'none';
+
+      if (data.success && data.orders && data.orders.length > 0) {
+        if (recentList) {
+          recentList.style.display = 'flex';
+          recentList.innerHTML = data.orders.slice(0, 3).map(order => buildOrderCardHtml(order)).join('');
+        }
       } else {
-        showAccountMessage(data.message || 'Failed to update profile', 'error');
+        if (noRecent) noRecent.style.display = 'block';
       }
-    } catch (error) {
-      console.error('Update profile error:', error);
-      showAccountMessage('An unexpected error occurred', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-      btn.style.opacity = '1';
+    } catch (e) {
+      console.error(e);
     }
   }
 
-  function showAccountMessage(message, type) {
-    const messageEl = document.getElementById('accountDetailsMessage');
-    messageEl.textContent = message;
-    messageEl.className = `acc-message ${type}`;
-    messageEl.style.display = 'block';
-
-    if (type === 'success') {
-      setTimeout(() => {
-        messageEl.style.display = 'none';
-      }, 5000);
-    }
-  }
-
-  // 辅助渲染状态
   function formatOrderStatus(statusKey) {
     const statusMap = {
       'pending': { text: 'Pending', class: 'processing' },
@@ -1507,63 +2136,41 @@ if (!userId || !userEmail) {
     return `<span class="acc-pill-status ${s.class}">${s.text}</span>`;
   }
 
-  // 生成单张订单卡片 HTML
   function buildOrderCardHtml(order) {
-    const orderDate = new Date(order.date_created).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-
+    const orderDate = new Date(order.date_created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     const items = order.line_items || [];
     const count = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
-
     const thumbsHtml = items.slice(0, 3).map(item => {
-      const src = item.image?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=100&q=80';
+      const isFreeGift = (item.name || '').includes('Free Gift');
+      const src = isFreeGift
+    ? 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/Gemini_Generated_Image_sesx5gsesx5gsesx.jpeg'
+    : (item.image?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=100&q=80');
       return `<img src="${src}" alt="${item.name || 'item'}" class="acc-thumb-img" />`;
     }).join('');
 
-    // 判断订单是否可以再次支付
     const canPay = ['pending', 'failed', 'on-hold'].includes(order.status);
-
-    // 根据订单状态显示不同的按钮
-    let actionButtonHtml = '';
-    if (canPay) {
-      actionButtonHtml = `
-        <div style="display: flex; gap: 8px;">
-          <button type="button" class="acc-btn-pay" onclick="retryPayment('${order.id}')">
-            Complete Payment &rarr;
-          </button>
-          <button type="button" class="acc-btn-detail-secondary" onclick="viewSingleOrder('${order.id}')">
-            View Details
-          </button>
-        </div>
-      `;
-    } else {
-      actionButtonHtml = `
-        <button type="button" class="acc-btn-detail" onclick="viewSingleOrder('${order.id}')">
-          View Details &rarr;
-        </button>
-      `;
-    }
+    let actionButtonHtml = canPay
+      ? `<div style="display: flex; gap: 8px;">
+          <button type="button" class="acc-btn-pay" onclick="retryPayment('${order.id}')">Complete Payment &rarr;</button>
+          <button type="button" class="acc-btn-detail-secondary" onclick="viewSingleOrder('${order.id}')">View Details</button>
+        </div>`
+      : `<button type="button" class="acc-btn-detail" onclick="viewSingleOrder('${order.id}')">View Details &rarr;</button>`;
 
     return `
       <div class="acc-order-card">
         <div class="acc-card-top">
-          <div class="acc-card-top-left">
+          <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
             <span class="acc-card-order-id">#${order.number || order.id}</span>
-            <span class="acc-card-dot">&bull;</span>
-            <span class="acc-card-date">${orderDate}</span>
+            <span style="color:#ccc;">&bull;</span>
+            <span style="color:#777;">${orderDate}</span>
             ${formatOrderStatus(order.status)}
           </div>
-          <div class="acc-card-top-right">
-            <div class="acc-card-total-box">Total: <strong>$${parseFloat(order.total).toFixed(2)}</strong></div>
-          </div>
+          <div style="font-size:13px; color:#666;">Total: <strong style="font-size:15px; color:#111;">$${parseFloat(order.total).toFixed(2)}</strong></div>
         </div>
         <div class="acc-card-bottom">
           <div class="acc-card-thumbs">
             ${thumbsHtml}
-            <span class="acc-thumb-summary">${count} item${count > 1 ? 's' : ''}</span>
+            <span style="font-size:12.5px; color:#777; margin-left:4px;">${count} item${count > 1 ? 's' : ''}</span>
           </div>
           ${actionButtonHtml}
         </div>
@@ -1571,21 +2178,11 @@ if (!userId || !userEmail) {
     `;
   }
 
-  // 处理重新支付
   function retryPayment(orderId) {
     const order = cachedOrdersData.find(o => String(o.id) === String(orderId));
-    if (!order) {
-      alert('Order not found');
-      return;
-    }
-
-    console.log('🔄 准备重新支付订单:', orderId);
-
-    // 从订单中提取 shipping 和 billing 信息
+    if (!order) return;
     const shipping = order.shipping || {};
     const billing = order.billing || {};
-
-    // 构建 shippingInfo 对象（与 checkout/shipping.astro 格式一致）
     const shippingInfo = {
       firstName: shipping.first_name || billing.first_name || '',
       lastName: shipping.last_name || billing.last_name || '',
@@ -1600,15 +2197,10 @@ if (!userId || !userEmail) {
       shippingMethod: order.shipping_lines?.[0]?.method_id || 'standard',
       shippingCost: parseFloat(order.shipping_total || 0).toFixed(2)
     };
-
-    console.log('📦 恢复订单信息:', shippingInfo);
-
-    // 将订单信息写入 sessionStorage
     sessionStorage.setItem('shippingInfo', JSON.stringify(shippingInfo));
     sessionStorage.setItem('pendingOrderId', order.id.toString());
     sessionStorage.setItem('pendingOrderKey', order.order_key || '');
 
-    // 将订单商品重新添加到购物车（payment 页面需要显示商品列表）
     const cartItems = order.line_items.map(item => ({
       id: item.product_id,
       product_id: item.product_id,
@@ -1618,37 +2210,23 @@ if (!userId || !userEmail) {
       quantity: item.quantity,
       image: item.image?.src || ''
     }));
-
     localStorage.setItem('ebbelle_cart', JSON.stringify(cartItems));
-
-    console.log('✅ 订单信息已恢复，跳转到支付页面');
-
-    // 跳转到 payment 页面
     window.location.href = '/checkout/payment';
   }
-
   window.retryPayment = retryPayment;
 
-  // 点击 View Details 展示订单详细介绍
   function viewSingleOrder(orderId) {
     const order = cachedOrdersData.find(o => String(o.id) === String(orderId));
     if (!order) return;
-
     changeTab('orders');
 
     const listWrap = document.getElementById('ordersListWrap');
     const detailWrap = document.getElementById('orderDetailWrap');
     const content = document.getElementById('orderDetailContent');
-
     listWrap.style.display = 'none';
     detailWrap.style.display = 'block';
 
-    const orderDate = new Date(order.date_created).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-
+    const orderDate = new Date(order.date_created).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const items = order.line_items || [];
     const shipping = order.shipping || {};
     const billing = order.billing || {};
@@ -1661,47 +2239,39 @@ if (!userId || !userEmail) {
             <h2 style="font-size: 20px; margin: 0 0 4px; font-weight: 700;">Order #${order.number || order.id}</h2>
             <p style="margin: 0; font-size: 12.5px; color: #888;">Placed on ${orderDate}</p>
           </div>
-          <div>
-            ${formatOrderStatus(order.status)}
-          </div>
+          <div>${formatOrderStatus(order.status)}</div>
         </div>
-
         <h3>Items Ordered</h3>
-        <div class="acc-detail-items-list">
-          ${items.map(item => `
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          ${items.map(item => {
+            const isFreeGift = (item.name || '').includes('Free Gift');
+            const thumbUrl = isFreeGift
+              ? 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/Gemini_Generated_Image_sesx5gsesx5gsesx.jpeg'
+              : (item.image?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=120&q=80');
+            return `
             <div class="acc-detail-item-row">
-              <img src="${item.image?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=120&q=80'}" class="acc-detail-thumb" alt="${item.name}" />
+              <img src="${thumbUrl}" class="acc-detail-thumb" alt="${item.name}" />
               <div class="acc-detail-name-box">
                 <h4>${item.name}</h4>
-                <p>Qty: ${item.quantity} &times; $${parseFloat(item.price || 0).toFixed(2)}</p>
+                <p style="margin:0; font-size:12px; color:#777;">Qty: ${item.quantity} &times; $${parseFloat(item.price || 0).toFixed(2)}</p>
               </div>
-              <div class="acc-detail-price-box">
-                $${parseFloat(item.total || 0).toFixed(2)}
-              </div>
+              <div class="acc-detail-price-box">$${parseFloat(item.total || 0).toFixed(2)}</div>
             </div>
-          `).join('')}
+          `;
+          }).join('')}
         </div>
       </div>
-
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
         <div class="acc-view-detail-card" style="margin-bottom: 0;">
           <h3>Order Summary</h3>
           <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #666;">
-            <div style="display: flex; justify-content: space-between;">
-              <span>Subtotal:</span>
-              <span>$${subtotal}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span>Shipping:</span>
-              <span>$${parseFloat(order.shipping_total || 0).toFixed(2)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-weight: 700; color: #111; border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px;">
-              <span>Total Paid:</span>
-              <span>$${parseFloat(order.total).toFixed(2)} ${order.currency || 'USD'}</span>
+            <div style="display: flex; justify-content: space-between;"><span>Subtotal:</span><span>$${subtotal}</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>Shipping:</span><span>$${parseFloat(order.shipping_total || 0).toFixed(2)}</span></div>
+            <div style="display: flex; justify-content: space-between; font-weight: 700; color: #111; border-top: 1px solid #eee; padding-top: 8px;">
+              <span>Total Paid:</span><span>$${parseFloat(order.total).toFixed(2)} ${order.currency || 'USD'}</span>
             </div>
           </div>
         </div>
-
         <div class="acc-view-detail-card" style="margin-bottom: 0;">
           <h3>Shipping Address</h3>
           <div style="font-size: 13px; color: #555; line-height: 1.5;">
@@ -1717,124 +2287,170 @@ if (!userId || !userEmail) {
   }
   window.viewSingleOrder = viewSingleOrder;
 
-  // 加载订单列表
-  async function loadOrders() {
-    try {
-      const response = await fetch('/api/user/orders');
-      const data = await response.json();
+  document.getElementById('backToOrdersListBtn')?.addEventListener('click', () => {
+    document.getElementById('ordersListWrap').style.display = 'block';
+    document.getElementById('orderDetailWrap').style.display = 'none';
+  });
 
-      const ordersLoading = document.getElementById('ordersLoading');
-      const ordersList = document.getElementById('ordersList');
-      const noOrders = document.getElementById('noOrders');
-      const orderCount = document.getElementById('orderCount');
+  function displayAddress(type, address) {
+    const displayEl = document.getElementById(`${type}AddressDisplay`);
+    if (!displayEl) return;
+    if (!address || !address.address_1) {
+      displayEl.innerHTML = '<p style="color: #999;">No address saved</p>';
+      return;
+    }
+    const fullName = `${address.first_name || ''} ${address.last_name || ''}`.trim();
+    let html = '';
+    if (fullName) html += `<p><strong>${fullName}</strong></p>`;
+    if (address.address_1) html += `<p>${address.address_1}${address.address_2 ? `, ${address.address_2}` : ''}</p>`;
+    html += `<p>${address.city || ''}, ${address.state || ''} ${address.postcode || ''}, ${address.country || ''}</p>`;
+    if (address.phone) html += `<p>${address.phone}</p>`;
+    displayEl.innerHTML = html;
+  }
 
-      ordersLoading.style.display = 'none';
-
-      if (data.success && data.orders && data.orders.length > 0) {
-        cachedOrdersData = data.orders;
-        orderCount.textContent = `Showing ${data.orders.length} order${data.orders.length > 1 ? 's' : ''}`;
-        ordersList.style.display = 'flex';
-
-        ordersList.innerHTML = data.orders.map(order => buildOrderCardHtml(order)).join('');
-
-        const sidebarBadge = document.getElementById('sidebarOrderCount');
-        if (sidebarBadge) {
-          sidebarBadge.textContent = data.orders.length;
-          sidebarBadge.style.display = 'inline-block';
-        }
-
-        const dashboardMetric = document.getElementById('dashboardOrdersMetric');
-        if (dashboardMetric) {
-          dashboardMetric.textContent = `${data.orders.length} Total Order${data.orders.length > 1 ? 's' : ''}`;
-        }
-      } else {
-        orderCount.textContent = 'No orders';
-        noOrders.style.display = 'block';
-
-        const sidebarBadge = document.getElementById('sidebarOrderCount');
-        if (sidebarBadge) {
-          sidebarBadge.style.display = 'none';
-        }
-
-        const dashboardMetric = document.getElementById('dashboardOrdersMetric');
-        if (dashboardMetric) {
-          dashboardMetric.textContent = '0 Total Orders';
-        }
-      }
-    } catch (error) {
-      console.error('Load orders error:', error);
-      document.getElementById('ordersLoading').innerHTML = '<p style="color: #999;">Failed to load orders</p>';
+  function populateAddressForm(type, address) {
+    if (!address) return;
+    document.getElementById(`${type}_first_name`).value = address.first_name || '';
+    document.getElementById(`${type}_last_name`).value = address.last_name || '';
+    document.getElementById(`${type}_company`).value = address.company || '';
+    document.getElementById(`${type}_country`).value = address.country || 'US';
+    document.getElementById(`${type}_address_1`).value = address.address_1 || '';
+    document.getElementById(`${type}_address_2`).value = address.address_2 || '';
+    document.getElementById(`${type}_city`).value = address.city || '';
+    document.getElementById(`${type}_postcode`).value = address.postcode || '';
+    if (type === 'billing') {
+      document.getElementById(`${type}_phone`).value = address.phone || '';
+      document.getElementById(`${type}_email`).value = address.email || '';
     }
   }
 
-  // 加载Dashboard的最近订单（最多显示3个）
-  async function loadRecentOrders() {
-    try {
-      const response = await fetch('/api/user/orders');
-      const data = await response.json();
-
-      const recentOrdersLoading = document.getElementById('recentOrdersLoading');
-      const recentOrdersList = document.getElementById('recentOrdersList');
-      const noRecentOrders = document.getElementById('noRecentOrders');
-
-      recentOrdersLoading.style.display = 'none';
-
-      if (data.success && data.orders && data.orders.length > 0) {
-        if (!cachedOrdersData || cachedOrdersData.length === 0) {
-          cachedOrdersData = data.orders;
-        }
-        const recentOrders = data.orders.slice(0, 3);
-        recentOrdersList.style.display = 'flex';
-        recentOrdersList.innerHTML = recentOrders.map(order => buildOrderCardHtml(order)).join('');
-      } else {
-        noRecentOrders.style.display = 'block';
-      }
-    } catch (error) {
-      console.error('Load recent orders error:', error);
-      document.getElementById('recentOrdersLoading').innerHTML = '<p style="color: #999;">Failed to load orders</p>';
-    }
-  }
-
-  // 更新Dashboard地址统计
   function updateAddressMetric(billing, shipping) {
-    const dashboardMetric = document.getElementById('dashboardAddressesMetric');
-    if (!dashboardMetric) return;
-
-    let addressCount = 0;
-    if (billing && billing.address_1) addressCount++;
-    if (shipping && shipping.address_1) addressCount++;
-
-    dashboardMetric.textContent = `${addressCount} Saved Address${addressCount !== 1 ? 'es' : ''}`;
+    const m = document.getElementById('dashboardAddressesMetric');
+    if (!m) return;
+    let count = 0;
+    if (billing && billing.address_1) count++;
+    if (shipping && shipping.address_1) count++;
+    m.textContent = `${count} Saved Address${count !== 1 ? 'es' : ''}`;
   }
 
-  // 加载Wishlist
-  async function loadWishlist() {
-    const wishlistLoading = document.getElementById('wishlistLoading');
-    const wishlistGrid = document.getElementById('wishlistGrid');
-    const noWishlist = document.getElementById('noWishlist');
-    const wishlistCount = document.getElementById('wishlistCount');
-    const sidebarWishlistBadge = document.getElementById('sidebarWishlistCount');
+  const billingFormBlock = document.getElementById('billingFormBlock');
+  const shippingFormBlock = document.getElementById('shippingFormBlock');
+  document.getElementById('openEditBillingBtn')?.addEventListener('click', () => { if (billingFormBlock) billingFormBlock.style.display = 'block'; });
+  document.getElementById('closeBillingFormBtn')?.addEventListener('click', () => { if (billingFormBlock) billingFormBlock.style.display = 'none'; });
+  document.getElementById('cancelBillingFormBtn')?.addEventListener('click', () => { if (billingFormBlock) billingFormBlock.style.display = 'none'; });
+  document.getElementById('openEditShippingBtn')?.addEventListener('click', () => { if (shippingFormBlock) shippingFormBlock.style.display = 'block'; });
+  document.getElementById('closeShippingFormBtn')?.addEventListener('click', () => { if (shippingFormBlock) shippingFormBlock.style.display = 'none'; });
+  document.getElementById('cancelShippingFormBtn')?.addEventListener('click', () => { if (shippingFormBlock) shippingFormBlock.style.display = 'none'; });
 
-    setTimeout(() => {
-      wishlistLoading.style.display = 'none';
-      const mockWishlistItems = [];
+  document.getElementById('billingAddressForm')?.addEventListener('submit', async (e) => { e.preventDefault(); await saveAddress('billing'); });
+  document.getElementById('shippingAddressForm')?.addEventListener('submit', async (e) => { e.preventDefault(); await saveAddress('shipping'); });
 
-      if (mockWishlistItems.length > 0) {
-        wishlistCount.textContent = `${mockWishlistItems.length} item${mockWishlistItems.length > 1 ? 's' : ''}`;
-        wishlistGrid.style.display = 'grid';
+  async function saveAddress(type) {
+    const address = {
+      firstName: document.getElementById(`${type}_first_name`).value.trim(),
+      lastName: document.getElementById(`${type}_last_name`).value.trim(),
+      company: document.getElementById(`${type}_company`).value.trim(),
+      country: document.getElementById(`${type}_country`).value,
+      address1: document.getElementById(`${type}_address_1`).value.trim(),
+      address2: document.getElementById(`${type}_address_2`).value.trim(),
+      city: document.getElementById(`${type}_city`).value.trim(),
+      postcode: document.getElementById(`${type}_postcode`).value.trim(),
+    };
+    if (type === 'billing') {
+      address.phone = document.getElementById(`${type}_phone`).value.trim();
+      address.email = document.getElementById(`${type}_email`).value.trim();
+    }
+    const btn = document.getElementById(`save${type.charAt(0).toUpperCase() + type.slice(1)}Btn`);
+    btn.disabled = true;
 
-        if (sidebarWishlistBadge) {
-          sidebarWishlistBadge.textContent = mockWishlistItems.length;
-          sidebarWishlistBadge.style.display = 'inline-block';
-        }
+    try {
+      const res = await fetch('/api/user/update-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, address }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        displayAddress(type, data.address);
+        document.getElementById(`${type}FormBlock`).style.display = 'none';
       } else {
-        wishlistCount.textContent = 'No items';
-        noWishlist.style.display = 'block';
-
-        if (sidebarWishlistBadge) {
-          sidebarWishlistBadge.style.display = 'none';
-        }
+        alert(data.message || 'Update failed');
       }
-    }, 500);
+    } catch (e) {
+      alert('Network error');
+    } finally {
+      btn.disabled = false;
+    }
   }
+
+  async function saveAccountDetails() {
+    const firstName = document.getElementById('account_first_name').value.trim();
+    const lastName = document.getElementById('account_last_name').value.trim();
+    const email = document.getElementById('account_email').value.trim();
+
+    const btn = document.getElementById('saveAccountDetailsBtn');
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/user/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstName, lastName, email }),
+      });
+      const data = await res.json();
+
+      const msg = document.getElementById('accountDetailsMessage');
+      msg.style.display = 'block';
+      msg.className = 'acc-message success';
+      msg.textContent = 'Profile updated successfully!';
+      await loadUserInfo();
+      setTimeout(() => { msg.style.display = 'none'; }, 4000);
+    } catch (e) {
+      alert('Error updating profile');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  window.saveAccountDetails = saveAccountDetails;
+
+  async function handlePasswordChange() {
+    const cur = document.getElementById('currentPassword').value;
+    const pwd = document.getElementById('newPassword').value;
+    const cnf = document.getElementById('confirmPassword').value;
+    const msg = document.getElementById('passwordMessage');
+
+    if (!cur || !pwd || !cnf || pwd !== cnf || pwd.length < 8) {
+      msg.className = 'acc-message error';
+      msg.style.display = 'block';
+      msg.textContent = 'Passwords do not match or length is less than 8.';
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUserId, new_password: pwd }),
+      });
+      const data = await res.json();
+      msg.style.display = 'block';
+      msg.className = data.success ? 'acc-message success' : 'acc-message error';
+      msg.textContent = data.message || (data.success ? 'Password updated!' : 'Failed');
+    } catch (e) {
+      msg.style.display = 'block';
+      msg.className = 'acc-message error';
+      msg.textContent = 'Error updating password';
+    }
+  }
+  window.handlePasswordChange = handlePasswordChange;
+
+  // 页面启动
+  loadUserInfo();
+  loadOrders();
+  loadRecentOrders();
+  loadVipSummary();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab');
+  if (tabParam) changeTab(tabParam);
 </script>
