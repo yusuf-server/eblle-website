@@ -400,7 +400,7 @@ export const translations: Record<SupportedLocale, UITranslations> = {
       },
       coupon: {
         badge: 'NEW USER BENEFITS',
-        value: '$130 Value',
+        value: '$200 Value',
         subtitle: 'EXCLUSIVE COUPONS',
         button: 'New User Deal'
       },
@@ -678,7 +678,7 @@ export const translations: Record<SupportedLocale, UITranslations> = {
       },
       coupon: {
         badge: 'AVANTAGES NOUVEL UTILISATEUR',
-        value: 'Valeur 130$',
+        value: 'Valeur 200$',
         subtitle: 'COUPONS EXCLUSIFS',
         button: 'Offre Nouveaux Clients'
       },
@@ -956,7 +956,7 @@ export const translations: Record<SupportedLocale, UITranslations> = {
       },
       coupon: {
         badge: 'VORTEILE FÜR NEUE BENUTZER',
-        value: '130$ Wert',
+        value: '200$ Wert',
         subtitle: 'EXKLUSIVE GUTSCHEINE',
         button: 'Neukunden-Angebot'
       },
@@ -1234,7 +1234,7 @@ export const translations: Record<SupportedLocale, UITranslations> = {
       },
       coupon: {
         badge: 'BENEFICIOS PARA NUEVOS USUARIOS',
-        value: 'Valor $130',
+        value: 'Valor $200',
         subtitle: 'CUPONES EXCLUSIVOS',
         button: 'Oferta Nuevos Clientes'
       },
