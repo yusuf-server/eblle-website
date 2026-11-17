@@ -3238,21 +3238,49 @@ if (Astro.response) {
       }
 
       // 1. NEW ARRIVALS
+      // 1. NEW ARRIVALS（以当前时间为准，仅显示最近 6 个月分类并按最新倒序排列）
       if (data.newArrivals && data.newArrivals.length > 0) {
-        html += '<div class="filter-section">';
-        html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
-        html += '<h3 class="filter-title">NEW ARRIVALS</h3>';
-        html += '<button class="filter-toggle" type="button"><i class="fa-solid fa-chevron-up"></i></button></div>';
-        html += '<div class="filter-content"><ul class="filter-list">';
+        const now = new Date();
+        const currentYm = now.getFullYear() * 12 + (now.getMonth() + 1);
+        const minYm = currentYm - 5; // 含当前月在内共最近 6 个月
+        let recentNewChildren = [];
+
         data.newArrivals.forEach(cat => {
           if (cat.children && cat.children.length > 0) {
             cat.children.forEach(child => {
-              const val = child.id || child.slug;
-              html += `<li><label><input type="checkbox" name="category" value="${val}" data-slug="${child.slug}" data-filter="category"><span>${child.name}</span></label></li>`;
+              const match = String(child.name || '').match(/(\d{4})[.\-](\d{1,2})/);
+              if (!match) {
+                recentNewChildren.push(child);
+              } else {
+                const ym = parseInt(match[1], 10) * 12 + parseInt(match[2], 10);
+                if (ym >= minYm && ym <= currentYm) {
+                  recentNewChildren.push(child);
+                }
+              }
             });
           }
         });
-        html += '</ul></div></div>';
+
+        recentNewChildren.sort((a, b) => {
+          const getYm = (item) => {
+            const m = String(item.name || '').match(/(\d{4})[.\-](\d{1,2})/);
+            return m ? parseInt(m[1], 10) * 12 + parseInt(m[2], 10) : 0;
+          };
+          return getYm(b) - getYm(a);
+        });
+
+        if (recentNewChildren.length > 0) {
+          html += '<div class="filter-section">';
+          html += '<div class="filter-header" onclick="toggleFilterSection(this)">';
+          html += '<h3 class="filter-title">NEW ARRIVALS</h3>';
+          html += '<button class="filter-toggle" type="button"><i class="fa-solid fa-chevron-up"></i></button></div>';
+          html += '<div class="filter-content"><ul class="filter-list">';
+          recentNewChildren.forEach(child => {
+            const val = child.id || child.slug;
+            html += `<li><label><input type="checkbox" name="category" value="${val}" data-slug="${child.slug}" data-filter="category"><span>${child.name}</span></label></li>`;
+          });
+          html += '</ul></div></div>';
+        }
       }
 
       // 2. ALL JEWELRY (桌面端 1-2-3 级，移动端严格仅 1-2 级)

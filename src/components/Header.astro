@@ -204,6 +204,13 @@ const categoryMenu = [
 ];
 
 // 2. New Arrivals 默认数据（带友好标题）
+const _now = new Date();
+const _recentSixMonths = Array.from({ length: 6 }, (_, i) => {
+  const d = new Date(_now.getFullYear(), _now.getMonth() - i, 1);
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  return { name: `${y}.${m}.NEW`, slug: `${y}-${m}-new` };
+});
 const newArrivalSubcategories = [
   { name: "All New Arrivals", slug: "new-arrivals" },
   { name: "2026.10.NEW", slug: "2026-10-new" },
@@ -2614,9 +2621,20 @@ const newArrivalSubcategories = [
         });
 
         if (subCats.length > 0) {
+          const now = new Date();
+          const currentYm = now.getFullYear() * 12 + (now.getMonth() + 1);
+          const minYm = currentYm - 5; // 含当前月在内共最近 6 个月
+
+          subCats = subCats.filter((cat: any) => {
+            const match = String(cat.name || '').match(/(\d{4})[.\-](\d{1,2})/);
+            if (!match) return true; // 非年月命名的子分类保留
+            const ym = parseInt(match[1], 10) * 12 + parseInt(match[2], 10);
+            return ym >= minYm && ym <= currentYm;
+          });
+
           subCats.sort((a, b) => {
             const extractDate = (name: string) => {
-              const match = name.match(/(\d{4})\.(\d{1,2})/);
+              const match = name.match(/(\d{4})[.\-](\d{1,2})/);
               if (match) return parseInt(match[1]) * 100 + parseInt(match[2]);
               return 0;
             };
