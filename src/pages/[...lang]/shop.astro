@@ -2094,6 +2094,8 @@ if (Astro.response) {
   .filter-list input[type="checkbox"] {
     width: 16px;
     height: 16px;
+    min-width: 16px;
+    flex-shrink: 0;
     cursor: pointer;
     accent-color: #1a1a1a;
   }
@@ -3327,7 +3329,20 @@ if (Astro.response) {
       mobileContainer.innerHTML = buildFullSections('mobile', false);
     }
 
-    container.querySelectorAll('input[data-filter]').forEach(input => input.addEventListener('change', handleFilterChange));
+    container.querySelectorAll('input[data-filter]').forEach(input => {
+      input.addEventListener('change', function() {
+        if (this.checked && this.name === 'category') {
+          const parentDiv = this.closest('.category-parent');
+          const toggleBtn = parentDiv?.querySelector('.toggle-children');
+          const childUl = this.closest('li')?.querySelector(':scope > .filter-children, :scope > .filter-children-level3');
+          if (childUl && !childUl.classList.contains('show')) {
+            childUl.classList.add('show');
+            toggleBtn?.classList.add('expanded');
+          }
+        }
+        handleFilterChange();
+      });
+    });
     container.querySelectorAll('.color-swatch input').forEach(input => {
       input.addEventListener('change', function() {
         const swatch = this.closest('.color-swatch');
