@@ -3,27 +3,125 @@ import { getProductsWithPricesAndTotal } from '../../lib/productCache';
 
 export const prerender = false;
 
+// 材质与颜色 Term ID ↔ 名称关键词映射（与 filters.ts 完全同步）
+const MATERIAL_TERM_MAP: Record<string, string[]> = {
+  '97': ['316l stainless steel', '316l'],
+  '866': ['stainless steel'],
+  '100': ['zircon', 'cubic zirconia', 'cz'],
+  '671': ['rope'],
+  '109': ['natural stone', 'stone'],
+  '105': ['acrylic'],
+  '110': ['nylon'],
+  '106': ['gemstone'],
+  '101': ['shell'],
+  '637': ['imitation pearl', 'imitaion pearl'],
+  '98': ['pearl']
+};
+
+const COLOR_TERM_MAP: Record<string, string[]> = {
+  '474': ['gold', '18k gold', 'yellow gold'],
+  '23': ['silver', 'steel', 'white gold']
+};
+
+function matchesAttributeTerms(product: any, attrKeys: string[], termIds: string[], termMap: Record<string, string[]>): boolean {
+  if (!termIds || termIds.length === 0) return true;
+  if (!product.attributes || !Array.isArray(product.attributes)) return false;
+
+  const targetAttr = product.attributes.find((attr: any) => {
+    const slug = (attr.slug || '').toLowerCase();
+    const name = (attr.name || '').toLowerCase();
+    return attrKeys.some(k => slug === k || name === k || slug.includes(k) || name.includes(k));
+  });
+
+  if (!targetAttr || !Array.isArray(targetAttr.options)) return false;
+
+  const productOptionsLower = targetAttr.options.map((o: any) => String(o).toLowerCase().trim());
+
+  // 同维度多选（如同时勾了 Gold 和 Silver，或同时勾了 Zircon 和 Pearl）取并集 OR
+  return termIds.some((tid) => {
+    const cleanTid = String(tid).trim().toLowerCase();
+    const keywords = termMap[cleanTid] || [cleanTid.replace(/-/g, ' ')];
+    return productOptionsLower.some((opt) =>
+      keywords.some((kw) => {
+        // 避免 "stainless steel" 误匹配 "316l stainless steel"（除非搜索的就是 stainless steel）
+        if (cleanTid === '866') {
+          return opt === 'stainless steel' || (opt.includes('stainless steel') && !opt.includes('316l'));
+        }
+        return opt === kw || opt.includes(kw);
+      })
+    );
+  });
+}
+
+async function resolveCategoryIds(rawCategoryParam: string): Promise<string> {
+  const parts = String(rawCategoryParam)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) return '';
+
+  const numericIds: string[] = [];
+  const slugsToResolve: string[] = [];
+
+  parts.forEach((part) => {
+    if (/^\d+$/.test(part)) {
+      numericIds.push(part);
+    } else {
+      slugsToResolve.push(part.toLowerCase());
+    }
+  });
+
+  if (slugsToResolve.length > 0) {
+    const WC_STORE_URL = (import.meta.env.WC_STORE_URL || '').replace(/\/$/, '');
+    const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY || '';
+    const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET || '';
+
+    if (WC_STORE_URL && WC_CONSUMER_KEY && WC_CONSUMER_SECRET) {
+      const authString = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
+      const base64Auth = typeof Buffer !== 'undefined'
+        ? Buffer.from(authString).toString('base64')
+        : btoa(authString);
+
+      const headers: Record<string, string> = {
+        'Authorization': `Basic ${base64Auth}`,
+        'Accept': 'application/json',
+        'User-Agent': 'curl/7.88.1'
+      };
+
+      const resolved = await Promise.all(
+        slugsToResolve.map(async (slug) => {
+          try {
+            const url = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products/categories`);
+            url.searchParams.append('slug', slug);
+            const res = await fetch(url.toString(), { method: 'GET', headers });
+            if (res.ok) {
+              const cats = await res.json();
+              if (Array.isArray(cats) && cats.length > 0 && cats[0].id) {
+                return String(cats[0].id);
+              }
+            }
+          } catch (e) {}
+          return null;
+        })
+      );
+
+      resolved.forEach((id) => {
+        if (id) numericIds.push(id);
+      });
+    }
+  }
+
+  return Array.from(new Set(numericIds)).join(',');
+}
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const page = parseInt(body.page || '1');
-    const perPage = parseInt(body.per_page || '20');
-
-    // 检测是否需要强制刷新（跳过缓存）
+    const page = Math.max(1, parseInt(body.page || '1', 10));
+    const perPage = Math.max(1, parseInt(body.per_page || '20', 10));
     const forceRefresh = request.headers.get('X-Force-Refresh') === 'true';
-    if (forceRefresh) {
-      console.log('🔄 检测到强制刷新标记，将跳过缓存直接从 WooCommerce 获取');
-    }
 
-    console.log(`API: 获取第 ${page} 页产品（带价格和变体）...`);
-    console.log('筛选参数:', {
-      search: body.search,
-      category: body.category,
-      color: body.color,
-      material: body.material
-    });
-
-    // 构建查询参数
     const queryParams: any = {
       per_page: perPage,
       page: page,
@@ -31,149 +129,81 @@ export const POST: APIRoute = async ({ request }) => {
       order: 'desc'
     };
 
-    // 添加搜索关键词
     if (body.search) {
-      queryParams.search = body.search;
-      console.log('应用搜索关键词:', body.search);
+      queryParams.search = String(body.search).trim();
     }
 
-    // 处理分类参数（可能是 slug 或 ID）
+    // 1. 解析并支持多个分类 ID 逗号组合查询
     if (body.category) {
-      // 如果是 slug（字符串），需要先查询分类 ID
-      if (typeof body.category === 'string' && isNaN(Number(body.category))) {
-        console.log('分类参数是 slug，需要查询 ID:', body.category);
-
-        const WC_STORE_URL = (import.meta.env.WC_STORE_URL || '').replace(/\/$/, '');
-        const WC_CONSUMER_KEY = import.meta.env.WC_CONSUMER_KEY;
-        const WC_CONSUMER_SECRET = import.meta.env.WC_CONSUMER_SECRET;
-
-        // 查询分类 ID
-        const categoryUrl = new URL(`${WC_STORE_URL}/wp-json/wc/v3/products/categories`);
-        categoryUrl.searchParams.append('slug', body.category);
-
-        // 跨环境 Base64 编码
-        const authString = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
-        const base64Auth = typeof Buffer !== 'undefined'
-          ? Buffer.from(authString).toString('base64')
-          : btoa(authString);
-
-        // 保持最纯粹的请求头
-        const headers: Record<string, string> = {
-          'Authorization': `Basic ${base64Auth}`,
-          'Accept': 'application/json',
-          'User-Agent': 'curl/7.88.1'
-        };
-
-        const categoryResponse = await fetch(categoryUrl.toString(), {
-          method: 'GET',
-          headers
-        });
-
-        if (categoryResponse.ok) {
-          const categories = await categoryResponse.json();
-          if (categories.length > 0) {
-            queryParams.category = categories[0].id;
-            console.log('找到分类 ID:', queryParams.category);
-          } else {
-            console.warn('未找到分类:', body.category);
-          }
-        }
+      const resolvedCatIds = await resolveCategoryIds(String(body.category));
+      if (resolvedCatIds) {
+        queryParams.category = resolvedCatIds;
       } else {
-        queryParams.category = body.category;
+        // 指定了不存在的分类时直接返回空结果，防止回退成全站所有产品
+        return new Response(JSON.stringify({ products: [], total: 0, totalPages: 0 }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+        });
       }
     }
 
-    // WooCommerce API只支持一个属性筛选
-    // 如果需要组合筛选，我们需要获取更多产品然后过滤
-    let needsMaterialFilter = false;
-    let materialTermId = null;
+    const colorIds = body.color
+      ? String(body.color).split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+    const materialIds = body.material
+      ? String(body.material).split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
 
-    if (body.color) {
+    const hasColor = colorIds.length > 0;
+    const hasMaterial = materialIds.length > 0;
+    const needsSecondaryFilter = (hasColor && hasMaterial) || colorIds.length > 1 || materialIds.length > 1;
+
+    if (hasColor && !needsSecondaryFilter) {
       queryParams.attribute = 'pa_color';
-      queryParams.attribute_term = body.color;
-      console.log('应用颜色筛选, 术语ID:', body.color);
-
-      // 如果同时有材质，需要获取足够多的产品来过滤
-      if (body.material) {
-        console.log('同时筛选颜色和材质，需要二次过滤');
-        needsMaterialFilter = true;
-        materialTermId = body.material;
-        // 获取更多产品，因为需要二次过滤
-        queryParams.per_page = 100;
-        queryParams.page = 1; // 从第一页开始获取
-      }
-    } else if (body.material) {
+      queryParams.attribute_term = colorIds[0];
+    } else if (hasMaterial && !needsSecondaryFilter) {
       queryParams.attribute = 'pa_material';
-      queryParams.attribute_term = body.material;
-      console.log('应用材质筛选, 术语ID:', body.material);
+      queryParams.attribute_term = materialIds[0];
+    } else if (needsSecondaryFilter) {
+      // 多维度交集或同维度多选：先利用主属性缩小候选集，再在内存中做严格交集与分页
+      if (hasColor) {
+        queryParams.attribute = 'pa_color';
+        queryParams.attribute_term = colorIds.join(',');
+      } else if (hasMaterial) {
+        queryParams.attribute = 'pa_material';
+        queryParams.attribute_term = materialIds.join(',');
+      }
+      queryParams.per_page = 100;
+      queryParams.page = 1;
     }
 
-    console.log('最终查询参数:', queryParams);
-
-    // 使用缓存系统，包含变体价格获取
-    // 如果有强制刷新标记，跳过缓存
     let result = await getProductsWithPricesAndTotal(queryParams, forceRefresh);
 
-    console.log(`API: 初始返回 ${result.products.length} 个产品`);
+    // 若需要二次跨维度 AND 交集过滤（分类 AND 颜色 AND 材质）
+    if (needsSecondaryFilter && Array.isArray(result.products)) {
+      let filtered = result.products;
 
-    // 如果需要二次筛选材质
-    if (needsMaterialFilter && materialTermId) {
-      console.log('执行材质二次筛选, 术语ID:', materialTermId);
-
-      // 先检查第一个产品的attributes结构
-      if (result.products.length > 0) {
-        console.log('第一个产品的attributes结构:', JSON.stringify(result.products[0].attributes, null, 2));
+      if (hasColor) {
+        filtered = filtered.filter((p: any) =>
+          matchesAttributeTerms(p, ['pa_color', 'color', 'colour'], colorIds, COLOR_TERM_MAP)
+        );
       }
 
-      result.products = result.products.filter(product => {
-        // 检查产品的attributes中是否包含指定的材质
-        if (product.attributes && Array.isArray(product.attributes)) {
-          const materialAttr = product.attributes.find(attr =>
-            attr.name === 'Material' ||
-            attr.slug === 'pa_material' ||
-            attr.name?.toLowerCase() === 'material'
-          );
+      if (hasMaterial) {
+        filtered = filtered.filter((p: any) =>
+          matchesAttributeTerms(p, ['pa_material', 'material'], materialIds, MATERIAL_TERM_MAP)
+        );
+      }
 
-          if (materialAttr) {
-            console.log(`产品 ${product.id} 的材质属性:`, materialAttr);
-
-            if (materialAttr.options && Array.isArray(materialAttr.options)) {
-              // WooCommerce返回的options是术语名称数组，不是ID
-              // 我们需要检查术语名称是否匹配
-              const hasMatch = materialAttr.options.some(option => {
-                // option是术语名称（如"Zircon"），需要转换为对应的ID检查
-                // 或者我们需要通过术语slug匹配
-                return option == materialTermId ||
-                       option.toString() === materialTermId.toString() ||
-                       option.toLowerCase().includes('zircon'); // 临时调试
-              });
-
-              if (hasMatch) {
-                console.log(`产品 ${product.id} 匹配材质`);
-              }
-
-              return hasMatch;
-            }
-          }
-        }
-        return false;
-      });
-
-      console.log(`二次筛选后剩余 ${result.products.length} 个产品`);
-
-      // 重新计算总数和分页
-      result.total = result.products.length;
-      result.totalPages = Math.ceil(result.total / perPage);
-
-      // 应用分页（只在二次筛选时需要）
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / perPage);
       const startIndex = (page - 1) * perPage;
-      const endIndex = startIndex + perPage;
-      result.products = result.products.slice(startIndex, endIndex);
-    }
 
-    console.log(`API: 最终返回 ${result.products.length} 个产品，总数: ${result.total}`);
-    if (result.products.length > 0) {
-      console.log(`第一个产品: ${result.products[0]?.name}, price=${result.products[0]?.price}`);
+      result = {
+        products: filtered.slice(startIndex, startIndex + perPage),
+        total,
+        totalPages
+      };
     }
 
     return new Response(JSON.stringify(result), {
@@ -187,9 +217,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.error('API错误:', error);
     return new Response(JSON.stringify({ error: 'Failed to fetch products' }), {
       status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 };

@@ -48,6 +48,14 @@ console.log(`[产品详情渲染] 数据获取耗时: ${Date.now() - startTime}m
 // 使用翻译后的数据
 product = translatedProduct;
 
+// 服务端初始库存状态计算（兼容 simple 单品与 variable 变体商品）
+const initialParentOutOfStock = Boolean(
+  product.type !== 'variable' && (
+    product.stock_status !== 'instock' ||
+    (product.manage_stock && product.stock_quantity !== null && product.stock_quantity !== undefined && Number(product.stock_quantity) <= 0 && product.backorders !== 'yes' && product.backorders !== 'notify')
+  )
+);
+
 // 计算折扣百分比
 const hasDiscount = Boolean(product.regular_price && product.price && parseFloat(product.regular_price) > parseFloat(product.price));
 const discountPercent = hasDiscount
@@ -179,10 +187,16 @@ const giftProducts = giftProductIds.map((id, index) => {
   };
 });
 
-// ============================================================
-// 注意：礼品产品翻译已移除以提升性能
-// 如需翻译礼品，应在聚合器中处理
-// ============================================================
+// 序列化主产品基础库存状态供客户端脚本初始化与实时校验使用
+const initialParentStockMeta = {
+  id: product.id,
+  type: product.type || 'simple',
+  stock_status: product.stock_status || 'instock',
+  stock_quantity: product.stock_quantity !== undefined ? product.stock_quantity : null,
+  manage_stock: Boolean(product.manage_stock),
+  backorders: product.backorders || 'no',
+  variation_ids: Array.isArray(product.variations) ? product.variations : []
+};
 ---
 
 <Layout title={`${product.name} - E.B.Belle`}>
@@ -366,10 +380,16 @@ const giftProducts = giftProductIds.map((id, index) => {
             <span class="badge">HYPOALLERGENIC</span>
           </div>
 
-          <!-- Product SKU -->
+          <!-- Product SKU & 实时库存状态徽章 -->
           <div class="product-sku">
-            <span class="sku-label">SKU:</span>
-            <span class="sku-value" id="product-sku">{product.sku || 'N/A'}</span>
+            <div>
+              <span class="sku-label">SKU:</span>
+              <span class="sku-value" id="product-sku">{product.sku || 'N/A'}</span>
+            </div>
+            <span id="productStockBadge" class={`stock-status-pill ${initialParentOutOfStock ? 'out-of-stock' : 'in-stock'}`}>
+              <i class={`fa-solid ${initialParentOutOfStock ? 'fa-circle-xmark' : 'fa-circle-check'}`}></i>
+              <span>{initialParentOutOfStock ? 'Out of Stock' : 'In Stock'}</span>
+            </span>
           </div>
 
           <!-- Product Variants Selection -->
@@ -450,6 +470,8 @@ const giftProducts = giftProductIds.map((id, index) => {
             <script is:inline id="variationsData" type="application/json" set:html={JSON.stringify(variations)} />
           )}
 
+          <script is:inline id="parentStockData" type="application/json" set:html={JSON.stringify(initialParentStockMeta)} />
+
           <!-- Quantity & Actions -->
           <div class="actions-section" id="actionsSection">
             <div class="quantity-row">
@@ -461,8 +483,22 @@ const giftProducts = giftProductIds.map((id, index) => {
               </div>
             </div>
             <div class="button-group">
-              <button type="button" class="btn-add-cart">{t(currentLocale, 'product.addToCart')}</button>
-              <button type="button" class="btn-buy-now">{t(currentLocale, 'product.buyNow')}</button>
+              <button
+                type="button"
+                class="btn-add-cart"
+                disabled={initialParentOutOfStock}
+                style={initialParentOutOfStock ? 'opacity: 0.45; cursor: not-allowed;' : ''}
+              >
+                {initialParentOutOfStock ? 'Out of Stock' : t(currentLocale, 'product.addToCart')}
+              </button>
+              <button
+                type="button"
+                class="btn-buy-now"
+                disabled={initialParentOutOfStock}
+                style={initialParentOutOfStock ? 'opacity: 0.45; cursor: not-allowed;' : ''}
+              >
+                {initialParentOutOfStock ? 'Sold Out' : t(currentLocale, 'product.buyNow')}
+              </button>
             </div>
             <button type="button" class="btn-wholesale">Inquire for Wholesale / Customization</button>
           </div>
@@ -507,7 +543,6 @@ const giftProducts = giftProductIds.map((id, index) => {
 
           <!-- Accordions -->
           <div class="accordions">
-            <!-- 第一项：Description（显示长描述） -->
             <div class="accordion-item">
               <button type="button" class="accordion-header" onclick="toggleAccordion('desc')">
                 <span>Description</span>
@@ -519,10 +554,8 @@ const giftProducts = giftProductIds.map((id, index) => {
               </div>
             </div>
 
-            <!-- 动态生成其他 FAQ 项 -->
-            {faqs.filter((faq: any) => faq.title !== 'Description').map((faq: any, index: number) => {
+            {faqs.filter((faq: any) => faq.title !== 'Description').map((faq: any) => {
               const faqId = faq.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
-              // 将换行符转换为 <br> 标签
               const formattedContent = faq.content
                 .replace(/\r\n/g, '<br>')
                 .replace(/\n/g, '<br>')
@@ -542,7 +575,6 @@ const giftProducts = giftProductIds.map((id, index) => {
               );
             })}
 
-            <!-- 追加固定的 FAQ 项 -->
             <div class="accordion-item">
               <button type="button" class="accordion-header" onclick="toggleAccordion('how-to-care')">
                 <span>HOW TO CARE</span>
@@ -586,9 +618,7 @@ const giftProducts = giftProductIds.map((id, index) => {
         </div>
       </div>
 
-      <!-- =========================================================
-           Related Products Section (桌面端 5 列 / 移动端 1 列 / 每次滑动 1 个)
-           ========================================================= -->
+      <!-- Related Products Section -->
       {relatedProducts.length > 0 && (
         <section class="related-products">
           <h2 class="section-title">You May Also Like</h2>
@@ -701,18 +731,15 @@ const giftProducts = giftProductIds.map((id, index) => {
       </section>
     </div>
 
-    <!-- 移动端底部悬浮购买栏 (48px高清缩略图 + 放大镜角标 + 动态规格) -->
+    <!-- 移动端底部悬浮购买栏 -->
     <div class="mobile-sticky-action-bar">
-      <!-- 左侧大变体预览图 (48x48，点击唤起 Lightbox) -->
       <div class="sticky-thumb-wrap" onclick="openMobileLightbox()" aria-label="Zoom image">
         <img id="stickyThumbImg" src={mainImage.src} alt={product.name} />
-        <!-- 放大微标识角标 -->
         <span class="zoom-indicator">
           <i class="fa-solid fa-magnifying-glass-plus"></i>
         </span>
       </div>
 
-      <!-- 价格与动态规格文字 -->
       <div class="sticky-price-block">
         <div class="sticky-prices">
           <span class="sticky-price" id="stickyPriceVal">${product.price}</span>
@@ -721,14 +748,27 @@ const giftProducts = giftProductIds.map((id, index) => {
         <span class="sticky-variant-label" id="stickyVariantLabel">Standard</span>
       </div>
 
-      <!-- 购买按钮组 -->
       <div class="sticky-btn-group">
-        <button type="button" class="sticky-btn-cart" onclick="document.querySelector('.btn-add-cart')?.click()">Add to Cart</button>
-        <button type="button" class="sticky-btn-buy" onclick="document.querySelector('.btn-buy-now')?.click()">Buy Now</button>
+        <button
+          type="button"
+          class="sticky-btn-cart"
+          disabled={initialParentOutOfStock}
+          style={initialParentOutOfStock ? 'opacity: 0.45; cursor: not-allowed;' : ''}
+        >
+          {initialParentOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+        </button>
+        <button
+          type="button"
+          class="sticky-btn-buy"
+          disabled={initialParentOutOfStock}
+          style={initialParentOutOfStock ? 'opacity: 0.45; cursor: not-allowed;' : ''}
+        >
+          {initialParentOutOfStock ? 'Sold Out' : 'Buy Now'}
+        </button>
       </div>
     </div>
 
-    <!-- 移动端专属高清大图 Lightbox 遮罩层 (桌面端隐藏) -->
+    <!-- 移动端专属高清大图 Lightbox 遮罩层 -->
     <div id="mobileLightboxModal" class="mobile-lightbox" onclick="closeMobileLightbox(event)">
       <button type="button" class="lightbox-close" onclick="closeMobileLightbox()" aria-label="Close preview">
         <i class="fa-solid fa-xmark"></i>
@@ -1456,6 +1496,11 @@ const giftProducts = giftProductIds.map((id, index) => {
     border-bottom: 1px solid #e5dfd5;
     font-size: 14px;
     color: #5c5f5f;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
   }
   .product-sku .sku-label {
     font-weight: 600;
@@ -1466,6 +1511,30 @@ const giftProducts = giftProductIds.map((id, index) => {
     color: #666;
     font-family: monospace;
     letter-spacing: 0.5px;
+  }
+  .stock-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+  .stock-status-pill.in-stock {
+    background: #eef8f1;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+  .stock-status-pill.low-stock {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+  }
+  .stock-status-pill.out-of-stock {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
   }
 
   .variants-section {
@@ -1697,7 +1766,7 @@ const giftProducts = giftProductIds.map((id, index) => {
     border: 1px solid #0e0f0f !important;
     color: #ffffff !important;
   }
-  .btn-add-cart:hover {
+  .btn-add-cart:hover:not(:disabled) {
     background: #2b2b2b !important;
   }
   .btn-buy-now {
@@ -1705,7 +1774,7 @@ const giftProducts = giftProductIds.map((id, index) => {
     border: 1px solid #ded7ca !important;
     color: #111111 !important;
   }
-  .btn-buy-now:hover {
+  .btn-buy-now:hover:not(:disabled) {
     background: #e4dccf !important;
   }
 
@@ -1892,7 +1961,7 @@ const giftProducts = giftProductIds.map((id, index) => {
   .accordion-body ul { padding-left: 18px; margin: 6px 0; }
   .accordion-body li { margin-bottom: 3px; }
 
-  /* Related Products: 桌面端 5 列 / 移动端 1 列 */
+  /* Related Products */
   .related-products {
     border-top: 1px solid #ddd8ce;
     padding-top: 48px;
@@ -2216,7 +2285,6 @@ const giftProducts = giftProductIds.map((id, index) => {
     cursor: pointer;
   }
 
-  /* 默认桌面隐藏移动端专属部件 */
   .mobile-sticky-action-bar,
   .mobile-lightbox {
     display: none;
@@ -2230,9 +2298,6 @@ const giftProducts = giftProductIds.map((id, index) => {
     }
   }
 
-  /* =========================================================
-     移动端响应式精准优化
-     ========================================================= */
   @media (max-width: 768px) {
     :root {
       --container-w: 100%;
@@ -2360,7 +2425,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       margin-bottom: 16px;
     }
 
-    /* 底部悬浮操作条 */
     .mobile-sticky-action-bar {
       display: flex !important;
       align-items: center !important;
@@ -2380,7 +2444,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       box-sizing: border-box !important;
     }
 
-    /* 48px 大缩略图容器与四周精致边框 */
     .sticky-thumb-wrap {
       width: 48px !important;
       height: 48px !important;
@@ -2403,7 +2466,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       transition: opacity 0.2s ease !important;
     }
 
-    /* 右下角放大微标识角标 */
     .zoom-indicator {
       position: absolute !important;
       bottom: 2px !important;
@@ -2420,7 +2482,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       pointer-events: none !important;
     }
 
-    /* 中间价格与动态规格信息 */
     .sticky-price-block {
       display: flex !important;
       flex-direction: column !important;
@@ -2448,7 +2509,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       text-decoration: line-through !important;
     }
 
-    /* 动态选中的变体选项文字 (杜绝 Default) */
     .sticky-variant-label {
       font-size: 9.5px !important;
       color: #725b29 !important;
@@ -2461,7 +2521,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       display: block !important;
     }
 
-    /* 按钮组 */
     .sticky-btn-group {
       display: flex !important;
       gap: 6px !important;
@@ -2495,7 +2554,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       color: #111111 !important;
     }
 
-    /* 移动端专属 Lightbox 弹窗样式 */
     .mobile-lightbox {
       display: none;
       position: fixed;
@@ -2562,9 +2620,6 @@ const giftProducts = giftProductIds.map((id, index) => {
   display: none !important;
 }
 
-/* ============================================================
-   Inquiry Popup Styles
-   ============================================================ */
 .inquiry-popup-overlay {
   display: none;
   position: fixed;
@@ -2747,54 +2802,213 @@ const giftProducts = giftProductIds.map((id, index) => {
   window.productWeight = productWeight || '0';
   window.wcUrl = wcUrl;
 
-  // ============================================================
-  // 货币工具函数（客户端版本）
-  // ============================================================
-  const CURRENCY_SYMBOLS = {
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    CAD: 'C$'
-  };
-
-  const CURRENCY_RATES = {
-    USD: 1.0,
-    EUR: 0.92,
-    GBP: 0.79,
-    CAD: 1.36
-  };
+  const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', CAD: 'C$' };
+  const CURRENCY_RATES = { USD: 1.0, EUR: 0.92, GBP: 0.79, CAD: 1.36 };
 
   function getCurrentCurrency() {
     return localStorage.getItem('ebbelle_currency') || 'USD';
   }
-
   function getCurrencySymbol(currency) {
     return CURRENCY_SYMBOLS[currency || getCurrentCurrency()] || '$';
   }
-
   function convertPrice(priceUSD, targetCurrency) {
     const currency = targetCurrency || getCurrentCurrency();
     const rate = CURRENCY_RATES[currency] || 1.0;
     return priceUSD * rate;
   }
-
   function formatPrice(priceUSD, targetCurrency) {
     const currency = targetCurrency || getCurrentCurrency();
     const converted = convertPrice(priceUSD, currency);
     const symbol = getCurrencySymbol(currency);
     const formatted = converted.toFixed(2);
-
-    // EUR 符号通常放在后面
-    if (currency === 'EUR') {
-      return `${formatted}${symbol}`;
-    }
-    return `${symbol}${formatted}`;
+    return currency === 'EUR' ? `${formatted}${symbol}` : `${symbol}${formatted}`;
   }
 
   // ============================================================
-  // 产品详情页逻辑
+  // 统一库存校验引擎（兼容 simple 单品 + 带展示属性的单品 + variable 变体商品）
   // ============================================================
+  let parentStockState = {
+    id: productId,
+    type: 'simple',
+    stock_status: 'instock',
+    stock_quantity: null,
+    manage_stock: false,
+    backorders: 'no',
+    variation_ids: []
+  };
 
+  try {
+    const parentEl = document.getElementById('parentStockData');
+    if (parentEl && parentEl.textContent) {
+      parentStockState = { ...parentStockState, ...JSON.parse(parentEl.textContent) };
+    }
+  } catch (e) {}
+
+  let variationsData = [];
+  try {
+    const dataElement = document.getElementById('variationsData');
+    if (dataElement) {
+      variationsData = JSON.parse(dataElement.textContent);
+    }
+  } catch (e) {
+    console.error('Failed to parse variations data:', e);
+  }
+
+  function isStockObjectAvailable(obj) {
+    if (!obj) return false;
+    if (obj.is_in_stock === false) return false;
+    if (obj.stock_status && obj.stock_status !== 'instock') return false;
+
+    const managesStock = Boolean(obj.manage_stock || obj.managing_stock);
+    const qty = obj.stock_quantity;
+    const allowBackorders = (obj.backorders === 'yes' || obj.backorders === 'notify');
+
+    if (managesStock && qty !== null && qty !== undefined && qty !== '') {
+      if (Number(qty) <= 0 && !allowBackorders) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function getMaxAllowedQuantity(obj) {
+    if (!obj) return null;
+    const managesStock = Boolean(obj.manage_stock || obj.managing_stock);
+    const qty = obj.stock_quantity;
+    const allowBackorders = (obj.backorders === 'yes' || obj.backorders === 'notify');
+    if (managesStock && !allowBackorders && qty !== null && qty !== undefined && qty !== '') {
+      return Math.max(0, parseInt(qty, 10) || 0);
+    }
+    return null;
+  }
+
+  function getActiveStockTarget() {
+    const hasVariations = Array.isArray(variationsData) && variationsData.length > 0;
+    if (parentStockState.type === 'variable' && hasVariations) {
+      const selectedAttrs = getSelectedAttributes();
+      return findMatchingVariation(selectedAttrs);
+    }
+    // simple 单品（即使后台挂载了 Color 等属性，也直接校验主商品库存）
+    return parentStockState;
+  }
+
+  function renderStockBadgeAndButtons(targetObj) {
+    const badgeEl = document.getElementById('productStockBadge');
+    const addBtns = document.querySelectorAll('.btn-add-cart, .sticky-btn-cart');
+    const buyBtns = document.querySelectorAll('.btn-buy-now, .sticky-btn-buy');
+
+    const available = isStockObjectAvailable(targetObj);
+    const maxQty = getMaxAllowedQuantity(targetObj);
+
+    if (badgeEl) {
+      if (!available) {
+        badgeEl.className = 'stock-status-pill out-of-stock';
+        badgeEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i><span>Out of Stock</span>';
+      } else if (maxQty !== null && maxQty > 0 && maxQty <= 10) {
+        badgeEl.className = 'stock-status-pill low-stock';
+        badgeEl.innerHTML = `<i class="fa-solid fa-fire"></i><span>Only ${maxQty} left in stock</span>`;
+      } else {
+        badgeEl.className = 'stock-status-pill in-stock';
+        badgeEl.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>In Stock${maxQty !== null && maxQty > 0 ? ` (${maxQty} available)` : ''}</span>`;
+      }
+    }
+
+    if (!available) {
+      addBtns.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.45';
+        btn.style.cursor = 'not-allowed';
+        btn.textContent = 'Out of Stock';
+      });
+      buyBtns.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.45';
+        btn.style.cursor = 'not-allowed';
+        btn.textContent = 'Sold Out';
+      });
+    } else {
+      addBtns.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.textContent = 'Add to Cart';
+      });
+      buyBtns.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.textContent = 'Buy Now';
+      });
+
+      // 若当前数量超过最新库存上限，自动修正回最大可用库存
+      const qtyInput = document.getElementById('qtyInput');
+      if (qtyInput && maxQty !== null && maxQty > 0) {
+        const cur = parseInt(qtyInput.value, 10) || 1;
+        if (cur > maxQty) {
+          qtyInput.value = String(maxQty);
+        }
+      }
+    }
+  }
+
+  // 客户端异步拉取 WooCommerce 实时库存（突破 KV 页面缓存）
+  async function syncRealtimeProductStock() {
+    try {
+      const idSet = new Set([Number(window.productId)]);
+      if (Array.isArray(variationsData)) {
+        variationsData.forEach(v => { if (v && v.id) idSet.add(Number(v.id)); });
+      }
+      if (Array.isArray(parentStockState.variation_ids)) {
+        parentStockState.variation_ids.forEach(vid => { if (vid) idSet.add(Number(vid)); });
+      }
+
+      const idsParam = Array.from(idSet).filter(Boolean).join(',');
+      if (!idsParam) return;
+
+      const apiBase = (window.wcUrl || 'https://api.ebbellejewelry.com').replace(/\/$/, '');
+      const res = await fetch(`${apiBase}/wp-json/custom/v1/stock?ids=${idsParam}&_t=${Date.now()}`);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (!data || !data.success || !data.stocks) return;
+
+      // 更新主产品实时库存
+      const pStock = data.stocks[window.productId];
+      if (pStock) {
+        parentStockState.stock_status = pStock.stock_status;
+        parentStockState.stock_quantity = pStock.stock_quantity;
+        parentStockState.manage_stock = Boolean(pStock.managing_stock);
+        parentStockState.is_in_stock = pStock.is_in_stock;
+      }
+
+      // 更新各变体实时库存
+      if (Array.isArray(variationsData) && variationsData.length > 0) {
+        variationsData.forEach(v => {
+          const vStock = data.stocks[v.id];
+          if (vStock) {
+            v.stock_status = vStock.stock_status;
+            v.stock_quantity = vStock.stock_quantity;
+            v.manage_stock = Boolean(vStock.managing_stock);
+            v.is_in_stock = vStock.is_in_stock;
+          }
+        });
+        updateAvailableOptions();
+      }
+
+      const activeTarget = getActiveStockTarget();
+      if (activeTarget && parentStockState.type === 'variable') {
+        updatePriceAndStock(activeTarget);
+      } else {
+        renderStockBadgeAndButtons(parentStockState);
+      }
+    } catch (err) {
+      console.warn('[Stock Sync Warning]:', err);
+    }
+  }
+
+  // ============================================================
+  // 轮播图逻辑
+  // ============================================================
   let currentSlide = 0;
   let totalSlides = 0;
   let autoPlayTimer = null;
@@ -2852,12 +3066,10 @@ const giftProducts = giftProductIds.map((id, index) => {
 
   function goToSlide(index) {
     if (index < 0 || index >= totalSlides) return;
-
     currentSlide = index;
     updateSlider();
     updateThumbnails();
     pauseAutoPlay();
-
     setTimeout(resumeAutoPlay, 3000);
   }
 
@@ -2880,22 +3092,14 @@ const giftProducts = giftProductIds.map((id, index) => {
   function updateSlider() {
     const sliderContainer = document.getElementById('sliderContainer');
     if (!sliderContainer) return;
-
     sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
-
     const counter = document.getElementById('currentImageIndex');
-    if (counter) {
-      counter.textContent = currentSlide + 1;
-    }
+    if (counter) counter.textContent = currentSlide + 1;
   }
 
   function updateThumbnails() {
     document.querySelectorAll('.thumbnail').forEach((thumb, index) => {
-      if (index === currentSlide) {
-        thumb.classList.add('active');
-      } else {
-        thumb.classList.remove('active');
-      }
+      thumb.classList.toggle('active', index === currentSlide);
     });
   }
 
@@ -2906,19 +3110,10 @@ const giftProducts = giftProductIds.map((id, index) => {
 
   function handleTouchEnd(e) {
     touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-  }
-
-  function handleSwipe() {
-    const swipeThreshold = 50;
     const diff = touchStartX - touchEndX;
-
-    if (Math.abs(diff) > swipeThreshold) {
-      if (diff > 0) {
-        nextImage();
-      } else {
-        prevImage();
-      }
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) nextImage();
+      else prevImage();
     } else {
       setTimeout(resumeAutoPlay, 3000);
     }
@@ -2926,11 +3121,8 @@ const giftProducts = giftProductIds.map((id, index) => {
 
   function startAutoPlay() {
     if (totalSlides <= 1) return;
-
     autoPlayTimer = setInterval(() => {
-      if (isAutoPlaying) {
-        nextImage();
-      }
+      if (isAutoPlaying) nextImage();
     }, 4000);
   }
 
@@ -2951,22 +3143,24 @@ const giftProducts = giftProductIds.map((id, index) => {
 
   function changeQty(delta) {
     const input = document.getElementById('qtyInput');
-    if (input) {
-      const currentValue = parseInt(input.value, 10) || 1;
-      const newValue = Math.max(1, currentValue + delta);
-      input.value = newValue;
+    if (!input) return;
+
+    const target = getActiveStockTarget();
+    const maxQty = getMaxAllowedQuantity(target);
+    const currentValue = parseInt(input.value, 10) || 1;
+    let newValue = Math.max(1, currentValue + delta);
+
+    if (delta > 0 && maxQty !== null && maxQty > 0 && newValue > maxQty) {
+      newValue = maxQty;
     }
+    input.value = newValue;
   }
 
-  // =========================================================
-  // 移动端专属 Lightbox 弹窗交互
-  // =========================================================
   function openMobileLightbox() {
     if (window.innerWidth > 768) return;
     const modal = document.getElementById('mobileLightboxModal');
     const stickyImg = document.getElementById('stickyThumbImg');
     const lightboxImg = document.getElementById('lightboxImg');
-
     if (modal && stickyImg && lightboxImg) {
       lightboxImg.src = stickyImg.src;
       modal.classList.add('active');
@@ -2977,7 +3171,6 @@ const giftProducts = giftProductIds.map((id, index) => {
   function closeMobileLightbox(e) {
     const modal = document.getElementById('mobileLightboxModal');
     if (e && e.target && e.target.id === 'lightboxImg') return;
-
     if (modal) {
       modal.classList.remove('active');
       document.body.style.overflow = '';
@@ -2987,45 +3180,44 @@ const giftProducts = giftProductIds.map((id, index) => {
   window.openMobileLightbox = openMobileLightbox;
   window.closeMobileLightbox = closeMobileLightbox;
 
-  // ========== 购物车功能 ==========
+  // ========== 购物车功能（严格校验 simple 与 variable 实时库存） ==========
 
   function getCurrentProductData() {
-    const quantity = parseInt(document.getElementById('qtyInput')?.value || 1);
+    const quantity = parseInt(document.getElementById('qtyInput')?.value || 1, 10);
     const selectedAttrs = getSelectedAttributes();
-    const matchingVariation = findMatchingVariation(selectedAttrs);
+    const isVariableProduct = parentStockState.type === 'variable' && variationsData && variationsData.length > 0;
+    const matchingVariation = isVariableProduct ? findMatchingVariation(selectedAttrs) : null;
 
     const productName = document.querySelector('.product-title')?.textContent || '';
     const productImage = document.querySelector('.slider-item img')?.src || '';
 
     let basePrice = document.querySelector('.current-price')?.textContent.replace(/[^0-9.]/g, '') || '0';
     let variationId = null;
-    let stockStatus = 'instock';
-    let weight = 0; // 单件重量（kg）
+    let isAvailable = false;
+    let maxQty = null;
+    let weight = 0;
 
-    if (matchingVariation) {
-      basePrice = matchingVariation.price;
-      variationId = matchingVariation.id;
-      stockStatus = matchingVariation.stock_status;
-      weight = parseFloat(matchingVariation.weight) || 0; // 从变体获取重量
-    } else {
-      // Simple 产品或没有匹配变体，从全局产品数据获取
-      weight = parseFloat(window.productWeight) || 0;
-
-      // 如果是变体产品但没有匹配到，尝试使用第一个变体的重量
-      if (variationsData && variationsData.length > 0) {
-        weight = parseFloat(variationsData[0].weight) || 0;
+    if (isVariableProduct) {
+      if (matchingVariation) {
+        basePrice = matchingVariation.price;
+        variationId = matchingVariation.id;
+        isAvailable = isStockObjectAvailable(matchingVariation);
+        maxQty = getMaxAllowedQuantity(matchingVariation);
+        weight = parseFloat(matchingVariation.weight) || 0;
+      } else {
+        isAvailable = false;
       }
+    } else {
+      // simple 单品（即使带 Color 等属性，也直接校验主商品库存）
+      isAvailable = isStockObjectAvailable(parentStockState);
+      maxQty = getMaxAllowedQuantity(parentStockState);
+      weight = parseFloat(window.productWeight) || 0;
     }
 
-    // 应用批发价格折扣
     let finalPrice = parseFloat(basePrice);
-    if (quantity >= 100) {
-      finalPrice = finalPrice * 0.90; // 10% 折扣
-    } else if (quantity >= 50) {
-      finalPrice = finalPrice * 0.94; // 6% 折扣
-    } else if (quantity >= 10) {
-      finalPrice = finalPrice * 0.97; // 3% 折扣
-    }
+    if (quantity >= 100) finalPrice = finalPrice * 0.90;
+    else if (quantity >= 50) finalPrice = finalPrice * 0.94;
+    else if (quantity >= 10) finalPrice = finalPrice * 0.97;
 
     return {
       id: variationId || window.productId,
@@ -3033,12 +3225,13 @@ const giftProducts = giftProductIds.map((id, index) => {
       variationId: variationId,
       name: productName,
       price: finalPrice.toFixed(2),
-      basePrice: basePrice, // 保存原价用于购物车重新计算
+      basePrice: basePrice,
       quantity: quantity,
-      weight: weight, // 保存单件重量（kg）
+      maxQty: maxQty,
+      weight: weight,
       image: productImage,
       selectedVariants: selectedAttrs,
-      stockStatus: stockStatus,
+      stockStatus: isAvailable ? 'instock' : 'outofstock',
       slug: window.productSlug
     };
   }
@@ -3047,8 +3240,8 @@ const giftProducts = giftProductIds.map((id, index) => {
     const productData = getCurrentProductData();
 
     if (productData.stockStatus !== 'instock') {
-      alert('Sorry, this product is out of stock.');
-      return;
+      alert('Sorry, this item is currently out of stock.');
+      return false;
     }
 
     let cart = [];
@@ -3064,6 +3257,12 @@ const giftProducts = giftProductIds.map((id, index) => {
       item.variationId === productData.variationId &&
       JSON.stringify(item.selectedVariants) === JSON.stringify(productData.selectedVariants)
     );
+
+    const existingQty = existingIndex > -1 ? (parseInt(cart[existingIndex].quantity, 10) || 0) : 0;
+    if (productData.maxQty !== null && (existingQty + productData.quantity) > productData.maxQty) {
+      alert(`Sorry, only ${productData.maxQty} unit(s) available in stock.`);
+      return false;
+    }
 
     if (existingIndex > -1) {
       cart[existingIndex].quantity += productData.quantity;
@@ -3081,23 +3280,17 @@ const giftProducts = giftProductIds.map((id, index) => {
       if (typeof window.toggleCart === 'function') {
         window.toggleCart(true);
       }
-
-      console.log('Added to cart:', productData);
+      return true;
     } catch (e) {
       console.error('Failed to save cart:', e);
       alert('Failed to add to cart. Please try again.');
+      return false;
     }
   }
 
   function buyNowHandler() {
-    const productData = getCurrentProductData();
-
-    if (productData.stockStatus !== 'instock') {
-      alert('Sorry, this product is out of stock.');
-      return;
-    }
-
-    addToCartHandler();
+    const added = addToCartHandler();
+    if (!added) return;
 
     setTimeout(() => {
       window.location.href = '/checkout';
@@ -3139,16 +3332,6 @@ const giftProducts = giftProductIds.map((id, index) => {
     }
   }
 
-  let variationsData = [];
-  try {
-    const dataElement = document.getElementById('variationsData');
-    if (dataElement) {
-      variationsData = JSON.parse(dataElement.textContent);
-    }
-  } catch (e) {
-    console.error('Failed to parse variations data:', e);
-  }
-
   function getSelectedAttributes() {
     const selected = {};
     document.querySelectorAll('.variant-option.active').forEach(btn => {
@@ -3176,7 +3359,14 @@ const giftProducts = giftProductIds.map((id, index) => {
   }
 
   function updateAvailableOptions() {
-    if (!variationsData || variationsData.length === 0) return;
+    // 若是 simple 单品但挂了展示属性，整品无货时把属性按钮也标为缺货态
+    if (parentStockState.type !== 'variable' || !variationsData || variationsData.length === 0) {
+      const parentAvailable = isStockObjectAvailable(parentStockState);
+      document.querySelectorAll('.variant-option').forEach(btn => {
+        btn.classList.toggle('out-of-stock', !parentAvailable);
+      });
+      return;
+    }
 
     const selectedAttrs = getSelectedAttributes();
 
@@ -3186,7 +3376,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       buttons.forEach(btn => {
         const attribute = btn.getAttribute('data-attribute');
         const value = btn.getAttribute('data-value');
-
         const testAttrs = { ...selectedAttrs, [attribute]: value };
 
         const hasStockVariation = variationsData.some(variation => {
@@ -3198,7 +3387,7 @@ const giftProducts = giftProductIds.map((id, index) => {
                    testAttrs[attrSlug].toLowerCase() === attr.option.toLowerCase();
           });
 
-          return matches && variation.stock_status === 'instock';
+          return matches && isStockObjectAvailable(variation);
         });
 
         if (!hasStockVariation) {
@@ -3215,9 +3404,7 @@ const giftProducts = giftProductIds.map((id, index) => {
   function updatePriceAndStock(variation) {
     if (!variation) return;
 
-    // 1. 同步价格更新 (桌面端与移动端悬浮底栏)
     const currentPrice = document.querySelector('.current-price');
-    const originalPrice = document.querySelector('.original-price');
     const stickyPriceVal = document.getElementById('stickyPriceVal');
 
     if (variation.price && currentPrice) {
@@ -3243,13 +3430,10 @@ const giftProducts = giftProductIds.map((id, index) => {
       stickyPriceVal.setAttribute('data-usd-price', priceUSD);
     }
 
-    // 2. 同步图片：主图悄悄同步切过去，同时给底部 48px 大缩略图换图（绝不乱滚页面）
     const variationImgSrc = variation.image && variation.image.src ? variation.image.src : null;
     if (variationImgSrc) {
       const stickyThumbImg = document.getElementById('stickyThumbImg');
-      if (stickyThumbImg) {
-        stickyThumbImg.src = variationImgSrc;
-      }
+      if (stickyThumbImg) stickyThumbImg.src = variationImgSrc;
 
       const sliderContainer = document.getElementById('sliderContainer');
       const allSlideImgs = sliderContainer ? sliderContainer.querySelectorAll('.slider-item img') : [];
@@ -3264,78 +3448,37 @@ const giftProducts = giftProductIds.map((id, index) => {
       });
 
       if (matchedIndex !== -1) {
-        if (typeof window.goToSlide === 'function') {
-          window.goToSlide(matchedIndex);
-        }
+        if (typeof window.goToSlide === 'function') window.goToSlide(matchedIndex);
       } else if (allSlideImgs.length > 0) {
         allSlideImgs[0].src = variationImgSrc;
         const firstThumbnailImg = document.querySelector('.thumbnail img');
-        if (firstThumbnailImg) {
-          firstThumbnailImg.src = variationImgSrc;
-        }
-        if (typeof window.goToSlide === 'function') {
-          window.goToSlide(0);
-        }
+        if (firstThumbnailImg) firstThumbnailImg.src = variationImgSrc;
+        if (typeof window.goToSlide === 'function') window.goToSlide(0);
       }
     }
 
-    // 3. 库存状态文字更新
-    const stockStatus = document.querySelector('.info-item:has(.fa-circle-check) span');
-    if (stockStatus) {
-      stockStatus.textContent = variation.stock_status === 'instock' ? 'In Stock' : 'Out of Stock';
-    }
-
-    // 4. 更新 SKU 显示
     const skuValue = document.getElementById('product-sku');
     if (skuValue && variation.sku) {
       skuValue.textContent = variation.sku;
     }
 
-    // 5. 加购与立即购买按钮状态切换
-    const addToCartBtns = document.querySelectorAll('.btn-add-cart, .sticky-btn-cart');
-    const buyNowBtns = document.querySelectorAll('.btn-buy-now, .sticky-btn-buy');
+    renderStockBadgeAndButtons(variation);
 
-    if (variation.stock_status !== 'instock') {
-      addToCartBtns.forEach(btn => {
-        btn.disabled = true;
-        btn.style.opacity = '0.5';
-        btn.style.cursor = 'not-allowed';
-      });
-      buyNowBtns.forEach(btn => {
-        btn.disabled = true;
-        btn.style.opacity = '0.5';
-        btn.style.cursor = 'not-allowed';
-      });
-    } else {
-      addToCartBtns.forEach(btn => {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.style.cursor = 'pointer';
-      });
-      buyNowBtns.forEach(btn => {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.style.cursor = 'pointer';
-      });
-    }
-
-    // 5. 更新批发价格表格
     if (variation.price) {
       updateWholesalePriceTable(parseFloat(variation.price));
     }
   }
 
-  // 更新批发价格表格
   function updateWholesalePriceTable(basePrice) {
     const priceTiers = document.querySelectorAll('.wholesale-table .price-tier');
     if (priceTiers.length === 0) return;
 
     const currency = getCurrentCurrency();
     const prices = [
-      { price: basePrice, label: 'Regular' },                    // 1-9 件
-      { price: basePrice * 0.97, label: 'Save 3%' },            // 10-49 件
-      { price: basePrice * 0.94, label: 'Save 6%' },            // 50-99 件
-      { price: basePrice * 0.90, label: 'Best Value - Save 10%' } // 100+ 件
+      { price: basePrice, label: 'Regular' },
+      { price: basePrice * 0.97, label: 'Save 3%' },
+      { price: basePrice * 0.94, label: 'Save 6%' },
+      { price: basePrice * 0.90, label: 'Best Value - Save 10%' }
     ];
 
     priceTiers.forEach((tier, index) => {
@@ -3367,7 +3510,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       selectedValueSpan.textContent = value;
     }
 
-    // 实时读取当前全部选中的属性值，拼成 "Gold / Set A" 的直观规格，绝不卡在 Default
     const selectedAttrs = getSelectedAttributes();
     const valuesList = Object.values(selectedAttrs);
     const stickyLabel = document.getElementById('stickyVariantLabel');
@@ -3375,10 +3517,14 @@ const giftProducts = giftProductIds.map((id, index) => {
       stickyLabel.textContent = valuesList.join(' / ');
     }
 
-    const matchingVariation = findMatchingVariation(selectedAttrs);
-
-    if (matchingVariation) {
-      updatePriceAndStock(matchingVariation);
+    if (parentStockState.type === 'variable' && variationsData && variationsData.length > 0) {
+      const matchingVariation = findMatchingVariation(selectedAttrs);
+      if (matchingVariation) {
+        updatePriceAndStock(matchingVariation);
+      }
+    } else {
+      // simple 产品即使带属性，也严格保持主产品实时库存状态
+      renderStockBadgeAndButtons(parentStockState);
     }
 
     updateAvailableOptions();
@@ -3392,20 +3538,27 @@ const giftProducts = giftProductIds.map((id, index) => {
   window.toggleAccordion = toggleAccordion;
 
   function initVariants() {
-    if (variationsData && variationsData.length > 0) {
-      updateAvailableOptions();
+    // 同步初始化移动端悬浮栏的已选属性文字（如默认选中的 Color）
+    const initialSelectedAttrs = getSelectedAttributes();
+    const initialVals = Object.values(initialSelectedAttrs);
+    const stickyLabel = document.getElementById('stickyVariantLabel');
+    if (stickyLabel && initialVals.length > 0) {
+      stickyLabel.textContent = initialVals.join(' / ');
+    }
 
-      const selectedAttrs = getSelectedAttributes();
-      const matchingVariation = findMatchingVariation(selectedAttrs);
+    if (parentStockState.type === 'variable' && variationsData && variationsData.length > 0) {
+      updateAvailableOptions();
+      const matchingVariation = findMatchingVariation(initialSelectedAttrs);
       if (matchingVariation) {
         updatePriceAndStock(matchingVariation);
       }
+    } else {
+      // simple 单品（无论是否带 Color 参数）立即执行库存判定与按钮状态锁定
+      updateAvailableOptions();
+      renderStockBadgeAndButtons(parentStockState);
     }
   }
 
-  // =========================================================
-  // Related Products Slider (桌面 5 个 / 移动端 1 个 / 每次滑动 1 个)
-  // =========================================================
   function initRelatedSlider() {
     const sliderContainer = document.querySelector('.related-slider-container');
     const slider = document.getElementById('relatedSlider');
@@ -3424,55 +3577,37 @@ const giftProducts = giftProductIds.map((id, index) => {
 
     function getVisibleCount() {
       const width = window.innerWidth;
-      if (width <= 768) {
-        return 1;
-      }
-      if (width <= 1024) {
-        return 3;
-      }
+      if (width <= 768) return 1;
+      if (width <= 1024) return 3;
       return 5;
     }
 
     function updateSliderPosition() {
       const firstCard = allProducts[0];
       if (!firstCard) return;
-
       const stepWidth = firstCard.offsetWidth + 16;
       const offset = -currentIndex * stepWidth;
-
       slider.style.transform = `translateX(${offset}px)`;
     }
 
     function nextSlide() {
       const visibleCount = getVisibleCount();
       const maxIndex = Math.max(0, totalProducts - visibleCount);
-
-      if (currentIndex < maxIndex) {
-        currentIndex += 1;
-      } else {
-        currentIndex = 0;
-      }
+      currentIndex = currentIndex < maxIndex ? currentIndex + 1 : 0;
       updateSliderPosition();
     }
 
     function prevSlide() {
       const visibleCount = getVisibleCount();
       const maxIndex = Math.max(0, totalProducts - visibleCount);
-
-      if (currentIndex > 0) {
-        currentIndex -= 1;
-      } else {
-        currentIndex = maxIndex;
-      }
+      currentIndex = currentIndex > 0 ? currentIndex - 1 : maxIndex;
       updateSliderPosition();
     }
 
     function startAutoPlay() {
       stopAutoPlay();
       autoPlayInterval = setInterval(() => {
-        if (isAutoPlaying) {
-          nextSlide();
-        }
+        if (isAutoPlaying) nextSlide();
       }, 3500);
     }
 
@@ -3492,16 +3627,8 @@ const giftProducts = giftProductIds.map((id, index) => {
       }, 4000);
     }
 
-    prevBtn.addEventListener('click', () => {
-      prevSlide();
-      pauseAndResume();
-    });
-
-    nextBtn.addEventListener('click', () => {
-      nextSlide();
-      pauseAndResume();
-    });
-
+    prevBtn.addEventListener('click', () => { prevSlide(); pauseAndResume(); });
+    nextBtn.addEventListener('click', () => { nextSlide(); pauseAndResume(); });
     sliderContainer.addEventListener('mouseenter', stopAutoPlay);
     sliderContainer.addEventListener('mouseleave', startAutoPlay);
 
@@ -3514,11 +3641,8 @@ const giftProducts = giftProductIds.map((id, index) => {
     sliderContainer.addEventListener('touchend', (e) => {
       const diffX = touchStartX - e.changedTouches[0].screenX;
       if (Math.abs(diffX) > 40) {
-        if (diffX > 0) {
-          nextSlide();
-        } else {
-          prevSlide();
-        }
+        if (diffX > 0) nextSlide();
+        else prevSlide();
       }
       pauseAndResume();
     }, { passive: true });
@@ -3526,9 +3650,7 @@ const giftProducts = giftProductIds.map((id, index) => {
     window.addEventListener('resize', () => {
       const visibleCount = getVisibleCount();
       const maxIndex = Math.max(0, totalProducts - visibleCount);
-      if (currentIndex > maxIndex) {
-        currentIndex = maxIndex;
-      }
+      if (currentIndex > maxIndex) currentIndex = maxIndex;
       updateSliderPosition();
     });
 
@@ -3536,9 +3658,6 @@ const giftProducts = giftProductIds.map((id, index) => {
     startAutoPlay();
   }
 
-  // =========================================================
-  // Product Carousel (Gift) 驱动 + 客户端兜底与加购
-  // =========================================================
   async function initGiftCarousel() {
     const carousel = document.getElementById('giftCarousel');
     const track = document.getElementById('giftTrack');
@@ -3572,9 +3691,7 @@ const giftProducts = giftProductIds.map((id, index) => {
               
               slide.setAttribute('data-price', finalPrice);
               const priceEl = slide.querySelector('.gift-price-el');
-              if (priceEl) {
-                priceEl.textContent = '$' + finalPrice;
-              }
+              if (priceEl) priceEl.textContent = '$' + finalPrice;
               const imgSrc = (data.images && data.images[0]) ? data.images[0].src : '';
               if (imgSrc) {
                 slide.setAttribute('data-image', imgSrc);
@@ -3602,41 +3719,14 @@ const giftProducts = giftProductIds.map((id, index) => {
       });
     }
 
-    function nextSlide() {
-      updateSlide(currentIndex + 1);
-    }
+    function nextSlide() { updateSlide(currentIndex + 1); }
+    function prevSlide() { updateSlide(currentIndex - 1); }
+    function startAutoPlay() { stopAutoPlay(); autoPlayTimer = setInterval(nextSlide, AUTO_DELAY); }
+    function stopAutoPlay() { if (autoPlayTimer) { clearInterval(autoPlayTimer); autoPlayTimer = null; } }
+    function pauseAndRestart() { stopAutoPlay(); setTimeout(startAutoPlay, 3500); }
 
-    function prevSlide() {
-      updateSlide(currentIndex - 1);
-    }
-
-    function startAutoPlay() {
-      stopAutoPlay();
-      autoPlayTimer = setInterval(nextSlide, AUTO_DELAY);
-    }
-
-    function stopAutoPlay() {
-      if (autoPlayTimer) {
-        clearInterval(autoPlayTimer);
-        autoPlayTimer = null;
-      }
-    }
-
-    function pauseAndRestart() {
-      stopAutoPlay();
-      setTimeout(startAutoPlay, 3500);
-    }
-
-    nextBtn?.addEventListener('click', () => {
-      pauseAndRestart();
-      nextSlide();
-    });
-
-    prevBtn?.addEventListener('click', () => {
-      pauseAndRestart();
-      prevSlide();
-    });
-
+    nextBtn?.addEventListener('click', () => { pauseAndRestart(); nextSlide(); });
+    prevBtn?.addEventListener('click', () => { pauseAndRestart(); prevSlide(); });
     carousel.addEventListener('mouseenter', stopAutoPlay);
     carousel.addEventListener('mouseleave', startAutoPlay);
 
@@ -3679,9 +3769,7 @@ const giftProducts = giftProductIds.map((id, index) => {
       try {
         const cartData = localStorage.getItem('ebbelle_cart');
         cart = cartData ? JSON.parse(cartData) : [];
-      } catch (e) {
-        console.error('Failed to get cart:', e);
-      }
+      } catch (e) {}
 
       const existingIndex = cart.findIndex((item) =>
         item.productId === giftItemData.productId &&
@@ -3691,19 +3779,13 @@ const giftProducts = giftProductIds.map((id, index) => {
       if (existingIndex > -1) {
         cart[existingIndex].quantity += 1;
       } else {
-        cart.push({
-          ...giftItemData,
-          cartItemId: Date.now() + Math.random()
-        });
+        cart.push({ ...giftItemData, cartItemId: Date.now() + Math.random() });
       }
 
       try {
         localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
         window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
-
-        if (typeof window.toggleCart === 'function') {
-          window.toggleCart(true);
-        }
+        if (typeof window.toggleCart === 'function') window.toggleCart(true);
 
         const originalText = addGiftBtn.textContent;
         addGiftBtn.textContent = 'ADDED ✓';
@@ -3715,7 +3797,6 @@ const giftProducts = giftProductIds.map((id, index) => {
           addGiftBtn.style.borderColor = '';
         }, 1200);
       } catch (e) {
-        console.error('Failed to save cart:', e);
         alert('Failed to add item to cart. Please try again.');
       }
     });
@@ -3723,7 +3804,6 @@ const giftProducts = giftProductIds.map((id, index) => {
     startAutoPlay();
   }
 
-  // 文字展开与折叠切换逻辑
   function initDescToggle() {
     const wrapper = document.getElementById('descWrapper');
     const content = document.getElementById('descContent');
@@ -3750,15 +3830,12 @@ const giftProducts = giftProductIds.map((id, index) => {
     });
   }
 
-  // 初始化和更新所有价格显示
   function updateAllPrices() {
-    // 获取存储的原始价格（USD）
     const currentPriceEl = document.querySelector('.current-price');
     const originalPriceEl = document.querySelector('.original-price');
     const stickyPriceEl = document.getElementById('stickyPriceVal');
     const stickyOriginalEl = document.querySelector('.sticky-original');
 
-    // 从 data 属性获取原始 USD 价格（如果没有，从文本解析）
     if (currentPriceEl) {
       const priceText = currentPriceEl.textContent.replace(/[^0-9.]/g, '');
       const priceUSD = parseFloat(priceText);
@@ -3767,7 +3844,6 @@ const giftProducts = giftProductIds.map((id, index) => {
         const dollarSpan = currentPriceEl.querySelector('.dollar');
         const formattedPrice = formatPrice(priceUSD);
         if (dollarSpan) {
-          // 分离货币符号和价格
           const currency = getCurrentCurrency();
           if (currency === 'EUR') {
             dollarSpan.textContent = '';
@@ -3809,7 +3885,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       }
     }
 
-    // 更新批发价格表
     const tierPrices = document.querySelectorAll('.tier-price');
     tierPrices.forEach(el => {
       const priceText = el.textContent.replace(/[^0-9.]/g, '');
@@ -3820,7 +3895,6 @@ const giftProducts = giftProductIds.map((id, index) => {
       }
     });
 
-    // 更新礼品价格
     const giftPrices = document.querySelectorAll('.gift-price-el');
     giftPrices.forEach(el => {
       const priceText = el.textContent.replace(/[^0-9.]/g, '');
@@ -3839,10 +3913,10 @@ const giftProducts = giftProductIds.map((id, index) => {
     initRelatedSlider();
     initGiftCarousel();
     initDescToggle();
-    updateAllPrices(); // 初始化价格显示
+    updateAllPrices();
+    syncRealtimeProductStock(); // 客户端实时拉取最新库存
   }
 
-  // 监听货币切换事件
   window.addEventListener('currencyChanged', () => {
     updateAllPrices();
   });
@@ -3853,32 +3927,22 @@ const giftProducts = giftProductIds.map((id, index) => {
     initAll();
   }
 
-  // ============================================================
-  // Inquiry Popup Functions (独立功能，不影响现有代码)
-  // ============================================================
-
-  // 打开询盘弹窗
+  // Inquiry Popup Functions
   window.openInquiryPopup = function() {
     const popup = document.getElementById('inquiryPopup');
     if (popup) {
-      // 填充产品信息
       const productNameInput = document.getElementById('inquiry-product-name');
       const productUrlInput = document.getElementById('inquiry-product-url');
       const productTitle = document.querySelector('h1');
 
-      if (productNameInput && productTitle) {
-        productNameInput.value = productTitle.textContent || '';
-      }
-      if (productUrlInput) {
-        productUrlInput.value = window.location.href;
-      }
+      if (productNameInput && productTitle) productNameInput.value = productTitle.textContent || '';
+      if (productUrlInput) productUrlInput.value = window.location.href;
 
       popup.classList.add('active');
       document.body.style.overflow = 'hidden';
     }
   };
 
-  // 关闭询盘弹窗
   window.closeInquiryPopup = function() {
     const popup = document.getElementById('inquiryPopup');
     if (popup) {
@@ -3887,17 +3951,13 @@ const giftProducts = giftProductIds.map((id, index) => {
     }
   };
 
-  // 点击遮罩层关闭弹窗
   const inquiryPopup = document.getElementById('inquiryPopup');
   if (inquiryPopup) {
     inquiryPopup.addEventListener('click', function(e) {
-      if (e.target === this) {
-        window.closeInquiryPopup();
-      }
+      if (e.target === this) window.closeInquiryPopup();
     });
   }
 
-  // 绑定批发按钮点击事件
   const wholesaleBtn = document.querySelector('.btn-wholesale');
   if (wholesaleBtn) {
     wholesaleBtn.addEventListener('click', function() {
@@ -3905,21 +3965,17 @@ const giftProducts = giftProductIds.map((id, index) => {
     });
   }
 
-  // 处理表单提交
   const inquiryForm = document.getElementById('inquiryForm');
   if (inquiryForm) {
     inquiryForm.addEventListener('submit', async function(e) {
       e.preventDefault();
-
       const submitBtn = this.querySelector('.inquiry-submit-btn');
       const originalText = submitBtn.textContent;
 
-      // 禁用按钮并显示加载状态
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
 
       try {
-        // 收集表单数据
         const formData = {
           name: document.getElementById('inquiry-name').value,
           email: document.getElementById('inquiry-email').value,
@@ -3931,27 +3987,19 @@ const giftProducts = giftProductIds.map((id, index) => {
           productUrl: document.getElementById('inquiry-product-url').value,
         };
 
-        // 获取 API URL
         const WC_URL = window.wcUrl || wcUrl;
-
-        // 发送到 WordPress API
         const response = await fetch(`${WC_URL}/wp-json/custom/v1/send-inquiry`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
         });
 
         const data = await response.json();
-
         if (data.success) {
-          // 成功提示
           submitBtn.textContent = 'Inquiry Received ✓';
           submitBtn.style.background = '#446651';
           submitBtn.style.borderColor = '#446651';
 
-          // 1.2秒后关闭弹窗并重置表单
           setTimeout(() => {
             inquiryForm.reset();
             window.closeInquiryPopup();
@@ -3964,7 +4012,6 @@ const giftProducts = giftProductIds.map((id, index) => {
           throw new Error(data.message || 'Failed to send inquiry');
         }
       } catch (error) {
-        console.error('Inquiry submission error:', error);
         submitBtn.textContent = 'Failed to Send';
         submitBtn.style.background = '#C84B4B';
         submitBtn.style.borderColor = '#C84B4B';
