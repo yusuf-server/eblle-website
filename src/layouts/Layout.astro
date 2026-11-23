@@ -9,6 +9,7 @@ interface Props {
 }
 
 const { title } = Astro.props;
+const WP_API_BASE = import.meta.env.PUBLIC_WC_STORE_URL || import.meta.env.WC_STORE_URL || 'https://api.ebbellejewelry.com';
 ---
 
 <!doctype html>
@@ -31,6 +32,9 @@ const { title } = Astro.props;
     <title>{title}</title>
   </head>
   <body>
+    <!-- 全站轻量级圣诞飘雪 Canvas（受后台氛围总控开关控制，不遮挡任何交互） -->
+    <canvas id="ebXmasSnowCanvas" aria-hidden="true"></canvas>
+
     <SkeletonLoader />
     <div id="main-content" style="opacity: 0; transition: opacity 0.3s ease;">
       <slot />
@@ -122,6 +126,56 @@ const { title } = Astro.props;
   .serif-title {
     font-family: 'Cinzel', serif;
     letter-spacing: 0.5px;
+  }
+
+  /* ============================================================
+     圣诞全站氛围特效样式（后台关闭时自动全部隐藏）
+     ============================================================ */
+  #ebXmasSnowCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 998;
+    opacity: 0;
+    transition: opacity 0.45s ease;
+  }
+
+  body.eb-xmas-atmosphere #ebXmasSnowCanvas {
+    opacity: 1;
+  }
+
+  .eb-santa-hat-badge {
+    position: absolute;
+    top: -12px;
+    left: -10px;
+    width: 40px;
+    height: 40px;
+    z-index: 18;
+    pointer-events: none;
+    transform: rotate(-14deg) scale(0.75);
+    opacity: 0;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
+    transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  body.eb-xmas-atmosphere .eb-santa-hat-badge {
+    opacity: 1;
+    transform: rotate(-14deg) scale(1);
+  }
+
+  body.eb-xmas-atmosphere *:hover > .eb-santa-hat-badge {
+    transform: rotate(-8deg) scale(1.08);
+  }
+
+  @media (max-width: 640px) {
+    .eb-santa-hat-badge {
+      width: 34px;
+      height: 34px;
+      top: -9px;
+      left: -7px;
+    }
   }
 
   /* Global Quick Order Styles - Complete implementation from shop.astro */
@@ -619,53 +673,6 @@ const { title } = Astro.props;
     -ms-overflow-style: none;
   }
 
-  .mobile-quick-price-tiers {
-    background: #fff;
-    border: 1px solid #e5e5e5;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 16px;
-  }
-
-  .mobile-tier-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
-
-  .mobile-tier-title {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #1a1a1a;
-  }
-
-  .mobile-tier-title i {
-    color: #B8860B;
-    font-size: 10px;
-  }
-
-  .mobile-tier-badge {
-    font-size: 9px;
-    padding: 2px 6px;
-    background: #FFF9E6;
-    color: #B8860B;
-    border-radius: 3px;
-    font-weight: 600;
-  }
-
-  .mobile-pricing-grid {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
   .mobile-pricing-grid::-webkit-scrollbar {
     display: none;
   }
@@ -731,17 +738,14 @@ const { title } = Astro.props;
     gap: 8px;
   }
 
-  /* 3个选项：3列 */
   .mobile-attribute-options[data-option-count="3"] {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  /* 4个选项：4列 */
   .mobile-attribute-options[data-option-count="4"] {
     grid-template-columns: repeat(4, 1fr);
   }
 
-  /* 5个或更多：5列，多行显示 */
   .mobile-attribute-options[data-option-count="5"],
   .mobile-attribute-options[data-option-count="6"],
   .mobile-attribute-options[data-option-count="7"],
@@ -756,7 +760,6 @@ const { title } = Astro.props;
     grid-template-columns: repeat(5, 1fr);
   }
 
-  /* 1-2个选项：单行全宽 */
   .mobile-attribute-options[data-option-count="1"],
   .mobile-attribute-options[data-option-count="2"] {
     grid-template-columns: repeat(2, 1fr);
@@ -776,7 +779,6 @@ const { title } = Astro.props;
     text-overflow: ellipsis;
   }
 
-  /* 5个或更多选项时，让按钮更紧凑 */
   .mobile-attribute-options[data-option-count="5"] .mobile-attribute-option,
   .mobile-attribute-options[data-option-count="6"] .mobile-attribute-option,
   .mobile-attribute-options[data-option-count="7"] .mobile-attribute-option,
@@ -916,7 +918,7 @@ const { title } = Astro.props;
   }
 </style>
 
-<script>
+<script is:inline define:vars={{ WP_API_BASE }}>
   // Show main content after skeleton is hidden
   document.addEventListener('DOMContentLoaded', () => {
     const mainContent = document.getElementById('main-content');
@@ -926,4 +928,194 @@ const { title } = Astro.props;
       }, 150);
     }
   });
+
+  // ============================================================
+  // 圣诞全站状态同步与氛围特效引擎（对接 /wp-json/ebbelle/v1/christmas/status）
+  // ============================================================
+  (function initEbbelleChristmasAtmosphere() {
+    const CACHE_KEY = 'eb_xmas_status_cache_v1';
+    const CACHE_TTL = 30 * 1000; // 30秒缓存，兼顾后台实时切换与零重复请求
+    let snowStarted = false;
+    let observerStarted = false;
+
+    const SANTA_HAT_SVG = `
+      <svg class="eb-santa-hat-badge" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M14 42C15 24 27 11 45 13C49 13.5 52 16 53 20C44 19 39 24 39 31C39 35 41 39 43 42H14Z" fill="#B83235"/>
+        <path d="M14 42C15 26 25 14 41 13C31 17 25 27 25 42H14Z" fill="#961820"/>
+        <circle cx="53" cy="21" r="6.5" fill="#FFFFFF" stroke="#E8DFD1" stroke-width="1.5"/>
+        <rect x="9" y="39" width="38" height="10" rx="5" fill="#FFFFFF" stroke="#E8DFD1" stroke-width="1.5"/>
+      </svg>
+    `;
+
+    // 自动为全站商品卡片左上角挂载圣诞帽（排除结账页与抽屉内的缩略图）
+    // 自动为全站商品卡片左上角挂载圣诞帽（兼容任意类名 + 动态异步渲染）
+    function decorateProductCards() {
+      if (!document.body.classList.contains('eb-xmas-atmosphere')) return;
+      if (window.location.pathname.includes('/checkout')) return;
+
+      const cardSet = new Set();
+
+      // 1. 常见商品卡片类名匹配
+      const selectors = [
+        '.product-card',
+        '.prod-card',
+        '.product-item',
+        '.prod-item',
+        '.xmas-prod-card',
+        '.shop-product-card',
+        '.bestseller-card',
+        '.arrival-card',
+        '.collection-product-card',
+        '[data-product-card]',
+        '[data-product-id]'
+      ];
+      document.querySelectorAll(selectors.join(',')).forEach(el => cardSet.add(el));
+
+      // 2. 智能兜底：自动识别所有包含 /product/ 链接且带商品图片的卡片外框
+      document.querySelectorAll('a[href*="/product/"]').forEach(link => {
+        const card = link.closest('article, li, [class*="card"], [class*="item"], [class*="prod"]');
+        if (card && card.querySelector('img') && card.offsetWidth >= 120 && card.offsetWidth <= 520) {
+          cardSet.add(card);
+        }
+      });
+
+      cardSet.forEach((card) => {
+        if (!card || card.nodeType !== 1) return;
+        if (card.closest('.cart-drawer, .order-summary, .quick-order-modal, header, nav, footer')) return;
+        if (card.querySelector(':scope > .eb-santa-hat-badge')) return;
+        // 避免同时给父子两层套帽
+        if (card.parentElement && cardSet.has(card.parentElement)) return;
+
+        const computed = window.getComputedStyle(card);
+        if (computed.position === 'static') {
+          card.style.position = 'relative';
+        }
+        if (computed.overflow === 'hidden') {
+          card.style.overflow = 'visible';
+        }
+        card.insertAdjacentHTML('afterbegin', SANTA_HAT_SVG);
+      });
+    }
+
+    function startCardObserver() {
+      decorateProductCards();
+      if (observerStarted) return;
+      observerStarted = true;
+
+      let timer = null;
+      const observer = new MutationObserver(() => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(decorateProductCards, 180);
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    // 轻量级全屏飘雪粒子（香槟金 + 雪白双层，白底与深底均清晰优雅）
+    function startSnowCanvas() {
+      if (snowStarted) return;
+      const canvas = document.getElementById('ebXmasSnowCanvas');
+      if (!canvas) return;
+      snowStarted = true;
+
+      const ctx = canvas.getContext('2d');
+      let width = (canvas.width = window.innerWidth);
+      let height = (canvas.height = window.innerHeight);
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      const count = width < 768 ? 20 : 38;
+      const flakes = Array.from({ length: count }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        r: Math.random() * 2.6 + 1.3,
+        speedY: Math.random() * 0.85 + 0.4,
+        speedX: Math.random() * 0.45 - 0.22,
+        opacity: Math.random() * 0.5 + 0.35
+      }));
+
+      function renderFrame() {
+        ctx.clearRect(0, 0, width, height);
+        if (document.body.classList.contains('eb-xmas-atmosphere')) {
+          for (let i = 0; i < flakes.length; i++) {
+            const f = flakes[i];
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(214, 184, 121, ${f.opacity})`;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, f.r * 0.65, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, f.opacity + 0.25)})`;
+            ctx.fill();
+
+            f.y += f.speedY;
+            f.x += f.speedX;
+            if (f.y > height) {
+              f.y = -5;
+              f.x = Math.random() * width;
+            }
+            if (f.x > width) f.x = 0;
+            if (f.x < 0) f.x = width;
+          }
+        }
+        requestAnimationFrame(renderFrame);
+      }
+
+      requestAnimationFrame(renderFrame);
+    }
+
+    function applyChristmasStatus(status) {
+      if (!status) return;
+      window.__EBBELLE_XMAS_STATUS__ = status;
+
+      if (status.atmosphere_active) {
+        document.body.classList.add('eb-xmas-atmosphere');
+        startSnowCanvas();
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', startCardObserver);
+        } else {
+          startCardObserver();
+        }
+      } else {
+        document.body.classList.remove('eb-xmas-atmosphere');
+      }
+
+      window.dispatchEvent(new CustomEvent('ebbelleXmasStatusReady', { detail: status }));
+    }
+
+    async function fetchChristmasStatus() {
+      // 1. 先命中短期缓存实现零闪烁秒开
+      try {
+        const cachedRaw = sessionStorage.getItem(CACHE_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw);
+          if (cached && cached.data && (Date.now() - cached.ts) < CACHE_TTL) {
+            applyChristmasStatus(cached.data);
+            return;
+          }
+        }
+      } catch (e) {}
+
+      // 2. 向后端独立插件拉取最新开关与周期状态
+      try {
+        const cleanBase = String(WP_API_BASE || 'https://api.ebbellejewelry.com').replace(/\/$/, '');
+        const res = await fetch(`${cleanBase}/wp-json/ebbelle/v1/christmas/status?_t=${Math.floor(Date.now() / 15000)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.success) {
+          try {
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+          } catch (e) {}
+          applyChristmasStatus(data);
+        }
+      } catch (e) {
+        // 静默兜底：接口异常时默认不开启特效，不影响正常页面渲染
+      }
+    }
+
+    fetchChristmasStatus();
+  })();
 </script>

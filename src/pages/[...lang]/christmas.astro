@@ -1,0 +1,3391 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import ProductSkeleton from '../../components/ProductSkeleton.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '../../lib/i18n/utils';
+
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang as SupportedLocale)
+  ? (lang as SupportedLocale)
+  : 'en';
+
+const localePrefix = currentLocale === 'en' ? '' : `/${currentLocale}`;
+const buildLocaleUrl = (path: string) => `${localePrefix}${path}`;
+---
+
+<Layout title="E.B.belle Holiday | Fine Festive Jewelry & Christmas Deals">
+  <Header />
+
+  <!-- 引入 Google Fonts & Material Symbols 仅用于圣诞专题视觉 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0&display=swap" rel="stylesheet" />
+
+  <div class="xmas-page-scope">
+    <!-- 背景氛围光晕 -->
+    <div class="xmas-ambient-glow xmas-glow-top"></div>
+    <div class="xmas-ambient-glow xmas-glow-right"></div>
+
+    <!-- SECTION 1: HOLIDAY ANNOUNCEMENT & HERO -->
+    <section class="xmas-container xmas-hero-section">
+      <div class="xmas-hero-header">
+        <div class="xmas-eyebrow-pill">
+          <span class="xmas-star-badge">★</span>
+          <span class="xmas-eyebrow-red">MERRY CHRISTMAS!</span>
+          <span class="xmas-dot"></span>
+          <span class="xmas-eyebrow-pine">THE BIGGEST GIFT EVENT OF THE SEASON</span>
+          <span class="material-symbols-outlined xmas-gold-icon">auto_awesome</span>
+        </div>
+
+        <h1 class="xmas-hero-title">
+          More Jewelry. More Gifts.<br />
+          <span class="xmas-hero-italic">More Christmas Magic!</span>
+        </h1>
+
+        <p class="xmas-hero-subtitle">
+          Mix &amp; match any styles across the entire boutique. Wrapped with handcrafted gold ribbon &amp; evergreen cheer — dipped in 18K gold and 100% waterproof.
+        </p>
+
+        <!-- 实时真实时间倒计时模块（锁定 12 月 31 日 23:59:59 结束，刷新不重置） -->
+        <div class="xmas-countdown-box">
+          <div class="xmas-cd-left">
+            <div class="xmas-cd-deadline-pill">
+              <span class="material-symbols-outlined">event_available</span>
+              <span>ENDS DEC 31</span>
+            </div>
+            <div class="xmas-cd-label">
+              <span>HOLIDAY DEALS DISAPPEAR IN:</span>
+            </div>
+            <span class="xmas-cd-subnote">Final cutoff: December 31, 11:59 PM</span>
+          </div>
+          <div class="xmas-cd-digits" id="xmasCountdownTimer">
+            <div class="xmas-cd-unit">
+              <strong id="xmas-cd-days">00</strong>
+              <span>DAYS</span>
+            </div>
+            <span class="xmas-cd-colon">:</span>
+            <div class="xmas-cd-unit">
+              <strong id="xmas-cd-hours">00</strong>
+              <span>HOURS</span>
+            </div>
+            <span class="xmas-cd-colon">:</span>
+            <div class="xmas-cd-unit">
+              <strong id="xmas-cd-mins">00</strong>
+              <span>MINS</span>
+            </div>
+            <span class="xmas-cd-colon">:</span>
+            <div class="xmas-cd-unit">
+              <strong id="xmas-cd-secs">00</strong>
+              <span>SECS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero 主视觉双栏大卡 -->
+      <div class="xmas-hero-card">
+        <div class="xmas-hero-media">
+          <img
+            src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&q=85"
+            alt="E.B.belle Holiday Fine Jewelry Collection"
+            loading="eager"
+          />
+          <div class="xmas-wax-seal">
+            <span class="seal-top">LUXE</span>
+            <strong class="seal-mid">18K</strong>
+            <span class="seal-bot">GOLD</span>
+          </div>
+        </div>
+
+        <div class="xmas-hero-editorial">
+          <div>
+            <div class="xmas-verified-tag">
+              <span class="material-symbols-outlined">verified</span>
+              <span>HANDCRAFTED HOLIDAY COLLECTION</span>
+            </div>
+            <h2 class="xmas-editorial-title">
+              18K Gold Plated + 100% Waterproof.
+            </h2>
+            <p class="xmas-editorial-desc">
+              Crafted in heavy heirloom 18K gold over surgical 316L stainless steel. Sweat-proof, perfume-proof, and guaranteed to shine through every holiday celebration.
+            </p>
+
+            <div class="xmas-trust-pills">
+              <div class="xmas-trust-item">
+                <span class="material-symbols-outlined">featured_seasonal_and_gifts</span>
+                <div>
+                  <strong>Free Gift Box</strong>
+                  <span>Velvet &amp; Wax Seal</span>
+                </div>
+              </div>
+              <div class="xmas-trust-item">
+                <span class="material-symbols-outlined">water_drop</span>
+                <div>
+                  <strong>Waterproof</strong>
+                  <span>Never Tarnish</span>
+                </div>
+              </div>
+              <div class="xmas-trust-item">
+                <span class="material-symbols-outlined">local_shipping</span>
+                <div>
+                  <strong>Pre-Xmas Dispatch</strong>
+                  <span>Tracked Delivery</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="xmas-hero-cta-row">
+            <a href="#holiday-tiers" class="xmas-btn-primary">
+              <span>🎁 UNWRAP THE DEALS</span>
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </a>
+            <span class="xmas-cta-note">
+              Mix &amp; match any items sitewide. Lowest-priced items automatically become FREE at checkout!
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: HOLIDAY TIERED BONUSES -->
+    <section class="xmas-container xmas-section" id="holiday-tiers">
+      <div class="xmas-section-head">
+        <span class="xmas-kicker">SITEWIDE MIX &amp; MATCH REWARDS</span>
+        <h2 class="xmas-section-title">The More You Shop, The More Gifts You Get!</h2>
+        <p class="xmas-section-desc">
+          Select any pieces across the entire store. Your lowest-priced items are automatically deducted at checkout (cannot be combined with VIP vouchers or free shipping).
+        </p>
+      </div>
+
+      <div class="xmas-tiers-grid">
+        <!-- TIER 1 -->
+        <div class="xmas-tier-card">
+          <div>
+            <div class="xmas-tier-top">
+              <span class="xmas-tier-badge">TIER 01</span>
+              <span class="xmas-tier-highlight pine">50% OFF VALUE</span>
+            </div>
+            <h3 class="xmas-tier-name">CHRISTMAS DUO</h3>
+            <div class="xmas-tier-offer-box">
+              <div class="xmas-tier-big">BUY 2 GET 1 FREE</div>
+              <p>Pick any <strong>2 items</strong> sitewide &amp; only pay for the highest-priced <strong>1 item</strong>!</p>
+            </div>
+            <ul class="xmas-tier-list">
+              <li><span class="material-symbols-outlined">check_circle</span><span>Mix &amp; match any 2 pieces across the site</span></li>
+              <li><span class="material-symbols-outlined">check_circle</span><span>Lowest-priced item is 100% FREE</span></li>
+              <li><span class="material-symbols-outlined">check_circle</span><span>Complimentary holiday gift pouches</span></li>
+            </ul>
+          </div>
+          <a href="#jewelry-grid" class="xmas-tier-btn">SHOP 2 ITEMS →</a>
+        </div>
+
+        <!-- TIER 2 -->
+        <div class="xmas-tier-card is-featured">
+          <div class="xmas-popular-ribbon">
+            <span class="material-symbols-outlined">local_fire_department</span>
+            <span>MOST POPULAR FOR GIFTING</span>
+          </div>
+          <div>
+            <div class="xmas-tier-top">
+              <span class="xmas-tier-badge red">TIER 02</span>
+              <span class="xmas-tier-highlight red">2 ITEMS FREE</span>
+            </div>
+            <h3 class="xmas-tier-name">HOLIDAY ENSEMBLE</h3>
+            <div class="xmas-tier-offer-box red-tint">
+              <div class="xmas-tier-big red">BUY 3 GET 2 FREE</div>
+              <p>Pick any <strong>5 items</strong> sitewide &amp; only pay for the highest-priced <strong>3 items</strong>!</p>
+            </div>
+            <ul class="xmas-tier-list">
+              <li><span class="material-symbols-outlined red">check_circle</span><span>Choose any 5 styles across the atelier</span></li>
+              <li><span class="material-symbols-outlined red">check_circle</span><span>2 lowest-priced pieces deducted automatically</span></li>
+              <li><span class="material-symbols-outlined red">check_circle</span><span>Includes holiday silk ribbons &amp; gift tags</span></li>
+              <li><span class="material-symbols-outlined red">check_circle</span><span>Ready to gift straight under the tree</span></li>
+            </ul>
+          </div>
+          <a href="#jewelry-grid" class="xmas-tier-btn red">SHOP 5 ITEMS &amp; GET 2 FREE →</a>
+        </div>
+
+        <!-- TIER 3 -->
+        <div class="xmas-tier-card is-pine">
+          <div>
+            <div class="xmas-tier-top">
+              <span class="xmas-tier-badge gold">TIER 03</span>
+              <span class="xmas-tier-highlight gold">3 ITEMS FREE</span>
+            </div>
+            <h3 class="xmas-tier-name">THE ULTIMATE VAULT</h3>
+            <div class="xmas-tier-offer-box dark-tint">
+              <div class="xmas-tier-big gold">BUY 5 GET 3 FREE</div>
+              <p>Pick any <strong>8 items</strong> sitewide &amp; only pay for the highest-priced <strong>5 items</strong>!</p>
+            </div>
+            <ul class="xmas-tier-list light">
+              <li><span class="material-symbols-outlined gold">check_circle</span><span>Choose 8 full-sized heirloom jewels</span></li>
+              <li><span class="material-symbols-outlined gold">check_circle</span><span>3 lowest-priced pieces 100% FREE</span></li>
+              <li><span class="material-symbols-outlined gold">check_circle</span><span>Complimentary velvet keepsake packaging</span></li>
+              <li><span class="material-symbols-outlined gold">check_circle</span><span>Complete your entire family gift list</span></li>
+            </ul>
+          </div>
+          <a href="#jewelry-grid" class="xmas-tier-btn gold">CLAIM MEGA BUNDLE →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: INTERACTIVE CHRISTMAS GIFT FINDER -->
+    <section class="xmas-container xmas-section">
+      <div class="xmas-section-head">
+        <span class="xmas-kicker">INSTANT CURATION</span>
+        <h2 class="xmas-section-title">Find The Perfect Gift in 1 Tap</h2>
+        <p class="xmas-section-desc">
+          Select a recipient below to filter curated holiday jewelry recommendations.
+        </p>
+      </div>
+
+      <div class="xmas-finder-grid">
+        <button type="button" class="xmas-recipient-card active" onclick="filterXmasByRecipient('christmas', this)">
+          <div class="xmas-rec-icon red"><span class="material-symbols-outlined">favorite</span></div>
+          <h4>For Her / Partner</h4>
+          <p>Romantic, sparkling &amp; timeless 18K gold heirlooms.</p>
+          <span class="xmas-rec-link">View Picks →</span>
+        </button>
+
+        <button type="button" class="xmas-recipient-card" onclick="filterXmasByRecipient('necklace', this)">
+          <div class="xmas-rec-icon pine"><span class="material-symbols-outlined">family_restroom</span></div>
+          <h4>For Mom</h4>
+          <p>Sentimental pearls and classic chains she will cherish.</p>
+          <span class="xmas-rec-link pine">View Picks →</span>
+        </button>
+
+        <button type="button" class="xmas-recipient-card" onclick="filterXmasByRecipient('earring', this)">
+          <div class="xmas-rec-icon gold"><span class="material-symbols-outlined">stars</span></div>
+          <h4>For Bestie / Sister</h4>
+          <p>Trendy stackable hoops, bows, and playful charms.</p>
+          <span class="xmas-rec-link gold">View Picks →</span>
+        </button>
+
+        <button type="button" class="xmas-recipient-card" onclick="filterXmasByRecipient('ring', this)">
+          <div class="xmas-rec-icon dark"><span class="material-symbols-outlined">celebration</span></div>
+          <h4>For Myself</h4>
+          <p>A well-deserved holiday treat — bold rings &amp; sets.</p>
+          <span class="xmas-rec-link dark">View Picks →</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- SECTION 3.5: INTERACTIVE HOLIDAY SCRATCH-OFF MYSTERY GIFT BOXES -->
+    <section class="xmas-container xmas-section" id="mystery-gift-section">
+      <div class="xmas-mystery-wrapper">
+        <span class="xmas-mystery-sparkle-tl">✦</span>
+        <span class="xmas-mystery-sparkle-br">❄</span>
+
+        <div class="xmas-section-head" style="margin-bottom: 30px;">
+          <span class="xmas-kicker">INTERACTIVE HOLIDAY DELIGHT</span>
+          <h2 class="xmas-section-title">Scratch to Unwrap Your Mystery Christmas Gift</h2>
+          <p class="xmas-section-desc">
+            Pick one festive gift box below and scratch the gold foil to reveal your secret holiday gift code — only one code can be active at a time!
+          </p>
+        </div>
+
+        <div class="xmas-mystery-grid" id="xmasMysteryGrid">
+          <!-- Gift Box 01: Crimson Surprise (GIFT125 - Dec 25 Christmas Day) -->
+          <div class="xmas-mystery-card" data-box-index="0" data-code="GIFT125">
+            <div class="xmas-gift-icon-ring red">
+              <img
+                src="https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift666.png"
+                alt="Crimson Surprise"
+                class="xmas-gift-custom-icon"
+                loading="lazy"
+              />
+            </div>
+            <span class="xmas-mystery-eyebrow">SECRET GIFT 01</span>
+            <h3 class="xmas-mystery-title">Crimson Surprise</h3>
+            <p class="xmas-mystery-sub">Rub or tap the gold foil below to reveal your gift</p>
+
+            <div class="xmas-scratch-slot">
+              <div class="xmas-scratch-reveal">
+                <button type="button" class="xmas-code-pill" data-voucher-code="GIFT125" title="Click to copy code">
+                  <strong class="xmas-code-text">GIFT125</strong>
+                  <span class="xmas-copy-state-badge">COPY</span>
+                </button>
+              </div>
+              <canvas class="xmas-scratch-canvas" width="260" height="78"></canvas>
+            </div>
+          </div>
+
+          <!-- Gift Box 02: Pine Surprise (GIFT124 - Dec 24 Christmas Eve) -->
+          <div class="xmas-mystery-card" data-box-index="1" data-code="GIFT124">
+            <div class="xmas-gift-icon-ring pine">
+              <img
+                src="https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift999.png"
+                alt="Pine Surprise"
+                class="xmas-gift-custom-icon"
+                loading="lazy"
+              />
+            </div>
+            <span class="xmas-mystery-eyebrow">SECRET GIFT 02</span>
+            <h3 class="xmas-mystery-title">Pine Surprise</h3>
+            <p class="xmas-mystery-sub">Rub or tap the gold foil below to reveal your gift</p>
+
+            <div class="xmas-scratch-slot">
+              <div class="xmas-scratch-reveal">
+                <button type="button" class="xmas-code-pill" data-voucher-code="GIFT124" title="Click to copy code">
+                  <strong class="xmas-code-text">GIFT124</strong>
+                  <span class="xmas-copy-state-badge">COPY</span>
+                </button>
+              </div>
+              <canvas class="xmas-scratch-canvas" width="260" height="78"></canvas>
+            </div>
+          </div>
+
+          <!-- Gift Box 03: Stellar Surprise (GIFT777 - Festive Lucky Star) -->
+          <div class="xmas-mystery-card" data-box-index="2" data-code="GIFT777">
+            <div class="xmas-gift-icon-ring gold">
+              <img
+                src="https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift888.png"
+                alt="Stellar Surprise"
+                class="xmas-gift-custom-icon"
+                loading="lazy"
+              />
+            </div>
+            <span class="xmas-mystery-eyebrow">SECRET GIFT 03</span>
+            <h3 class="xmas-mystery-title">Stellar Surprise</h3>
+            <p class="xmas-mystery-sub">Rub or tap the gold foil below to reveal your gift</p>
+
+            <div class="xmas-scratch-slot">
+              <div class="xmas-scratch-reveal">
+                <button type="button" class="xmas-code-pill" data-voucher-code="GIFT777" title="Click to copy code">
+                  <strong class="xmas-code-text">GIFT777</strong>
+                  <span class="xmas-copy-state-badge">COPY</span>
+                </button>
+              </div>
+              <canvas class="xmas-scratch-canvas" width="260" height="78"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 刮开后自动弹出的英文复制与结账兑换提示条 -->
+        <div class="xmas-scratch-tip-banner" id="xmasScratchTipBanner" style="display: none;">
+          <div class="xmas-tip-left">
+            <span class="material-symbols-outlined">check_circle</span>
+            <div>
+              <strong>Code <span id="xmasRevealedCodeDisplay">GIFT125</span> copied to your clipboard!</strong>
+              <span>Only one code can be copied at a time — click COPY on another box if you'd like to switch.</span>
+            </div>
+          </div>
+          <div class="xmas-tip-actions">
+            <button type="button" class="xmas-copy-again-btn" id="xmasCopyAgainBtn">Copy Code</button>
+            <a href={buildLocaleUrl('/checkout/shipping')} class="xmas-redeem-now-btn">Go to Checkout →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: CHRISTMAS FAVORITES PRODUCT GRID (每次加载8个两行，全部加载完后切换为跳转Shop按钮) -->
+    <section class="xmas-container xmas-section" id="jewelry-grid">
+      <div class="xmas-grid-header">
+        <div>
+          <span class="xmas-kicker">SITEWIDE MIX &amp; MATCH ELIGIBLE</span>
+          <h2 class="xmas-section-title" style="text-align:left; margin-bottom:4px;">Christmas Favorites</h2>
+          <p class="xmas-section-desc" style="text-align:left; margin:0;">
+            Add any pieces here or browse the <a href={buildLocaleUrl('/shop')} style="color:#961820; font-weight:700; text-decoration:underline;">full catalog</a> — all items count toward Buy 2 Get 1 / Buy 3 Get 2 / Buy 5 Get 3!
+          </p>
+        </div>
+      </div>
+
+      <!-- 真实商品网格（默认加载 8 个两行，移动端 2 列） -->
+      <div class="xmas-products-grid" id="xmasProductsGrid">
+        <ProductSkeleton count={8} />
+      </div>
+
+      <!-- 底部操作区：未加载完时显示“加载更多（带转圈动画）”，全部加载完后显示“跳转 Shop 页” -->
+      <div class="xmas-grid-footer-actions" id="xmasGridFooterActions">
+        <button type="button" class="xmas-load-more-btn" id="xmasLoadMoreBtn">
+          <span class="xmas-btn-spinner" id="xmasLoadMoreSpinner" aria-hidden="true"></span>
+          <span id="xmasLoadMoreLabel">LOAD MORE FESTIVE PIECES</span>
+        </button>
+        <a href={buildLocaleUrl('/shop')} class="xmas-btn-outline" id="xmasExploreAllLink" style="display: none;">
+          EXPLORE ALL 500+ SITEWIDE STYLES →
+        </a>
+      </div>
+    </section>
+
+    <!-- SECTION 5: UNBOXING PERFECTION -->
+    <section class="xmas-container xmas-section">
+      <div class="xmas-unboxing-card">
+        <div class="xmas-unboxing-media">
+          <img
+            src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=1000&q=85"
+            alt="Luxury Holiday Velvet Gift Packaging"
+            loading="lazy"
+          />
+          <div class="xmas-unboxing-badge">
+            <span class="material-symbols-outlined">loyalty</span>
+            <span>COMPLIMENTARY WITH EVERY HOLIDAY ORDER</span>
+          </div>
+        </div>
+
+        <div class="xmas-unboxing-body">
+          <span class="xmas-kicker">UNBOXING PERFECTION</span>
+          <h2 class="xmas-section-title" style="text-align:left; margin:6px 0 12px;">A Little Extra Christmas Magic</h2>
+          <p class="xmas-editorial-desc">
+            We believe unwrapping is half the joy of the holidays. Every single order arrives beautifully packaged and ready to place straight beneath the tree.
+          </p>
+
+          <div class="xmas-perks-stack">
+            <div class="xmas-perk-row">
+              <div class="xmas-perk-icon pine"><span class="material-symbols-outlined">package_2</span></div>
+              <div>
+                <h4>Signature Keepsake Jewelry Packaging</h4>
+                <p>Soft velvet pouch &amp; gilded presentation box to safeguard every piece.</p>
+              </div>
+            </div>
+            <div class="xmas-perk-row">
+              <div class="xmas-perk-icon red"><span class="material-symbols-outlined">edit_note</span></div>
+              <div>
+                <h4>Holiday Greeting Card</h4>
+                <p>Add your custom gift message at checkout — sealed with festive care.</p>
+              </div>
+            </div>
+            <div class="xmas-perk-row">
+              <div class="xmas-perk-icon gold"><span class="material-symbols-outlined">cleaning_services</span></div>
+              <div>
+                <h4>Anti-Tarnish Polishing Cloth</h4>
+                <p>Keep your 18K gold-plated pieces gleaming bright season after season.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: CHRISTMAS FAQ -->
+    <section class="xmas-container xmas-section" style="padding-bottom: 80px;">
+      <div class="xmas-faq-layout">
+        <div class="xmas-faq-col">
+          <span class="xmas-kicker">NEED ASSISTANCE?</span>
+          <h2 class="xmas-section-title" style="text-align:left; margin:6px 0 20px;">Your Christmas Questions, Answered</h2>
+
+          <div class="xmas-accordion">
+            <div class="xmas-acc-item">
+              <button type="button" class="xmas-acc-btn" onclick="toggleXmasFaq(1)">
+                <span>How do Buy 2 Get 1, Buy 3 Get 2, and Buy 5 Get 3 work?</span>
+                <span class="material-symbols-outlined" id="xmas-faq-icon-1">expand_more</span>
+              </button>
+              <div class="xmas-acc-body" id="xmas-faq-body-1">
+                Simply add any items across our store to your bag! When you reach 2+ items, the lowest-priced item is free (Buy 2 Get 1). At 5+ items, the 2 lowest-priced items are free (Buy 3 Get 2). At 8+ items, the 3 lowest-priced items are free (Buy 5 Get 3). You can select the Christmas Event option directly at checkout.
+              </div>
+            </div>
+
+            <div class="xmas-acc-item">
+              <button type="button" class="xmas-acc-btn" onclick="toggleXmasFaq(2)">
+                <span>Can I combine Christmas tiered deals with VIP coupons or free shipping?</span>
+                <span class="material-symbols-outlined" id="xmas-faq-icon-2">expand_more</span>
+              </button>
+              <div class="xmas-acc-body" id="xmas-faq-body-2">
+                To offer these deep multi-item giveaways, the Christmas Event is an exclusive promotion that cannot be stacked with VIP welcome vouchers, points, or free shipping thresholds. At checkout, you can freely switch between the Christmas Event and your regular VIP Member benefits to choose whichever saves you more.
+              </div>
+            </div>
+
+            <div class="xmas-acc-item">
+              <button type="button" class="xmas-acc-btn" onclick="toggleXmasFaq(3)">
+                <span>Can I mix different rings, necklaces, and earrings in one bundle?</span>
+                <span class="material-symbols-outlined" id="xmas-faq-icon-3">expand_more</span>
+              </button>
+              <div class="xmas-acc-body" id="xmas-faq-body-3">
+                Yes! Any product across the entire E.B.belle website counts toward your total item quantity — no restrictions on collections or styles.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="xmas-concierge-card">
+          <div>
+            <div class="xmas-online-badge">
+              <span class="xmas-pulse-dot"></span>
+              <span>HOLIDAY CONCIERGE ONLINE</span>
+            </div>
+            <h3>Still Have Questions About Holiday Gifting?</h3>
+            <p>Our team is ready to help with gift recommendations, order tracking, or bulk corporate gifting.</p>
+          </div>
+          <div class="xmas-concierge-actions">
+            <a href={buildLocaleUrl('/contact')} class="xmas-btn-pine">
+              <span class="material-symbols-outlined">chat</span>
+              <span>CONTACT HOLIDAY CONCIERGE</span>
+            </a>
+            <a href={buildLocaleUrl('/order-tracking')} class="xmas-btn-subtle">
+              Track My Holiday Order
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         圣诞主题化 Quick Order Modal (桌面端)
+         ========================================================= -->
+    <div class="xmas-qo-overlay" id="xmasQuickOrderOverlay"></div>
+    <div class="xmas-qo-modal" id="xmasQuickOrderModal">
+      <button class="xmas-qo-close" id="xmasQuickOrderClose" type="button" aria-label="Close">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      <div class="xmas-qo-content" id="xmasQuickOrderContent"></div>
+    </div>
+
+    <!-- =========================================================
+         圣诞主题化 Quick Order Mobile Sheet (移动端)
+         ========================================================= -->
+    <div class="xmas-qo-mobile-overlay" id="xmasQuickOrderMobileOverlay"></div>
+    <div class="xmas-qo-mobile-sheet" id="xmasQuickOrderMobileSheet">
+      <div class="xmas-mobile-sheet-header" id="xmasMobileSheetHeader">
+        <button class="xmas-mobile-sheet-close" id="xmasQuickOrderMobileClose" type="button" aria-label="Close">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <div class="xmas-mobile-sheet-content" id="xmasQuickOrderMobileContent"></div>
+    </div>
+  </div>
+
+  <Footer />
+  <CartDrawer />
+</Layout>
+
+<style is:global>
+  .xmas-page-scope {
+    background-color: #fff8f0;
+    color: #1e1b14;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .xmas-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .xmas-ambient-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .xmas-glow-top {
+    top: -120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 380px;
+    background: radial-gradient(circle, rgba(184, 50, 53, 0.14) 0%, rgba(255, 248, 240, 0) 70%);
+  }
+  .xmas-glow-right {
+    top: 320px;
+    right: -80px;
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle, rgba(66, 102, 86, 0.14) 0%, rgba(255, 248, 240, 0) 70%);
+  }
+
+  /* Hero Section */
+  .xmas-hero-section {
+    padding-top: 44px;
+    padding-bottom: 56px;
+  }
+  .xmas-hero-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+  .xmas-eyebrow-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #efe7db;
+    border: 1px solid rgba(214, 184, 121, 0.6);
+    padding: 6px 16px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .xmas-star-badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #961820;
+    color: #fff;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .xmas-eyebrow-red {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #961820;
+  }
+  .xmas-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #c8b6a6;
+  }
+  .xmas-eyebrow-pine {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #234638;
+  }
+  .xmas-gold-icon {
+    font-size: 16px;
+    color: #9e6d28;
+  }
+  .xmas-hero-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(32px, 5vw, 54px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: #1e1b14;
+    margin: 0 0 14px;
+    letter-spacing: -0.02em;
+  }
+  .xmas-hero-italic {
+    font-style: italic;
+    color: #961820;
+    font-weight: 600;
+  }
+  .xmas-hero-subtitle {
+    max-width: 680px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #59413f;
+    margin: 0 0 22px;
+  }
+
+  /* Countdown Box */
+  .xmas-countdown-box {
+    background: #ffffff;
+    border: 1.5px solid rgba(214, 184, 121, 0.75);
+    border-radius: 16px;
+    padding: 16px 26px;
+    box-shadow: 0 10px 28px -4px rgba(150, 24, 32, 0.09), 0 4px 12px -2px rgba(66, 102, 86, 0.06);
+    display: inline-flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .xmas-cd-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .xmas-cd-deadline-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #961820 0%, #b82932 100%);
+    color: #ffdf9c;
+    border: 1px solid #d6b879;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 3px 11px;
+    border-radius: 999px;
+    box-shadow: 0 3px 8px rgba(150, 24, 32, 0.2);
+  }
+  .xmas-cd-deadline-pill span.material-symbols-outlined {
+    font-size: 14px;
+    color: #ffdf9c;
+  }
+  .xmas-cd-label {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #1e1b14;
+  }
+  .xmas-cd-subnote {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #234638;
+  }
+  .xmas-cd-digits {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .xmas-cd-unit {
+    background: linear-gradient(180deg, #fbf4e8 0%, #f3e6d2 100%);
+    border: 1px solid rgba(214, 184, 121, 0.55);
+    border-radius: 10px;
+    padding: 7px 11px;
+    min-width: 56px;
+    text-align: center;
+  }
+  .xmas-cd-unit strong {
+    display: block;
+    font-family: 'Playfair Display', serif;
+    font-size: 23px;
+    font-weight: 700;
+    color: #961820;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .xmas-cd-unit span {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #59413f;
+    letter-spacing: 0.06em;
+  }
+  .xmas-cd-colon {
+    font-weight: 700;
+    color: #961820;
+    margin-top: -10px;
+  }
+  @media (max-width: 640px) {
+    .xmas-cd-left {
+      align-items: center;
+      text-align: center;
+    }
+    .xmas-countdown-box {
+      padding: 14px 16px;
+      gap: 14px;
+    }
+    .xmas-cd-unit {
+      min-width: 50px;
+      padding: 6px 8px;
+    }
+  }
+
+  /* Hero Card */
+  .xmas-hero-card {
+    background: #ffffff;
+    border: 1px solid rgba(214, 184, 121, 0.6);
+    border-radius: 18px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    box-shadow: 0 16px 36px -6px rgba(184, 50, 53, 0.08), 0 4px 12px -2px rgba(66, 102, 86, 0.05);
+  }
+  .xmas-hero-media {
+    position: relative;
+    min-height: 400px;
+    background: #234638;
+  }
+  .xmas-hero-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .xmas-wax-seal {
+    position: absolute;
+    top: 22px;
+    left: 22px;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: #961820;
+    border: 2px solid #e2c383;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    transform: rotate(-10deg);
+  }
+  .seal-top { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; }
+  .seal-mid { font-size: 18px; font-weight: 700; line-height: 1.1; }
+  .seal-bot { font-size: 8.5px; font-weight: 700; color: #ffdf9c; letter-spacing: 0.12em; }
+
+  .xmas-hero-editorial {
+    padding: 40px 38px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .xmas-verified-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #234638;
+    margin-bottom: 10px;
+  }
+  .xmas-verified-tag span.material-symbols-outlined {
+    font-size: 17px;
+    color: #9e6d28;
+  }
+  .xmas-editorial-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #1e1b14;
+    margin: 0 0 12px;
+  }
+  .xmas-editorial-desc {
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: #59413f;
+    margin: 0 0 22px;
+  }
+  .xmas-trust-pills {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .xmas-trust-item {
+    background: #fbf3e6;
+    border: 1px solid rgba(214, 184, 121, 0.4);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .xmas-trust-item span.material-symbols-outlined {
+    color: #234638;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .xmas-trust-item strong {
+    display: block;
+    font-size: 11.5px;
+    color: #1e1b14;
+  }
+  .xmas-trust-item span {
+    font-size: 10.5px;
+    color: #59413f;
+  }
+  .xmas-hero-cta-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .xmas-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #961820;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 15px 28px;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px -4px rgba(184, 50, 53, 0.35);
+    transition: all 0.2s ease;
+  }
+  .xmas-btn-primary:hover {
+    background: #b83235;
+    transform: translateY(-1px);
+  }
+  .xmas-cta-note {
+    font-size: 12px;
+    color: #59413f;
+  }
+
+  /* Generic Section */
+  .xmas-section {
+    padding-top: 44px;
+    padding-bottom: 44px;
+  }
+  .xmas-section-head {
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto 36px;
+  }
+  .xmas-kicker {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #961820;
+    text-transform: uppercase;
+  }
+  .xmas-section-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(26px, 3.5vw, 38px);
+    font-weight: 600;
+    color: #1e1b14;
+    margin: 6px 0 10px;
+    line-height: 1.2;
+  }
+  .xmas-section-desc {
+    font-size: 14.5px;
+    color: #59413f;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* 3 Tier Cards */
+  .xmas-tiers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    align-items: stretch;
+  }
+  .xmas-tier-card {
+    background: #ffffff;
+    border: 1px solid rgba(214, 184, 121, 0.55);
+    border-radius: 16px;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    box-shadow: 0 8px 24px -4px rgba(66, 102, 86, 0.06);
+    transition: transform 0.25s ease;
+  }
+  .xmas-tier-card:hover {
+    transform: translateY(-4px);
+  }
+  .xmas-tier-card.is-featured {
+    border: 2px solid #961820;
+    box-shadow: 0 16px 36px -6px rgba(184, 50, 53, 0.18);
+  }
+  .xmas-tier-card.is-pine {
+    background: #234638;
+    color: #ffffff;
+    border-color: #d6b879;
+  }
+  .xmas-popular-ribbon {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #961820;
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 5px 14px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(150, 24, 32, 0.3);
+  }
+  .xmas-popular-ribbon span.material-symbols-outlined { font-size: 14px; }
+
+  .xmas-tier-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .xmas-tier-badge {
+    background: #f5ede0;
+    color: #59413f;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+  }
+  .xmas-tier-badge.red { background: rgba(150, 24, 32, 0.1); color: #961820; }
+  .xmas-tier-badge.gold { background: rgba(255, 223, 156, 0.2); color: #ffdf9c; }
+
+  .xmas-tier-highlight { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; }
+  .xmas-tier-highlight.pine { color: #234638; }
+  .xmas-tier-highlight.red { color: #961820; }
+  .xmas-tier-highlight.gold { color: #ffdf9c; }
+
+  .xmas-tier-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 14px;
+  }
+  .xmas-tier-offer-box {
+    background: #fbf3e6;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+  }
+  .xmas-tier-offer-box.red-tint { background: rgba(150, 24, 32, 0.06); }
+  .xmas-tier-offer-box.dark-tint { background: rgba(255, 255, 255, 0.08); }
+
+  .xmas-tier-big {
+    font-family: 'Playfair Display', serif;
+    font-size: 25px;
+    font-weight: 700;
+    color: #1e1b14;
+    margin-bottom: 4px;
+  }
+  .xmas-tier-big.red { color: #961820; }
+  .xmas-tier-big.gold { color: #ffdf9c; }
+
+  .xmas-tier-offer-box p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    opacity: 0.9;
+  }
+  .xmas-tier-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13.5px;
+    color: #59413f;
+  }
+  .xmas-tier-list.light { color: rgba(255, 255, 255, 0.9); }
+  .xmas-tier-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .xmas-tier-list span.material-symbols-outlined {
+    font-size: 18px;
+    color: #234638;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .xmas-tier-list span.material-symbols-outlined.red { color: #961820; }
+  .xmas-tier-list span.material-symbols-outlined.gold { color: #ffdf9c; }
+
+  .xmas-tier-btn {
+    display: block;
+    text-align: center;
+    padding: 13px 16px;
+    border-radius: 10px;
+    background: #f5ede0;
+    color: #1e1b14;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .xmas-tier-btn:hover { background: #e9e2d5; }
+  .xmas-tier-btn.red { background: #961820; color: #ffffff; }
+  .xmas-tier-btn.red:hover { background: #b83235; }
+  .xmas-tier-btn.gold { background: #ffdf9c; color: #251a00; }
+  .xmas-tier-btn.gold:hover { background: #e2c383; }
+
+  /* Gift Finder */
+  .xmas-finder-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .xmas-recipient-card {
+    background: #ffffff;
+    border: 2px solid transparent;
+    border-radius: 14px;
+    padding: 22px 18px;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 6px 20px -4px rgba(66, 102, 86, 0.06);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .xmas-recipient-card:hover,
+  .xmas-recipient-card.active {
+    border-color: #961820;
+    transform: translateY(-2px);
+  }
+  .xmas-rec-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  .xmas-rec-icon.red { background: #ffdad7; color: #961820; }
+  .xmas-rec-icon.pine { background: #c4ebd8; color: #234638; }
+  .xmas-rec-icon.gold { background: #ffdf9c; color: #5e4915; }
+  .xmas-rec-icon.dark { background: #efe7db; color: #1e1b14; }
+
+  .xmas-recipient-card h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: #1e1b14;
+  }
+  .xmas-recipient-card p {
+    font-size: 13px;
+    color: #59413f;
+    line-height: 1.5;
+    margin: 0 0 14px;
+    flex: 1;
+  }
+  .xmas-rec-link {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #961820;
+  }
+  .xmas-rec-link.pine { color: #234638; }
+  .xmas-rec-link.gold { color: #5e4915; }
+  .xmas-rec-link.dark { color: #1e1b14; }
+
+  /* =========================================================
+     MYSTERY SCRATCH-OFF GIFT BOXES (自定义礼盒图标 + 纯净折扣码刮开槽)
+     ========================================================= */
+  .xmas-mystery-wrapper {
+    background: linear-gradient(145deg, #f7efe2 0%, #fffaf3 50%, #f4ebe0 100%);
+    border: 1px solid rgba(214, 184, 121, 0.7);
+    border-radius: 20px;
+    padding: 40px 32px;
+    position: relative;
+    box-shadow: 0 14px 36px -8px rgba(150, 24, 32, 0.08);
+  }
+  .xmas-mystery-sparkle-tl {
+    position: absolute;
+    top: 18px;
+    left: 22px;
+    font-size: 18px;
+    color: #d6b879;
+    pointer-events: none;
+  }
+  .xmas-mystery-sparkle-br {
+    position: absolute;
+    bottom: 18px;
+    right: 22px;
+    font-size: 20px;
+    color: #c5d7d9;
+    pointer-events: none;
+  }
+  .xmas-mystery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .xmas-mystery-card {
+    background: #ffffff;
+    border: 1.5px solid rgba(214, 184, 121, 0.55);
+    border-radius: 16px;
+    padding: 26px 20px 22px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 8px 24px -6px rgba(66, 102, 86, 0.08);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  .xmas-mystery-card:hover {
+    transform: translateY(-3px);
+    border-color: #d6b879;
+  }
+  .xmas-mystery-card.is-revealed {
+    border-color: rgba(214, 184, 121, 0.9);
+  }
+  .xmas-mystery-card.is-active-copied {
+    border-color: #961820;
+    box-shadow: 0 12px 28px -6px rgba(150, 24, 32, 0.16);
+  }
+  .xmas-gift-icon-ring {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    padding: 8px;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .xmas-gift-custom-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .xmas-mystery-card:hover .xmas-gift-icon-ring,
+  .xmas-mystery-card.is-active-copied .xmas-gift-icon-ring {
+    transform: scale(1.08) rotate(-4deg);
+  }
+  .xmas-gift-icon-ring.red { background: #fbeaea; }
+  .xmas-gift-icon-ring.pine { background: #e3f2eb; }
+  .xmas-gift-icon-ring.gold { background: #fbf1da; }
+
+  .xmas-mystery-eyebrow {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #597268;
+    margin-bottom: 4px;
+  }
+  .xmas-mystery-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: #1e1b14;
+    margin: 0 0 6px;
+  }
+  .xmas-mystery-sub {
+    font-size: 12px;
+    color: #6f5855;
+    margin: 0 0 16px;
+    line-height: 1.4;
+  }
+
+  /* 刮刮乐涂层容器 */
+  .xmas-scratch-slot {
+    position: relative;
+    width: 100%;
+    max-width: 260px;
+    height: 78px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px dashed #c89b4b;
+    background: linear-gradient(135deg, #fffdf9 0%, #fdf2e3 100%);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  .xmas-scratch-reveal {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 10px;
+    z-index: 1;
+  }
+  .xmas-code-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1.5px solid #961820;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(150, 24, 32, 0.08);
+    transition: all 0.2s ease;
+  }
+  .xmas-code-pill:hover {
+    background: #fff4f4;
+    transform: scale(1.03);
+  }
+  .xmas-code-pill:active {
+    transform: scale(0.98);
+  }
+  .xmas-code-text {
+    font-family: monospace;
+    font-size: 15px;
+    font-weight: 800;
+    color: #961820;
+    letter-spacing: 0.08em;
+  }
+  .xmas-copy-state-badge {
+    font-size: 9.5px;
+    font-weight: 800;
+    background: #f3e6d3;
+    color: #7c5620;
+    padding: 2.5px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+    transition: all 0.2s ease;
+  }
+  .xmas-mystery-card.is-active-copied .xmas-copy-state-badge {
+    background: #234638;
+    color: #ffffff;
+  }
+  .xmas-scratch-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    cursor: grab;
+    transition: opacity 0.45s ease;
+  }
+  .xmas-scratch-canvas:active {
+    cursor: grabbing;
+  }
+  .xmas-scratch-canvas.faded {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* 刮出后英文复制提示栏 */
+  .xmas-scratch-tip-banner {
+    margin-top: 22px;
+    background: #ffffff;
+    border: 1.5px solid #234638;
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    box-shadow: 0 8px 20px rgba(35, 70, 56, 0.1);
+    animation: xmasSlideUpFade 0.35s ease;
+  }
+  @keyframes xmasSlideUpFade {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .xmas-tip-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .xmas-tip-left span.material-symbols-outlined {
+    font-size: 26px;
+    color: #234638;
+    flex-shrink: 0;
+  }
+  .xmas-tip-left strong {
+    display: block;
+    font-size: 13.5px;
+    color: #1e1b14;
+    margin-bottom: 2px;
+  }
+  .xmas-tip-left span {
+    font-size: 12px;
+    color: #59413f;
+  }
+  .xmas-tip-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .xmas-copy-again-btn {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid #d6b879;
+    background: #fbf3e6;
+    color: #1e1b14;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .xmas-redeem-now-btn {
+    padding: 9px 18px;
+    border-radius: 999px;
+    background: #961820;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  /* Product Grid Header & Cards */
+  .xmas-grid-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 26px;
+  }
+  .xmas-products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    min-height: 360px;
+  }
+  .xmas-loading-box {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: #59413f;
+  }
+
+  .xmas-prod-card {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid rgba(214, 184, 121, 0.55);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 6px 20px -4px rgba(66, 102, 86, 0.06);
+    transition: all 0.25s ease;
+  }
+  .xmas-prod-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px -6px rgba(184, 50, 53, 0.14);
+  }
+  .xmas-prod-img-wrap {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fbf3e6;
+    margin-bottom: 12px;
+    display: block;
+    cursor: pointer;
+  }
+  .xmas-prod-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .xmas-prod-card:hover .xmas-prod-img-wrap img {
+    transform: scale(1.05);
+  }
+  .xmas-tag-left {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #234638;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+  }
+  .xmas-tag-right {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #961820;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .xmas-prod-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e1b14;
+    margin: 0 0 6px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .xmas-prod-title:hover {
+    color: #961820;
+  }
+  .xmas-prod-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .xmas-prod-price {
+    font-family: 'Playfair Display', serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: #961820;
+  }
+  .xmas-prod-old {
+    font-size: 12.5px;
+    color: #8d706e;
+    text-decoration: line-through;
+  }
+  .xmas-prod-bogo-hint {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #234638;
+    background: #e6f3ec;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .xmas-add-btn {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: none;
+    background: #961820;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.2s;
+  }
+  .xmas-add-btn:hover {
+    background: #234638;
+  }
+
+  /* 底部 Load More & Explore All 按钮区域 */
+  .xmas-grid-footer-actions {
+    text-align: center;
+    margin-top: 36px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .xmas-load-more-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 32px;
+    border-radius: 999px;
+    border: 1.5px solid #961820;
+    background: #ffffff;
+    color: #961820;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 6px 18px -4px rgba(150, 24, 32, 0.14);
+    transition: all 0.22s ease;
+  }
+  .xmas-load-more-btn:hover:not(:disabled) {
+    background: #961820;
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+  .xmas-load-more-btn:disabled {
+    opacity: 0.85;
+    cursor: wait;
+  }
+  .xmas-btn-spinner {
+    display: none;
+    width: 15px;
+    height: 15px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: xmasSpin 0.75s linear infinite;
+    flex-shrink: 0;
+  }
+  .xmas-load-more-btn.is-loading .xmas-btn-spinner {
+    display: inline-block;
+  }
+
+  .xmas-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 30px;
+    border-radius: 999px;
+    border: 1.5px solid #234638;
+    background: #ffffff;
+    color: #234638;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .xmas-btn-outline:hover {
+    background: #234638;
+    color: #ffffff;
+  }
+
+  /* 骨架屏支撑 */
+  @keyframes xmasShimmerAnim {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .product-skeleton {
+    background: #ffffff;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(214, 184, 121, 0.45);
+    display: flex;
+    flex-direction: column;
+    min-height: 280px;
+  }
+  .skeleton-image {
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(90deg, #f7efe2 25%, #efe3d0 50%, #f7efe2 75%);
+    background-size: 200% 100%;
+    animation: xmasShimmerAnim 1.5s infinite;
+  }
+  .skeleton-content {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .skeleton-line {
+    height: 12px;
+    background: linear-gradient(90deg, #f7efe2 25%, #efe3d0 50%, #f7efe2 75%);
+    background-size: 200% 100%;
+    animation: xmasShimmerAnim 1.5s infinite;
+    border-radius: 4px;
+  }
+  .skeleton-line.skeleton-title { width: 85%; height: 14px; }
+  .skeleton-line.skeleton-price { width: 45%; height: 16px; }
+  .skeleton-line.skeleton-meta { width: 60%; height: 10px; }
+
+  /* Unboxing Card */
+  .xmas-unboxing-card {
+    background: #ffffff;
+    border: 1px solid rgba(214, 184, 121, 0.55);
+    border-radius: 18px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    box-shadow: 0 12px 32px -6px rgba(66, 102, 86, 0.08);
+  }
+  .xmas-unboxing-media {
+    position: relative;
+    min-height: 360px;
+  }
+  .xmas-unboxing-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .xmas-unboxing-badge {
+    position: absolute;
+    bottom: 18px;
+    left: 18px;
+    background: rgba(255, 255, 255, 0.94);
+    padding: 8px 14px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #1e1b14;
+  }
+  .xmas-unboxing-badge span.material-symbols-outlined { color: #961820; font-size: 18px; }
+
+  .xmas-unboxing-body {
+    padding: 36px 34px;
+  }
+  .xmas-perks-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .xmas-perk-row {
+    background: #f5ede0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .xmas-perk-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .xmas-perk-icon.pine { background: #234638; }
+  .xmas-perk-icon.red { background: #961820; }
+  .xmas-perk-icon.gold { background: #78612b; }
+  .xmas-perk-row h4 { margin: 0 0 3px; font-size: 14.5px; font-weight: 700; color: #1e1b14; }
+  .xmas-perk-row p { margin: 0; font-size: 12.5px; color: #59413f; line-height: 1.45; }
+
+  /* FAQ & Concierge */
+  .xmas-faq-layout {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  .xmas-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .xmas-acc-item {
+    background: #ffffff;
+    border: 1px solid rgba(214, 184, 121, 0.45);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .xmas-acc-btn {
+    width: 100%;
+    padding: 16px 18px;
+    background: transparent;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e1b14;
+    cursor: pointer;
+  }
+  .xmas-acc-body {
+    display: none;
+    padding: 0 18px 16px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #59413f;
+  }
+  .xmas-acc-body.open { display: block; }
+
+  .xmas-concierge-card {
+    background: #ffffff;
+    border: 1px solid rgba(214, 184, 121, 0.55);
+    border-radius: 16px;
+    padding: 28px 24px;
+    box-shadow: 0 12px 28px -4px rgba(66, 102, 86, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .xmas-online-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #234638;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .xmas-pulse-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #2e7d32;
+    box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.18);
+  }
+  .xmas-concierge-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    margin: 0 0 8px;
+  }
+  .xmas-concierge-card p {
+    font-size: 13.5px;
+    color: #59413f;
+    line-height: 1.55;
+    margin: 0;
+  }
+  .xmas-concierge-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .xmas-btn-pine {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #234638;
+    color: #ffffff;
+    text-decoration: none;
+    padding: 13px 16px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+  .xmas-btn-subtle {
+    display: block;
+    text-align: center;
+    padding: 11px 16px;
+    border-radius: 10px;
+    background: #f5ede0;
+    color: #1e1b14;
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  /* =========================================================
+     圣诞定制版 Quick Order 弹窗（桌面端 + 移动端，红金松绿节日动效）
+     ========================================================= */
+  .xmas-qo-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(24, 15, 14, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  .xmas-qo-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .xmas-qo-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -46%) scale(0.92);
+    width: 92%;
+    max-width: 1100px;
+    max-height: 86vh;
+    background: #fffcf7;
+    border: 1.5px solid #d6b879;
+    border-radius: 16px;
+    z-index: 1002;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(150, 24, 32, 0.25), 0 0 0 1px rgba(214, 184, 121, 0.4);
+  }
+  .xmas-qo-modal.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .xmas-qo-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    background: #fff8f0;
+    border: 1px solid #d6b879;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #961820;
+    z-index: 10;
+    transition: all 0.25s ease;
+  }
+  .xmas-qo-close:hover {
+    background: #961820;
+    color: #ffffff;
+    transform: rotate(90deg);
+  }
+
+  .xmas-qo-content {
+    display: grid;
+    grid-template-columns: 45% 55%;
+    height: 85vh;
+    overflow: hidden;
+  }
+  .xmas-qo-images {
+    background: linear-gradient(165deg, #fbf3e6 0%, #f5e9d6 100%);
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    border-right: 1px solid rgba(214, 184, 121, 0.45);
+  }
+  .xmas-qo-main-image {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(214, 184, 121, 0.65);
+    box-shadow: 0 8px 20px rgba(35, 70, 56, 0.08);
+  }
+  .xmas-qo-main-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.35s ease;
+  }
+  .xmas-qo-thumbnails {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .xmas-qo-thumb {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    background: #fff;
+  }
+  .xmas-qo-thumb:hover,
+  .xmas-qo-thumb.active {
+    border-color: #961820;
+    transform: translateY(-2px);
+  }
+  .xmas-qo-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .xmas-qo-details {
+    padding: 30px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  .xmas-qo-holiday-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    background: linear-gradient(90deg, #234638 0%, #961820 100%);
+    color: #ffdf9c;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+  .xmas-qo-title {
+    font-size: 21px;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: #1e1b14;
+    line-height: 1.3;
+    margin: 0;
+  }
+  .xmas-qo-price {
+    font-size: 26px;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: #961820;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .xmas-qo-price-regular {
+    font-size: 16px;
+    color: #8d706e;
+    text-decoration: line-through;
+  }
+  .xmas-qo-stock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #234638;
+  }
+  .xmas-qo-stock.out-of-stock { color: #961820; }
+
+  .xmas-qo-wholesale {
+    background: #fff8f0;
+    border: 1px solid rgba(214, 184, 121, 0.6);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .xmas-qo-wholesale .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .xmas-qo-wholesale .header-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #234638;
+  }
+  .xmas-qo-wholesale .header-badge {
+    font-size: 9.5px;
+    color: #961820;
+    font-weight: 700;
+  }
+  .xmas-qo-wholesale .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .xmas-qo-wholesale .price-tier {
+    background: #fff;
+    border: 1px solid rgba(214, 184, 121, 0.45);
+    border-radius: 6px;
+    padding: 6px 4px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .xmas-qo-wholesale .price-tier.best {
+    background: #ffefef;
+    border-color: #961820;
+  }
+  .xmas-qo-wholesale .tier-qty { font-size: 9.5px; color: #59413f; }
+  .xmas-qo-wholesale .tier-price { font-size: 13.5px; font-weight: 700; color: #1e1b14; }
+  .xmas-qo-wholesale .tier-save { font-size: 8.5px; font-weight: 700; color: #234638; }
+  .xmas-qo-wholesale .tier-badge { font-size: 8.5px; font-weight: 700; color: #961820; }
+  .xmas-qo-wholesale .tier-label { font-size: 8.5px; font-weight: 700; color: #8d706e; }
+
+  .xmas-qo-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #234638;
+    margin-bottom: 8px;
+    letter-spacing: 0.06em;
+  }
+  .xmas-qo-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .xmas-qo-option {
+    padding: 7px 14px;
+    border: 1.5px solid rgba(214, 184, 121, 0.65);
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    color: #1e1b14;
+  }
+  .xmas-qo-option:hover {
+    border-color: #961820;
+  }
+  .xmas-qo-option.selected {
+    border-color: #961820;
+    background: #961820;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(150, 24, 32, 0.22);
+  }
+  .xmas-qo-quantity {
+    display: flex;
+    align-items: center;
+    border: 1px solid #d6b879;
+    background: #fff8f0;
+    height: 38px;
+    width: 124px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .xmas-qo-qty-btn {
+    width: 34px;
+    height: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #234638;
+  }
+  .xmas-qo-qty-input {
+    flex: 1;
+    width: 100%;
+    text-align: center;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e1b14;
+  }
+  .xmas-qo-add-btn {
+    width: 100%;
+    height: 48px;
+    background: linear-gradient(135deg, #961820 0%, #b83235 100%);
+    color: #fff;
+    border: 1px solid #d6b879;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 8px 20px rgba(150, 24, 32, 0.28);
+  }
+  .xmas-qo-add-btn:hover:not(.disabled) {
+    background: linear-gradient(135deg, #234638 0%, #193329 100%);
+    transform: translateY(-1px);
+  }
+  .xmas-qo-add-btn.disabled {
+    background: #ccc;
+    border-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* 移动端 Quick Order Sheet */
+  .xmas-qo-mobile-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(24, 15, 14, 0.6);
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+  .xmas-qo-mobile-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  .xmas-qo-mobile-sheet {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 86vh;
+    background: #fffcf7;
+    border-top: 2px solid #d6b879;
+    border-radius: 20px 20px 0 0;
+    z-index: 1002;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 -8px 30px rgba(150, 24, 32, 0.2);
+  }
+  .xmas-qo-mobile-sheet.active {
+    transform: translateY(0);
+  }
+  .xmas-mobile-sheet-header {
+    position: relative;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(214, 184, 121, 0.45);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fbf3e6;
+    border-radius: 18px 18px 0 0;
+  }
+  .xmas-mobile-sheet-product-image {
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #fff;
+    border: 1px solid #d6b879;
+  }
+  .xmas-mobile-sheet-product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .xmas-mobile-sheet-header-right {
+    flex: 1;
+    min-width: 0;
+    padding-right: 30px;
+  }
+  .xmas-mobile-sheet-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e1b14;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .xmas-mobile-sheet-price {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #961820;
+  }
+  .xmas-mobile-sheet-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    background: #fff;
+    border: 1px solid #d6b879;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #961820;
+  }
+  .xmas-mobile-sheet-content {
+    overflow-y: auto;
+    max-height: calc(86vh - 102px);
+    padding: 14px 16px 88px;
+  }
+  .xmas-mobile-quick-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: #fffcf7;
+    border-top: 1px solid rgba(214, 184, 121, 0.5);
+  }
+  .xmas-mobile-quick-add-btn {
+    width: 100%;
+    height: 46px;
+    background: linear-gradient(135deg, #961820 0%, #b83235 100%);
+    color: #fff;
+    border: 1px solid #d6b879;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .xmas-mobile-quick-add-btn:disabled {
+    background: #ccc;
+    border-color: #ccc;
+    color: #666;
+  }
+
+  .xmas-qo-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 14px;
+    color: #59413f;
+  }
+  .xmas-qo-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #f5ede0;
+    border-top: 3px solid #961820;
+    border-radius: 50%;
+    animation: xmasSpin 0.8s linear infinite;
+  }
+  @keyframes xmasSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Responsive */
+  @media (max-width: 960px) {
+    .xmas-hero-card,
+    .xmas-unboxing-card,
+    .xmas-faq-layout {
+      grid-template-columns: 1fr;
+    }
+    .xmas-tiers-grid,
+    .xmas-mystery-grid {
+      grid-template-columns: 1fr;
+    }
+    .xmas-finder-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .xmas-products-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 768px) {
+    /* 移动端给顶部 Header 留出适当空间 */
+    .xmas-hero-section {
+      padding-top: 68px;
+      padding-bottom: 44px;
+    }
+    .xmas-eyebrow-pill {
+      padding: 8px 14px;
+      margin-bottom: 20px;
+    }
+    .xmas-qo-overlay,
+    .xmas-qo-modal {
+      display: none !important;
+    }
+    .xmas-qo-mobile-overlay,
+    .xmas-qo-mobile-sheet {
+      display: block;
+    }
+  }
+  @media (min-width: 769px) {
+    .xmas-qo-mobile-overlay,
+    .xmas-qo-mobile-sheet {
+      display: none !important;
+    }
+  }
+  @media (max-width: 600px) {
+    .xmas-container { padding: 0 14px; }
+    .xmas-hero-section { padding-top: 64px; }
+    .xmas-hero-editorial { padding: 24px 20px; }
+    .xmas-trust-pills { grid-template-columns: 1fr; }
+    .xmas-finder-grid { grid-template-columns: 1fr; }
+    .xmas-mystery-wrapper { padding: 24px 14px; }
+    .xmas-mystery-card { padding: 20px 14px 18px; }
+    .xmas-scratch-slot { max-width: 100%; height: 82px; }
+    .xmas-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .xmas-prod-card { padding: 10px; }
+    .xmas-prod-title { font-size: 13px; }
+    .xmas-prod-price { font-size: 17px; }
+    .xmas-grid-footer-actions { margin-top: 26px; }
+    .xmas-load-more-btn,
+    .xmas-btn-outline {
+      width: 100%;
+      padding: 13px 20px;
+    }
+    .xmas-scratch-tip-banner { flex-direction: column; align-items: stretch; padding: 14px; }
+    .xmas-tip-actions { justify-content: space-between; }
+    .xmas-copy-again-btn, .xmas-redeem-now-btn { flex: 1; text-align: center; }
+  }
+</style>
+
+<script define:vars={{ serverLocale: currentLocale }}>
+  const SUPPORTED_LOCALES = ['en', 'fr', 'de', 'es'];
+  const PAGE_LOCALE = serverLocale || 'en';
+
+  function getCurrentLocale() {
+    return PAGE_LOCALE;
+  }
+
+  function addLocalePrefix(url) {
+    const loc = getCurrentLocale();
+    if (loc === 'en') return url;
+    let cleanUrl = url;
+    for (const l of SUPPORTED_LOCALES) {
+      if (cleanUrl.startsWith(`/${l}/`)) {
+        cleanUrl = cleanUrl.substring(l.length + 1);
+        break;
+      }
+    }
+    return `/${loc}${cleanUrl}`;
+  }
+
+  // ============================================================
+  // 货币转换工具（与 shop.astro 保持一致）
+  // ============================================================
+  const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', CAD: 'C$' };
+  const CURRENCY_RATES = { USD: 1.0, EUR: 0.92, GBP: 0.79, CAD: 1.36 };
+
+  function getCurrentCurrency() {
+    return localStorage.getItem('ebbelle_currency') || 'USD';
+  }
+  function convertPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const rate = CURRENCY_RATES[currency] || 1.0;
+    return priceUSD * rate;
+  }
+  function formatPrice(priceUSD, targetCurrency) {
+    const currency = targetCurrency || getCurrentCurrency();
+    const converted = convertPrice(priceUSD, currency);
+    const symbol = CURRENCY_SYMBOLS[currency] || '$';
+    const formatted = converted.toFixed(2);
+    return currency === 'EUR' ? `${formatted}${symbol}` : `${symbol}${formatted}`;
+  }
+
+  // ============================================================
+  // 1. 圣诞真实时间倒计时（锁定 2026 年 12 月 31 日 23:59:59 结束，刷新不重置）
+  // ============================================================
+  (function initXmasCountdown() {
+    const dEl = document.getElementById('xmas-cd-days');
+    const hEl = document.getElementById('xmas-cd-hours');
+    const mEl = document.getElementById('xmas-cd-mins');
+    const sEl = document.getElementById('xmas-cd-secs');
+    if (!dEl || !hEl || !mEl || !sEl) return;
+
+    // 锁定 2026-12-31 23:59:59（美东时间 EST -05:00，覆盖北美及全球年末截止）
+    const TARGET_END_TIME = new Date('2026-12-31T23:59:59-05:00').getTime();
+
+    function updateRealCountdown() {
+      const now = Date.now();
+      const diffMs = Math.max(0, TARGET_END_TIME - now);
+
+      const totalSeconds = Math.floor(diffMs / 1000);
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const secs = totalSeconds % 60;
+
+      dEl.textContent = String(days).padStart(2, '0');
+      hEl.textContent = String(hours).padStart(2, '0');
+      mEl.textContent = String(mins).padStart(2, '0');
+      sEl.textContent = String(secs).padStart(2, '0');
+    }
+
+    updateRealCountdown();
+    setInterval(updateRealCountdown, 1000);
+  })();
+
+  // ============================================================
+  // 2. FAQ 折叠
+  // ============================================================
+  window.toggleXmasFaq = function(idx) {
+    const body = document.getElementById(`xmas-faq-body-${idx}`);
+    const icon = document.getElementById(`xmas-faq-icon-${idx}`);
+    if (!body) return;
+    const willOpen = !body.classList.contains('open');
+    body.classList.toggle('open', willOpen);
+    if (icon) icon.style.transform = willOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+  };
+
+  // ============================================================
+  // 3. 礼盒刮刮乐盲盒：排他性 COPY / COPIED 状态（同时只能激活复制一个码）
+  // ============================================================
+  let activeRevealedCode = '';
+
+  async function copyVoucherCodeToClipboard(code) {
+    if (!code) return;
+    try {
+      sessionStorage.setItem('ebbelle_cart_manual_coupon', code);
+    } catch (e) {}
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(code);
+        return true;
+      } catch (e) {}
+    }
+
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = code;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setExclusiveCopiedVoucher(code) {
+    activeRevealedCode = code;
+    copyVoucherCodeToClipboard(code);
+
+    // 排他更新所有礼盒状态：只有当前选中的礼盒显示 COPIED ✓，其余全部显示 COPY
+    document.querySelectorAll('.xmas-mystery-card').forEach((cardEl) => {
+      const cardCode = cardEl.getAttribute('data-code') || '';
+      const badgeEl = cardEl.querySelector('.xmas-copy-state-badge');
+      const isCurrent = cardCode === code;
+
+      cardEl.classList.toggle('is-active-copied', isCurrent);
+      if (badgeEl) {
+        badgeEl.textContent = isCurrent ? 'COPIED ✓' : 'COPY';
+      }
+    });
+
+    const banner = document.getElementById('xmasScratchTipBanner');
+    const codeDisplay = document.getElementById('xmasRevealedCodeDisplay');
+    if (codeDisplay) codeDisplay.textContent = code;
+    if (banner) banner.style.display = 'flex';
+  }
+
+  function initMysteryScratchCards() {
+    const cards = document.querySelectorAll('.xmas-mystery-card');
+    cards.forEach((card) => {
+      const canvas = card.querySelector('.xmas-scratch-canvas');
+      const codePill = card.querySelector('.xmas-code-pill');
+      const code = card.getAttribute('data-code') || 'GIFT125';
+
+      // 点击已刮开礼盒的优惠码胶囊：切换复制该礼盒优惠码，其余重置为 COPY
+      codePill?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setExclusiveCopiedVoucher(code);
+      });
+
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // 绘制香槟金箔刮奖涂层
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#e6c88a');
+      grad.addColorStop(0.5, '#f5e1b5');
+      grad.addColorStop(1, '#cfa455');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // 绘制细微斜向闪光纹理
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.lineWidth = 2;
+      for (let i = -h; i < w; i += 16) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + h, h);
+        ctx.stroke();
+      }
+
+      // 涂层提示文字
+      ctx.fillStyle = '#5e3d0c';
+      ctx.font = 'bold 12px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('✨ SCRATCH HERE TO UNWRAP ✨', w / 2, h / 2);
+
+      let isDrawing = false;
+      let isRevealed = false;
+      let strokeMoves = 0;
+
+      function completeReveal() {
+        if (isRevealed) return;
+        isRevealed = true;
+        canvas.classList.add('faded');
+        card.classList.add('is-revealed');
+        setExclusiveCopiedVoucher(code);
+      }
+
+      function scratchAt(clientX, clientY) {
+        if (isRevealed) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = w / rect.width;
+        const scaleY = h / rect.height;
+        const x = (clientX - rect.left) * scaleX;
+        const y = (clientY - rect.top) * scaleY;
+
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(x, y, 22, 0, Math.PI * 2);
+        ctx.fill();
+
+        strokeMoves++;
+        if (strokeMoves >= 12) {
+          completeReveal();
+        }
+      }
+
+      // 桌面端鼠标事件
+      canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        scratchAt(e.clientX, e.clientY);
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        scratchAt(e.clientX, e.clientY);
+      });
+      window.addEventListener('mouseup', () => {
+        if (isDrawing) {
+          isDrawing = false;
+          if (strokeMoves > 0 && strokeMoves < 12) {
+            completeReveal();
+          }
+        }
+      });
+
+      // 移动端触摸事件
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        isDrawing = true;
+        const t = e.touches[0];
+        if (t) scratchAt(t.clientX, t.clientY);
+      }, { passive: false });
+
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!isDrawing) return;
+        const t = e.touches[0];
+        if (t) scratchAt(t.clientX, t.clientY);
+      }, { passive: false });
+
+      canvas.addEventListener('touchend', () => {
+        if (isDrawing) {
+          isDrawing = false;
+          if (strokeMoves > 0) {
+            completeReveal();
+          }
+        }
+      });
+
+      // 支持单击直接揭晓
+      canvas.addEventListener('click', completeReveal);
+    });
+
+    const copyBtn = document.getElementById('xmasCopyAgainBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        if (!activeRevealedCode) return;
+        setExclusiveCopiedVoucher(activeRevealedCode);
+        const orig = copyBtn.textContent;
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyBtn.textContent = orig; }, 1500);
+      });
+    }
+  }
+
+  // ============================================================
+  // 4. 商品列表分页加载（默认 8 个两行，点击每次追加 8 个，全部加载完后切换为跳转 Shop）
+  // ============================================================
+  const XMAS_PAGE_SIZE = 8;
+  let xmasCurrentCategory = 'christmas';
+  let xmasCurrentPage = 1;
+  let xmasIsLoading = false;
+  let xmasHasMore = true;
+  let xmasLoadedProducts = [];
+  const variationsCache = new Map();
+
+  const escapeHtml = (text) => {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  };
+
+  function buildProductCardHtml(p) {
+    const price = parseFloat(p.price) || 0;
+    const regPrice = parseFloat(p.regular_price) || 0;
+    const hasSale = regPrice > price;
+    const pct = hasSale ? Math.round(((regPrice - price) / regPrice) * 100) : 0;
+    const img = p.images?.[0]?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&q=80';
+    const safeName = escapeHtml(p.name);
+    const productUrl = addLocalePrefix(`/product/${encodeURIComponent(p.slug || '')}`);
+
+    return `
+      <div class="xmas-prod-card">
+        <div>
+          <div class="xmas-prod-img-wrap" data-href="${productUrl}" role="link" tabindex="0">
+            <span class="xmas-tag-left">18K Waterproof</span>
+            ${hasSale ? `<span class="xmas-tag-right">-${pct}%</span>` : ''}
+            <img src="${img}" alt="${safeName}" loading="lazy" />
+          </div>
+          <h3 class="xmas-prod-title" data-href="${productUrl}" role="link" tabindex="0">${safeName}</h3>
+          <div class="xmas-prod-price-row">
+            <span class="xmas-prod-price">${formatPrice(price)}</span>
+            ${hasSale ? `<span class="xmas-prod-old">${formatPrice(regPrice)}</span>` : ''}
+            <span class="xmas-prod-bogo-hint">Mix &amp; Match</span>
+          </div>
+        </div>
+        <button type="button" class="xmas-add-btn" data-product-id="${p.id}">
+          <span class="material-symbols-outlined" style="font-size:16px;">shopping_bag</span>
+          <span>Add</span>
+        </button>
+      </div>
+    `;
+  }
+
+  function updateGridFooterControls() {
+    const loadMoreBtn = document.getElementById('xmasLoadMoreBtn');
+    const loadMoreLabel = document.getElementById('xmasLoadMoreLabel');
+    const exploreAllLink = document.getElementById('xmasExploreAllLink');
+    if (!loadMoreBtn || !exploreAllLink) return;
+
+    loadMoreBtn.classList.toggle('is-loading', xmasIsLoading);
+    loadMoreBtn.disabled = xmasIsLoading;
+    if (loadMoreLabel) {
+      loadMoreLabel.textContent = xmasIsLoading ? 'LOADING MORE...' : 'LOAD MORE FESTIVE PIECES';
+    }
+
+    if (xmasHasMore) {
+      loadMoreBtn.style.display = 'inline-flex';
+      exploreAllLink.style.display = 'none';
+    } else {
+      loadMoreBtn.style.display = 'none';
+      exploreAllLink.style.display = 'inline-flex';
+    }
+  }
+
+  async function loadXmasFavorites(categorySlug = 'christmas', append = false) {
+    const grid = document.getElementById('xmasProductsGrid');
+    if (!grid || xmasIsLoading) return;
+
+    xmasIsLoading = true;
+
+    if (!append) {
+      xmasCurrentCategory = categorySlug || 'christmas';
+      xmasCurrentPage = 1;
+      xmasHasMore = true;
+      xmasLoadedProducts = [];
+
+      grid.innerHTML = Array.from({ length: XMAS_PAGE_SIZE }, () => `
+        <div class="product-skeleton">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-content">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-price"></div>
+            <div class="skeleton-line skeleton-meta"></div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      xmasCurrentPage += 1;
+    }
+
+    updateGridFooterControls();
+
+    try {
+      const requestBody = {
+        page: xmasCurrentPage,
+        per_page: XMAS_PAGE_SIZE
+      };
+      if (xmasCurrentCategory && xmasCurrentCategory !== 'all') {
+        requestBody.category = xmasCurrentCategory;
+      }
+
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      const data = await response.json();
+      let newProducts = Array.isArray(data.products) ? data.products : [];
+      const totalPages = Number(data.totalPages || 0);
+
+      // 判断是否还有下一页
+      if (newProducts.length < XMAS_PAGE_SIZE || (totalPages > 0 && xmasCurrentPage >= totalPages)) {
+        xmasHasMore = false;
+      }
+
+      if (newProducts.length === 0) {
+        if (!append) {
+          grid.innerHTML = `<div class="xmas-loading-box"><p>No pieces found right now. Explore our full catalog below!</p></div>`;
+        }
+        xmasHasMore = false;
+        return;
+      }
+
+      // 多语言翻译（与 shop.astro 一致）
+      const loc = getCurrentLocale();
+      if (loc !== 'en') {
+        try {
+          const trRes = await fetch('/api/translate-products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ products: newProducts, targetLang: loc })
+          });
+          if (trRes.ok) {
+            newProducts = await trRes.json();
+          }
+        } catch (e) {}
+      }
+
+      // 批量获取最新库存（与 shop.astro 一致）
+      try {
+        const productIds = newProducts.map(p => p.id).join(',');
+        if (productIds) {
+          const stockRes = await fetch(`https://api.ebbellejewelry.com/wp-json/custom/v1/stock?ids=${productIds}&_t=${Date.now()}`);
+          if (stockRes.ok) {
+            const stockData = await stockRes.json();
+            if (stockData.success && stockData.stocks) {
+              newProducts.forEach(product => {
+                const stock = stockData.stocks[product.id];
+                if (stock) {
+                  product.stock_status = stock.stock_status;
+                  product.stock_quantity = stock.stock_quantity;
+                  product.is_in_stock = stock.is_in_stock;
+                  product.managing_stock = stock.managing_stock;
+                }
+              });
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 去重合并，防止分页边界偶发重复
+      const existingIds = new Set(xmasLoadedProducts.map(item => Number(item.id)));
+      const uniqueBatch = newProducts.filter(item => !existingIds.has(Number(item.id)));
+      xmasLoadedProducts = append ? [...xmasLoadedProducts, ...uniqueBatch] : uniqueBatch;
+
+      const batchHtml = uniqueBatch.map(buildProductCardHtml).join('');
+      if (append) {
+        grid.insertAdjacentHTML('beforeend', batchHtml);
+      } else {
+        grid.innerHTML = batchHtml;
+      }
+    } catch (err) {
+      console.error('Failed to load Christmas favorites:', err);
+      if (append) {
+        xmasCurrentPage = Math.max(1, xmasCurrentPage - 1);
+      } else {
+        grid.innerHTML = `<div class="xmas-loading-box"><p>Unable to load products right now. Please refresh the page.</p></div>`;
+        xmasHasMore = false;
+      }
+    } finally {
+      xmasIsLoading = false;
+      updateGridFooterControls();
+    }
+  }
+
+  function rerenderAllLoadedProducts() {
+    const grid = document.getElementById('xmasProductsGrid');
+    if (!grid || xmasLoadedProducts.length === 0) return;
+    grid.innerHTML = xmasLoadedProducts.map(buildProductCardHtml).join('');
+  }
+
+  // 点击加载更多按钮
+  document.getElementById('xmasLoadMoreBtn')?.addEventListener('click', () => {
+    if (xmasHasMore && !xmasIsLoading) {
+      loadXmasFavorites(xmasCurrentCategory, true);
+    }
+  });
+
+  // 委托点击 Add 按钮打开圣诞 Quick Order 弹窗，或点击图片/标题跳转详情页
+  document.getElementById('xmasProductsGrid')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.xmas-add-btn');
+    if (btn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const pid = Number(btn.getAttribute('data-product-id'));
+      const product = xmasLoadedProducts.find(item => Number(item.id) === pid);
+      if (product) {
+        openXmasQuickOrder(product);
+      }
+      return;
+    }
+
+    const linkTrigger = e.target.closest('[data-href]');
+    if (linkTrigger) {
+      const href = linkTrigger.getAttribute('data-href');
+      if (href) {
+        window.location.href = href;
+      }
+    }
+  });
+
+  // 保留 "Find The Perfect Gift in 1 Tap" 礼物推荐筛选联动
+  window.filterXmasByRecipient = function(slug, btnEl) {
+    document.querySelectorAll('.xmas-recipient-card').forEach(el => el.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    loadXmasFavorites(slug, false);
+    document.getElementById('jewelry-grid')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // ============================================================
+  // 5. 圣诞主题化 Quick Order 弹窗逻辑（完整支持变体选择、批发价与桌面/移动端双端适配）
+  // ============================================================
+  const xmasQoOverlay = document.getElementById('xmasQuickOrderOverlay');
+  const xmasQoModal = document.getElementById('xmasQuickOrderModal');
+  const xmasQoClose = document.getElementById('xmasQuickOrderClose');
+  const xmasQoContent = document.getElementById('xmasQuickOrderContent');
+
+  const xmasQoMobileOverlay = document.getElementById('xmasQuickOrderMobileOverlay');
+  const xmasQoMobileSheet = document.getElementById('xmasQuickOrderMobileSheet');
+  const xmasQoMobileClose = document.getElementById('xmasQuickOrderMobileClose');
+  const xmasQoMobileContent = document.getElementById('xmasQuickOrderMobileContent');
+  const xmasMobileSheetHeader = document.getElementById('xmasMobileSheetHeader');
+
+  function isMobileViewport() {
+    return window.innerWidth <= 768;
+  }
+
+  async function openXmasQuickOrder(product) {
+    const mobile = isMobileViewport();
+
+    if (mobile) {
+      xmasQoMobileOverlay?.classList.add('active');
+      xmasQoMobileSheet?.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      renderXmasMobileLoading(product);
+    } else {
+      xmasQoOverlay?.classList.add('active');
+      xmasQoModal?.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      renderXmasDesktopLoading(product);
+    }
+
+    if (product.type === 'variable' && Array.isArray(product.variations) && product.variations.length > 0) {
+      if (variationsCache.has(product.id)) {
+        product.variationsData = variationsCache.get(product.id);
+      } else {
+        try {
+          const res = await fetch(`/api/product-variations/${product.id}`);
+          if (res.ok) {
+            const vData = await res.json();
+            product.variationsData = vData;
+            variationsCache.set(product.id, vData);
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (mobile) {
+      renderXmasMobileContent(product);
+    } else {
+      renderXmasDesktopContent(product);
+    }
+  }
+
+  function closeXmasQuickOrder() {
+    xmasQoOverlay?.classList.remove('active');
+    xmasQoModal?.classList.remove('active');
+    xmasQoMobileOverlay?.classList.remove('active');
+    xmasQoMobileSheet?.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  function renderXmasDesktopLoading(product) {
+    const img = product.images?.[0]?.src || '';
+    const name = escapeHtml(product.name);
+    if (!xmasQoContent) return;
+    xmasQoContent.innerHTML = `
+      <div class="xmas-qo-images">
+        <div class="xmas-qo-main-image"><img src="${img}" alt="${name}"></div>
+      </div>
+      <div class="xmas-qo-details">
+        <span class="xmas-qo-holiday-tag">🎄 HOLIDAY MIX &amp; MATCH ELIGIBLE</span>
+        <h2 class="xmas-qo-title">${name}</h2>
+        <div class="xmas-qo-loading">
+          <div class="xmas-qo-spinner"></div>
+          <p>Loading festive options...</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderXmasMobileLoading(product) {
+    const img = product.images?.[0]?.src || '';
+    const name = escapeHtml(product.name);
+    const price = parseFloat(product.price) || 0;
+    if (xmasMobileSheetHeader) {
+      xmasMobileSheetHeader.innerHTML = `
+        <button class="xmas-mobile-sheet-close" id="xmasQuickOrderMobileClose" type="button"><i class="fa-solid fa-times"></i></button>
+        <div class="xmas-mobile-sheet-product-image"><img src="${img}" alt="${name}"></div>
+        <div class="xmas-mobile-sheet-header-right">
+          <div class="xmas-mobile-sheet-title">${name}</div>
+          <div class="xmas-mobile-sheet-price">${formatPrice(price)}</div>
+        </div>
+      `;
+      document.getElementById('xmasQuickOrderMobileClose')?.addEventListener('click', closeXmasQuickOrder);
+    }
+    if (xmasQoMobileContent) {
+      xmasQoMobileContent.innerHTML = `
+        <div class="xmas-qo-loading">
+          <div class="xmas-qo-spinner"></div>
+          <p>Loading festive options...</p>
+        </div>
+      `;
+    }
+  }
+
+  function renderXmasDesktopContent(product) {
+    const images = product.images || [];
+    const mainImage = images[0]?.src || '';
+    const price = parseFloat(product.price) || 0;
+    const regularPrice = parseFloat(product.regular_price) || 0;
+    const name = escapeHtml(product.name);
+    const attributes = product.attributes || [];
+    const variationsData = product.variationsData || [];
+    const type = product.type || 'simple';
+
+    window.xmasCurrentProduct = product;
+    window.xmasCurrentVariations = variationsData;
+    window.xmasCurrentType = type;
+
+    let html = `<div class="xmas-qo-images">`;
+    html += `<div class="xmas-qo-main-image"><img src="${mainImage}" alt="${name}" id="xmasQoMainImg"></div>`;
+    if (images.length > 1) {
+      html += `<div class="xmas-qo-thumbnails">`;
+      images.slice(0, 5).forEach((img, idx) => {
+        html += `<div class="xmas-qo-thumb ${idx === 0 ? 'active' : ''}" onclick="changeXmasQoImage('${img.src}', this)"><img src="${img.src}" alt="${name}"></div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+
+    html += `<div class="xmas-qo-details">`;
+    html += `<span class="xmas-qo-holiday-tag">🎄 HOLIDAY MIX &amp; MATCH ELIGIBLE</span>`;
+    html += `<h2 class="xmas-qo-title">${name}</h2>`;
+
+    html += `<div id="xmasQoPriceContainer">`;
+    if (regularPrice > price) {
+      html += `<div class="xmas-qo-price"><span>${formatPrice(price)}</span><span class="xmas-qo-price-regular">${formatPrice(regularPrice)}</span></div>`;
+    } else {
+      html += `<div class="xmas-qo-price"><span>${formatPrice(price)}</span></div>`;
+    }
+    html += `</div>`;
+
+    html += `<div id="xmasQoStockContainer">`;
+    const isSimpleOut = type === 'simple' && (
+      product.stock_status === 'outofstock' ||
+      (product.managing_stock && Number(product.stock_quantity ?? 0) <= 0)
+    );
+    if (type === 'variable') {
+      html += `<div class="xmas-qo-stock">Please select options below</div>`;
+    } else if (isSimpleOut) {
+      html += `<div class="xmas-qo-stock out-of-stock"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</div>`;
+    } else {
+      html += `<div class="xmas-qo-stock"><i class="fa-solid fa-circle-check"></i> In Stock ${product.stock_quantity ? '(' + product.stock_quantity + ' available)' : ''}</div>`;
+    }
+    html += `</div>`;
+
+    // 批发阶梯价格表
+    html += `
+      <div class="xmas-qo-wholesale">
+        <div class="table-header">
+          <div class="header-left"><i class="fa-solid fa-tag"></i><span>Wholesale &amp; Volume Pricing</span></div>
+          <span class="header-badge">Tiered Discounts</span>
+        </div>
+        <div class="pricing-grid">
+          <div class="price-tier"><span class="tier-qty">1–9 pcs</span><span class="tier-price">${formatPrice(price)}</span><span class="tier-label">Regular</span></div>
+          <div class="price-tier"><span class="tier-qty">10–49 pcs</span><span class="tier-price">${formatPrice(price * 0.97)}</span><span class="tier-save">Save 3%</span></div>
+          <div class="price-tier"><span class="tier-qty">50–99 pcs</span><span class="tier-price">${formatPrice(price * 0.94)}</span><span class="tier-save">Save 6%</span></div>
+          <div class="price-tier best"><span class="tier-qty">100+ pcs</span><span class="tier-price">${formatPrice(price * 0.90)}</span><span class="tier-badge">Save 10%</span></div>
+        </div>
+      </div>
+    `;
+
+    // 变体属性按钮组
+    if (type === 'variable' && attributes.length > 0) {
+      attributes.forEach(attr => {
+        if (attr.variation && Array.isArray(attr.options) && attr.options.length > 0) {
+          html += `<div>`;
+          html += `<div class="xmas-qo-section-title">${escapeHtml(attr.name)}</div>`;
+          html += `<div class="xmas-qo-options" data-attribute="${escapeHtml(attr.name)}">`;
+          attr.options.forEach((opt, i) => {
+            html += `<button type="button" class="xmas-qo-option ${i === 0 ? 'selected' : ''}" data-value="${escapeHtml(opt)}" onclick="selectXmasQoOption(this)">${escapeHtml(opt)}</button>`;
+          });
+          html += `</div></div>`;
+        }
+      });
+    }
+
+    // 数量选择
+    html += `
+      <div>
+        <div class="xmas-qo-section-title">Quantity</div>
+        <div class="xmas-qo-quantity">
+          <button type="button" class="xmas-qo-qty-btn" onclick="changeXmasQoQty(-1)"><i class="fa-solid fa-minus"></i></button>
+          <input type="number" class="xmas-qo-qty-input" id="xmasQoQty" value="1" min="1">
+          <button type="button" class="xmas-qo-qty-btn" onclick="changeXmasQoQty(1)"><i class="fa-solid fa-plus"></i></button>
+        </div>
+      </div>
+    `;
+
+    html += `
+      <button type="button" class="xmas-qo-add-btn ${isSimpleOut ? 'disabled' : ''}" id="xmasQoAddBtn" onclick="confirmAddXmasQoToCart('desktop')" ${isSimpleOut ? 'disabled' : ''}>
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span>${isSimpleOut ? 'Out of Stock' : 'Add to Holiday Bag'}</span>
+      </button>
+    `;
+    html += `</div>`;
+
+    if (xmasQoContent) xmasQoContent.innerHTML = html;
+    if (type === 'variable') {
+      setTimeout(updateXmasDesktopVariation, 60);
+    }
+  }
+
+  function renderXmasMobileContent(product) {
+    const images = product.images || [];
+    const mainImage = images[0]?.src || '';
+    const price = parseFloat(product.price) || 0;
+    const name = escapeHtml(product.name);
+    const attributes = product.attributes || [];
+    const variationsData = product.variationsData || [];
+    const type = product.type || 'simple';
+
+    window.xmasCurrentProduct = product;
+    window.xmasCurrentVariations = variationsData;
+    window.xmasCurrentType = type;
+
+    if (xmasMobileSheetHeader) {
+      xmasMobileSheetHeader.innerHTML = `
+        <button class="xmas-mobile-sheet-close" id="xmasQuickOrderMobileClose" type="button"><i class="fa-solid fa-times"></i></button>
+        <div class="xmas-mobile-sheet-product-image"><img src="${mainImage}" alt="${name}" id="xmasMobileMainImg"></div>
+        <div class="xmas-mobile-sheet-header-right">
+          <div style="font-size:10px; font-weight:700; color:#234638; margin-bottom:2px;">🎄 MIX &amp; MATCH ELIGIBLE</div>
+          <div class="xmas-mobile-sheet-title">${name}</div>
+          <div class="xmas-mobile-sheet-price" id="xmasMobileSheetPrice">${formatPrice(price)}</div>
+        </div>
+      `;
+      document.getElementById('xmasQuickOrderMobileClose')?.addEventListener('click', closeXmasQuickOrder);
+    }
+
+    const isSimpleOut = type === 'simple' && (
+      product.stock_status === 'outofstock' ||
+      (product.managing_stock && Number(product.stock_quantity ?? 0) <= 0)
+    );
+
+    let html = `
+      <div class="xmas-qo-wholesale" style="margin-bottom:14px;">
+        <div class="table-header">
+          <div class="header-left"><i class="fa-solid fa-tag"></i><span>Wholesale Pricing</span></div>
+          <span class="header-badge">Tiered Discounts</span>
+        </div>
+        <div class="pricing-grid">
+          <div class="price-tier"><span class="tier-qty">1–9</span><span class="tier-price">${formatPrice(price)}</span><span class="tier-label">Reg</span></div>
+          <div class="price-tier"><span class="tier-qty">10–49</span><span class="tier-price">${formatPrice(price * 0.97)}</span><span class="tier-save">-3%</span></div>
+          <div class="price-tier"><span class="tier-qty">50–99</span><span class="tier-price">${formatPrice(price * 0.94)}</span><span class="tier-save">-6%</span></div>
+          <div class="price-tier best"><span class="tier-qty">100+</span><span class="tier-price">${formatPrice(price * 0.90)}</span><span class="tier-badge">-10%</span></div>
+        </div>
+      </div>
+    `;
+
+    if (type === 'variable' && attributes.length > 0) {
+      attributes.forEach(attr => {
+        if (attr.variation && Array.isArray(attr.options) && attr.options.length > 0) {
+          html += `<div style="margin-bottom:14px;">`;
+          html += `<div class="xmas-qo-section-title">${escapeHtml(attr.name)}</div>`;
+          html += `<div class="xmas-qo-options xmas-mobile-attr-options" data-attribute="${escapeHtml(attr.name)}">`;
+          attr.options.forEach((opt, i) => {
+            html += `<button type="button" class="xmas-qo-option ${i === 0 ? 'selected' : ''}" data-value="${escapeHtml(opt)}" onclick="selectXmasMobileOption(this)">${escapeHtml(opt)}</button>`;
+          });
+          html += `</div></div>`;
+        }
+      });
+    }
+
+    html += `
+      <div style="margin-bottom:16px;">
+        <div class="xmas-qo-section-title">Quantity</div>
+        <div class="xmas-qo-quantity">
+          <button type="button" class="xmas-qo-qty-btn" onclick="changeXmasMobileQty(-1)"><i class="fa-solid fa-minus"></i></button>
+          <input type="number" class="xmas-qo-qty-input" id="xmasMobileQtyInput" value="1" min="1" readonly>
+          <button type="button" class="xmas-qo-qty-btn" onclick="changeXmasMobileQty(1)"><i class="fa-solid fa-plus"></i></button>
+        </div>
+        <div id="xmasMobileStockStatus" style="margin-top:8px;">
+          ${isSimpleOut ? '<div class="xmas-qo-stock out-of-stock"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</div>' : ''}
+        </div>
+      </div>
+      <div class="xmas-mobile-quick-footer">
+        <button type="button" class="xmas-mobile-quick-add-btn" id="xmasMobileAddBtn" onclick="confirmAddXmasQoToCart('mobile')" ${isSimpleOut ? 'disabled' : ''}>
+          <i class="fa-solid fa-cart-shopping"></i>
+          <span>${isSimpleOut ? 'Out of Stock' : 'Add to Holiday Bag'}</span>
+        </button>
+      </div>
+    `;
+
+    if (xmasQoMobileContent) xmasQoMobileContent.innerHTML = html;
+    if (type === 'variable') {
+      setTimeout(updateXmasMobileVariation, 60);
+    }
+  }
+
+  window.changeXmasQoImage = function(src, el) {
+    const mainImg = document.getElementById('xmasQoMainImg');
+    if (mainImg) mainImg.src = src;
+    document.querySelectorAll('.xmas-qo-thumb').forEach(t => t.classList.remove('active'));
+    el?.classList.add('active');
+  };
+
+  window.selectXmasQoOption = function(el) {
+    const group = el.closest('.xmas-qo-options');
+    group?.querySelectorAll('.xmas-qo-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    updateXmasDesktopVariation();
+  };
+
+  window.selectXmasMobileOption = function(el) {
+    const group = el.closest('.xmas-qo-options');
+    group?.querySelectorAll('.xmas-qo-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    updateXmasMobileVariation();
+  };
+
+  window.changeXmasQoQty = function(delta) {
+    const inp = document.getElementById('xmasQoQty');
+    if (!inp) return;
+    inp.value = String(Math.max(1, (parseInt(inp.value, 10) || 1) + delta));
+  };
+
+  window.changeXmasMobileQty = function(delta) {
+    const inp = document.getElementById('xmasMobileQtyInput');
+    if (!inp) return;
+    inp.value = String(Math.max(1, (parseInt(inp.value, 10) || 1) + delta));
+  };
+
+  function updateXmasDesktopVariation() {
+    const variations = window.xmasCurrentVariations || [];
+    if (!variations.length) return;
+
+    const selected = {};
+    document.querySelectorAll('#xmasQuickOrderContent .xmas-qo-options').forEach(group => {
+      const attrName = group.getAttribute('data-attribute');
+      const activeBtn = group.querySelector('.xmas-qo-option.selected');
+      if (attrName && activeBtn) selected[attrName] = activeBtn.getAttribute('data-value');
+    });
+
+    const match = variations.find(v => v.attributes.every(a => selected[a.name] === a.option));
+    const stockBox = document.getElementById('xmasQoStockContainer');
+    const priceBox = document.getElementById('xmasQoPriceContainer');
+    const addBtn = document.getElementById('xmasQoAddBtn');
+    const mainImg = document.getElementById('xmasQoMainImg');
+
+    if (match) {
+      const p = parseFloat(match.price) || 0;
+      const rp = parseFloat(match.regular_price) || 0;
+      if (priceBox) {
+        priceBox.innerHTML = rp > p
+          ? `<div class="xmas-qo-price"><span>${formatPrice(p)}</span><span class="xmas-qo-price-regular">${formatPrice(rp)}</span></div>`
+          : `<div class="xmas-qo-price"><span>${formatPrice(p)}</span></div>`;
+      }
+      if (match.image?.src && mainImg) {
+        mainImg.src = match.image.src;
+      }
+      const isVarOut = match.stock_status === 'outofstock' ||
+        (match.managing_stock && Number(match.stock_quantity ?? 0) <= 0);
+      if (isVarOut) {
+        if (stockBox) stockBox.innerHTML = `<div class="xmas-qo-stock out-of-stock"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</div>`;
+        if (addBtn) { addBtn.classList.add('disabled'); addBtn.disabled = true; }
+      } else {
+        if (stockBox) stockBox.innerHTML = `<div class="xmas-qo-stock"><i class="fa-solid fa-circle-check"></i> In Stock ${match.stock_quantity ? '(' + match.stock_quantity + ' available)' : ''}</div>`;
+        if (addBtn) { addBtn.classList.remove('disabled'); addBtn.disabled = false; }
+      }
+    }
+  }
+
+  function updateXmasMobileVariation() {
+    const variations = window.xmasCurrentVariations || [];
+    if (!variations.length) return;
+
+    const selected = {};
+    document.querySelectorAll('#xmasQuickOrderMobileContent .xmas-mobile-attr-options').forEach(group => {
+      const attrName = group.getAttribute('data-attribute');
+      const activeBtn = group.querySelector('.xmas-qo-option.selected');
+      if (attrName && activeBtn) selected[attrName] = activeBtn.getAttribute('data-value');
+    });
+
+    const match = variations.find(v => v.attributes.every(a => selected[a.name] === a.option));
+    const stockBox = document.getElementById('xmasMobileStockStatus');
+    const priceEl = document.getElementById('xmasMobileSheetPrice');
+    const imgEl = document.getElementById('xmasMobileMainImg');
+    const addBtn = document.getElementById('xmasMobileAddBtn');
+
+    if (match) {
+      const p = parseFloat(match.price) || 0;
+      if (priceEl) priceEl.textContent = formatPrice(p);
+      if (match.image?.src && imgEl) imgEl.src = match.image.src;
+      const isVarOut = match.stock_status === 'outofstock' ||
+        (match.managing_stock && Number(match.stock_quantity ?? 0) <= 0);
+      if (isVarOut) {
+        if (stockBox) stockBox.innerHTML = `<div class="xmas-qo-stock out-of-stock"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</div>`;
+        if (addBtn) addBtn.disabled = true;
+      } else {
+        if (stockBox) stockBox.innerHTML = `<div class="xmas-qo-stock"><i class="fa-solid fa-circle-check"></i> In Stock ${match.stock_quantity ? '(' + match.stock_quantity + ' available)' : ''}</div>`;
+        if (addBtn) addBtn.disabled = false;
+      }
+    }
+  }
+
+  window.confirmAddXmasQoToCart = function(device) {
+    const product = window.xmasCurrentProduct;
+    if (!product) return;
+
+    const variations = window.xmasCurrentVariations || [];
+    const type = window.xmasCurrentType || 'simple';
+    const qtyInput = document.getElementById(device === 'mobile' ? 'xmasMobileQtyInput' : 'xmasQoQty');
+    const qty = Math.max(1, parseInt(qtyInput?.value || '1', 10));
+
+    const containerSelector = device === 'mobile' ? '#xmasQuickOrderMobileContent .xmas-mobile-attr-options' : '#xmasQuickOrderContent .xmas-qo-options';
+    const selectedAttrs = {};
+    document.querySelectorAll(containerSelector).forEach(group => {
+      const attrName = group.getAttribute('data-attribute');
+      const activeBtn = group.querySelector('.xmas-qo-option.selected');
+      if (attrName && activeBtn) selectedAttrs[attrName] = activeBtn.getAttribute('data-value');
+    });
+
+    let basePrice = parseFloat(product.price) || 0;
+    let weight = parseFloat(product.weight) || 0;
+    let image = product.images?.[0]?.src || '';
+    let variationId = null;
+    let cartItemId = `${product.id}_simple`;
+    let itemName = product.name;
+
+    if (type === 'variable' && variations.length > 0) {
+      const match = variations.find(v => v.attributes.every(a => selectedAttrs[a.name] === a.option));
+      if (!match) {
+        alert('Please select all available options');
+        return;
+      }
+      basePrice = parseFloat(match.price) || basePrice;
+      weight = parseFloat(match.weight) || weight;
+      image = match.image?.src || image;
+      variationId = match.id;
+      const variantLabel = match.attributes.map(a => a.option).join(', ');
+      const varKey = Object.entries(selectedAttrs)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k}:${String(v).trim().replace(/\s+/g, '_')}`)
+        .join('|');
+      cartItemId = `${product.id}_${varKey}`;
+      itemName = `${product.name} - ${variantLabel}`;
+    }
+
+    let finalPrice = basePrice;
+    if (qty >= 100) finalPrice = basePrice * 0.90;
+    else if (qty >= 50) finalPrice = basePrice * 0.94;
+    else if (qty >= 10) finalPrice = basePrice * 0.97;
+    finalPrice = parseFloat(finalPrice.toFixed(2));
+
+    let cart = [];
+    try {
+      cart = JSON.parse(localStorage.getItem('ebbelle_cart') || '[]');
+    } catch (e) {}
+
+    const existIdx = cart.findIndex(item => item.cartItemId === cartItemId);
+    if (existIdx > -1) {
+      cart[existIdx].quantity += qty;
+      const newQty = cart[existIdx].quantity;
+      let recalc = basePrice;
+      if (newQty >= 100) recalc = basePrice * 0.90;
+      else if (newQty >= 50) recalc = basePrice * 0.94;
+      else if (newQty >= 10) recalc = basePrice * 0.97;
+      cart[existIdx].price = parseFloat(recalc.toFixed(2));
+      cart[existIdx].basePrice = basePrice;
+    } else {
+      cart.push({
+        cartItemId,
+        id: product.id,
+        name: itemName,
+        price: finalPrice,
+        basePrice,
+        quantity: qty,
+        weight,
+        image,
+        selectedVariants: selectedAttrs,
+        variationId
+      });
+    }
+
+    localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
+    window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+
+    closeXmasQuickOrder();
+    setTimeout(() => {
+      if (typeof window.toggleCart === 'function') {
+        window.toggleCart(true);
+      } else {
+        document.getElementById('cartDrawer')?.classList.add('active');
+        document.getElementById('cartOverlay')?.classList.add('active');
+      }
+    }, 260);
+  };
+
+  xmasQoClose?.addEventListener('click', closeXmasQuickOrder);
+  xmasQoOverlay?.addEventListener('click', closeXmasQuickOrder);
+  xmasQoMobileClose?.addEventListener('click', closeXmasQuickOrder);
+  xmasQoMobileOverlay?.addEventListener('click', closeXmasQuickOrder);
+
+  // ============================================================
+  // 页面初始化：默认加载 Holiday Gift Sets 下的 Christmas 分类（首屏 8 个两行）
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', () => {
+    initMysteryScratchCards();
+    loadXmasFavorites('christmas', false);
+  });
+
+  window.addEventListener('currencyChanged', () => {
+    rerenderAllLoadedProducts();
+  });
+</script>

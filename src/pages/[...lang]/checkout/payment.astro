@@ -29,7 +29,7 @@ const CURRENT_CURRENCY = 'USD';
         </svg>
         <span>E.B.Belle</span>
       </a>
-      <a href="/checkout/shipping" class="back-btn">
+      <a href="/checkout/shipping" class="back-btn" id="checkoutBackBtn">
         <i class="fa-solid fa-arrow-left"></i>
         Back to Shipping
       </a>
@@ -72,8 +72,12 @@ const CURRENT_CURRENCY = 'USD';
                   <span class="subtotal-val">$0.00</span>
                 </div>
                 <div class="total-line discount-row" style="display: none; color: #2e7d32;">
-                  <span>Discount & Rewards</span>
+                  <span class="discount-label">Discount &amp; Rewards</span>
                   <span class="discount-val">-$0.00</span>
+                </div>
+                <div class="total-line fee-row" style="display: none; color: #666;">
+                  <span class="fee-label">Order Adjustment</span>
+                  <span class="fee-val">$0.00</span>
                 </div>
                 <div class="total-line">
                   <span>Shipping</span>
@@ -94,7 +98,7 @@ const CURRENT_CURRENCY = 'USD';
         <section class="info-review">
           <div class="review-header">
             <h3>Shipping Information</h3>
-            <a href="/checkout/shipping">Edit</a>
+            <a href="/checkout/shipping" id="shippingEditLink">Edit</a>
           </div>
           <div class="review-content" id="shippingReview">
             <p class="name">Loading...</p>
@@ -181,8 +185,12 @@ const CURRENT_CURRENCY = 'USD';
               <span class="subtotal-val">$0.00</span>
             </div>
             <div class="total-line discount-row" style="display: none; color: #2e7d32;">
-              <span>Discount & Rewards</span>
+              <span class="discount-label">Discount &amp; Rewards</span>
               <span class="discount-val">-$0.00</span>
+            </div>
+            <div class="total-line fee-row" style="display: none; color: #666;">
+              <span class="fee-label">Order Adjustment</span>
+              <span class="fee-val">$0.00</span>
             </div>
             <div class="total-line">
               <span>Shipping</span>
@@ -677,8 +685,61 @@ const CURRENT_CURRENCY = 'USD';
     }
   }
 
+  // 仅在 URL 明确携带 ?order_id= 时才读取历史 Pending 订单锁定快照，彻底杜绝正常结账串单
+  function getPendingOrderSnapshot() {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryOrderId = urlParams.get('order_id');
+      if (!queryOrderId) return null;
+
+      const snapStr = sessionStorage.getItem('pendingOrderSnapshot');
+      if (!snapStr) return null;
+      const snap = JSON.parse(snapStr);
+      if (String(snap.orderId) !== String(queryOrderId)) return null;
+      return snap;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function calculateCartTotals(cart) {
+    // 1. 若处于“继续支付已有 Pending 订单”模式，严格锁定 WooCommerce 后台订单金额
+    const pendingSnap = getPendingOrderSnapshot();
+    if (pendingSnap) {
+      const snapItems = Array.isArray(pendingSnap.items) && pendingSnap.items.length > 0 ? pendingSnap.items : cart;
+      const rawSubtotal = snapItems.reduce((sum, item) => {
+        if (item.lineTotal !== undefined) return sum + (parseFloat(item.lineTotal) || 0);
+        return sum + ((parseFloat(item.price) || 0) * (item.quantity || 1));
+      }, 0);
+
+      const shipping = parseFloat(pendingSnap.shippingTotal || 0) || 0;
+      const lockedTotal = Math.max(0, parseFloat(pendingSnap.total || 0) || 0);
+      const couponDiscount = parseFloat(pendingSnap.discountTotal || 0) || 0;
+
+      const feeSum = (pendingSnap.feeLines || []).reduce((acc, f) => acc + (parseFloat(f.total) || 0), 0);
+      const impliedDelta = parseFloat((lockedTotal - (rawSubtotal - couponDiscount + shipping)).toFixed(2));
+      const effectiveAdjustment = Math.abs(feeSum) > 0 ? feeSum : impliedDelta;
+
+      const totalDiscount = couponDiscount + (effectiveAdjustment < 0 ? Math.abs(effectiveAdjustment) : 0);
+      const positiveFee = effectiveAdjustment > 0 ? effectiveAdjustment : 0;
+
+      return {
+        isLockedPendingOrder: true,
+        pendingOrderNumber: pendingSnap.orderNumber || pendingSnap.orderId,
+        subtotal: rawSubtotal.toFixed(2),
+        discount: totalDiscount.toFixed(2),
+        positiveFee: positiveFee.toFixed(2),
+        shipping: shipping.toFixed(2),
+        total: lockedTotal.toFixed(2),
+        currency: pendingSnap.currency || CURRENT_CURRENCY,
+        itemCount: snapItems.reduce((sum, item) => sum + (item.quantity || 1), 0),
+        calcData: null
+      };
+    }
+
+    // 2. 常规购物车结账模式
     const rawSubtotal = cart.reduce((sum, item) => {
+      if (item.isXmasMysteryGift) return sum;
       const price = parseFloat(item.price) || 0;
       return sum + (price * item.quantity);
     }, 0);
@@ -703,8 +764,10 @@ const CURRENT_CURRENCY = 'USD';
     const total = Math.max(0, rawSubtotal - discount) + shipping;
 
     return {
+      isLockedPendingOrder: false,
       subtotal: rawSubtotal.toFixed(2),
       discount: discount.toFixed(2),
+      positiveFee: '0.00',
       shipping: shipping.toFixed(2),
       total: total.toFixed(2),
       currency: CURRENT_CURRENCY,
@@ -714,24 +777,31 @@ const CURRENT_CURRENCY = 'USD';
   }
 
   function renderCart(cart, totals) {
+    const pendingSnap = getPendingOrderSnapshot();
+    const displayItems = (pendingSnap && Array.isArray(pendingSnap.items) && pendingSnap.items.length > 0)
+      ? pendingSnap.items
+      : cart;
+
     const renderBox = (containerId) => {
       const el = document.getElementById(containerId);
       if (!el) return;
-      if (cart.length === 0) {
+      if (displayItems.length === 0) {
         el.innerHTML = '<p style="text-align:center;padding:16px;color:#888;">Cart is empty</p>';
         return;
       }
-      el.innerHTML = cart.map(item => {
-        const price = parseFloat(item.price) || 0;
-        const itemTotal = price * item.quantity;
+      el.innerHTML = displayItems.map(item => {
+        const isMysteryGift = Boolean(item.isXmasMysteryGift);
+        const itemTotal = item.lineTotal !== undefined
+          ? (parseFloat(item.lineTotal) || 0)
+          : ((parseFloat(item.price) || 0) * (item.quantity || 1));
         return `
-          <div class="item">
-            <img src="${item.image || '/placeholder.jpg'}" alt="${item.name}">
+          <div class="item" ${isMysteryGift ? 'style="background:#fff8f5; padding:8px; border-radius:6px; border:1px dashed #d6b879;"' : ''}>
+            <img src="${item.image || '/placeholder.jpg'}" alt="${item.name}" ${isMysteryGift ? 'style="object-fit:contain; padding:4px; border-color:#d6b879;"' : ''}>
             <div class="item-details">
               <h3>${item.name}</h3>
-              <p>Qty: ${item.quantity}</p>
+              <p ${isMysteryGift ? 'style="color:#961820; font-weight:600;"' : ''}>${isMysteryGift ? `🎄 Mystery Gift (${item.xmasGiftCode || ''}) • Qty: 1` : `Qty: ${item.quantity}`}</p>
             </div>
-            <span class="item-price">${formatPrice(itemTotal)}</span>
+            <span class="item-price" ${isMysteryGift ? 'style="color:#961820; font-weight:700;"' : ''}>${isMysteryGift ? 'FREE' : formatPrice(itemTotal)}</span>
           </div>
         `;
       }).join('');
@@ -740,42 +810,56 @@ const CURRENT_CURRENCY = 'USD';
     renderBox('mobileCartItems');
     renderBox('desktopCartItems');
 
-    // 渲染生效特权及预计获取积分提示
+    // 渲染生效特权提示横幅
     const banners = document.querySelectorAll('.applied-privileges-banner');
-    const calc = totals.calcData;
-    const hasOffers = calc && calc.applied_offers && calc.applied_offers.length > 0;
-    const earnedPts = calc ? (parseFloat(calc.points_earned) || 0) : parseFloat((parseFloat(totals.subtotal) / 10).toFixed(1));
-    const multiplier = calc ? (parseFloat(calc.points_multiplier) || 1.0) : 1.0;
-
-    if (hasOffers || earnedPts > 0) {
+    if (totals.isLockedPendingOrder) {
       banners.forEach(b => {
         b.style.display = 'block';
-        let html = '';
-        if (hasOffers) {
-          html += `
-            <div style="font-weight:700; color:#8c631a; margin-bottom:4px; text-transform:uppercase; font-size:11px; letter-spacing:0.06em;">
-              <i class="fa-solid fa-crown"></i> Active Rewards & Discounts
-            </div>
-            <div style="margin-bottom: ${earnedPts > 0 ? '8px' : '0'};">
-              ${calc.applied_offers.map(o => `<div>✓ ${o}</div>`).join('')}
-            </div>
-          `;
-        }
-        if (earnedPts > 0) {
-          html += `
-            <div style="display:flex; align-items:center; justify-content:space-between; ${hasOffers ? 'padding-top:8px; border-top:1px dashed rgba(163,130,76,0.3);' : ''} color:#66522e; font-size:12px;">
-              <span>
-                <i class="fa-solid fa-coins" style="color:#b8860b; margin-right:4px;"></i>
-                Points to Earn ${multiplier > 1 ? `<span style="background:#faebd7; color:#8c631a; padding:1px 5px; border-radius:4px; font-size:10px; font-weight:700;">${multiplier}x VIP</span>` : ''}
-              </span>
-              <strong style="color:#2e7d32;">+${earnedPts} PTS</strong>
-            </div>
-          `;
-        }
-        b.innerHTML = html;
+        b.innerHTML = `
+          <div style="font-weight:700; color:#8c631a; text-transform:uppercase; font-size:11px; letter-spacing:0.06em;">
+            <i class="fa-solid fa-lock"></i> Completing Payment for Order #${totals.pendingOrderNumber}
+          </div>
+          <div style="font-size:11.5px; color:#66522e; margin-top:2px;">
+            Final order total is locked to your confirmed invoice amount.
+          </div>
+        `;
       });
     } else {
-      banners.forEach(b => { b.style.display = 'none'; });
+      const calc = totals.calcData;
+      const hasOffers = calc && calc.applied_offers && calc.applied_offers.length > 0;
+      const earnedPts = calc ? (parseFloat(calc.points_earned) || 0) : parseFloat((parseFloat(totals.subtotal) / 10).toFixed(1));
+      const multiplier = calc ? (parseFloat(calc.points_multiplier) || 1.0) : 1.0;
+
+      if (hasOffers || earnedPts > 0) {
+        banners.forEach(b => {
+          b.style.display = 'block';
+          let html = '';
+          if (hasOffers) {
+            html += `
+              <div style="font-weight:700; color:#8c631a; margin-bottom:4px; text-transform:uppercase; font-size:11px; letter-spacing:0.06em;">
+                <i class="fa-solid fa-crown"></i> Active Rewards & Discounts
+              </div>
+              <div style="margin-bottom: ${earnedPts > 0 ? '8px' : '0'};">
+                ${calc.applied_offers.map(o => `<div>✓ ${o}</div>`).join('')}
+              </div>
+            `;
+          }
+          if (earnedPts > 0) {
+            html += `
+              <div style="display:flex; align-items:center; justify-content:space-between; ${hasOffers ? 'padding-top:8px; border-top:1px dashed rgba(163,130,76,0.3);' : ''} color:#66522e; font-size:12px;">
+                <span>
+                  <i class="fa-solid fa-coins" style="color:#b8860b; margin-right:4px;"></i>
+                  Points to Earn ${multiplier > 1 ? `<span style="background:#faebd7; color:#8c631a; padding:1px 5px; border-radius:4px; font-size:10px; font-weight:700;">${multiplier}x VIP</span>` : ''}
+                </span>
+                <strong style="color:#2e7d32;">+${earnedPts} PTS</strong>
+              </div>
+            `;
+          }
+          b.innerHTML = html;
+        });
+      } else {
+        banners.forEach(b => { b.style.display = 'none'; });
+      }
     }
 
     document.querySelectorAll('.subtotal-val').forEach(el => el.textContent = formatPrice(parseFloat(totals.subtotal)));
@@ -785,6 +869,12 @@ const CURRENT_CURRENCY = 'USD';
       row.style.display = discountNum > 0 ? 'flex' : 'none';
     });
     document.querySelectorAll('.discount-val').forEach(el => el.textContent = `-${formatPrice(discountNum)}`);
+
+    const posFeeNum = parseFloat(totals.positiveFee || '0');
+    document.querySelectorAll('.fee-row').forEach(row => {
+      row.style.display = posFeeNum > 0 ? 'flex' : 'none';
+    });
+    document.querySelectorAll('.fee-val').forEach(el => el.textContent = `+${formatPrice(posFeeNum)}`);
 
     const shippingNum = parseFloat(totals.shipping);
     document.querySelectorAll('.shipping-val').forEach(el => {
@@ -800,10 +890,67 @@ const CURRENT_CURRENCY = 'USD';
     if (dtTitle) dtTitle.textContent = `Order summary (${totals.itemCount} items)`;
   }
 
-  function initCheckout() {
+  async function initCheckout() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryOrderId = urlParams.get('order_id');
+    const queryOrderKey = urlParams.get('order_key');
+
+    if (queryOrderId) {
+      sessionStorage.setItem('pendingOrderId', queryOrderId);
+      if (queryOrderKey) sessionStorage.setItem('pendingOrderKey', queryOrderKey);
+
+      if (!getPendingOrderSnapshot()) {
+        try {
+          const orderRes = await fetch('/api/user/orders');
+          if (orderRes.ok) {
+            const orderData = await orderRes.json();
+            const found = (orderData.orders || []).find(o => String(o.id) === String(queryOrderId));
+            if (found) {
+              const snap = {
+                orderId: found.id,
+                orderNumber: found.number || found.id,
+                orderKey: found.order_key || queryOrderKey || '',
+                total: parseFloat(found.total || 0).toFixed(2),
+                shippingTotal: parseFloat(found.shipping_total || 0).toFixed(2),
+                discountTotal: parseFloat(found.discount_total || 0).toFixed(2),
+                currency: (found.currency || 'USD').toUpperCase(),
+                feeLines: Array.isArray(found.fee_lines) ? found.fee_lines : [],
+                couponLines: Array.isArray(found.coupon_lines) ? found.coupon_lines : [],
+                items: (found.line_items || []).map(item => ({
+                  id: item.product_id,
+                  product_id: item.product_id,
+                  variation_id: item.variation_id || 0,
+                  name: item.name,
+                  price: parseFloat(item.price || 0).toFixed(2),
+                  lineTotal: parseFloat(item.total || 0).toFixed(2),
+                  quantity: item.quantity || 1,
+                  image: item.image?.src || ''
+                }))
+              };
+              sessionStorage.setItem('pendingOrderSnapshot', JSON.stringify(snap));
+            }
+          }
+        } catch (e) {}
+      }
+    } else {
+      sessionStorage.removeItem('pendingOrderSnapshot');
+      sessionStorage.removeItem('pendingOrderId');
+      sessionStorage.removeItem('pendingOrderKey');
+    }
+
     const cart = getCart();
     const totals = calculateCartTotals(cart);
     renderCart(cart, totals);
+
+    if (totals.isLockedPendingOrder) {
+      const backBtn = document.getElementById('checkoutBackBtn');
+      if (backBtn) {
+        backBtn.setAttribute('href', '/account?tab=orders');
+        backBtn.innerHTML = `<i class="fa-solid fa-arrow-left"></i> Back to My Orders`;
+      }
+      const editLink = document.getElementById('shippingEditLink');
+      if (editLink) editLink.style.display = 'none';
+    }
 
     const shippingInfoStr = sessionStorage.getItem('shippingInfo');
     if (shippingInfoStr) {
@@ -836,15 +983,6 @@ const CURRENT_CURRENCY = 'USD';
       return;
     }
 
-    // 支持从订单详情页 "Complete Payment" 链接 (?order_id=123&order_key=wc_order_xxx) 传入待支付订单
-    const urlParams = new URLSearchParams(window.location.search);
-    const queryOrderId = urlParams.get('order_id');
-    const queryOrderKey = urlParams.get('order_key');
-    if (queryOrderId) {
-      sessionStorage.setItem('pendingOrderId', queryOrderId);
-      if (queryOrderKey) sessionStorage.setItem('pendingOrderKey', queryOrderKey);
-    }
-
     // @ts-ignore
     paypal.Buttons({
       style: {
@@ -861,7 +999,6 @@ const CURRENT_CURRENCY = 'USD';
         const shippingInfoStr = sessionStorage.getItem('shippingInfo');
         const latestCart = getCart();
 
-        // 若既没有待复用的 pending 订单，又没有地址或购物车，才拦截跳回
         if (!existingOrderId) {
           if (!shippingInfoStr) {
             alert('Please provide shipping details first.');
@@ -913,9 +1050,12 @@ const CURRENT_CURRENCY = 'USD';
           appliedOffers: calc?.applied_offers || [],
           coupon_lines: calc?.manual_coupon ? [{ code: calc.manual_coupon }] : [],
           line_items: latestCart.map(item => ({
-            product_id: item.productId || item.product_id || item.id,
+            product_id: Number(item.productId || item.product_id || item.id || 0),
             variation_id: item.variationId || item.variation_id || undefined,
-            quantity: item.quantity
+            name: item.name || '',
+            quantity: Number(item.quantity) || 1,
+            price: item.isXmasMysteryGift ? 0 : (parseFloat(item.price) || undefined),
+            isXmasMysteryGift: Boolean(item.isXmasMysteryGift)
           }))
         };
 
@@ -965,11 +1105,12 @@ const CURRENT_CURRENCY = 'USD';
             return;
           }
 
-          // 真正支付成功：清理购物车、计算快照与 pendingOrderId
           localStorage.removeItem('ebbelle_cart');
           sessionStorage.removeItem('ebbelle_checkout_calculation');
+          sessionStorage.removeItem('ebbelle_cart_manual_coupon');
           sessionStorage.removeItem('pendingOrderId');
           sessionStorage.removeItem('pendingOrderKey');
+          sessionStorage.removeItem('pendingOrderSnapshot');
           sessionStorage.setItem('paymentStatus', JSON.stringify({
             status: 'success'
           }));
@@ -999,7 +1140,6 @@ const CURRENT_CURRENCY = 'USD';
           status: 'cancelled'
         }));
 
-        // 跳转至确认页展示 Pending 状态并触发自动建号，同时保留 pendingOrderId 以便继续完成同一笔订单付款
         window.top.location.href = `/checkout/confirmation?order_id=${orderId || ''}&order_key=${orderKey || ''}&payment=paypal&status=cancelled`;
       }
     }).render('#paypal-button-container');

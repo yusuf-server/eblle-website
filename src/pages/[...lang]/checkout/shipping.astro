@@ -21,9 +21,9 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
         <span>E.B.belle</span>
       </a>
       <a href={currentLocale === 'en' ? '/cart' : `/${currentLocale}/cart`} class="back-btn">
-  <i class="fa-solid fa-arrow-left"></i>
-  {t(currentLocale, 'checkout.returnToCart') !== 'checkout.returnToCart' ? t(currentLocale, 'checkout.returnToCart') : 'Return to Cart'}
-</a>
+        <i class="fa-solid fa-arrow-left"></i>
+        {t(currentLocale, 'checkout.returnToCart') !== 'checkout.returnToCart' ? t(currentLocale, 'checkout.returnToCart') : 'Return to Cart'}
+      </a>
     </div>
   </header>
 
@@ -33,9 +33,9 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       <div class="checkout-left">
         <!-- Progress -->
         <nav class="progress-nav">
-          <span class="progress-step active">{t(currentLocale, 'checkout.shippingAddress').toUpperCase()}</span>
+          <span class="progress-step active">{t(currentLocale, 'checkout.shippingAddress') !== 'checkout.shippingAddress' ? t(currentLocale, 'checkout.shippingAddress').toUpperCase() : 'SHIPPING ADDRESS'}</span>
           <i class="fa-solid fa-chevron-right"></i>
-          <span class="progress-step">{t(currentLocale, 'checkout.paymentMethod').toUpperCase()}</span>
+          <span class="progress-step">{t(currentLocale, 'checkout.paymentMethod') !== 'checkout.paymentMethod' ? t(currentLocale, 'checkout.paymentMethod').toUpperCase() : 'PAYMENT METHOD'}</span>
           <i class="fa-solid fa-chevron-right"></i>
           <span class="progress-step">REVIEW</span>
         </nav>
@@ -47,7 +47,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
             <button type="button" class="summary-toggle" id="summaryToggle">
               <div class="summary-header-left">
                 <i class="fa-solid fa-shopping-bag"></i>
-                <h2>{t(currentLocale, 'checkout.orderSummary')}</h2>
+                <h2>{t(currentLocale, 'checkout.orderSummary') !== 'checkout.orderSummary' ? t(currentLocale, 'checkout.orderSummary') : 'Order summary'}</h2>
                 <i class="fa-solid fa-chevron-down toggle-icon"></i>
               </div>
               <span class="summary-total">$0.00</span>
@@ -56,7 +56,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
             <!-- Collapsible Content (仅折叠商品列表与价格明细) -->
             <div class="summary-content" id="summaryContent">
               <div class="summary-items" id="mobileCartItems">
-                <!-- 商品将动态加载 -->
+                <!-- 商品与免费圣诞礼盒将动态加载 -->
               </div>
 
               <div class="summary-totals">
@@ -123,19 +123,19 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
           <!-- Shipping Address -->
           <section class="form-section">
-            <h2>{t(currentLocale, 'checkout.shippingAddress')}</h2>
+            <h2>{t(currentLocale, 'checkout.shippingAddress') !== 'checkout.shippingAddress' ? t(currentLocale, 'checkout.shippingAddress') : 'Shipping Address'}</h2>
             <div class="field-row">
               <div class="field">
-                <label>{t(currentLocale, 'checkout.firstName').toUpperCase()}</label>
+                <label>{t(currentLocale, 'checkout.firstName') !== 'checkout.firstName' ? t(currentLocale, 'checkout.firstName').toUpperCase() : 'FIRST NAME'}</label>
                 <input type="text" id="firstName" required>
               </div>
               <div class="field">
-                <label>{t(currentLocale, 'checkout.lastName').toUpperCase()}</label>
+                <label>{t(currentLocale, 'checkout.lastName') !== 'checkout.lastName' ? t(currentLocale, 'checkout.lastName').toUpperCase() : 'LAST NAME'}</label>
                 <input type="text" id="lastName" required>
               </div>
             </div>
             <div class="field">
-              <label>{t(currentLocale, 'checkout.address').toUpperCase()}</label>
+              <label>{t(currentLocale, 'checkout.address') !== 'checkout.address' ? t(currentLocale, 'checkout.address').toUpperCase() : 'ADDRESS'}</label>
               <input type="text" id="address" placeholder="Street address" required>
             </div>
             <div class="field">
@@ -144,21 +144,21 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
             </div>
             <div class="field-row">
               <div class="field">
-                <label>{t(currentLocale, 'checkout.city').toUpperCase()}</label>
+                <label>{t(currentLocale, 'checkout.city') !== 'checkout.city' ? t(currentLocale, 'checkout.city').toUpperCase() : 'CITY'}</label>
                 <input type="text" id="city" required>
               </div>
               <div class="field">
-                <label>{t(currentLocale, 'checkout.state').toUpperCase()}</label>
+                <label>{t(currentLocale, 'checkout.state') !== 'checkout.state' ? t(currentLocale, 'checkout.state').toUpperCase() : 'STATE / PROVINCE'}</label>
                 <input type="text" id="state" required>
               </div>
             </div>
             <div class="field-row">
               <div class="field">
-                <label>{t(currentLocale, 'checkout.zipCode').toUpperCase()}</label>
+                <label>{t(currentLocale, 'checkout.zipCode') !== 'checkout.zipCode' ? t(currentLocale, 'checkout.zipCode').toUpperCase() : 'ZIP / POSTAL CODE'}</label>
                 <input type="text" id="zip" required>
               </div>
               <div class="field">
-                <label>{t(currentLocale, 'checkout.country').toUpperCase()}</label>
+                <label>{t(currentLocale, 'checkout.country') !== 'checkout.country' ? t(currentLocale, 'checkout.country').toUpperCase() : 'COUNTRY'}</label>
                 <select id="country" required>
                   <option value="">Select a country</option>
                   <option>Albania</option>
@@ -311,7 +311,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
               </div>
             </div>
             <div class="field">
-              <label>{t(currentLocale, 'checkout.phone').toUpperCase()}</label>
+              <label>{t(currentLocale, 'checkout.phone') !== 'checkout.phone' ? t(currentLocale, 'checkout.phone').toUpperCase() : 'PHONE'}</label>
               <input type="tel" id="phone" placeholder="+1 (555) 000-0000" required>
             </div>
           </section>
@@ -336,8 +336,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
           <!-- Actions -->
           <div class="form-actions">
-            <button type="submit" class="btn-submit">{t(currentLocale, 'checkout.continueToPayment')}</button>
-           <a href="/cart" class="link-return">Return to Cart</a>
+            <button type="submit" class="btn-submit">{t(currentLocale, 'checkout.continueToPayment') !== 'checkout.continueToPayment' ? t(currentLocale, 'checkout.continueToPayment') : 'Continue to Payment'}</button>
+            <a href="/cart" class="link-return">Return to Cart</a>
           </div>
         </form>
       </div>
@@ -348,15 +348,16 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
           <h2>Order summary</h2>
 
           <div class="summary-items" id="desktopCartItems">
-            <!-- 商品将动态加载 -->
+            <!-- 商品与免费圣诞礼盒将动态加载 -->
           </div>
 
           <!-- Discount Code -->
-          <div class="discount-code-section">
+          <div class="discount-code-section desktop-discount-section">
             <input type="text" class="discount-input manual-discount-input" placeholder="Discount code or gift card">
             <button type="button" class="apply-btn manual-apply-btn">Apply</button>
           </div>
-         <div class="coupon-feedback-msg" style="display: none; font-size: 12px; margin-top: -14px; margin-bottom: 18px; padding: 6px 10px; border-radius: 4px;"></div>
+          <div class="coupon-feedback-msg" style="display: none; font-size: 12px; margin-top: -14px; margin-bottom: 18px; padding: 6px 10px; border-radius: 4px;"></div>
+
           <!-- 桌面端优惠方案选择器容器 -->
           <div class="checkout-privilege-box desktop-privilege-box" style="display: none;"></div>
 
@@ -669,6 +670,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   .item {
     display: flex;
     gap: 12px;
+    align-items: center;
   }
   .item img {
     width: 60px;
@@ -850,6 +852,256 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   }
 
   /* ============================================================
+     圣诞互斥二选一与进阶促单进度条样式（圣诞红 + 松绿 + 香槟金节日动效）
+     ============================================================ */
+  .xmas-mutex-switcher {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(145deg, #fff8f0 0%, #ffefed 55%, #fff6ea 100%);
+    border: 1.5px solid #961820;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 22px rgba(150, 24, 32, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .xmas-mutex-switcher::before {
+    content: '❄ ✦ ❄';
+    position: absolute;
+    top: 6px;
+    right: 88px;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: rgba(150, 24, 32, 0.22);
+    pointer-events: none;
+    animation: xmasTwinkleFloat 3.6s ease-in-out infinite;
+  }
+  @keyframes xmasTwinkleFloat {
+    0%, 100% { opacity: 0.35; transform: translateY(0); }
+    50% { opacity: 0.9; transform: translateY(-2px); }
+  }
+  .xmas-mutex-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 9px;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed rgba(150, 24, 32, 0.3);
+  }
+  .xmas-mutex-title {
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #961820;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .xmas-mutex-badge {
+    background: linear-gradient(135deg, #234638 0%, #193329 100%);
+    color: #ffdf9c;
+    border: 1px solid rgba(214, 184, 121, 0.45);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* 圣诞进阶阶梯进度条卡片 */
+  .xmas-tier-progress-box {
+    background: #ffffff;
+    border: 1px solid rgba(214, 184, 121, 0.75);
+    border-radius: 8px;
+    padding: 11px 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 3px 10px rgba(35, 70, 56, 0.05);
+  }
+  .xmas-tp-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #234638;
+    margin-bottom: 7px;
+  }
+  .xmas-tp-count {
+    background: #fdf3e1;
+    color: #8c631a;
+    border: 1px solid rgba(214, 184, 121, 0.55);
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    white-space: nowrap;
+  }
+  .xmas-tp-track {
+    position: relative;
+    width: 100%;
+    height: 8px;
+    background: #f1e8dc;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .xmas-tp-fill {
+    height: 100%;
+    border-radius: 999px;
+    background-color: #961820;
+    background-image: linear-gradient(
+      45deg,
+      rgba(255, 223, 156, 0.32) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 223, 156, 0.32) 50%,
+      rgba(255, 223, 156, 0.32) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: 18px 18px;
+    animation: xmasCandyFlow 1.4s linear infinite;
+    transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .xmas-tp-fill.is-maxed {
+    background-color: #234638;
+  }
+  @keyframes xmasCandyFlow {
+    0% { background-position: 0 0; }
+    100% { background-position: 18px 0; }
+  }
+  .xmas-tp-milestones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .xmas-ms-pill {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 4px;
+    border-radius: 5px;
+    background: #f7f2ea;
+    color: #8c7b75;
+    border: 1px solid #eadfce;
+    transition: all 0.25s ease;
+  }
+  .xmas-ms-pill.reached {
+    background: #e7f3ed;
+    color: #234638;
+    border-color: #9bc7b2;
+    font-weight: 700;
+  }
+  .xmas-ms-pill.current {
+    background: linear-gradient(135deg, #961820 0%, #b82932 100%);
+    color: #ffdf9c;
+    border-color: #961820;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(150, 24, 32, 0.22);
+  }
+  .xmas-tp-hint-row {
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px dashed rgba(214, 184, 121, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11.5px;
+    color: #7c181f;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .xmas-add-more-link {
+    flex-shrink: 0;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #234638;
+    background: #e7f3ed;
+    border: 1px solid #9bc7b2;
+    padding: 3px 8px;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .xmas-add-more-link:hover {
+    background: #234638;
+    color: #ffdf9c;
+  }
+
+  .xmas-mutex-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 10px 11px;
+    border-radius: 7px;
+    background: #ffffff;
+    border: 1px solid #e6d2cf;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 8px;
+  }
+  .xmas-mutex-option:last-child {
+    margin-bottom: 0;
+  }
+  .xmas-mutex-option.active-xmas {
+    border-color: #961820;
+    background: #fffafa;
+    box-shadow: 0 3px 10px rgba(150, 24, 32, 0.1);
+  }
+  .xmas-mutex-option.active-vip {
+    border-color: #a87928;
+    background: #fdfbf7;
+    box-shadow: 0 3px 10px rgba(168, 121, 40, 0.08);
+  }
+  .xmas-mutex-option input[type="radio"] {
+    margin-top: 2px;
+    width: 15px;
+    height: 15px;
+    accent-color: #961820;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .xmas-mutex-option.active-vip input[type="radio"] {
+    accent-color: #8c631a;
+  }
+  .xmas-mutex-opt-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .xmas-mutex-opt-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 3px;
+  }
+  .xmas-save-tag {
+    color: #961820;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .xmas-mutex-opt-desc {
+    font-size: 11px;
+    color: #665250;
+    line-height: 1.45;
+  }
+  .xmas-nudge-card {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #fff8f0 0%, #ffefed 100%);
+    border: 1.5px solid #961820;
+    border-radius: 8px;
+    padding: 12px 13px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 14px rgba(150, 24, 32, 0.1);
+  }
+
+  /* ============================================================
      特权方案与香槟金动效进度条 (高定黑金视觉)
      ============================================================ */
   .checkout-privilege-box {
@@ -920,7 +1172,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
   }
-  /* 流光闪烁动效 */
   .progress-fill::after {
     content: '';
     position: absolute;
@@ -1050,7 +1301,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     .mobile-order-summary .item-price {
       font-size: 14px;
     }
-    /* 移动端外置特权与优惠码区域样式 */
     .mobile-exposed-rewards {
       margin-top: 14px;
     }
@@ -1072,18 +1322,93 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   let selectedOfferKey = ''; // 'welcome_15' | 'bundle_tier'
   let manualCouponCode = '';
   let activeCalculationData = null;
-  let isPointsRedeemed = false; // 是否使用积分抵扣
+  let isPointsRedeemed = false;
+  let promoMode = 'xmas_bogo'; // 'xmas_bogo' | 'vip_rewards'
+
+  const XMAS_GIFT_CATALOG = {
+    GIFT125: {
+      code: 'GIFT125',
+      name: 'Crimson Surprise — Christmas Mystery Gift',
+      image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift666.png'
+    },
+    GIFT124: {
+      code: 'GIFT124',
+      name: 'Pine Surprise — Christmas Mystery Gift',
+      image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift999.png'
+    },
+    GIFT777: {
+      code: 'GIFT777',
+      name: 'Stellar Surprise — Christmas Mystery Gift',
+      image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift888.png'
+    }
+  };
+  const XMAS_EXCLUSIVE_CODES = Object.keys(XMAS_GIFT_CATALOG);
+
+  let calcAbortController = null;
+  let calcDebounceTimer = null;
+
+  function scheduleCheckoutRecalculation(delay = 120) {
+    if (calcDebounceTimer) clearTimeout(calcDebounceTimer);
+    calcDebounceTimer = setTimeout(() => {
+      performCheckoutRecalculation();
+    }, delay);
+  }
 
   window.handlePointsToggle = function(checkbox) {
     isPointsRedeemed = Boolean(checkbox.checked);
     performCheckoutRecalculation();
   };
+
+  window.handlePromoModeSwitch = function(mode) {
+    promoMode = mode === 'vip_rewards' ? 'vip_rewards' : 'xmas_bogo';
+    performCheckoutRecalculation();
+  };
+
   // 免运费特殊赠品 ID 名单
   const FREE_SHIPPING_PRODUCT_IDS = [57994, '57994'];
 
   function isExcludedFromShipping(item) {
+    if (item && item.isXmasMysteryGift) return true;
     const id = item.id || item.product_id;
     return FREE_SHIPPING_PRODUCT_IDS.includes(id) || FREE_SHIPPING_PRODUCT_IDS.includes(String(id));
+  }
+
+  // 在购物车列表中排他同步免费圣诞实物礼物（仅限选择圣诞活动且达标时保留，切回 VIP 自动移除）
+  function syncShippingXmasGiftItem(validCode) {
+    const cart = getCart();
+    const regularItems = cart.filter(item => !item.isXmasMysteryGift);
+    const upper = (validCode || '').toUpperCase().trim();
+    const giftMeta = XMAS_GIFT_CATALOG[upper];
+
+    let nextCart = regularItems;
+    if (giftMeta && regularItems.length > 0) {
+      nextCart = [
+        ...regularItems,
+        {
+          cartItemId: `xmas_mystery_gift_${upper}`,
+          id: 0,
+          name: giftMeta.name,
+          price: '0.00',
+          basePrice: '0.00',
+          quantity: 1,
+          weight: 0,
+          image: giftMeta.image,
+          isXmasMysteryGift: true,
+          xmasGiftCode: upper
+        }
+      ];
+    }
+
+    if (JSON.stringify(cart) !== JSON.stringify(nextCart)) {
+      localStorage.setItem('ebbelle_cart', JSON.stringify(nextCart));
+      renderCartItems(nextCart, 'mobileCartItems');
+      renderCartItems(nextCart, 'desktopCartItems');
+      const count = nextCart.reduce((sum, item) => sum + (parseInt(item.quantity, 10) || 1), 0);
+      const mobileH2 = document.querySelector('.mobile-order-summary h2');
+      if (mobileH2) mobileH2.textContent = `Order summary (${count} items)`;
+      const desktopH2 = document.querySelector('.desktop-order-summary h2');
+      if (desktopH2) desktopH2.textContent = `Order summary (${count} items)`;
+    }
   }
 
   // 国家标准 ISO 代码对照映射
@@ -1111,7 +1436,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     'Nigeria': 'NG', 'North Macedonia': 'MK', 'Norway': 'NO', 'Oman': 'OM', 'Pakistan': 'PK',
     'Palau': 'PW', 'Panama': 'PA', 'Papua New Guinea': 'PG', 'Paraguay': 'PY', 'Peru': 'PE',
     'Philippines': 'PH', 'Poland': 'PL', 'Portugal': 'PT', 'Puerto Rico': 'PR', 'Qatar': 'QA',
-    'Romania': 'RO', 'Rwanda': 'RW', 'Réunion': 'RE', 'Saudi Arabia': 'SA', 'Senegal': 'SN',
+    'Romania': 'RO', 'Rwanda': 'Rwanda', 'Réunion': 'RE', 'Saudi Arabia': 'SA', 'Senegal': 'SN',
     'Serbia': 'RS', 'Seychelles': 'SC', 'Singapore': 'SG', 'Sint Maarten': 'SX', 'Slovakia': 'SK',
     'Slovenia': 'SI', 'South Africa': 'ZA', 'South Korea': 'KR', 'Spain': 'ES', 'Sri Lanka': 'LK',
     'Suriname': 'SR', 'Sweden': 'SE', 'Switzerland': 'CH', 'Syria': 'SY', 'Tanzania': 'TZ',
@@ -1229,7 +1554,10 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   }
 
   function getPreDiscountSubtotal(cart) {
-    return cart.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (item.quantity || 1)), 0);
+    return cart.reduce((sum, item) => {
+      if (item && item.isXmasMysteryGift) return sum;
+      return sum + ((parseFloat(item.price) || 0) * (item.quantity || 1));
+    }, 0);
   }
 
   function renderCartItems(cart, containerId) {
@@ -1243,73 +1571,96 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
     let html = '';
     cart.forEach(item => {
+      const isMysteryGift = Boolean(item.isXmasMysteryGift);
       const price = parseFloat(item.price) || 0;
       const itemTotal = price * item.quantity;
-      const variants = item.selectedVariants ? Object.values(item.selectedVariants).filter(v => v).join(' / ') : '';
+      const variants = isMysteryGift
+        ? `🎄 Mystery Gift (${item.xmasGiftCode || ''})`
+        : (item.selectedVariants ? Object.values(item.selectedVariants).filter(v => v).join(' / ') : '');
 
-      html += '<div class="item">';
-      html += `<img src="${item.image || '/placeholder.jpg'}" alt="${item.name}" onerror="this.src='/placeholder.jpg'">`;
+      html += `<div class="item" ${isMysteryGift ? 'style="background:#fff8f5; padding:8px; border-radius:6px; border:1px dashed #d6b879;"' : ''}>`;
+      html += `<img src="${item.image || '/placeholder.jpg'}" alt="${item.name}" ${isMysteryGift ? 'style="object-fit:contain; padding:4px; border-color:#d6b879;"' : ''} onerror="this.src='/placeholder.jpg'">`;
       html += '<div class="item-details">';
       html += `<h3>${item.name}</h3>`;
-      if (variants) html += `<p>${variants}</p>`;
-      if (item.quantity > 1) html += `<p>Qty: ${item.quantity}</p>`;
+      if (variants) html += `<p ${isMysteryGift ? 'style="color:#961820; font-weight:600;"' : ''}>${variants}</p>`;
+      if (!isMysteryGift && item.quantity > 1) html += `<p>Qty: ${item.quantity}</p>`;
       html += '</div>';
-      html += `<span class="item-price">${formatPrice(itemTotal)}</span>`;
+      html += `<span class="item-price" ${isMysteryGift ? 'style="color:#961820; font-weight:700;"' : ''}>${isMysteryGift ? 'FREE' : formatPrice(itemTotal)}</span>`;
       html += '</div>';
     });
     container.innerHTML = html;
   }
 
   // ============================================================
-  // 核心业务：统一调度结账试算接口（api/woocommerce/calculate）
+  // 核心业务：统一调度结账试算接口（排除免费圣诞礼物本身不计件）
   // ============================================================
   async function performCheckoutRecalculation() {
     const cart = getCart();
+    const regularCart = cart.filter(item => !item.isXmasMysteryGift);
     const subtotal = getPreDiscountSubtotal(cart);
     const countryName = document.getElementById('country')?.value || '';
     const email = document.getElementById('email')?.value.trim() || '';
     const countryIso = COUNTRY_ISO_MAP[countryName] || 'US';
 
-    if (cart.length === 0) return;
+    if (regularCart.length === 0) return;
 
-    const totalWeight = calculateTotalWeight(cart);
+    if (calcAbortController) {
+      try { calcAbortController.abort(); } catch (e) {}
+    }
+    const currentController = new AbortController();
+    calcAbortController = currentController;
+
+    const totalWeight = calculateTotalWeight(regularCart);
     const localShipping = calculateShipping(totalWeight, countryName);
+
+    const itemsPayload = regularCart.map(item => ({
+      id: item.id || item.product_id,
+      price: parseFloat(item.price) || 0,
+      quantity: parseInt(item.quantity, 10) || 1
+    }));
 
     try {
       const res = await fetch('/api/woocommerce/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: currentController.signal,
         body: JSON.stringify({
           email: email,
           subtotal: subtotal,
           country: countryIso,
           selected_offer: selectedOfferKey,
+          promo_mode: promoMode,
           use_points: isPointsRedeemed,
-          manual_coupon: manualCouponCode
+          manual_coupon: manualCouponCode,
+          items: itemsPayload
         })
       });
 
       const data = await res.json();
+      if (currentController.signal.aborted) return;
+
       if (data && data.success) {
         activeCalculationData = data;
         renderCalculationOutcome(data, localShipping);
         return;
       }
     } catch (e) {
+      if (e && e.name === 'AbortError') return;
       console.warn('API calculate fallback to local calculation:', e);
     }
 
-    renderFallbackOutcome(subtotal, localShipping);
+    if (!currentController.signal.aborted) {
+      renderFallbackOutcome(subtotal, localShipping);
+    }
   }
 
   // ============================================================
-  // 核心渲染：包含香槟金动效进度条与严格解锁逻辑
-  // ============================================================
-  // ============================================================
-  // 核心渲染：完全由后端动态配置驱动（零硬编码）
+  // 核心渲染：支持【圣诞满赠 vs VIP会员优惠】二选一互斥隔离
   // ============================================================
   function renderCalculationOutcome(data, localShipping) {
     const privilegeBoxes = document.querySelectorAll('.checkout-privilege-box');
+    const discountSections = document.querySelectorAll('.discount-code-section');
+    const feedbackEls = document.querySelectorAll('.coupon-feedback-msg');
     const remoteFeeLines = document.querySelectorAll('.remote-fee-line');
     const remoteFeeVals = document.querySelectorAll('.remote-fee-val');
     const discountLines = document.querySelectorAll('.discount-line');
@@ -1321,10 +1672,12 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     const shippingDetailsEl = document.getElementById('shippingDetails');
 
     const cart = getCart();
-    const hasOnlyFreeShippingItems = cart.length > 0 && cart.every(item => isExcludedFromShipping(item));
+    const regularCart = cart.filter(item => !item.isXmasMysteryGift);
+    const hasOnlyFreeShippingItems = regularCart.length > 0 && regularCart.every(item => isExcludedFromShipping(item));
 
-    // A. 纯免运费赠品订单：彻底隐身
+    // A. 纯免运费赠品订单
     if (hasOnlyFreeShippingItems) {
+      syncShippingXmasGiftItem('');
       if (shippingDetailsEl) {
         shippingDetailsEl.style.display = 'none';
         shippingDetailsEl.innerHTML = '';
@@ -1339,11 +1692,30 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       if (shippingOption) shippingOption.setAttribute('data-cost', '0.00');
 
       applyFinalTotalsToDom(data.final_subtotal);
+
+      sessionStorage.setItem('ebbelle_checkout_calculation', JSON.stringify({
+        promo_mode: 'free_gift_only',
+        original_subtotal: parseFloat(data.original_subtotal) || 0,
+        final_subtotal: parseFloat(data.final_subtotal) || 0,
+        discount_total: 0,
+        points_spent: 0,
+        points_discount: 0,
+        points_earned: 0,
+        points_multiplier: 1.0,
+        manual_coupon: '',
+        shipping_cost: 0,
+        remote_surcharge: 0,
+        selected_offer: '',
+        is_extreme_remote: false,
+        free_gift: true,
+        applied_offers: []
+      }));
       return;
     }
 
-    // B. 极偏远排除国家（不参与促销与包邮）
+    // B. 极偏远排除国家
     if (data.is_extreme_remote) {
+      syncShippingXmasGiftItem('');
       privilegeBoxes.forEach(b => { b.style.display = 'none'; b.innerHTML = ''; });
       discountLines.forEach(l => { l.style.display = 'none'; });
       noticeBoxes.forEach(n => { n.style.display = 'none'; });
@@ -1370,6 +1742,24 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
         `;
       }
       applyFinalTotalsToDom(grandTotal);
+
+      sessionStorage.setItem('ebbelle_checkout_calculation', JSON.stringify({
+        promo_mode: 'extreme_remote',
+        original_subtotal: parseFloat(data.original_subtotal) || 0,
+        final_subtotal: parseFloat(data.final_subtotal) || 0,
+        discount_total: 0,
+        points_spent: 0,
+        points_discount: 0,
+        points_earned: parseFloat(data.points_earned) || 0,
+        points_multiplier: parseFloat(data.points_multiplier) || 1.0,
+        manual_coupon: '',
+        shipping_cost: actualShipping,
+        remote_surcharge: parseFloat(data.remote_surcharge) || 0,
+        selected_offer: '',
+        is_extreme_remote: true,
+        free_gift: false,
+        applied_offers: []
+      }));
       return;
     }
 
@@ -1378,7 +1768,242 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       shippingDetailsEl.innerHTML = '';
     }
 
-    // C. 偏远起付线国家运费行处理
+    // 检查是否处于圣诞活动周期内（严格联动后台总开关 + 开始/结束时间，非活动时间自动不显示）
+    const xmasData = data.xmas_data || null;
+    const isXmasPromoLive = Boolean(data.xmas_promo_active && xmasData && xmasData.promo_active);
+    const isXmasEligible = Boolean(isXmasPromoLive && xmasData.eligible && (parseFloat(xmasData.xmas_discount) || 0) > 0);
+    const useXmasBranch = isXmasEligible && promoMode === 'xmas_bogo';
+
+    // 构建圣诞进阶促单进度条 HTML
+    function buildXmasTierProgressHtml(xData) {
+      const totalQty = Math.max(0, parseInt(xData.total_qty, 10) || 0);
+      const isMaxed = totalQty >= 8;
+
+      let nextTarget = 2;
+      let nextTierName = 'Buy 2 Get 1 Free';
+      if (totalQty >= 8) {
+        nextTarget = 8;
+        nextTierName = 'Buy 5 Get 3 Free (Max Tier)';
+      } else if (totalQty >= 5) {
+        nextTarget = 8;
+        nextTierName = 'Buy 5 Get 3 Free';
+      } else if (totalQty >= 2) {
+        nextTarget = 5;
+        nextTierName = 'Buy 3 Get 2 Free';
+      }
+
+      const pct = isMaxed ? 100 : Math.min(100, Math.max(10, Math.round((totalQty / nextTarget) * 100)));
+      const needMore = Math.max(0, nextTarget - totalQty);
+      const defaultHint = isMaxed
+        ? 'Maximum Christmas reward unlocked (3 lowest-priced items FREE)!'
+        : `Add ${needMore} more item${needMore > 1 ? 's' : ''} to ${totalQty >= 2 ? 'upgrade to' : 'unlock'} ${nextTierName}!`;
+      const hintText = xData.next_tier_hint || defaultHint;
+
+      const ms1Class = totalQty >= 2 ? (totalQty < 5 ? 'xmas-ms-pill current' : 'xmas-ms-pill reached') : 'xmas-ms-pill';
+      const ms2Class = totalQty >= 5 ? (totalQty < 8 ? 'xmas-ms-pill current' : 'xmas-ms-pill reached') : 'xmas-ms-pill';
+      const ms3Class = totalQty >= 8 ? 'xmas-ms-pill current' : 'xmas-ms-pill';
+      const shopUrl = window.location.pathname.startsWith('/fr') ? '/fr/christmas'
+        : window.location.pathname.startsWith('/de') ? '/de/christmas'
+        : window.location.pathname.startsWith('/es') ? '/es/christmas'
+        : '/christmas';
+
+      return `
+        <div class="xmas-tier-progress-box">
+          <div class="xmas-tp-top">
+            <span><i class="fa-solid fa-gift" style="color:#961820; margin-right:4px;"></i> ${isMaxed ? 'All Holiday Tiers Unlocked!' : `Next Goal: ${nextTierName}`}</span>
+            <span class="xmas-tp-count">${totalQty} / ${nextTarget} Items</span>
+          </div>
+          <div class="xmas-tp-track">
+            <div class="xmas-tp-fill ${isMaxed ? 'is-maxed' : ''}" style="width: ${pct}%;"></div>
+          </div>
+          <div class="xmas-tp-milestones">
+            <div class="${ms1Class}">${totalQty >= 2 ? '✓ ' : ''}2+: Buy 2 Get 1</div>
+            <div class="${ms2Class}">${totalQty >= 5 ? '✓ ' : ''}5+: Buy 3 Get 2</div>
+            <div class="${ms3Class}">${totalQty >= 8 ? '✓ ' : ''}8+: Buy 5 Get 3</div>
+          </div>
+          <div class="xmas-tp-hint-row">
+            <span>${isMaxed ? '🎉 ' : '✨ '}${hintText}</span>
+            ${!isMaxed ? `<a href="${shopUrl}" class="xmas-add-more-link">+ Add Items</a>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    let xmasTopCardHtml = '';
+    if (isXmasEligible) {
+      const xmasDiscountNum = parseFloat(xmasData.xmas_discount) || 0;
+      const vipDiscountNum = parseFloat(data.discount_total) || 0;
+      const tierProgressHtml = buildXmasTierProgressHtml(xmasData);
+
+      xmasTopCardHtml = `
+        <div class="xmas-mutex-switcher">
+          <div class="xmas-mutex-header">
+            <span class="xmas-mutex-title"><i class="fa-solid fa-sleigh"></i> Choose Your Checkout Promotion</span>
+            <span class="xmas-mutex-badge">🎄 Holiday Event</span>
+          </div>
+
+          ${tierProgressHtml}
+
+          <label class="xmas-mutex-option ${useXmasBranch ? 'active-xmas' : ''}">
+            <input type="radio" name="eb_promo_mutex" value="xmas_bogo" ${useXmasBranch ? 'checked' : ''} onchange="handlePromoModeSwitch('xmas_bogo')">
+            <div class="xmas-mutex-opt-body">
+              <div class="xmas-mutex-opt-top">
+                <span>🎄 Christmas Event: ${xmasData.tier_label}</span>
+                <span class="xmas-save-tag">Save ${formatPrice(xmasDiscountNum)}</span>
+              </div>
+              <div class="xmas-mutex-opt-desc">
+                ${xmasData.free_count} lowest-priced item${xmasData.free_count > 1 ? 's' : ''} FREE! Standard shipping applies (VIP vouchers, points &amp; free shipping excluded; your VIP vouchers stay safe for future orders).
+              </div>
+            </div>
+          </label>
+
+          <label class="xmas-mutex-option ${!useXmasBranch ? 'active-vip' : ''}">
+            <input type="radio" name="eb_promo_mutex" value="vip_rewards" ${!useXmasBranch ? 'checked' : ''} onchange="handlePromoModeSwitch('vip_rewards')">
+            <div class="xmas-mutex-opt-body">
+              <div class="xmas-mutex-opt-top">
+                <span>👑 Use VIP Member Rewards &amp; Free Shipping</span>
+                ${vipDiscountNum > 0 ? `<span style="color:#8c631a; font-weight:700;">Save ${formatPrice(vipDiscountNum)}</span>` : ''}
+              </div>
+              <div class="xmas-mutex-opt-desc">
+                Apply your Welcome 15% OFF / $200 Bundle, reward points &amp; free shipping threshold instead.
+              </div>
+            </div>
+          </label>
+        </div>
+      `;
+    } else if (isXmasPromoLive && xmasData && !xmasData.eligible) {
+      xmasTopCardHtml = `
+        <div class="xmas-nudge-card">
+          <div class="xmas-mutex-header" style="margin-bottom:8px; padding-bottom:6px;">
+            <span class="xmas-mutex-title"><i class="fa-solid fa-sleigh"></i> Christmas Mix &amp; Match Event</span>
+            <span class="xmas-mutex-badge">Sitewide Deal</span>
+          </div>
+          ${buildXmasTierProgressHtml(xmasData)}
+        </div>
+      `;
+    }
+
+    // ============================================================
+    // 分支 1：客户选择了【🎄 圣诞满赠活动】（支持兑换 GIFT125/GIFT124/GIFT777 加入免费实物礼盒，三选一不可叠加）
+    // ============================================================
+    if (useXmasBranch) {
+      discountSections.forEach(s => { s.style.display = 'flex'; });
+
+      const upperCode = (manualCouponCode || '').toUpperCase().trim();
+      const isXmasCode = XMAS_EXCLUSIVE_CODES.includes(upperCode);
+      const validXmasGiftCode = Boolean(isXmasCode && data.xmas_coupon_status === 'valid');
+
+      // 在加购列表中排他同步对应免费圣诞实物礼盒（自动替换旧礼盒，确保只能兑 1 个）
+      syncShippingXmasGiftItem(validXmasGiftCode ? upperCode : '');
+
+      if (upperCode) {
+        feedbackEls.forEach(el => {
+          el.style.display = 'flex';
+          el.style.alignItems = 'center';
+          el.style.justifyContent = 'space-between';
+          if (validXmasGiftCode) {
+            el.style.background = '#fff5f5';
+            el.style.color = '#961820';
+            el.style.border = '1px solid #f5c2c7';
+            el.innerHTML = `
+              <span>${data.xmas_coupon_message}</span>
+              <button type="button" onclick="removeManualCoupon()" style="background:none; border:none; color:#555; cursor:pointer; font-size:12px; text-decoration:underline;">Remove</button>
+            `;
+          } else {
+            const msg = isXmasCode
+              ? (data.xmas_coupon_message || data.coupon_message || `Unable to apply ${upperCode}.`)
+              : `Regular code "${upperCode}" cannot be combined with Christmas Event. Switch to VIP Rewards above or use a Christmas Mystery Code (GIFT125/124/777).`;
+            el.style.background = '#fdecea';
+            el.style.color = '#c62828';
+            el.style.border = '1px solid #ffcdd2';
+            el.innerHTML = `
+              <span><i class="fa-solid fa-circle-exclamation"></i> ${msg}</span>
+              <button type="button" onclick="removeManualCoupon()" style="background:none; border:none; color:#555; cursor:pointer; font-size:12px; text-decoration:underline;">Remove</button>
+            `;
+          }
+        });
+      } else {
+        feedbackEls.forEach(el => { el.style.display = 'none'; });
+      }
+
+      const standardShip = localShipping.baseShipping + localShipping.surcharge;
+      if (localShipping.surcharge > 0) {
+        remoteFeeLines.forEach(l => { l.style.display = 'flex'; });
+        remoteFeeVals.forEach(v => { v.textContent = `+${formatPrice(localShipping.surcharge)}`; });
+      } else {
+        remoteFeeLines.forEach(l => { l.style.display = 'none'; });
+      }
+
+      noticeBoxes.forEach(n => {
+        n.className = 'shipping-notice-box need-more';
+        n.style.display = 'block';
+        n.innerHTML = `<i class="fa-solid fa-snowflake"></i> Christmas Event selected: Standard shipping applies (${formatPrice(standardShip)}). Switch to VIP Rewards above if you prefer free shipping.`;
+      });
+
+      shippingStatusTexts.forEach(s => { s.textContent = formatPrice(standardShip); });
+      if (shippingPriceEl) shippingPriceEl.textContent = formatPrice(standardShip);
+      if (shippingOption) shippingOption.setAttribute('data-cost', standardShip.toFixed(2));
+
+      privilegeBoxes.forEach(b => {
+        b.style.display = 'block';
+        b.style.background = 'transparent';
+        b.style.border = 'none';
+        b.style.padding = '0';
+        b.style.boxShadow = 'none';
+        b.innerHTML = xmasTopCardHtml;
+      });
+
+      const xmasDiscount = parseFloat(xmasData.xmas_discount) || 0;
+      const xmasFinalGoods = Math.max(0, parseFloat(((parseFloat(data.original_subtotal) || 0) - xmasDiscount).toFixed(2)));
+      const xmasGrandTotal = Math.max(0, xmasFinalGoods + standardShip);
+
+      if (xmasDiscount > 0) {
+        discountLines.forEach(l => { l.style.display = 'flex'; });
+        discountVals.forEach(v => { v.textContent = `-${formatPrice(xmasDiscount)}`; });
+      } else {
+        discountLines.forEach(l => { l.style.display = 'none'; });
+      }
+
+      applyFinalTotalsToDom(xmasGrandTotal);
+
+      const appliedOffersList = [`Christmas Event: ${xmasData.tier_label} (-$${xmasDiscount.toFixed(2)})`];
+      if (validXmasGiftCode) {
+        appliedOffersList.push(`Holiday Mystery Gift: ${XMAS_GIFT_CATALOG[upperCode].name} (${upperCode})`);
+      }
+
+      sessionStorage.setItem('ebbelle_checkout_calculation', JSON.stringify({
+        promo_mode: 'xmas_bogo',
+        original_subtotal: parseFloat(data.original_subtotal) || 0,
+        final_subtotal: xmasFinalGoods,
+        discount_total: xmasDiscount,
+        points_spent: 0,
+        points_discount: 0,
+        points_earned: 0,
+        points_multiplier: 1.0,
+        manual_coupon: '', // 免费礼盒已直接作为独立商品项写入购物车，无需 WooCommerce 校验优惠券
+        shipping_cost: standardShip,
+        remote_surcharge: localShipping.surcharge,
+        selected_offer: 'xmas_bogo',
+        is_extreme_remote: false,
+        free_gift: false,
+        applied_offers: appliedOffersList
+      }));
+      return;
+    }
+
+    // ============================================================
+    // 分支 2：日常 VIP 会员结算模式（切回 VIP 模式时自动移除圣诞免费实物礼盒）
+    // ============================================================
+    syncShippingXmasGiftItem('');
+    discountSections.forEach(s => { s.style.display = 'flex'; });
+
+    privilegeBoxes.forEach(b => {
+      b.style.background = '';
+      b.style.border = '';
+      b.style.padding = '';
+      b.style.boxShadow = '';
+    });
+
     if (data.is_remote) {
       if (data.base_shipping_free) {
         remoteFeeLines.forEach(l => { l.style.display = 'none'; });
@@ -1405,7 +2030,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       }
     }
 
-    // D. 运费最终计算
     let effectiveShipping = 0;
     if (!data.base_shipping_free) {
       effectiveShipping += localShipping.baseShipping;
@@ -1418,27 +2042,23 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     if (shippingPriceEl) shippingPriceEl.textContent = effectiveShipping === 0 ? 'FREE' : formatPrice(effectiveShipping);
     if (shippingOption) shippingOption.setAttribute('data-cost', effectiveShipping.toFixed(2));
 
-    // E. 动态读取后端配置参数（彻底消除前端硬编码）
     const isNewCustomer = typeof data.is_new_customer === 'boolean' ? data.is_new_customer : Boolean(data.free_gift_included);
     const canChooseWelcome15 = Boolean(data.base_shipping_free);
     const subtotal = parseFloat(data.original_subtotal) || 0;
     const freeShippingTarget = (typeof data.free_shipping_min === 'number')
       ? data.free_shipping_min
       : (data.is_remote ? (data.remote_free_min || 150) : (isNewCustomer ? 25.0 : 0));
-    // 动态读取后台配置的大礼包阶梯（已按门槛从低到高排序）
-    // 动态读取后台配置的大礼包剩余可用阶梯（已按门槛从低到高排序；若全部用完则为 []）
+
     const bundleTiers = Array.isArray(data.bundle_tiers) ? data.bundle_tiers : [];
     const tier1Min = bundleTiers.length > 0 ? (parseFloat(bundleTiers[0].min) || 60) : 0;
     const tier1Off = bundleTiers.length > 0 ? (parseFloat(bundleTiers[0].off) || 10) : 0;
     const nextTier = bundleTiers.find(t => subtotal < parseFloat(t.min)) || null;
     const tierSummaryText = bundleTiers.slice(0, 2).map(t => `Orders $${t.min}+ (-$${t.off})`).join(' | ');
 
-    // 动态积分汇率与可用积分
     const availablePts = parseFloat(data.available_points) || 0;
     const ptsFor1Usd = parseFloat(data.pts_for_1usd) || 10.0;
     const ptsValueUsd = ptsFor1Usd > 0 ? (availablePts / ptsFor1Usd) : 0;
 
-    // 积分兑换组件模板（新客/老客只要账号有积分且汇率正常即可通用）
     const pointsRedeemHtml = (availablePts > 0 && ptsValueUsd > 0) ? `
       <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(212,175,103,0.3);">
         <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 12px; color: #66522e;">
@@ -1454,9 +2074,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     let privilegeHtml = '';
 
     if (isNewCustomer) {
-      // ============================================================
-      // 新客首单特权分支（含已注册但 0 笔已付款订单的 Pearl 新会员）
-      // ============================================================
       if (!selectedOfferKey) {
         selectedOfferKey = canChooseWelcome15 ? 'welcome_15' : 'bundle_tier';
       } else if (selectedOfferKey === 'welcome_15' && !canChooseWelcome15) {
@@ -1542,9 +2159,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
         </div>
       `;
     } else {
-      // ============================================================
-      // 老客户及 VIP 会员专属权益看板（全量读取后端返回数据）
-      // ============================================================
       selectedOfferKey = 'bundle_tier';
       const progressPercent = freeShippingTarget > 0 ? Math.min(100, Math.round((subtotal / freeShippingTarget) * 100)) : 100;
       const distanceToFree = Math.max(0, freeShippingTarget - subtotal);
@@ -1561,7 +2175,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
         </div>
       `;
 
-      // 1. 动态包邮进度条
       if (!hasReachedFree && freeShippingTarget > 0) {
         privilegeHtml += `
           <div class="privilege-progress-card">
@@ -1580,7 +2193,6 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
         `;
       }
 
-      // 2. 权益明细、动态大礼包阶梯与积分抵扣卡
       privilegeHtml += `
         <div class="privilege-options">
           ${appliedMemberTier ? `
@@ -1617,10 +2229,9 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
     privilegeBoxes.forEach(b => {
       b.style.display = 'block';
-      b.innerHTML = privilegeHtml;
+      b.innerHTML = xmasTopCardHtml + privilegeHtml;
     });
 
-    // F. 折扣金额渲染
     if (data.discount_total > 0) {
       discountLines.forEach(l => { l.style.display = 'flex'; });
       discountVals.forEach(v => { v.textContent = `-${formatPrice(data.discount_total)}`; });
@@ -1628,18 +2239,17 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       discountLines.forEach(l => { l.style.display = 'none'; });
     }
 
-    // G. 最终总额
     const grandFinal = Math.max(0, data.final_subtotal + effectiveShipping);
     applyFinalTotalsToDom(grandFinal);
 
-    // 渲染手动折扣码校验状态与一键移除按钮
-    const feedbackEls = document.querySelectorAll('.coupon-feedback-msg');
     if (manualCouponCode && data.coupon_message) {
+      const upperCode = manualCouponCode.toUpperCase().trim();
+      const isXmasOnlyCode = XMAS_EXCLUSIVE_CODES.includes(upperCode);
       feedbackEls.forEach(el => {
         el.style.display = 'flex';
         el.style.alignItems = 'center';
         el.style.justifyContent = 'space-between';
-        if (data.coupon_status === 'valid') {
+        if (!isXmasOnlyCode && data.coupon_status === 'valid') {
           el.style.background = '#edf7ee';
           el.style.color = '#2e7d32';
           el.style.border = '1px solid #c8e6c9';
@@ -1651,18 +2261,22 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
           el.style.background = '#fdecea';
           el.style.color = '#c62828';
           el.style.border = '1px solid #ffcdd2';
-          el.innerHTML = `<span><i class="fa-solid fa-circle-exclamation"></i> ${data.coupon_message}</span>`;
+          el.innerHTML = `
+            <span><i class="fa-solid fa-circle-exclamation"></i> ${data.coupon_message}</span>
+            <button type="button" onclick="removeManualCoupon()" style="background:none; border:none; color:#555; cursor:pointer; font-size:12px; text-decoration:underline;">Remove</button>
+          `;
         }
       });
     } else {
       feedbackEls.forEach(el => { el.style.display = 'none'; });
     }
 
-    // H. 保存完整结算快照（供 payment 页与创建订单接口使用）
     const actualPointsSpent = (isPointsRedeemed && data.points_discount > 0) ? (data.available_points || 0) : 0;
-    const validManualCoupon = (manualCouponCode && data.coupon_status === 'valid') ? manualCouponCode : '';
+    const upperCode = (manualCouponCode || '').toUpperCase().trim();
+    const validManualCoupon = (manualCouponCode && !XMAS_EXCLUSIVE_CODES.includes(upperCode) && data.coupon_status === 'valid') ? manualCouponCode : '';
 
     sessionStorage.setItem('ebbelle_checkout_calculation', JSON.stringify({
+      promo_mode: 'vip_rewards',
       original_subtotal: data.original_subtotal,
       final_subtotal: data.final_subtotal,
       discount_total: data.discount_total,
@@ -1701,15 +2315,15 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     performCheckoutRecalculation();
   };
 
-  // 移除已应用的折扣码
   window.removeManualCoupon = function() {
     manualCouponCode = '';
+    sessionStorage.removeItem('ebbelle_cart_manual_coupon');
     document.querySelectorAll('.manual-discount-input').forEach(inp => { inp.value = ''; });
     document.querySelectorAll('.coupon-feedback-msg').forEach(el => { el.style.display = 'none'; });
+    syncShippingXmasGiftItem('');
     performCheckoutRecalculation();
   };
 
-  // 手动优惠券 Apply 事件
   document.querySelectorAll('.manual-apply-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1719,7 +2333,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       if (!code) return;
 
       manualCouponCode = code;
-      // 同步移动端和桌面端两个输入框的内容
+      sessionStorage.setItem('ebbelle_cart_manual_coupon', code);
       document.querySelectorAll('.manual-discount-input').forEach(inp => { inp.value = code; });
 
       const origText = btn.textContent;
@@ -1734,7 +2348,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   });
 
   // ============================================================
-  // 原有初始化与事件监听（含浏览器后退 BFCache / 表单恢复修复）
+  // 原有初始化与事件监听（含防重复初始化 & BFCache 恢复）
   // ============================================================
   function restoreSavedShippingForm() {
     try {
@@ -1753,7 +2367,11 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
   function initializeCart() {
     restoreSavedShippingForm();
-
+    const savedCoupon = sessionStorage.getItem('ebbelle_cart_manual_coupon');
+    if (savedCoupon && !manualCouponCode) {
+      manualCouponCode = savedCoupon;
+      document.querySelectorAll('.manual-discount-input').forEach(inp => { inp.value = savedCoupon; });
+    }
     const cart = getCart();
     const subtotal = getPreDiscountSubtotal(cart);
     const count = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -1799,13 +2417,13 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
   const countrySelect = document.getElementById('country');
   if (countrySelect) {
-    countrySelect.addEventListener('change', performCheckoutRecalculation);
+    countrySelect.addEventListener('change', () => scheduleCheckoutRecalculation(80));
   }
 
   const emailInput = document.getElementById('email');
   if (emailInput) {
-    emailInput.addEventListener('blur', performCheckoutRecalculation);
-    emailInput.addEventListener('change', performCheckoutRecalculation);
+    emailInput.addEventListener('blur', () => scheduleCheckoutRecalculation(120));
+    emailInput.addEventListener('change', () => scheduleCheckoutRecalculation(120));
   }
 
   document.getElementById('shippingForm')?.addEventListener('submit', async (e) => {
@@ -1847,6 +2465,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     sessionStorage.setItem('shippingInfo', JSON.stringify(formData));
     sessionStorage.removeItem('pendingOrderId');
     sessionStorage.removeItem('pendingOrderKey');
+    sessionStorage.removeItem('pendingOrderSnapshot');
     window.location.href = '/checkout/payment';
   });
 
@@ -1857,14 +2476,13 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     });
   });
 
-  window.addEventListener('cartUpdated', performCheckoutRecalculation);
+  window.addEventListener('cartUpdated', () => scheduleCheckoutRecalculation(100));
   document.addEventListener('DOMContentLoaded', initializeCart);
 
-  // 捕获浏览器前进/后退返回（含 BFCache），等浏览器自动填充结束后用真实地址重新试算
   window.addEventListener('pageshow', (event) => {
-    setTimeout(() => {
+    if (event.persisted) {
       restoreSavedShippingForm();
       performCheckoutRecalculation();
-    }, event.persisted ? 0 : 60);
+    }
   });
 </script>

@@ -6,6 +6,15 @@ import { getEnv, validateEnv } from '../../../lib/env';
 
 export const prerender = false;
 
+interface LineItemInput {
+  product_id: number;
+  variation_id?: number;
+  name?: string;
+  quantity: number;
+  price?: number;
+  isXmasMysteryGift?: boolean;
+}
+
 interface RequestBody {
   existingOrderId?: number;
   existingOrderKey?: string;
@@ -38,11 +47,7 @@ interface RequestBody {
   pointsSpent?: number;
   pointsEarned?: number;
   appliedOffers?: string[];
-  line_items: Array<{
-    product_id: number;
-    variation_id?: number;
-    quantity: number;
-  }>;
+  line_items: LineItemInput[];
   coupon_lines?: Array<{
     code: string;
   }>;
@@ -210,6 +215,12 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
         metaData.push({ key: '_eb_applied_offers', value: appliedOffers.join(' | ') });
       }
 
+      // 借用订单内第一个真实商品的 product_id 作为圣诞免费礼盒的合法商品引用，满足 WooCommerce REST API 必填校验
+      const firstValidItem = line_items.find(
+        (it) => !it.isXmasMysteryGift && Number(it.product_id) > 0
+      );
+      const fallbackGiftProductId = firstValidItem ? Number(firstValidItem.product_id) : 57994;
+
       const orderPayload: any = {
         status: 'pending',
         currency: currency.toUpperCase(),
@@ -218,11 +229,37 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
         set_paid: false,
         billing: normalizedBilling,
         shipping: normalizedShipping,
-        line_items: line_items.map(item => ({
-          product_id: Number(item.product_id),
-          variation_id: item.variation_id ? Number(item.variation_id) : undefined,
-          quantity: Number(item.quantity) || 1
-        })),
+        line_items: line_items.map(item => {
+          const qty = Number(item.quantity) || 1;
+          const unitPrice = Number(item.price);
+
+          // 圣诞刮刮乐免费实物礼物：使用合法 product_id 满足 WC 接口校验，但覆写礼盒名称与 $0.00 价格
+          if (item.isXmasMysteryGift || Number(item.product_id) === 0) {
+            return {
+              product_id: fallbackGiftProductId,
+              name: item.name || 'Christmas Mystery Gift',
+              quantity: qty,
+              subtotal: '0.00',
+              total: '0.00',
+              meta_data: [
+                { key: '_eb_xmas_mystery_gift', value: 'yes' },
+                { key: '_eb_gift_title', value: item.name || 'Christmas Mystery Gift' }
+              ]
+            };
+          }
+
+          const lineItem: any = {
+            product_id: Number(item.product_id),
+            variation_id: item.variation_id ? Number(item.variation_id) : undefined,
+            quantity: qty,
+          };
+          if (!isNaN(unitPrice) && unitPrice >= 0) {
+            const lineSum = (unitPrice * qty).toFixed(2);
+            lineItem.subtotal = lineSum;
+            lineItem.total = lineSum;
+          }
+          return lineItem;
+        }),
         shipping_lines: shippingLines,
         coupon_lines: Array.isArray(coupon_lines) ? coupon_lines : [],
         meta_data: metaData
@@ -250,7 +287,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
       wcOrder = await wcOrderRes.json();
 
-      // 补齐非优惠券特权折扣（VIP 会员折扣 / $200大礼包 / 积分抵扣）
+      // 补齐非优惠券特权折扣（VIP 会员折扣 / $200大礼包 / 积分抵扣 / 圣诞阶梯满减）
       const wcCouponDiscount = parseFloat(wcOrder.discount_total || '0') || 0;
       const numericDiscountTotal = Number(discountTotal) || 0;
       const remainingPrivilegeDiscount = Math.max(0, parseFloat((numericDiscountTotal - wcCouponDiscount).toFixed(2)));

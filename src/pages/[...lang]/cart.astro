@@ -37,8 +37,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       <div class="cart-layout">
         <!-- Main Cart Column -->
         <main class="cart-main">
-          <!-- Free Shipping Progress -->
-          <div class="shipping-progress-banner">
+          <!-- 动态激励进度条（圣诞活动期间自动切换为圣诞老人骑麋鹿送礼主题 + 保留 VIP/新客提示；非活动期间自动恢复原黑金免邮条） -->
+          <div class="shipping-progress-banner" id="cartProgressBanner">
             <div class="progress-header">
               <p class="progress-message">
                 <i class="fa-solid fa-truck-fast"></i>
@@ -55,10 +55,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
             </div>
           </div>
 
-          <!-- Cart Items List (动态渲染区) -->
-          <div class="cart-items-wrapper" id="cartItemsWrapper">
-            <!-- 骨架屏/头部将在JS内统一渲染 -->
-          </div>
+          <!-- Cart Items List (动态渲染区，包含兑换出的免费圣诞实物礼盒图标行) -->
+          <div class="cart-items-wrapper" id="cartItemsWrapper"></div>
 
           <!-- Bottom Action Buttons -->
           <div class="cart-bottom-actions">
@@ -138,8 +136,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   <Footer />
 </Layout>
 
-<style>
-  /* 基础与防横向溢出安全锁 */
+<style is:global>
   *, *::before, *::after {
     box-sizing: border-box;
   }
@@ -220,7 +217,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     align-items: flex-start;
   }
 
-  /* Progress Banner (动态双门槛 & 热烈流光激励动效) */
+  /* 日常 VIP 免邮进度条样式 */
   .shipping-progress-banner {
     background: linear-gradient(135deg, #fffdf9 0%, #fbf5ea 100%);
     border: 1px solid #e2c99b;
@@ -335,6 +332,219 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     color: #8c867d;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+
+  /* 圣诞活动专属横幅（红金松绿高定 + 圣诞老人骑麋鹿送礼动画） */
+  .shipping-progress-banner.is-xmas-theme {
+    background: linear-gradient(145deg, #fff8f0 0%, #ffefed 55%, #fff6ea 100%);
+    border: 1.5px solid #961820;
+    border-radius: 10px;
+    padding: 16px 20px 15px;
+    box-shadow: 0 8px 22px rgba(150, 24, 32, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .shipping-progress-banner.is-xmas-theme::before {
+    content: '❄ ✦ ❄';
+    position: absolute;
+    top: 8px;
+    right: 120px;
+    font-size: 11px;
+    letter-spacing: 5px;
+    color: rgba(150, 24, 32, 0.22);
+    pointer-events: none;
+    animation: xmasBannerSparkle 3.5s ease-in-out infinite;
+  }
+  @keyframes xmasBannerSparkle {
+    0%, 100% { opacity: 0.35; transform: translateY(0); }
+    50% { opacity: 0.9; transform: translateY(-2px); }
+  }
+  .xmas-cart-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed rgba(150, 24, 32, 0.28);
+    flex-wrap: wrap;
+  }
+  .xmas-cart-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #961820;
+  }
+  .xmas-cart-pill {
+    background: linear-gradient(135deg, #234638 0%, #193329 100%);
+    color: #ffdf9c;
+    border: 1px solid rgba(214, 184, 121, 0.45);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 999px;
+  }
+  .xmas-cart-goal-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e1b14;
+    margin-bottom: 24px;
+  }
+  .xmas-cart-save-badge {
+    background: #fff;
+    border: 1px solid #961820;
+    color: #961820;
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* 圣诞老人骑麋鹿奔跑轨道 */
+  .xmas-sleigh-track-wrap {
+    position: relative;
+    width: 100%;
+    padding-top: 4px;
+    margin-bottom: 10px;
+  }
+  .xmas-sleigh-track {
+    position: relative;
+    width: 100%;
+    height: 10px;
+    background: #efe4d6;
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+  .xmas-sleigh-fill {
+    height: 100%;
+    border-radius: 999px;
+    background-color: #961820;
+    background-image: linear-gradient(
+      45deg,
+      rgba(255, 223, 156, 0.36) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 223, 156, 0.36) 50%,
+      rgba(255, 223, 156, 0.36) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: 20px 20px;
+    animation: xmasCandySlide 1.2s linear infinite;
+    transition: width 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .xmas-sleigh-fill.is-maxed {
+    background-color: #234638;
+  }
+  @keyframes xmasCandySlide {
+    0% { background-position: 0 0; }
+    100% { background-position: 20px 0; }
+  }
+
+  .xmas-santa-rider {
+    position: absolute;
+    top: -22px;
+    transform: translateX(-50%);
+    transition: left 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: #ffffff;
+    border: 1.5px solid #961820;
+    border-radius: 999px;
+    padding: 2px 8px;
+    box-shadow: 0 4px 10px rgba(150, 24, 32, 0.22);
+    white-space: nowrap;
+    animation: santaSleighBounce 0.9s ease-in-out infinite;
+  }
+  .xmas-santa-rider .rider-trail {
+    font-size: 10px;
+    color: #d49b35;
+    animation: starTwinkle 0.8s ease-in-out infinite alternate;
+  }
+  .xmas-santa-rider .rider-emojis {
+    font-size: 13px;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  @keyframes santaSleighBounce {
+    0%, 100% { transform: translateX(-50%) translateY(0) rotate(-1.5deg); }
+    50% { transform: translateX(-50%) translateY(-3.5px) rotate(1.5deg); }
+  }
+  @keyframes starTwinkle {
+    0% { opacity: 0.4; transform: scale(0.85); }
+    100% { opacity: 1; transform: scale(1.15); }
+  }
+
+  .xmas-cart-milestones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .xmas-cart-ms {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 6px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #7d6b66;
+    border: 1px solid #e7d8c6;
+    transition: all 0.25s ease;
+  }
+  .xmas-cart-ms.reached {
+    background: #e7f3ed;
+    color: #234638;
+    border-color: #9bc7b2;
+    font-weight: 700;
+  }
+  .xmas-cart-ms.current {
+    background: linear-gradient(135deg, #961820 0%, #b82932 100%);
+    color: #ffdf9c;
+    border-color: #961820;
+    font-weight: 700;
+    box-shadow: 0 3px 8px rgba(150, 24, 32, 0.2);
+  }
+
+  /* 保留原会员/新客免邮与首单优惠小提示条 */
+  .xmas-vip-keep-note {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px dashed #d4af67;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 11.5px;
+    color: #5f4c2c;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    line-height: 1.4;
+  }
+  .xmas-vip-keep-note i {
+    color: #a3824c;
+    margin-right: 4px;
+  }
+  .xmas-vip-status-tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #2e7d32;
+    background: #edf7ee;
+    border: 1px solid #c8e6c9;
+    padding: 1px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
   }
 
   /* Cart Items Container */
@@ -548,12 +758,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     color: #6d665c;
   }
 
-  /* =========================================================
-     动态节点全局样式穿透 (全面修复桌面端与移动端排版)
-     ========================================================= */
-
-  /* 桌面端表头 */
-  :global(.cart-header-row) {
+  /* 动态节点全局样式穿透 */
+  .cart-header-row {
     display: grid !important;
     grid-template-columns: minmax(0, 4fr) 1.2fr 1.6fr 1.2fr 0.6fr !important;
     padding: 14px 20px !important;
@@ -565,15 +771,12 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     letter-spacing: 0.08em !important;
     color: #77726b !important;
   }
-  :global(.cart-header-row .col-total) {
-    text-align: right !important;
-  }
-  :global(.cart-header-row .col-action) {
+  .cart-header-row .col-total,
+  .cart-header-row .col-action {
     text-align: right !important;
   }
 
-  /* 商品卡片：桌面端 5 列标准排布 */
-  :global(.cart-item-card) {
+  .cart-item-card {
     display: grid !important;
     grid-template-columns: minmax(0, 4fr) 1.2fr 1.6fr 1.2fr 0.6fr !important;
     align-items: center !important;
@@ -582,21 +785,20 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     transition: background-color 0.2s ease !important;
     background: #ffffff !important;
   }
-  :global(.cart-item-card:last-child) {
+  .cart-item-card:last-child {
     border-bottom: none !important;
   }
-  :global(.cart-item-card:hover) {
+  .cart-item-card:hover {
     background-color: #faf8f5 !important;
   }
 
-  /* 产品列与缩略图 */
-  :global(.cart-item-card .item-product-col) {
+  .cart-item-card .item-product-col {
     display: flex !important;
     align-items: center !important;
     gap: 16px !important;
     min-width: 0 !important;
   }
-  :global(.cart-item-card .item-thumb) {
+  .cart-item-card .item-thumb {
     width: 76px !important;
     height: 76px !important;
     border-radius: 3px !important;
@@ -605,17 +807,17 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     background: #f4efe8 !important;
     border: 1px solid #eee7dd !important;
   }
-  :global(.cart-item-card .item-thumb img) {
+  .cart-item-card .item-thumb img {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
     display: block !important;
   }
-  :global(.cart-item-card .item-meta) {
+  .cart-item-card .item-meta {
     min-width: 0 !important;
     flex: 1 !important;
   }
-  :global(.cart-item-card .item-title) {
+  .cart-item-card .item-title {
     margin: 0 0 4px !important;
     font-size: 14px !important;
     font-weight: 600 !important;
@@ -624,14 +826,14 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     overflow: hidden !important;
     text-overflow: ellipsis !important;
   }
-  :global(.cart-item-card .item-title a) {
+  .cart-item-card .item-title a {
     color: #1a1917 !important;
     text-decoration: none !important;
   }
-  :global(.cart-item-card .item-title a:hover) {
+  .cart-item-card .item-title a:hover {
     color: #a3824c !important;
   }
-  :global(.cart-item-card .item-variant) {
+  .cart-item-card .item-variant {
     margin: 0 !important;
     font-size: 11.5px !important;
     color: #8c867d !important;
@@ -641,19 +843,17 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     text-overflow: ellipsis !important;
   }
 
-  /* 价格列 */
-  :global(.cart-item-card .item-price-col) {
+  .cart-item-card .item-price-col {
     display: flex !important;
     align-items: center !important;
   }
-  :global(.cart-item-card .unit-price) {
+  .cart-item-card .unit-price {
     font-size: 14px !important;
     font-weight: 600 !important;
     color: #4a453f !important;
   }
 
-  /* 数量增减器 */
-  :global(.cart-item-card .quantity-stepper) {
+  .cart-item-card .quantity-stepper {
     display: inline-flex !important;
     align-items: center !important;
     height: 32px !important;
@@ -662,7 +862,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     background: #ffffff !important;
     overflow: hidden !important;
   }
-  :global(.cart-item-card .stepper-btn) {
+  .cart-item-card .stepper-btn {
     width: 28px !important;
     height: 100% !important;
     border: none !important;
@@ -676,10 +876,10 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     padding: 0 !important;
     transition: background 0.2s !important;
   }
-  :global(.cart-item-card .stepper-btn:hover) {
+  .cart-item-card .stepper-btn:hover {
     background: #f4efe8 !important;
   }
-  :global(.cart-item-card .stepper-input) {
+  .cart-item-card .stepper-input {
     width: 38px !important;
     height: 100% !important;
     border: none !important;
@@ -694,19 +894,16 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     padding: 0 !important;
   }
 
-  /* 小计与删除 */
-  :global(.cart-item-card .item-total-col) {
+  .cart-item-card .item-total-col,
+  .cart-item-card .item-action-col {
     text-align: right !important;
   }
-  :global(.cart-item-card .line-total) {
+  .cart-item-card .line-total {
     font-size: 14.5px !important;
     font-weight: 700 !important;
     color: #1a1917 !important;
   }
-  :global(.cart-item-card .item-action-col) {
-    text-align: right !important;
-  }
-  :global(.cart-item-card .btn-remove) {
+  .cart-item-card .btn-remove {
     background: none !important;
     border: none !important;
     color: #aba499 !important;
@@ -715,25 +912,16 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     padding: 6px !important;
     transition: color 0.2s !important;
   }
-  :global(.cart-item-card .btn-remove:hover) {
+  .cart-item-card .btn-remove:hover {
     color: #a82424 !important;
   }
 
-  /* 默认隐藏移动端专属标签 */
-  :global(.cart-item-card .mobile-price-row) {
-    display: none !important;
-  }
-  :global(.cart-item-card .total-label) {
+  .cart-item-card .mobile-price-row,
+  .cart-item-card .total-label {
     display: none !important;
   }
 
-  /* =========================================================
-     移动端断点适配（卡片化上下分布，避免左右穿透）
-     ========================================================= */
   @media (max-width: 768px) {
-    :root {
-      --container-w: 100%;
-    }
     .cart-layout {
       box-sizing: border-box;
       grid-template-columns: minmax(0, 1fr);
@@ -742,14 +930,10 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     .cart-sidebar {
       position: static;
     }
-
-    /* 移动端隐藏桌面端表头 */
-    :global(.cart-header-row) {
+    .cart-header-row {
       display: none !important;
     }
-
-    /* 移动端卡片采用类似 Cart Drawer 的自适应布局 */
-    :global(.cart-item-card) {
+    .cart-item-card {
       display: grid !important;
       grid-template-columns: minmax(0, 1fr) auto !important;
       grid-template-areas:
@@ -759,57 +943,48 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       padding: 16px 14px !important;
       align-items: center !important;
     }
-
-    :global(.cart-item-card .item-product-col) {
+    .cart-item-card .item-product-col {
       grid-area: product !important;
       align-items: flex-start !important;
       gap: 12px !important;
     }
-    :global(.cart-item-card .item-thumb) {
+    .cart-item-card .item-thumb {
       width: 68px !important;
       height: 68px !important;
     }
-    :global(.cart-item-card .item-title) {
+    .cart-item-card .item-title {
       font-size: 13.5px !important;
-      white-space: normal !important; /* 允许折行 */
+      white-space: normal !important;
       display: -webkit-box !important;
       -webkit-line-clamp: 2 !important;
       -webkit-box-orient: vertical !important;
       overflow: hidden !important;
     }
-    :global(.cart-item-card .mobile-price-row) {
+    .cart-item-card .mobile-price-row {
       display: block !important;
       margin-top: 3px !important;
     }
-    :global(.cart-item-card .mobile-price-row .unit-price) {
+    .cart-item-card .mobile-price-row .unit-price {
       font-size: 13px !important;
       color: #a3824c !important;
       font-weight: 600 !important;
     }
-
-    /* 隐藏桌面单价列 */
-    :global(.cart-item-card .item-price-col) {
+    .cart-item-card .item-price-col {
       display: none !important;
     }
-
-    /* 删除按钮位于右上角 */
-    :global(.cart-item-card .item-action-col) {
+    .cart-item-card .item-action-col {
       grid-area: action !important;
       align-self: flex-start !important;
       text-align: right !important;
     }
-
-    /* 数量调节器位于左下 */
-    :global(.cart-item-card .item-quantity-col) {
+    .cart-item-card .item-quantity-col {
       grid-area: quantity !important;
       padding-top: 4px !important;
     }
-    :global(.cart-item-card .quantity-stepper) {
+    .cart-item-card .quantity-stepper {
       height: 30px !important;
     }
-
-    /* 小计金额位于右下 */
-    :global(.cart-item-card .item-total-col) {
+    .cart-item-card .item-total-col {
       grid-area: total !important;
       display: flex !important;
       align-items: center !important;
@@ -817,12 +992,12 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       gap: 4px !important;
       padding-top: 4px !important;
     }
-    :global(.cart-item-card .total-label) {
+    .cart-item-card .total-label {
       display: inline !important;
       font-size: 11.5px !important;
       color: #8c867d !important;
     }
-    :global(.cart-item-card .line-total) {
+    .cart-item-card .line-total {
       font-size: 14.5px !important;
     }
   }
@@ -836,6 +1011,10 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     }
     .shipping-progress-banner {
       padding: 14px;
+    }
+    .xmas-cart-ms {
+      font-size: 10px;
+      padding: 4px 3px;
     }
   }
 </style>
@@ -905,65 +1084,138 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   }
 
   // 货币处理函数
-  const CURRENCY_SYMBOLS = {
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    CAD: 'C$'
-  };
-
-  const CURRENCY_RATES = {
-    USD: 1.0,
-    EUR: 0.92,
-    GBP: 0.79,
-    CAD: 1.36
-  };
+  const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', CAD: 'C$' };
+  const CURRENCY_RATES = { USD: 1.0, EUR: 0.92, GBP: 0.79, CAD: 1.36 };
 
   function getCurrentCurrency() {
     return localStorage.getItem('ebbelle_currency') || 'USD';
   }
-
   function getCurrencySymbol(currency) {
     return CURRENCY_SYMBOLS[currency || getCurrentCurrency()] || '$';
   }
-
   function convertPrice(priceUSD, targetCurrency) {
     const currency = targetCurrency || getCurrentCurrency();
     const rate = CURRENCY_RATES[currency] || 1.0;
     return priceUSD * rate;
   }
-
   function formatPrice(priceUSD, targetCurrency) {
     const currency = targetCurrency || getCurrentCurrency();
     const converted = convertPrice(priceUSD, currency);
     const symbol = getCurrencySymbol(currency);
     const formatted = converted.toFixed(2);
-
-    if (currency === 'EUR') {
-      return `${formatted}${symbol}`;
-    }
-    return `${symbol}${formatted}`;
+    return currency === 'EUR' ? `${formatted}${symbol}` : `${symbol}${formatted}`;
   }
 
-  // 获取购物车数据
   function getCart() {
     try {
       const cart = localStorage.getItem('ebbelle_cart');
       return cart ? JSON.parse(cart) : [];
     } catch (e) {
-      console.error('Failed to get cart:', e);
       return [];
     }
   }
 
-  // 保存购物车数据
   function saveCart(cart) {
     try {
       localStorage.setItem('ebbelle_cart', JSON.stringify(cart));
       window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
-    } catch (e) {
-      console.error('Failed to save cart:', e);
+    } catch (e) {}
+  }
+
+  // ============================================================
+  // 圣诞专属免费礼盒映射（3 个码可任意切换兑换，每次仅生效 1 个，不可叠加）
+  // ============================================================
+  const XMAS_GIFT_CATALOG = {
+    GIFT125: {
+      code: 'GIFT125',
+      name: 'Crimson Surprise — Christmas Mystery Gift',
+      image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift666.png'
+    },
+    GIFT124: {
+      code: 'GIFT124',
+      name: 'Pine Surprise — Christmas Mystery Gift',
+      image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift999.png'
+    },
+    GIFT777: {
+      code: 'GIFT777',
+      name: 'Stellar Surprise — Christmas Mystery Gift',
+      image: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift888.png'
     }
+  };
+  const XMAS_EXCLUSIVE_CODES = Object.keys(XMAS_GIFT_CATALOG);
+
+  let cartXmasPromoActive = false;
+  let cartXmasBackendData = null;
+
+  // 在加购列表中排他同步免费圣诞实物礼盒（自动替换旧礼盒，确保每次只有 1 个生效）
+  function syncXmasMysteryGiftInCart(validCode) {
+    const cart = getCart();
+    const regularItems = cart.filter(item => !item.isXmasMysteryGift);
+    const upper = (validCode || '').toUpperCase().trim();
+    const giftMeta = XMAS_GIFT_CATALOG[upper];
+
+    let nextCart = regularItems;
+    if (giftMeta && regularItems.length > 0) {
+      nextCart = [
+        ...regularItems,
+        {
+          cartItemId: `xmas_mystery_gift_${upper}`,
+          id: 0,
+          name: giftMeta.name,
+          price: '0.00',
+          basePrice: '0.00',
+          quantity: 1,
+          weight: 0,
+          image: giftMeta.image,
+          isXmasMysteryGift: true,
+          xmasGiftCode: upper
+        }
+      ];
+    }
+
+    const changed = JSON.stringify(cart) !== JSON.stringify(nextCart);
+    if (changed) {
+      localStorage.setItem('ebbelle_cart', JSON.stringify(nextCart));
+      window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart: nextCart } }));
+    }
+    return changed;
+  }
+
+  function computeLocalXmasBogo(cart) {
+    const unitPrices = [];
+    cart.forEach(item => {
+      if (item.isXmasMysteryGift) return; // 免费礼物不计入买X送Y门槛件数
+      const p = Math.max(0, parseFloat(item.price) || 0);
+      const q = Math.max(0, parseInt(item.quantity, 10) || 0);
+      for (let i = 0; i < q; i++) unitPrices.push(p);
+    });
+    unitPrices.sort((a, b) => b - a);
+    const totalQty = unitPrices.length;
+    const subtotal = parseFloat(unitPrices.reduce((s, v) => s + v, 0).toFixed(2));
+
+    let freeCount = 0;
+    let tierLabel = '';
+    if (totalQty >= 8) {
+      freeCount = 3;
+      tierLabel = 'Buy 5 Get 3 Free';
+    } else if (totalQty >= 5) {
+      freeCount = 2;
+      tierLabel = 'Buy 3 Get 2 Free';
+    } else if (totalQty >= 2) {
+      freeCount = 1;
+      tierLabel = 'Buy 2 Get 1 Free';
+    }
+
+    const freeSlice = freeCount > 0 ? unitPrices.slice(-freeCount) : [];
+    const discount = parseFloat(freeSlice.reduce((s, v) => s + v, 0).toFixed(2));
+    return {
+      total_qty: totalQty,
+      eligible: totalQty >= 2,
+      free_count: freeCount,
+      tier_label: tierLabel,
+      xmas_discount: discount,
+      subtotal
+    };
   }
 
   // 渲染购物车页面
@@ -974,14 +1226,17 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
     if (!wrapper) return;
 
-    // 更新商品件数标签
+    const regularItems = cart.filter(item => !item.isXmasMysteryGift);
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     if (itemsCountTag) {
       itemsCountTag.textContent = `${totalItems} ${t('itemsInBag')}`;
     }
 
-    // 购物车为空时
-    if (cart.length === 0) {
+    // 若常规商品已清空，同时清空残留的免费圣诞礼物
+    if (regularItems.length === 0) {
+      if (cart.length > 0) {
+        localStorage.setItem('ebbelle_cart', JSON.stringify([]));
+      }
       wrapper.innerHTML = `
         <div style="text-align: center; padding: 60px 20px; color: #999;">
           <i class="fa-solid fa-cart-shopping" style="font-size: 48px; margin-bottom: 16px; opacity: 0.25;"></i>
@@ -996,55 +1251,61 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       return;
     }
 
-    // 渲染商品列表（结构直接绑定全局穿透类）
     const itemsHTML = cart.map(item => {
+      const isMysteryGift = Boolean(item.isXmasMysteryGift);
       const price = parseFloat(item.price) || 0;
-      const itemTotal = convertPrice(price * item.quantity);
       const itemWeight = parseFloat(item.weight) || 0;
       const totalWeight = itemWeight * item.quantity;
 
-      // 提取变体
       let variantsText = '';
-      if (item.selectedVariants) {
+      if (isMysteryGift) {
+        variantsText = `🎄 Redeemed with Code: ${item.xmasGiftCode} (1 Gift Per Order)`;
+      } else if (item.selectedVariants) {
         variantsText = Object.entries(item.selectedVariants)
           .filter(([_, value]) => value)
           .map(([key, value]) => `${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`)
           .join(' / ');
       }
 
-      // 添加重量信息（如果有）
-      const weightText = itemWeight > 0 ? ` • ${totalWeight.toFixed(3)}kg` : '';
+      const weightText = (!isMysteryGift && itemWeight > 0) ? ` • ${totalWeight.toFixed(3)}kg` : '';
+      const priceDisplay = isMysteryGift ? '<span style="color:#961820; font-weight:700;">FREE</span>' : formatPrice(price);
+      const lineTotalDisplay = isMysteryGift ? '<span style="color:#961820; font-weight:700;">FREE</span>' : formatPrice(price * item.quantity);
 
       return `
-        <div class="cart-item-card" data-cart-item-id="${item.cartItemId}">
+        <div class="cart-item-card" data-cart-item-id="${item.cartItemId}" ${isMysteryGift ? 'style="background: linear-gradient(90deg, #fff8f6 0%, #ffffff 100%) !important;"' : ''}>
           <div class="item-product-col">
-            <div class="item-thumb">
-              <img src="${item.image}" alt="${item.name}" />
+            <div class="item-thumb" ${isMysteryGift ? 'style="padding:6px !important; background:#fff8f0 !important; border-color:#d6b879 !important;"' : ''}>
+              <img src="${item.image}" alt="${item.name}" ${isMysteryGift ? 'style="object-fit:contain !important;"' : ''} />
             </div>
             <div class="item-meta">
-              <h3 class="item-title"><a href="/product/${item.slug || ''}">${item.name}</a></h3>
-              ${variantsText ? `<p class="item-variant">${variantsText}${weightText}</p>` : (weightText ? `<p class="item-variant">${weightText.substring(3)}</p>` : '')}
+              <h3 class="item-title">
+                ${isMysteryGift ? `<span>${item.name}</span>` : `<a href="/product/${item.slug || ''}">${item.name}</a>`}
+              </h3>
+              ${variantsText ? `<p class="item-variant" ${isMysteryGift ? 'style="color:#961820 !important; font-weight:600 !important;"' : ''}>${variantsText}${weightText}</p>` : (weightText ? `<p class="item-variant">${weightText.substring(3)}</p>` : '')}
               <div class="mobile-price-row">
-                <span class="unit-price item-price">${formatPrice(price)}</span>
+                <span class="unit-price item-price">${priceDisplay}</span>
               </div>
             </div>
           </div>
 
           <div class="item-price-col">
-            <span class="unit-price item-price">${formatPrice(price)}</span>
+            <span class="unit-price item-price">${priceDisplay}</span>
           </div>
 
           <div class="item-quantity-col">
-            <div class="quantity-stepper">
-              <button type="button" class="stepper-btn" data-action="decrease" aria-label="Decrease quantity">-</button>
-              <input type="number" class="stepper-input" value="${item.quantity}" min="1" readonly />
-              <button type="button" class="stepper-btn" data-action="increase" aria-label="Increase quantity">+</button>
-            </div>
+            ${isMysteryGift
+              ? `<span style="display:inline-block; font-size:11.5px; font-weight:700; color:#234638; background:#e7f3ed; border:1px solid #9bc7b2; padding:4px 10px; border-radius:999px;">Qty: 1 (Free Gift)</span>`
+              : `<div class="quantity-stepper">
+                  <button type="button" class="stepper-btn" data-action="decrease" aria-label="Decrease quantity">-</button>
+                  <input type="number" class="stepper-input" value="${item.quantity}" min="1" readonly />
+                  <button type="button" class="stepper-btn" data-action="increase" aria-label="Increase quantity">+</button>
+                </div>`
+            }
           </div>
 
           <div class="item-total-col">
             <span class="total-label">${t('total')}</span>
-            <span class="line-total">${formatPrice(price * item.quantity)}</span>
+            <span class="line-total">${lineTotalDisplay}</span>
           </div>
 
           <div class="item-action-col">
@@ -1070,9 +1331,10 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     updateCartSummary();
   }
 
-  // 购物车页状态：动态包邮门槛 + 优惠券码计算（与 shipping.astro 保持同一套后端校验接口）
+  // 购物车页状态
   let cartUserEmail = '';
   let cartFreeShippingThreshold = 25;
+  let cartIsNewCustomer = true;
   let cartManualCoupon = sessionStorage.getItem('ebbelle_cart_manual_coupon') || '';
   let cartDiscountAmount = 0;
   let cartCouponFreeShipping = false;
@@ -1095,8 +1357,21 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
   async function syncCartWithBackend() {
     const cart = getCart();
-    const subtotal = cart.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * item.quantity), 0);
+    const regularCart = cart.filter(item => !item.isXmasMysteryGift);
+    const subtotal = regularCart.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * item.quantity), 0);
     const feedbackEl = document.getElementById('cartCouponFeedback');
+    const itemsPayload = regularCart.map(item => ({
+      id: item.id || item.product_id,
+      price: parseFloat(item.price) || 0,
+      quantity: parseInt(item.quantity, 10) || 1
+    }));
+
+    const localXmas = computeLocalXmasBogo(cart);
+    const upperCode = (cartManualCoupon || '').toUpperCase().trim();
+    const isXmasCode = XMAS_EXCLUSIVE_CODES.includes(upperCode);
+
+    // 若用户输入的是圣诞专属券（GIFT125/GIFT124/GIFT777），仅在达标圣诞满赠时传 promo_mode: 'xmas_bogo' 供后端联动校验
+    const reqPromoMode = (isXmasCode && localXmas.eligible) ? 'xmas_bogo' : '';
 
     try {
       const res = await fetch('/api/woocommerce/calculate', {
@@ -1107,67 +1382,113 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
           subtotal: subtotal > 0 ? subtotal : 10,
           country: 'US',
           selected_offer: 'bundle_tier',
-          manual_coupon: cartManualCoupon
+          promo_mode: reqPromoMode,
+          manual_coupon: cartManualCoupon,
+          items: itemsPayload
         })
       });
       const data = await res.json();
       if (data && data.success) {
+        cartIsNewCustomer = typeof data.is_new_customer === 'boolean' ? data.is_new_customer : true;
         if (typeof data.free_shipping_min === 'number' && data.free_shipping_min > 0) {
           cartFreeShippingThreshold = data.free_shipping_min;
         } else {
-          cartFreeShippingThreshold = data.is_new_customer ? 25 : 50;
+          cartFreeShippingThreshold = cartIsNewCustomer ? 25 : 50;
         }
 
-        if (cartManualCoupon && subtotal > 0) {
-          if (data.coupon_status === 'valid') {
-            // 仅计算手动券本身带来的折扣金额（或免邮）
-            const baseRes = await fetch('/api/woocommerce/calculate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: cartUserEmail,
-                subtotal: subtotal,
-                country: 'US',
-                selected_offer: 'bundle_tier',
-                manual_coupon: ''
-              })
-            });
-            const baseData = await baseRes.json();
-            const baseDiscount = (baseData && baseData.success) ? (parseFloat(baseData.discount_total) || 0) : 0;
-            cartDiscountAmount = Math.max(0, parseFloat(((parseFloat(data.discount_total) || 0) - baseDiscount).toFixed(2)));
-            cartCouponFreeShipping = Boolean(data.base_shipping_free && !(baseData && baseData.base_shipping_free));
+        cartXmasPromoActive = Boolean(data.xmas_promo_active);
+        cartXmasBackendData = data.xmas_data || null;
 
-            if (feedbackEl) {
-              feedbackEl.style.display = 'flex';
-              feedbackEl.style.background = '#edf7ee';
-              feedbackEl.style.color = '#2e7d32';
-              feedbackEl.style.border = '1px solid #c8e6c9';
-              feedbackEl.innerHTML = `
-                <span><i class="fa-solid fa-tag"></i> ${data.coupon_message}</span>
-                <button type="button" onclick="removeCartPromoCode()" style="background:none; border:none; color:#555; cursor:pointer; font-size:11.5px; text-decoration:underline; padding:0;">Remove</button>
-              `;
-            }
-          } else {
+        if (cartManualCoupon && subtotal > 0) {
+          if (isXmasCode) {
             cartDiscountAmount = 0;
             cartCouponFreeShipping = false;
-            sessionStorage.removeItem('ebbelle_cart_manual_coupon');
-            if (feedbackEl && data.coupon_message) {
-              feedbackEl.style.display = 'flex';
-              feedbackEl.style.background = '#fdecea';
-              feedbackEl.style.color = '#c62828';
-              feedbackEl.style.border = '1px solid #ffcdd2';
-              feedbackEl.innerHTML = `<span><i class="fa-solid fa-circle-exclamation"></i> ${data.coupon_message}</span>`;
+            if (cartXmasPromoActive && localXmas.eligible && data.xmas_coupon_status === 'valid') {
+              const didChange = syncXmasMysteryGiftInCart(upperCode);
+              if (feedbackEl) {
+                feedbackEl.style.display = 'flex';
+                feedbackEl.style.background = '#fff5f5';
+                feedbackEl.style.color = '#961820';
+                feedbackEl.style.border = '1px solid #f5c2c7';
+                feedbackEl.innerHTML = `
+                  <span>${data.xmas_coupon_message}</span>
+                  <button type="button" onclick="removeCartPromoCode()" style="background:none; border:none; color:#555; cursor:pointer; font-size:11.5px; text-decoration:underline; padding:0;">Remove</button>
+                `;
+              }
+              if (didChange) renderCartPage();
+            } else {
+              const didChange = syncXmasMysteryGiftInCart('');
+              const errMsg = !cartXmasPromoActive
+                ? `Holiday code ${upperCode} is only valid during the Christmas Event.`
+                : (!localXmas.eligible
+                  ? `Add at least 2 items to join the Christmas Event and redeem ${upperCode}.`
+                  : (data.xmas_coupon_message || data.coupon_message || `Unable to apply ${upperCode}.`));
+              if (feedbackEl) {
+                feedbackEl.style.display = 'flex';
+                feedbackEl.style.background = '#fdecea';
+                feedbackEl.style.color = '#c62828';
+                feedbackEl.style.border = '1px solid #ffcdd2';
+                feedbackEl.innerHTML = `
+                  <span><i class="fa-solid fa-circle-exclamation"></i> ${errMsg}</span>
+                  <button type="button" onclick="removeCartPromoCode()" style="background:none; border:none; color:#555; cursor:pointer; font-size:11.5px; text-decoration:underline; padding:0;">Clear</button>
+                `;
+              }
+              if (didChange) renderCartPage();
             }
+          } else {
+            // 非圣诞专属码：清空任何圣诞免费礼盒
+            const didChange = syncXmasMysteryGiftInCart('');
+            if (data.coupon_status === 'valid') {
+              const baseRes = await fetch('/api/woocommerce/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email: cartUserEmail,
+                  subtotal: subtotal,
+                  country: 'US',
+                  selected_offer: 'bundle_tier',
+                  manual_coupon: '',
+                  items: itemsPayload
+                })
+              });
+              const baseData = await baseRes.json();
+              const baseDiscount = (baseData && baseData.success) ? (parseFloat(baseData.discount_total) || 0) : 0;
+              cartDiscountAmount = Math.max(0, parseFloat(((parseFloat(data.discount_total) || 0) - baseDiscount).toFixed(2)));
+              cartCouponFreeShipping = Boolean(data.base_shipping_free && !(baseData && baseData.base_shipping_free));
+
+              if (feedbackEl) {
+                feedbackEl.style.display = 'flex';
+                feedbackEl.style.background = '#edf7ee';
+                feedbackEl.style.color = '#2e7d32';
+                feedbackEl.style.border = '1px solid #c8e6c9';
+                feedbackEl.innerHTML = `
+                  <span><i class="fa-solid fa-tag"></i> ${data.coupon_message}</span>
+                  <button type="button" onclick="removeCartPromoCode()" style="background:none; border:none; color:#555; cursor:pointer; font-size:11.5px; text-decoration:underline; padding:0;">Remove</button>
+                `;
+              }
+            } else {
+              cartDiscountAmount = 0;
+              cartCouponFreeShipping = false;
+              sessionStorage.removeItem('ebbelle_cart_manual_coupon');
+              if (feedbackEl && data.coupon_message) {
+                feedbackEl.style.display = 'flex';
+                feedbackEl.style.background = '#fdecea';
+                feedbackEl.style.color = '#c62828';
+                feedbackEl.style.border = '1px solid #ffcdd2';
+                feedbackEl.innerHTML = `<span><i class="fa-solid fa-circle-exclamation"></i> ${data.coupon_message}</span>`;
+              }
+            }
+            if (didChange) renderCartPage();
           }
         } else {
+          const didChange = syncXmasMysteryGiftInCart('');
           cartDiscountAmount = 0;
           cartCouponFreeShipping = false;
           if (feedbackEl) feedbackEl.style.display = 'none';
+          if (didChange) renderCartPage();
         }
       }
-    } catch (e) {
-      // 降级本地计算
-    }
+    } catch (e) {}
 
     updateCartSummary();
   }
@@ -1181,7 +1502,8 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     if (inp) inp.value = '';
     const feedbackEl = document.getElementById('cartCouponFeedback');
     if (feedbackEl) feedbackEl.style.display = 'none';
-    updateCartSummary();
+    syncXmasMysteryGiftInCart('');
+    renderCartPage();
   };
 
   document.getElementById('cartCouponApplyBtn')?.addEventListener('click', async () => {
@@ -1207,11 +1529,12 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     }
   });
 
-  // 更新总览价格与免邮条
+  // 更新总览价格与动态激励横幅
   function updateCartSummary() {
     const cart = getCart();
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const subtotal = cart.reduce((sum, item) => {
+      if (item.isXmasMysteryGift) return sum;
       const price = parseFloat(item.price) || 0;
       return sum + (price * item.quantity);
     }, 0);
@@ -1231,6 +1554,112 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       subtotalSpan.textContent = formatPrice(subtotal);
     }
 
+    const freeShippingThreshold = cartFreeShippingThreshold || 25;
+    const remaining = Math.max(0, freeShippingThreshold - subtotal);
+    const vipShippingUnlocked = (remaining <= 0 && subtotal > 0) || (cartCouponFreeShipping && subtotal > 0);
+    const bannerEl = document.getElementById('cartProgressBanner');
+
+    // 分支 A：圣诞大促已开启且在活动时间内
+    if (cartXmasPromoActive && bannerEl) {
+      const xmasCalc = computeLocalXmasBogo(cart);
+      const qty = xmasCalc.total_qty;
+      const isMaxed = qty >= 8;
+
+      let nextTarget = 2;
+      let nextTierName = 'Buy 2 Get 1 Free';
+      if (qty >= 8) {
+        nextTarget = 8;
+        nextTierName = 'Buy 5 Get 3 Free (Max Tier)';
+      } else if (qty >= 5) {
+        nextTarget = 8;
+        nextTierName = 'Buy 5 Get 3 Free';
+      } else if (qty >= 2) {
+        nextTarget = 5;
+        nextTierName = 'Buy 3 Get 2 Free';
+      }
+
+      const rawPct = isMaxed ? 100 : Math.min(100, Math.round((qty / nextTarget) * 100));
+      const riderLeftPct = Math.min(92, Math.max(8, rawPct));
+      const needMore = Math.max(0, nextTarget - qty);
+
+      let goalHeadline = '';
+      if (qty === 0) {
+        goalHeadline = `Add 2 items anywhere on site to unlock <strong>Buy 2 Get 1 Free</strong>!`;
+      } else if (isMaxed) {
+        goalHeadline = `🎉 <strong>Buy 5 Get 3 Free</strong> Unlocked! (3 lowest-priced items FREE)`;
+      } else if (qty >= 2) {
+        goalHeadline = `🎄 <strong>${xmasCalc.tier_label}</strong> Active! Add <strong>${needMore} more</strong> to upgrade to <strong>${nextTierName}</strong>`;
+      } else {
+        goalHeadline = `Add <strong>${needMore} more item</strong> to unlock <strong>Buy 2 Get 1 Free</strong>!`;
+      }
+
+      const ms1Class = qty >= 2 ? (qty < 5 ? 'xmas-cart-ms current' : 'xmas-cart-ms reached') : 'xmas-cart-ms';
+      const ms2Class = qty >= 5 ? (qty < 8 ? 'xmas-cart-ms current' : 'xmas-cart-ms reached') : 'xmas-cart-ms';
+      const ms3Class = qty >= 8 ? 'xmas-cart-ms current' : 'xmas-cart-ms';
+
+      const vipPerkText = cartIsNewCustomer
+        ? `New Guest Welcome: <strong>15% OFF</strong> &amp; <strong>Free Shipping</strong> over ${formatPrice(freeShippingThreshold)} also available at checkout`
+        : `VIP Member Benefit: <strong>Free Shipping</strong> over ${formatPrice(freeShippingThreshold)} &amp; <strong>$200 Bundle</strong> also available at checkout`;
+      const vipStatusTag = vipShippingUnlocked
+        ? `✓ ${formatPrice(freeShippingThreshold)} Free Ship Ready`
+        : `${formatPrice(remaining)} to Free Ship`;
+
+      bannerEl.className = 'shipping-progress-banner is-xmas-theme';
+      bannerEl.innerHTML = `
+        <div class="xmas-cart-top-row">
+          <span class="xmas-cart-kicker"><i class="fa-solid fa-sleigh"></i> Christmas Mix &amp; Match Event</span>
+          <span class="xmas-cart-pill">🎄 Sitewide Stackable Tiers</span>
+        </div>
+
+        <div class="xmas-cart-goal-line">
+          <span>${goalHeadline}</span>
+          ${xmasCalc.xmas_discount > 0
+            ? `<span class="xmas-cart-save-badge">Est. Free Gift Value: -${formatPrice(xmasCalc.xmas_discount)}</span>`
+            : `<span class="xmas-cart-save-badge">${qty} / ${nextTarget} Items</span>`}
+        </div>
+
+        <div class="xmas-sleigh-track-wrap">
+          <div class="xmas-santa-rider" style="left: ${riderLeftPct}%;" title="Santa & Reindeer delivering your holiday gifts!">
+            <span class="rider-trail">✨</span>
+            <span class="rider-emojis">🎁🛷🎅🦌</span>
+          </div>
+          <div class="xmas-sleigh-track">
+            <div class="xmas-sleigh-fill ${isMaxed ? 'is-maxed' : ''}" style="width: ${rawPct}%;"></div>
+          </div>
+        </div>
+
+        <div class="xmas-cart-milestones">
+          <div class="${ms1Class}">${qty >= 2 ? '✓ ' : ''}2 Items: Buy 2 Get 1</div>
+          <div class="${ms2Class}">${qty >= 5 ? '✓ ' : ''}5 Items: Buy 3 Get 2</div>
+          <div class="${ms3Class}">${qty >= 8 ? '✓ ' : ''}8 Items: Buy 5 Get 3</div>
+        </div>
+
+        <div class="xmas-vip-keep-note">
+          <span><i class="fa-solid fa-crown"></i> ${vipPerkText}</span>
+          <span class="xmas-vip-status-tag">${vipStatusTag}</span>
+        </div>
+      `;
+
+      const activeDiscount = xmasCalc.eligible ? xmasCalc.xmas_discount : (subtotal > 0 ? Math.min(subtotal, cartDiscountAmount) : 0);
+      if (discountRow && discountVal && discountLabel) {
+        if (activeDiscount > 0) {
+          discountRow.style.display = 'flex';
+          discountLabel.textContent = xmasCalc.eligible ? `🎄 ${xmasCalc.tier_label}` : `Promo (${cartManualCoupon.toUpperCase()})`;
+          discountVal.textContent = `-${formatPrice(activeDiscount)}`;
+        } else {
+          discountRow.style.display = 'none';
+        }
+      }
+      if (shippingTag) {
+        shippingTag.textContent = xmasCalc.eligible ? 'Standard / VIP at Checkout' : (vipShippingUnlocked ? 'FREE' : 'Calculated next step');
+      }
+      if (totalSpan) {
+        totalSpan.textContent = formatPrice(Math.max(0, subtotal - activeDiscount));
+      }
+      return;
+    }
+
+    // 分支 B：非圣诞活动时段
     const effectiveDiscount = subtotal > 0 ? Math.min(subtotal, cartDiscountAmount) : 0;
     if (discountRow && discountVal && discountLabel) {
       if (effectiveDiscount > 0) {
@@ -1247,38 +1676,32 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       totalSpan.textContent = formatPrice(estimatedTotal);
     }
 
-    // 动态免邮进度（未登录或首单新客 $25；已付款复购老客 $50）
-    const freeShippingThreshold = cartFreeShippingThreshold || 25;
-    const remaining = Math.max(0, freeShippingThreshold - subtotal);
-    const unlocked = (remaining <= 0 && subtotal > 0) || (cartCouponFreeShipping && subtotal > 0);
-    const progress = unlocked ? 100 : Math.min(100, (subtotal / freeShippingThreshold) * 100);
+    const progress = vipShippingUnlocked ? 100 : Math.min(100, (subtotal / freeShippingThreshold) * 100);
 
     if (shippingTag) {
-      shippingTag.textContent = unlocked ? 'FREE' : 'Calculated next step';
+      shippingTag.textContent = vipShippingUnlocked ? 'FREE' : 'Calculated next step';
     }
 
-    const bannerEl = document.querySelector('.shipping-progress-banner');
-    const progressFill = document.querySelector('.shipping-progress-banner .progress-fill');
-    const progressPercent = document.querySelector('.shipping-progress-banner .progress-percent');
-    const progressMessage = document.querySelector('.shipping-progress-banner .progress-message');
-    const progressLabels = document.querySelector('.shipping-progress-banner .progress-labels');
+    if (bannerEl) {
+      bannerEl.className = `shipping-progress-banner${vipShippingUnlocked ? ' unlocked' : ''}`;
+      const msgHtml = (!vipShippingUnlocked && remaining > 0)
+        ? `<i class="fa-solid fa-truck-fast"></i> You're <span class="highlight">${formatPrice(remaining)}</span> away from <strong>FREE SHIPPING!</strong>`
+        : (subtotal > 0
+          ? `<i class="fa-solid fa-truck-fast"></i> <strong>Congratulations! You've unlocked FREE SHIPPING!</strong>`
+          : `<i class="fa-solid fa-truck-fast"></i> You're <span class="highlight">${formatPrice(freeShippingThreshold)}</span> away from <strong>FREE SHIPPING!</strong>`);
 
-    if (bannerEl) bannerEl.classList.toggle('unlocked', unlocked);
-    if (progressFill) progressFill.style.width = `${progress}%`;
-    if (progressPercent) progressPercent.textContent = `${Math.round(progress)}%`;
-    if (progressMessage) {
-      if (!unlocked && remaining > 0) {
-        progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> You're <span class="highlight">${formatPrice(remaining)}</span> away from <strong>FREE SHIPPING!</strong>`;
-      } else if (subtotal > 0) {
-        progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> <strong>Congratulations! You've unlocked FREE SHIPPING!</strong>`;
-      } else {
-        progressMessage.innerHTML = `<i class="fa-solid fa-truck-fast"></i> You're <span class="highlight">${formatPrice(freeShippingThreshold)}</span> away from <strong>FREE SHIPPING!</strong>`;
-      }
-    }
-    if (progressLabels) {
-      progressLabels.innerHTML = `
-        <span>Current: <strong>${formatPrice(subtotal)}</strong></span>
-        <span>Free threshold: <strong>${formatPrice(freeShippingThreshold)}</strong></span>
+      bannerEl.innerHTML = `
+        <div class="progress-header">
+          <p class="progress-message">${msgHtml}</p>
+          <span class="progress-percent">${Math.round(progress)}%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-fill" style="width: ${progress}%;"></div>
+        </div>
+        <div class="progress-labels">
+          <span>Current: <strong>${formatPrice(subtotal)}</strong></span>
+          <span>Free threshold: <strong>${formatPrice(freeShippingThreshold)}</strong></span>
+        </div>
       `;
     }
   }
@@ -1288,18 +1711,17 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     if (newQuantity < 1) return;
     const cart = getCart();
     const item = cart.find(i => String(i.cartItemId) === String(cartItemId));
-    if (item) {
+    if (item && !item.isXmasMysteryGift) {
       item.quantity = newQuantity;
 
-      // 重新计算批发价格
       const basePrice = parseFloat(item.basePrice || item.price);
       let finalPrice = basePrice;
       if (newQuantity >= 100) {
-        finalPrice = basePrice * 0.90; // 10% 折扣
+        finalPrice = basePrice * 0.90;
       } else if (newQuantity >= 50) {
-        finalPrice = basePrice * 0.94; // 6% 折扣
+        finalPrice = basePrice * 0.94;
       } else if (newQuantity >= 10) {
-        finalPrice = basePrice * 0.97; // 3% 折扣
+        finalPrice = basePrice * 0.97;
       }
       item.price = finalPrice.toFixed(2);
 
@@ -1318,18 +1740,31 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
         }
       }
       updateCartSummary();
+      if (cartManualCoupon) {
+        syncCartWithBackend();
+      }
     }
   }
 
-  // 删除商品
   function removeCartItem(cartItemId) {
     let cart = getCart();
+    const target = cart.find(i => String(i.cartItemId) === String(cartItemId));
+    if (target && target.isXmasMysteryGift) {
+      cartManualCoupon = '';
+      sessionStorage.removeItem('ebbelle_cart_manual_coupon');
+      const inp = document.getElementById('cartCouponInput');
+      if (inp) inp.value = '';
+      const feedbackEl = document.getElementById('cartCouponFeedback');
+      if (feedbackEl) feedbackEl.style.display = 'none';
+    }
     cart = cart.filter(i => String(i.cartItemId) !== String(cartItemId));
     saveCart(cart);
     renderCartPage();
+    if (cartManualCoupon) {
+      syncCartWithBackend();
+    }
   }
 
-  // 事件代理
   document.getElementById('cartItemsWrapper')?.addEventListener('click', (e) => {
     const button = e.target.closest('button');
     if (!button) return;
@@ -1355,17 +1790,15 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     }
   });
 
-  // 清空购物车
   document.getElementById('btnClearAll')?.addEventListener('click', () => {
+    cartManualCoupon = '';
+    sessionStorage.removeItem('ebbelle_cart_manual_coupon');
     saveCart([]);
     renderCartPage();
   });
 
   window.addEventListener('cartUpdated', () => {
     renderCartPage();
-    if (cartManualCoupon) {
-      syncCartWithBackend();
-    }
   });
   document.addEventListener('DOMContentLoaded', () => {
     renderCartPage();

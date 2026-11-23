@@ -188,7 +188,7 @@ if (!userId || !userEmail) {
           </div>
 
           <!-- =========================================================================
-               Tab: VIP & Rewards (全新高定会员中心)
+               Tab: VIP & Rewards (高定会员中心)
                ========================================================================= -->
           <div class="acc-tab-pane" id="membership">
             
@@ -208,7 +208,7 @@ if (!userId || !userEmail) {
               </p>
             </div>
 
-            <!-- 1. 生日设定独立专区 (纯英文月日双下拉框，彻底移除系统年/月/日) -->
+            <!-- 1. 生日设定独立专区 -->
             <div class="vip-feature-card" id="birthdayCard" style="background: #ffffff; border: 1px solid #e5ded2; border-radius: 6px; padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
               <div>
                 <h4 style="margin: 0 0 4px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #111; display:flex; align-items:center; gap:6px;">
@@ -241,7 +241,7 @@ if (!userId || !userEmail) {
               </div>
             </div>
 
-            <!-- 2. 免费拿样专属面板 (Silver / Gold / Diamond 亮起) -->
+            <!-- 2. 免费拿样专属面板 -->
             <div class="vip-feature-card" id="sampleClaimCard" style="display: none; background: linear-gradient(135deg, #fdfbf7 0%, #f6efe2 100%); border: 1px solid #d4af67; border-radius: 6px; padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 2px 10px rgba(163, 130, 76, 0.08); justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
               <div>
                 <h4 style="margin: 0 0 4px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #8c631a; display:flex; align-items:center; gap:6px;">
@@ -258,7 +258,6 @@ if (!userId || !userEmail) {
 
             <!-- 积分与兑换操作面板 -->
             <div class="rewards-split-grid" id="vipActiveContent">
-              <!-- 积分兑换现金券 -->
               <div class="reward-box-card">
                 <div>
                   <h4><i class="fa-solid fa-coins"></i> Redeem Points for Voucher</h4>
@@ -280,7 +279,6 @@ if (!userId || !userEmail) {
                 <div id="redeemMsg" style="display:none; font-size:12px; margin-top:10px;"></div>
               </div>
 
-              <!-- 当前等级权益卡片 -->
               <div class="reward-box-card" style="background: #fdf8f0; border-color: rgba(163, 130, 76, 0.3);">
                 <div>
                   <h4 style="color: #9e6d28;"><i class="fa-solid fa-gem"></i> <span id="currentTierPrivilegeTitle">Tier Privileges</span></h4>
@@ -294,14 +292,13 @@ if (!userId || !userEmail) {
               </div>
             </div>
 
-            <!-- 优惠券区域 (高定轻奢珠宝票券) -->
+            <!-- 优惠券区域 -->
             <div style="margin-top: 28px;">
               <div class="acc-pane-title-row" style="border-bottom:none; margin-bottom:12px;">
                 <h3 style="font-size: 17px; margin:0; font-family: 'Bodoni Moda', serif;">My Vouchers</h3>
                 <span style="font-size:12px; color:#9e6d28;">&#10003; All vouchers can be stacked at checkout</span>
               </div>
               
-              <!-- 状态筛选标签 -->
               <div class="coupon-subnav">
                 <button type="button" class="c-sub-btn active" onclick="switchCouponFilter('available', this)">
                   Available (<span id="couponCntAvailable">0</span>)
@@ -314,7 +311,6 @@ if (!userId || !userEmail) {
                 </button>
               </div>
 
-              <!-- 卡券展示网格 -->
               <div class="coupons-card-grid" id="couponsGrid">
                 <div style="grid-column: 1 / -1; text-align:center; padding:30px; color:#999;">
                   <i class="fa-solid fa-spinner fa-spin"></i> Loading vouchers...
@@ -347,7 +343,7 @@ if (!userId || !userEmail) {
 
           </div>
 
-          <!-- Tab 2: Orders (完全保持原有) -->
+          <!-- Tab 2: Orders -->
           <div class="acc-tab-pane" id="orders">
             <div id="ordersListWrap">
               <div class="acc-pane-title-row">
@@ -376,7 +372,7 @@ if (!userId || !userEmail) {
             </div>
           </div>
 
-          <!-- Tab 3: Wishlist (完全保持原有) -->
+          <!-- Tab 3: Wishlist -->
           <div class="acc-tab-pane" id="wishlist">
             <div class="acc-pane-title-row">
               <h2>My Wishlist</h2>
@@ -397,7 +393,7 @@ if (!userId || !userEmail) {
             </div>
           </div>
 
-          <!-- Tab 4: Addresses (完全保持原有) -->
+          <!-- Tab 4: Addresses -->
           <div class="acc-tab-pane" id="addresses">
             <div class="acc-pane-title-row">
               <h2>Addresses</h2>
@@ -553,7 +549,7 @@ if (!userId || !userEmail) {
             </div>
           </div>
 
-          <!-- Tab 5: Account Details (完全保持原有) -->
+          <!-- Tab 5: Account Details -->
           <div class="acc-tab-pane" id="account-details">
             <div class="acc-pane-title-row">
               <h2>Account Details</h2>
@@ -618,7 +614,7 @@ if (!userId || !userEmail) {
     </div>
   </div>
 
-  <!-- 高定轻奢拿样模态弹窗 (Luxury Sample Modal) -->
+  <!-- 高定轻奢拿样模态弹窗 -->
   <div id="sampleModalOverlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
     <div style="background: #ffffff; border-radius: 8px; max-width: 480px; width: 100%; border: 1px solid #e2cbab; box-shadow: 0 16px 40px rgba(0,0,0,0.25); overflow: hidden; animation: modalFadeIn 0.25s ease;">
       <div style="background: linear-gradient(135deg, #1f1d1a 0%, #332d24 100%); padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #a3824c;">
@@ -650,7 +646,7 @@ if (!userId || !userEmail) {
     </div>
   </div>
 
-  <!-- 高定轻奢反馈提示弹窗 (Luxury Notification Modal - 适配移动端与桌面端) -->
+  <!-- 高定轻奢反馈提示弹窗 -->
   <div id="vipLuxuryAlertOverlay" onclick="if(event.target===this) closeVipLuxuryAlert()" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.58); backdrop-filter: blur(5px); z-index: 10000; align-items: center; justify-content: center; padding: 16px;">
     <div style="background: #ffffff; border-radius: 10px; max-width: 400px; width: 100%; border: 1px solid #e2cbab; box-shadow: 0 18px 44px rgba(0,0,0,0.24); overflow: hidden; animation: modalFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1); text-align: center;">
       <div style="background: linear-gradient(135deg, #1f1d1a 0%, #332d24 100%); padding: 20px 20px 18px; border-bottom: 1px solid #a3824c;">
@@ -873,9 +869,7 @@ if (!userId || !userEmail) {
   .acc-pane-title-row h2 { font-size: 20px; margin: 0; color: #111; font-family: 'Bodoni Moda', serif; }
   .acc-pane-title-row span { font-size: 12.5px; color: #888; }
 
-  /* =========================================================================
-     高定会员横幅：四等级动态流动背景 (Pure CSS 硬件加速)
-     ========================================================================= */
+  /* 高定会员横幅 */
   .vip-status-banner {
     border-radius: 8px;
     padding: 26px 30px;
@@ -1141,7 +1135,7 @@ if (!userId || !userEmail) {
 </style>
 
 <style is:global>
-  /* 订单卡片与详情全局样式 (完全保留原生设置) */
+  /* 订单卡片与详情全局样式 */
   .acc-order-card { background: #ffffff; border: 1px solid #eee8df; border-radius: 4px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
   .acc-card-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid #f6f2ec; }
   .acc-card-order-id { font-family: monospace; font-weight: 700; font-size: 14.5px; color: #111; }
@@ -1164,9 +1158,7 @@ if (!userId || !userEmail) {
   .acc-detail-name-box h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #111; }
   .acc-detail-price-box { font-weight: 700; font-size: 13.5px; color: #111; }
 
-  /* =========================================================================
-     参考图 2 优化：高定轻奢珠宝票券质感 (Luxury Satin Gold Ticket)
-     ========================================================================= */
+  /* 高定轻奢珠宝票券质感 */
   .coupon-subnav { display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid #f0eae1; padding-bottom: 10px; }
   .c-sub-btn {
     background: transparent;
@@ -1188,7 +1180,6 @@ if (!userId || !userEmail) {
     margin-bottom: 32px !important;
   }
 
-  /* 票券卡片外框：香槟金丝绸微反光背景 */
   .ticket-card {
     background: linear-gradient(135deg, #fdfaf3 0%, #faedd9 50%, #f6e3c5 100%) !important;
     border-radius: 8px !important;
@@ -1207,7 +1198,6 @@ if (!userId || !userEmail) {
     border-color: #d1b183 !important;
   }
 
-  /* 丝绸镜面反光扫光 */
   .ticket-card:not(.is-used):not(.is-expired)::after {
     content: '' !important;
     position: absolute !important;
@@ -1225,7 +1215,6 @@ if (!userId || !userEmail) {
     75%, 100% { left: 160%; }
   }
 
-  /* 左侧面额票根 */
   .ticket-stub-left {
     width: 124px !important;
     background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(243,222,192,0.3) 100%) !important;
@@ -1240,7 +1229,6 @@ if (!userId || !userEmail) {
     box-sizing: border-box !important;
   }
 
-  /* 参考图 2 咬合圆孔 */
   .ticket-stub-left::before,
   .ticket-stub-left::after {
     content: '' !important;
@@ -1261,7 +1249,6 @@ if (!userId || !userEmail) {
     box-shadow: inset 0 2px 3px rgba(163, 130, 76, 0.15) !important; 
   }
 
-  /* 烫金感金额立体字 */
   .ticket-val-num {
     font-family: 'Bodoni Moda', 'Didot', Georgia, serif !important;
     font-size: 32px !important;
@@ -1279,7 +1266,6 @@ if (!userId || !userEmail) {
     margin-top: 5px !important;
   }
 
-  /* 右侧主体信息 */
   .ticket-body-right {
     flex: 1 !important;
     padding: 16px 20px !important;
@@ -1351,7 +1337,6 @@ if (!userId || !userEmail) {
     border: 1px solid #dfcfb9 !important;
   }
 
-  /* 模仿参考图 2 的高光香槟金胶囊按钮 */
   .ticket-copy-btn {
     background: linear-gradient(135deg, #caa360 0%, #99732e 100%) !important;
     color: #ffffff !important;
@@ -1375,7 +1360,6 @@ if (!userId || !userEmail) {
     box-shadow: 0 4px 10px rgba(163, 130, 76, 0.35) !important;
   }
 
-  /* 已使用 (USED) 印章 */
   .ticket-card.is-used {
     background: #f7f6f4 !important;
     border-color: #ddd9d2 !important;
@@ -1491,6 +1475,12 @@ if (!userId || !userEmail) {
   let currentCouponFilter = 'available';
   let countdownTimer = null;
 
+  const XMAS_GIFT_ICONS = {
+    GIFT125: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift666.png',
+    GIFT124: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift999.png',
+    GIFT777: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift888.png'
+  };
+
   // 1. 初始化英文 Day 下拉框 (1 - 31)
   const daySelect = document.getElementById('bdayDaySelect');
   if (daySelect && daySelect.options.length <= 1) {
@@ -1524,7 +1514,7 @@ if (!userId || !userEmail) {
   document.querySelectorAll('.acc-text-link[data-tab], .acc-mini-link[data-tab]').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); changeTab(btn.getAttribute('data-tab')); }));
 
   // =========================================================================
-  // 核心：VIP 会员数据加载与渲染 (支持动态背景与全新质感)
+  // 核心：VIP 会员数据加载与渲染
   // =========================================================================
   async function loadVipSummary() {
     try {
@@ -1555,13 +1545,11 @@ if (!userId || !userEmail) {
       const coupons = data.coupons || { available: [], used: [], expired: [] };
       const ledger = data.ledger || [];
 
-      // 1. 动态注入 VIP 横幅对应的背景流光类名 (tier-bg-pearl, tier-bg-silver, etc.)
       const bannerEl = document.getElementById('dashboardVipBanner');
       if (bannerEl) {
         bannerEl.className = `vip-status-banner tier-bg-${vip.tier_key}`;
       }
 
-      // 2. 侧边栏动态徽章类名注入
       const avatarEl = document.getElementById('sidebarAvatarMedallion');
       const avatarIcon = document.getElementById('sidebarAvatarIcon');
       if (avatarEl) {
@@ -1580,7 +1568,6 @@ if (!userId || !userEmail) {
       document.getElementById('dashPointsNum').textContent = vip.points_balance.toLocaleString();
       document.getElementById('dashPointsUsd').textContent = `PTS (≈ $${vip.points_usd_value.toFixed(2)})`;
 
-      // 3. 晋升进度条向前生长加载动画
       const progressBar = document.getElementById('dashProgressBar');
       if (vip.next_tier_label) {
         document.getElementById('dashNextTierLabel').textContent = `Progress to ${vip.next_tier_label}`;
@@ -1597,7 +1584,6 @@ if (!userId || !userEmail) {
         }, 100);
       }
 
-      // 指标
       const availCount = coupons.available ? coupons.available.length : 0;
       if (sidebarCouponCount) {
         sidebarCouponCount.textContent = `${availCount} Coupon${availCount !== 1 ? 's' : ''}`;
@@ -1607,14 +1593,12 @@ if (!userId || !userEmail) {
         dashboardRewardsMetric.textContent = `${availCount} Available Voucher${availCount !== 1 ? 's' : ''}`;
       }
 
-      // 4. 权益列表渲染
       document.getElementById('currentTierPrivilegeTitle').textContent = `${vip.tier_label} Privileges`;
       const perksContainer = document.getElementById('currentTierPerksList');
       if (vip.perks && Array.isArray(vip.perks) && vip.perks.length > 0) {
         perksContainer.innerHTML = vip.perks.map(p => `<div>&bull; ${p}</div>`).join('');
       }
 
-      // 5. 生日设定展示
       const birthdayCard = document.getElementById('birthdayCard');
       const bdayDesc = document.getElementById('birthdayStatusDesc');
       const bdayArea = document.getElementById('birthdayActionArea');
@@ -1629,7 +1613,6 @@ if (!userId || !userEmail) {
         }
       }
 
-      // 6. 免费拿样面板 (Silver / Gold / Diamond)
       const sampleCard = document.getElementById('sampleClaimCard');
       if (sampleCard) {
         if (vip.free_samples_quota > 0) {
@@ -1650,7 +1633,6 @@ if (!userId || !userEmail) {
         }
       }
 
-      // 7. 卡券与流水
       document.getElementById('couponCntAvailable').textContent = coupons.available ? coupons.available.length : 0;
       document.getElementById('couponCntUsed').textContent = coupons.used ? coupons.used.length : 0;
       document.getElementById('couponCntExpired').textContent = coupons.expired ? coupons.expired.length : 0;
@@ -1689,7 +1671,6 @@ if (!userId || !userEmail) {
     }, 1000);
   }
 
-  // 渲染高定轻奢珠宝票券 (活动券自动隐藏具体券码与复制按钮)
   function renderCouponsGrid(coupons) {
     const grid = document.getElementById('couponsGrid');
     const list = coupons[currentCouponFilter] || [];
@@ -1712,8 +1693,6 @@ if (!userId || !userEmail) {
       const isAvailable = currentCouponFilter === 'available';
       const isUsed = currentCouponFilter === 'used';
       const isExpired = currentCouponFilter === 'expired';
-
-      // 核心判断：大礼包、首单券、月度券、生日券不需要展示具体券码
       const isSystemAutoOffer = ['bundle_pack', 'welcome_pct', 'monthly_pct', 'birthday'].includes(c.tag);
 
       let cardClass = 'ticket-card';
@@ -1737,7 +1716,6 @@ if (!userId || !userEmail) {
         `;
       }
 
-      // 底部操作区逻辑
       let footerBarHtml = '';
       if (!isAvailable) {
         footerBarHtml = `
@@ -1796,7 +1774,6 @@ if (!userId || !userEmail) {
   }
   window.switchCouponFilter = switchCouponFilter;
 
-  // 渲染流水表
   function renderLedgerTable(ledger) {
     const tbody = document.getElementById('ledgerTableBody');
     if (!ledger || ledger.length === 0) {
@@ -1822,7 +1799,6 @@ if (!userId || !userEmail) {
     }).join('');
   }
 
-  // 积分兑换操作
   async function handleRedeemPoints() {
     const select = document.getElementById('redeemSelect');
     const pts = parseInt(select.value, 10);
@@ -1861,7 +1837,6 @@ if (!userId || !userEmail) {
   }
   window.handleRedeemPoints = handleRedeemPoints;
 
-  // 格式化生日展示（隐藏占位年份 2000，仅展示 Month Day，如 November 15）
   function formatBirthdayMonthDay(rawStr) {
     if (!rawStr) return '';
     const months = [
@@ -1884,7 +1859,6 @@ if (!userId || !userEmail) {
     return rawStr;
   }
 
-  // 高定轻奢提示弹窗控制（替代原生 alert）
   function showVipLuxuryAlert(title, message, isError = false) {
     const overlay = document.getElementById('vipLuxuryAlertOverlay');
     const titleEl = document.getElementById('vipLuxuryAlertTitle');
@@ -1907,7 +1881,6 @@ if (!userId || !userEmail) {
   }
   window.closeVipLuxuryAlert = closeVipLuxuryAlert;
 
-  // 改造后的纯英文生日保存函数（带按钮 Loading 状态 + 高定弹窗提醒）
   async function saveVipBirthday() {
     const m = document.getElementById('bdayMonthSelect')?.value;
     const d = document.getElementById('bdayDaySelect')?.value;
@@ -1949,7 +1922,6 @@ if (!userId || !userEmail) {
   }
   window.saveVipBirthday = saveVipBirthday;
 
-  // 高定模态弹窗控制
   function openSampleModal() {
     const overlay = document.getElementById('sampleModalOverlay');
     const input = document.getElementById('modalSampleNoteInput');
@@ -2012,7 +1984,6 @@ if (!userId || !userEmail) {
   }
   window.submitSampleRequest = submitSampleRequest;
 
-  // 复制优惠券码
   function copyCouponCode(code, btn) {
     navigator.clipboard.writeText(code).then(() => {
       const origin = btn.innerHTML;
@@ -2026,7 +1997,7 @@ if (!userId || !userEmail) {
   window.copyCouponCode = copyCouponCode;
 
   // =========================================================================
-  // 原有业务：用户信息、订单与地址逻辑 (完全保留)
+  // 用户信息、订单（含 VIP 免费礼物 & 圣诞满赠与礼盒码标识）与地址逻辑
   // =========================================================================
   let currentUserId = null;
 
@@ -2136,16 +2107,74 @@ if (!userId || !userEmail) {
     return `<span class="acc-pill-status ${s.class}">${s.text}</span>`;
   }
 
+  function resolveOrderItemVisual(item) {
+    const name = String(item.name || '');
+    if (name.includes('Crimson Surprise')) {
+      return {
+        src: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift666.png',
+        badge: '🎄 Holiday Gift',
+        isGift: true
+      };
+    }
+    if (name.includes('Pine Surprise')) {
+      return {
+        src: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift999.png',
+        badge: '🎄 Holiday Gift',
+        isGift: true
+      };
+    }
+    if (name.includes('Stellar Surprise')) {
+      return {
+        src: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift888.png',
+        badge: '🎄 Holiday Gift',
+        isGift: true
+      };
+    }
+    if (name.includes('Free Gift')) {
+      return {
+        src: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/Gemini_Generated_Image_sesx5gsesx5gsesx.jpeg',
+        badge: '🎁 VIP Gift',
+        isGift: true
+      };
+    }
+    return {
+      src: item.image?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=120&q=80',
+      badge: '',
+      isGift: false
+    };
+  }
+
+  function detectOrderCampaignBadges(order) {
+    const items = order.line_items || [];
+    const metaList = Array.isArray(order.meta_data) ? order.meta_data : [];
+    const promoModeMeta = metaList.find(m => m.key === '_eb_promo_mode')?.value || '';
+    const appliedOffersMeta = String(metaList.find(m => m.key === '_eb_applied_offers')?.value || '');
+
+    const isXmasOrder = promoModeMeta === 'xmas_bogo' ||
+      appliedOffersMeta.includes('Christmas Event') ||
+      (Array.isArray(order.fee_lines) && order.fee_lines.some(f => String(f.name || '').includes('Christmas Event')));
+
+    const hasVipFreeGift = items.some(item => (item.name || '').includes('Free Gift'));
+
+    let badges = '';
+    if (isXmasOrder) {
+      badges += `<span style="background:#961820; color:#ffdf9c; padding:3px 9px; border-radius:999px; font-size:10.5px; font-weight:700; letter-spacing:0.04em;">🎄 Christmas Event</span>`;
+    }
+    if (hasVipFreeGift) {
+      badges += `<span style="background:#fdf8f0; color:#8c631a; border:1px solid #d4af67; padding:2px 8px; border-radius:999px; font-size:10.5px; font-weight:700;">🎁 VIP Free Gift</span>`;
+    }
+    return badges;
+  }
+
   function buildOrderCardHtml(order) {
     const orderDate = new Date(order.date_created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     const items = order.line_items || [];
     const count = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    const campaignBadgesHtml = detectOrderCampaignBadges(order);
+
     const thumbsHtml = items.slice(0, 3).map(item => {
-      const isFreeGift = (item.name || '').includes('Free Gift');
-      const src = isFreeGift
-    ? 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/Gemini_Generated_Image_sesx5gsesx5gsesx.jpeg'
-    : (item.image?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=100&q=80');
-      return `<img src="${src}" alt="${item.name || 'item'}" class="acc-thumb-img" />`;
+      const visual = resolveOrderItemVisual(item);
+      return `<img src="${visual.src}" alt="${item.name || 'item'}" class="acc-thumb-img" ${visual.isGift ? 'style="object-fit:contain; padding:3px; background:#fff8f0;"' : ''} />`;
     }).join('');
 
     const canPay = ['pending', 'failed', 'on-hold'].includes(order.status);
@@ -2159,11 +2188,12 @@ if (!userId || !userEmail) {
     return `
       <div class="acc-order-card">
         <div class="acc-card-top">
-          <div style="display:flex; align-items:center; gap:10px; font-size:13px;">
+          <div style="display:flex; align-items:center; gap:8px; font-size:13px; flex-wrap:wrap;">
             <span class="acc-card-order-id">#${order.number || order.id}</span>
             <span style="color:#ccc;">&bull;</span>
             <span style="color:#777;">${orderDate}</span>
             ${formatOrderStatus(order.status)}
+            ${campaignBadgesHtml}
           </div>
           <div style="font-size:13px; color:#666;">Total: <strong style="font-size:15px; color:#111;">$${parseFloat(order.total).toFixed(2)}</strong></div>
         </div>
@@ -2197,21 +2227,37 @@ if (!userId || !userEmail) {
       shippingMethod: order.shipping_lines?.[0]?.method_id || 'standard',
       shippingCost: parseFloat(order.shipping_total || 0).toFixed(2)
     };
+
+    sessionStorage.removeItem('ebbelle_checkout_calculation');
     sessionStorage.setItem('shippingInfo', JSON.stringify(shippingInfo));
     sessionStorage.setItem('pendingOrderId', order.id.toString());
     sessionStorage.setItem('pendingOrderKey', order.order_key || '');
 
-    const cartItems = order.line_items.map(item => ({
-      id: item.product_id,
-      product_id: item.product_id,
-      variation_id: item.variation_id || 0,
-      name: item.name,
-      price: parseFloat(item.price || 0).toFixed(2),
-      quantity: item.quantity,
-      image: item.image?.src || ''
-    }));
-    localStorage.setItem('ebbelle_cart', JSON.stringify(cartItems));
-    window.location.href = '/checkout/payment';
+    const snapshot = {
+      orderId: order.id,
+      orderNumber: order.number || order.id,
+      orderKey: order.order_key || '',
+      total: parseFloat(order.total || 0).toFixed(2),
+      shippingTotal: parseFloat(order.shipping_total || 0).toFixed(2),
+      discountTotal: parseFloat(order.discount_total || 0).toFixed(2),
+      currency: (order.currency || 'USD').toUpperCase(),
+      feeLines: Array.isArray(order.fee_lines) ? order.fee_lines : [],
+      couponLines: Array.isArray(order.coupon_lines) ? order.coupon_lines : [],
+      items: (order.line_items || []).map(item => ({
+        id: item.product_id,
+        product_id: item.product_id,
+        variation_id: item.variation_id || 0,
+        name: item.name,
+        price: parseFloat(item.price || 0).toFixed(2),
+        lineTotal: parseFloat(item.total || 0).toFixed(2),
+        quantity: item.quantity || 1,
+        image: item.image?.src || ''
+      }))
+    };
+    sessionStorage.setItem('pendingOrderSnapshot', JSON.stringify(snapshot));
+
+    localStorage.setItem('ebbelle_cart', JSON.stringify(snapshot.items));
+    window.location.href = `/checkout/payment?order_id=${encodeURIComponent(order.id)}&order_key=${encodeURIComponent(order.order_key || '')}`;
   }
   window.retryPayment = retryPayment;
 
@@ -2230,32 +2276,85 @@ if (!userId || !userEmail) {
     const items = order.line_items || [];
     const shipping = order.shipping || {};
     const billing = order.billing || {};
-    const subtotal = (parseFloat(order.total) - parseFloat(order.shipping_total || 0) - parseFloat(order.total_tax || 0)).toFixed(2);
+    const campaignBadgesHtml = detectOrderCampaignBadges(order);
+
+    const itemsSubtotal = items.reduce((sum, item) => sum + (parseFloat(item.subtotal || item.total || 0)), 0);
+    const feeLines = Array.isArray(order.fee_lines) ? order.fee_lines : [];
+    const couponLines = Array.isArray(order.coupon_lines) ? order.coupon_lines : [];
+    const metaList = Array.isArray(order.meta_data) ? order.meta_data : [];
+    const appliedOffersStr = String(metaList.find(m => m.key === '_eb_applied_offers')?.value || '');
+
+    let discountsBreakdownHtml = '';
+
+    // 1. 渲染负向费用项（圣诞满2送1/买3送2/买5送3 减免、VIP折扣等）
+    feeLines.forEach(fee => {
+      const feeAmt = parseFloat(fee.total || 0);
+      if (feeAmt < 0) {
+        const feeName = String(fee.name || 'Discount');
+        const isXmasFee = feeName.includes('Christmas');
+        discountsBreakdownHtml += `
+          <div style="display:flex; justify-content:space-between; align-items:center; color:${isXmasFee ? '#961820' : '#2e7d32'}; font-weight:600; font-size:13px;">
+            <span>${isXmasFee ? '🎄 ' : ''}${feeName}</span>
+            <span>-$${Math.abs(feeAmt).toFixed(2)}</span>
+          </div>
+        `;
+      }
+    });
+
+    // 2. 渲染优惠券项（识别 GIFT125 / GIFT124 / GIFT777 并附带对应礼盒图标）
+    couponLines.forEach(cp => {
+      const cpDisc = parseFloat(cp.discount || 0);
+      const codeUpper = String(cp.code || '').toUpperCase().trim();
+      const isGiftCode = Boolean(XMAS_GIFT_ICONS[codeUpper]);
+      const labelHtml = isGiftCode
+        ? `<span style="display:inline-flex; align-items:center; gap:6px;"><img src="${XMAS_GIFT_ICONS[codeUpper]}" alt="${codeUpper}" style="width:18px; height:18px; object-fit:contain; border-radius:3px;" /><span>Holiday Code (${codeUpper})</span></span>`
+        : `<span>🎟️ Coupon (${codeUpper})</span>`;
+
+      discountsBreakdownHtml += `
+        <div style="display:flex; justify-content:space-between; align-items:center; color:${isGiftCode ? '#961820' : '#2e7d32'}; font-weight:600; font-size:13px;">
+          ${labelHtml}
+          <span>${cpDisc > 0 ? `-$${cpDisc.toFixed(2)}` : 'Applied'}</span>
+        </div>
+      `;
+    });
+
+    // 3. 兜底展示历史订单的 _eb_applied_offers 元数据
+    if (!discountsBreakdownHtml && appliedOffersStr) {
+      discountsBreakdownHtml = `
+        <div style="background:#fff8f0; border:1px dashed #d6b879; padding:8px 10px; border-radius:4px; color:#961820; font-size:12px; font-weight:600;">
+          🎄 ${appliedOffersStr}
+        </div>
+      `;
+    }
 
     content.innerHTML = `
       <div class="acc-view-detail-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
           <div>
             <h2 style="font-size: 20px; margin: 0 0 4px; font-weight: 700;">Order #${order.number || order.id}</h2>
             <p style="margin: 0; font-size: 12.5px; color: #888;">Placed on ${orderDate}</p>
           </div>
-          <div>${formatOrderStatus(order.status)}</div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            ${campaignBadgesHtml}
+            ${formatOrderStatus(order.status)}
+          </div>
         </div>
         <h3>Items Ordered</h3>
         <div style="display:flex; flex-direction:column; gap:12px;">
           ${items.map(item => {
-            const isFreeGift = (item.name || '').includes('Free Gift');
-            const thumbUrl = isFreeGift
-              ? 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/Gemini_Generated_Image_sesx5gsesx5gsesx.jpeg'
-              : (item.image?.src || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=120&q=80');
+            const visual = resolveOrderItemVisual(item);
+            const isZeroGift = visual.isGift && parseFloat(item.total || 0) === 0;
             return `
             <div class="acc-detail-item-row">
-              <img src="${thumbUrl}" class="acc-detail-thumb" alt="${item.name}" />
+              <img src="${visual.src}" class="acc-detail-thumb" alt="${item.name}" ${visual.isGift ? 'style="object-fit:contain; padding:4px; background:#fff8f0;"' : ''} />
               <div class="acc-detail-name-box">
-                <h4>${item.name}</h4>
+                <h4>
+                  ${item.name}
+                  ${visual.badge ? `<span style="margin-left:6px; background:#fff8f0; color:#961820; border:1px solid #d6b879; padding:1px 7px; border-radius:999px; font-size:10px; font-weight:700;">${visual.badge}</span>` : ''}
+                </h4>
                 <p style="margin:0; font-size:12px; color:#777;">Qty: ${item.quantity} &times; $${parseFloat(item.price || 0).toFixed(2)}</p>
               </div>
-              <div class="acc-detail-price-box">$${parseFloat(item.total || 0).toFixed(2)}</div>
+              <div class="acc-detail-price-box">${isZeroGift ? '<span style="color:#961820;">FREE</span>' : `$${parseFloat(item.total || 0).toFixed(2)}`}</div>
             </div>
           `;
           }).join('')}
@@ -2265,8 +2364,9 @@ if (!userId || !userEmail) {
         <div class="acc-view-detail-card" style="margin-bottom: 0;">
           <h3>Order Summary</h3>
           <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #666;">
-            <div style="display: flex; justify-content: space-between;"><span>Subtotal:</span><span>$${subtotal}</span></div>
-            <div style="display: flex; justify-content: space-between;"><span>Shipping:</span><span>$${parseFloat(order.shipping_total || 0).toFixed(2)}</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>Subtotal:</span><span>$${itemsSubtotal.toFixed(2)}</span></div>
+            ${discountsBreakdownHtml}
+            <div style="display: flex; justify-content: space-between;"><span>Shipping:</span><span>${parseFloat(order.shipping_total || 0) === 0 ? 'FREE' : `$${parseFloat(order.shipping_total).toFixed(2)}`}</span></div>
             <div style="display: flex; justify-content: space-between; font-weight: 700; color: #111; border-top: 1px solid #eee; padding-top: 8px;">
               <span>Total Paid:</span><span>$${parseFloat(order.total).toFixed(2)} ${order.currency || 'USD'}</span>
             </div>
