@@ -794,6 +794,7 @@ for (const locale of SUPPORTED_LOCALES) {
   function computeDrawerXmasBogo(cart) {
     const unitPrices = [];
     cart.forEach(item => {
+      if (item.isXmasMysteryGift) return; // 免费圣诞礼盒不计入买X送Y门槛件数
       const p = Math.max(0, parseFloat(item.price) || 0);
       const q = Math.max(0, parseInt(item.quantity, 10) || 0);
       for (let i = 0; i < q; i++) unitPrices.push(p);
@@ -973,45 +974,51 @@ for (const locale of SUPPORTED_LOCALES) {
     }
 
     cartItemsContainer.innerHTML = cart.map(item => {
-      const itemPrice = parseFloat(item.price);
+      const isMysteryGift = Boolean(item.isXmasMysteryGift);
+      const itemPrice = parseFloat(item.price) || 0;
       const itemTotal = itemPrice * item.quantity;
       const itemWeight = parseFloat(item.weight) || 0;
       const totalWeight = itemWeight * item.quantity;
       const cleanCartItemId = String(item.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_');
 
       let variantsText = '';
-      if (item.selectedVariants) {
+      if (isMysteryGift) {
+        variantsText = `🎄 Code: ${item.xmasGiftCode || ''} (Free Gift)`;
+      } else if (item.selectedVariants) {
         variantsText = Object.entries(item.selectedVariants)
           .filter(([_, value]) => value)
           .map(([key, value]) => `${key.charAt(0).toUpperCase() + key.slice(1)}: ${String(value).trim()}`)
           .join(' / ');
       }
 
-      const weightText = itemWeight > 0 ? ` • ${totalWeight.toFixed(3)}kg` : '';
+      const weightText = (!isMysteryGift && itemWeight > 0) ? ` • ${totalWeight.toFixed(3)}kg` : '';
 
       return `
-        <div class="cart-item" data-cart-item-id="${cleanCartItemId}">
-          <div class="item-image">
-            <img src="${item.image}" alt="${item.name}">
+        <div class="cart-item" data-cart-item-id="${cleanCartItemId}" ${isMysteryGift ? 'style="background: linear-gradient(90deg, #fff8f6 0%, #ffffff 100%) !important; border-color: #d6b879 !important;"' : ''}>
+          <div class="item-image" ${isMysteryGift ? 'style="padding: 6px !important; background: #fff8f0 !important; border-color: #d6b879 !important;"' : ''}>
+            <img src="${item.image}" alt="${item.name}" ${isMysteryGift ? 'style="object-fit: contain !important;"' : ''}>
           </div>
           <div class="item-details">
             <div class="item-header">
               <div class="item-info">
                 <h3>${item.name}</h3>
-                ${variantsText ? `<p class="item-meta">${variantsText}${weightText}</p>` : (weightText ? `<p class="item-meta">${weightText.substring(3)}</p>` : '')}
-                <p class="item-price">${formatPrice(itemPrice)}</p>
+                ${variantsText ? `<p class="item-meta" ${isMysteryGift ? 'style="color:#961820 !important; font-weight:600 !important;"' : ''}>${variantsText}${weightText}</p>` : (weightText ? `<p class="item-meta">${weightText.substring(3)}</p>` : '')}
+                <p class="item-price" ${isMysteryGift ? 'style="color:#961820 !important;"' : ''}>${isMysteryGift ? 'FREE' : formatPrice(itemPrice)}</p>
               </div>
               <button type="button" class="delete-btn" data-action="delete" title="Remove item">
                 <i class="fa-regular fa-trash-can"></i>
               </button>
             </div>
             <div class="item-footer">
-              <div class="item-quantity">
-                <button type="button" class="qty-btn" data-action="decrease">-</button>
-                <span class="qty-value">${item.quantity}</span>
-                <button type="button" class="qty-btn" data-action="increase">+</button>
-              </div>
-              <p class="item-total">${formatPrice(itemTotal)}</p>
+              ${isMysteryGift
+                ? `<span style="font-size:11px; font-weight:700; color:#234638; background:#e7f3ed; border:1px solid #9bc7b2; padding:3px 9px; border-radius:999px;">Qty: 1 (Free Gift)</span>`
+                : `<div class="item-quantity">
+                    <button type="button" class="qty-btn" data-action="decrease">-</button>
+                    <span class="qty-value">${item.quantity}</span>
+                    <button type="button" class="qty-btn" data-action="increase">+</button>
+                  </div>`
+              }
+              <p class="item-total" ${isMysteryGift ? 'style="color:#961820 !important;"' : ''}>${isMysteryGift ? 'FREE' : formatPrice(itemTotal)}</p>
             </div>
           </div>
         </div>
@@ -1029,7 +1036,7 @@ for (const locale of SUPPORTED_LOCALES) {
       return cleanItemId === cleanInputId;
     });
 
-    if (item) {
+    if (item && !item.isXmasMysteryGift) {
       item.quantity = newQuantity;
 
       const basePrice = parseFloat(item.basePrice || item.price);
@@ -1094,14 +1101,26 @@ for (const locale of SUPPORTED_LOCALES) {
     const cleanInputId = String(cartItemId).trim().replace(/[\s\n\r]+/g, '_');
     const cartItem = document.querySelector(`[data-cart-item-id="${cleanInputId}"]`);
 
-    if (cartItem) {
-      let cart = getCart();
-      cart = cart.filter(i => {
-        const cleanItemId = String(i.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_');
-        return cleanItemId !== cleanInputId;
-      });
-      saveCart(cart);
+    let cart = getCart();
+    const target = cart.find(i => String(i.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_') === cleanInputId);
 
+    // 如果删除的是免费圣诞礼盒，同步清除 sessionStorage 中的兑换码
+    if (target && target.isXmasMysteryGift) {
+      sessionStorage.removeItem('ebbelle_cart_manual_coupon');
+    }
+
+    cart = cart.filter(i => String(i.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_') !== cleanInputId);
+
+    // 如果常规商品已全部删空，连带清空残留的免费圣诞礼盒
+    const hasRegularItems = cart.some(i => !i.isXmasMysteryGift);
+    if (!hasRegularItems) {
+      cart = [];
+      sessionStorage.removeItem('ebbelle_cart_manual_coupon');
+    }
+
+    saveCart(cart);
+
+    if (cartItem) {
       cartItem.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
       cartItem.style.transform = 'translateX(-100%)';
       cartItem.style.opacity = '0';
@@ -1116,12 +1135,6 @@ for (const locale of SUPPORTED_LOCALES) {
         }
       }, 300);
     } else {
-      let cart = getCart();
-      cart = cart.filter(i => {
-        const cleanItemId = String(i.cartItemId || '').trim().replace(/[\s\n\r]+/g, '_');
-        return cleanItemId !== cleanInputId;
-      });
-      saveCart(cart);
       renderCartItems();
     }
   }
