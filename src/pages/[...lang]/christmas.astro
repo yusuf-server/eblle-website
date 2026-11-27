@@ -87,18 +87,26 @@ const buildLocaleUrl = (path: string) => `${localePrefix}${path}`;
 
       <!-- Hero 主视觉双栏大卡 -->
       <div class="xmas-hero-card">
-        <div class="xmas-hero-media">
-          <img
-            src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&q=85"
-            alt="E.B.belle Holiday Fine Jewelry Collection"
-            loading="eager"
-          />
-          <div class="xmas-wax-seal">
-            <span class="seal-top">LUXE</span>
-            <strong class="seal-mid">18K</strong>
-            <span class="seal-bot">GOLD</span>
-          </div>
-        </div>
+       <div class="xmas-hero-media">
+  <picture>
+    <!-- 移动端 (<= 768px) 加载 1:1 专属图 -->
+    <source
+      media="(max-width: 768px)"
+      srcset="https://api.ebbellejewelry.com/wp-content/uploads/2026/11/手机1.jpg"
+    />
+    <!-- 桌面端 (> 768px) 保持原图 -->
+    <img
+      src="https://api.ebbellejewelry.com/wp-content/uploads/2026/11/电脑1.jpg"
+      alt="E.B.belle Holiday Fine Jewelry Collection"
+      loading="eager"
+    />
+  </picture>
+  <div class="xmas-wax-seal">
+    <span class="seal-top">LUXE</span>
+    <strong class="seal-mid">18K</strong>
+    <span class="seal-bot">GOLD</span>
+  </div>
+</div>
 
         <div class="xmas-hero-editorial">
           <div>
@@ -110,15 +118,15 @@ const buildLocaleUrl = (path: string) => `${localePrefix}${path}`;
               18K Gold Plated + 100% Waterproof.
             </h2>
             <p class="xmas-editorial-desc">
-              Crafted in heavy heirloom 18K gold over surgical 316L stainless steel. Sweat-proof, perfume-proof, and guaranteed to shine through every holiday celebration.
+              Stock up on holiday bestsellers forged from surgical 316L stainless steel with thick 18K PVD gold plating. Hypoallergenic, tarnish-free, and ready to elevate your seasonal lineup.
             </p>
 
             <div class="xmas-trust-pills">
               <div class="xmas-trust-item">
                 <span class="material-symbols-outlined">featured_seasonal_and_gifts</span>
                 <div>
-                  <strong>Free Gift Box</strong>
-                  <span>Velvet &amp; Wax Seal</span>
+                  <strong>Free Surprise Gift</strong>
+                  <span>Surprise Piece Inside</span>
                 </div>
               </div>
               <div class="xmas-trust-item">
@@ -177,7 +185,7 @@ const buildLocaleUrl = (path: string) => `${localePrefix}${path}`;
             <ul class="xmas-tier-list">
               <li><span class="material-symbols-outlined">check_circle</span><span>Mix &amp; match any 2 pieces across the site</span></li>
               <li><span class="material-symbols-outlined">check_circle</span><span>Lowest-priced item is 100% FREE</span></li>
-              <li><span class="material-symbols-outlined">check_circle</span><span>Complimentary holiday gift pouches</span></li>
+              <li><span class="material-symbols-outlined">check_circle</span><span>Includes a FREE mystery gift piece</span></li>
             </ul>
           </div>
           <a href="#jewelry-grid" class="xmas-tier-btn">SHOP 2 ITEMS →</a>
@@ -202,7 +210,7 @@ const buildLocaleUrl = (path: string) => `${localePrefix}${path}`;
             <ul class="xmas-tier-list">
               <li><span class="material-symbols-outlined red">check_circle</span><span>Choose any 5 styles across the atelier</span></li>
               <li><span class="material-symbols-outlined red">check_circle</span><span>2 lowest-priced pieces deducted automatically</span></li>
-              <li><span class="material-symbols-outlined red">check_circle</span><span>Includes holiday silk ribbons &amp; gift tags</span></li>
+              <li><span class="material-symbols-outlined red">check_circle</span><span>Includes a FREE mystery gift piece</span></li>
               <li><span class="material-symbols-outlined red">check_circle</span><span>Ready to gift straight under the tree</span></li>
             </ul>
           </div>
@@ -224,7 +232,7 @@ const buildLocaleUrl = (path: string) => `${localePrefix}${path}`;
             <ul class="xmas-tier-list light">
               <li><span class="material-symbols-outlined gold">check_circle</span><span>Choose 8 full-sized heirloom jewels</span></li>
               <li><span class="material-symbols-outlined gold">check_circle</span><span>3 lowest-priced pieces 100% FREE</span></li>
-              <li><span class="material-symbols-outlined gold">check_circle</span><span>Complimentary velvet keepsake packaging</span></li>
+              <li><span class="material-symbols-outlined gold">check_circle</span><span>Includes a FREE mystery gift piece</span></li>
               <li><span class="material-symbols-outlined gold">check_circle</span><span>Complete your entire family gift list</span></li>
             </ul>
           </div>
@@ -415,44 +423,52 @@ const buildLocaleUrl = (path: string) => `${localePrefix}${path}`;
     <section class="xmas-container xmas-section">
       <div class="xmas-unboxing-card">
         <div class="xmas-unboxing-media">
-          <img
-            src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=1000&q=85"
-            alt="Luxury Holiday Velvet Gift Packaging"
-            loading="lazy"
-          />
-          <div class="xmas-unboxing-badge">
-            <span class="material-symbols-outlined">loyalty</span>
-            <span>COMPLIMENTARY WITH EVERY HOLIDAY ORDER</span>
-          </div>
-        </div>
+  <picture>
+    <!-- 移动端 (<= 768px) 加载 1:1 专属图 -->
+    <source
+      media="(max-width: 768px)"
+      srcset="https://api.ebbellejewelry.com/wp-content/uploads/2026/11/手机2.jpg"
+    />
+    <!-- 桌面端 (> 768px) 保持原图 -->
+    <img
+      src="https://api.ebbellejewelry.com/wp-content/uploads/2026/11/电脑2.jpg"
+      alt="Luxury Holiday Velvet Gift Packaging"
+      loading="lazy"
+    />
+  </picture>
+  <div class="xmas-unboxing-badge">
+    <span class="material-symbols-outlined">loyalty</span>
+    <span>FREE MYSTERY GIFT WITH EVERY ORDER</span>
+  </div>
+</div>
 
         <div class="xmas-unboxing-body">
-          <span class="xmas-kicker">UNBOXING PERFECTION</span>
+          <span class="xmas-kicker">HOLIDAY SURPRISE BONUS</span>
           <h2 class="xmas-section-title" style="text-align:left; margin:6px 0 12px;">A Little Extra Christmas Magic</h2>
           <p class="xmas-editorial-desc">
-            We believe unwrapping is half the joy of the holidays. Every single order arrives beautifully packaged and ready to place straight beneath the tree.
+            We believe surprises are half the joy of the holidays. Every single order includes a complimentary mystery jewelry piece—handpicked at random just for you.
           </p>
 
           <div class="xmas-perks-stack">
             <div class="xmas-perk-row">
               <div class="xmas-perk-icon pine"><span class="material-symbols-outlined">package_2</span></div>
               <div>
-                <h4>Signature Keepsake Jewelry Packaging</h4>
-                <p>Soft velvet pouch &amp; gilded presentation box to safeguard every piece.</p>
+                <h4>Free Mystery Jewelry Piece</h4>
+                <p>Receive a surprise 18K gold-plated accessory randomly selected with every order.</p>
               </div>
             </div>
             <div class="xmas-perk-row">
               <div class="xmas-perk-icon red"><span class="material-symbols-outlined">edit_note</span></div>
               <div>
-                <h4>Holiday Greeting Card</h4>
-                <p>Add your custom gift message at checkout — sealed with festive care.</p>
+                <h4>18K PVD Gold Plated</h4>
+                <p>Crafted over surgical 316L stainless steel for lasting, tarnish-free brilliance.</p>
               </div>
             </div>
             <div class="xmas-perk-row">
               <div class="xmas-perk-icon gold"><span class="material-symbols-outlined">cleaning_services</span></div>
               <div>
-                <h4>Anti-Tarnish Polishing Cloth</h4>
-                <p>Keep your 18K gold-plated pieces gleaming bright season after season.</p>
+                <h4>100% Waterproof & Hypoallergenic</h4>
+                <p>Sweat-proof, shower-safe, and gentle on sensitive skin for effortless daily wear.</p>
               </div>
             </div>
           </div>
@@ -787,6 +803,35 @@ const buildLocaleUrl = (path: string) => `${localePrefix}${path}`;
     object-fit: cover;
     display: block;
   }
+
+  /* 确保 <picture> 表现与原本直接放 <img> 一致，不破坏桌面端布局 */
+.xmas-hero-media picture,
+.xmas-unboxing-media picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 移动端 (<= 768px) 强制 1:1 比例完整展示，绝不拉伸变形或裁切 */
+@media (max-width: 768px) {
+  .xmas-hero-media,
+  .xmas-unboxing-media {
+    width: 100% !important;
+    height: auto !important;
+    min-height: unset !important;
+    max-height: none !important;
+    aspect-ratio: 1 / 1;
+  }
+
+  .xmas-hero-media img,
+  .xmas-unboxing-media img {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: 1 / 1;
+    object-fit: cover; /* 图片本身已是 1:1 且容器也是 1:1，等价于 100% 完整无损铺满 */
+    display: block;
+  }
+}
   .xmas-wax-seal {
     position: absolute;
     top: 22px;
