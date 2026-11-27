@@ -9,17 +9,25 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
   ? (lang as SupportedLocale)
   : 'en';
 
-// 获取 PayPal Client ID 与配置
+// 获取 PayPal & Airwallex 配置
 const PAYPAL_CLIENT_ID = import.meta.env.PUBLIC_PAYPAL_CLIENT_ID || '';
-const PAYPAL_MODE = import.meta.env.PAYPAL_MODE || 'sandbox';
+const AIRWALLEX_ENV = import.meta.env.PUBLIC_AIRWALLEX_ENV || import.meta.env.AIRWALLEX_ENV || 'demo';
 
 // 支持动态多货币，默认兜底 USD
 const CURRENT_CURRENCY = 'USD';
 ---
 
 <Layout title="Checkout: Payment & Review - E.B.Belle">
-  <!-- PayPal SDK（支持动态货币） -->
+  <!-- 提前建立 DNS 与 TLS 预连接，加快 Airwallex 与 PayPal 表单首屏渲染速度 -->
+  <link rel="preconnect" href="https://checkout.airwallex.com" crossorigin />
+  <link rel="dns-prefetch" href="https://checkout.airwallex.com" />
+  <link rel="preconnect" href="https://www.paypal.com" crossorigin />
+  <link rel="dns-prefetch" href="https://www.paypal.com" />
+
+  <!-- PayPal SDK -->
   <script is:inline src={`https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=${CURRENT_CURRENCY}&intent=capture`} data-sdk-integration-source="button-factory"></script>
+  <!-- Airwallex Payment Elements SDK -->
+  <script is:inline src="https://checkout.airwallex.com/assets/elements.bundle.min.js"></script>
 
   <header class="checkout-header">
     <div class="header-container">
@@ -94,7 +102,7 @@ const CURRENT_CURRENCY = 'USD';
           </div>
         </aside>
 
-        <!-- Shipping Review -->
+        <!-- 1. Shipping Review -->
         <section class="info-review">
           <div class="review-header">
             <h3>Shipping Information</h3>
@@ -107,46 +115,146 @@ const CURRENT_CURRENCY = 'USD';
           </div>
         </section>
 
-        <form id="paymentForm" class="payment-form">
-          <section class="form-section">
-            <h2>{t(currentLocale, 'checkout.paymentMethod')}</h2>
-            <div class="payment-methods">
-              <label class="payment-option active">
-                <input type="radio" name="payment" value="paypal" checked>
-                <div class="payment-content">
-                  <i class="fa-brands fa-paypal" style="color: #003087;"></i>
-                  <span>PayPal (Express / Cards)</span>
+        <form id="paymentForm" class="payment-form" onsubmit="return false;">
+          <!-- 2. Billing Address（置于 Shipping 与 Payment Method 之间，全渠道通用） -->
+          <section class="form-section" id="billingAddressSection">
+            <div class="section-heading-row">
+              <h2>Billing Address</h2>
+              <span class="section-sub-hint">Matches your card or PayPal statement</span>
+            </div>
+
+            <div class="billing-options-card">
+              <label class="billing-radio-row active" data-billing-mode="same">
+                <input type="radio" name="billingMode" value="same" checked>
+                <span class="custom-radio-dot"></span>
+                <div class="radio-label-group">
+                  <span class="radio-title">Same as shipping address</span>
+                  <span class="radio-desc" id="sameAsShippingPreview">Use your delivery address above</span>
                 </div>
               </label>
 
-              <label class="payment-option disabled-option">
-                <input type="radio" name="payment" value="card" disabled>
-                <div class="payment-content">
-                  <i class="fa-regular fa-credit-card"></i>
-                  <span>Credit Card <small>(Coming Soon)</small></span>
+              <label class="billing-radio-row" data-billing-mode="different">
+                <input type="radio" name="billingMode" value="different">
+                <span class="custom-radio-dot"></span>
+                <div class="radio-label-group">
+                  <span class="radio-title">Use a different billing address</span>
+                  <span class="radio-desc">Enter a separate billing address for card or PayPal</span>
                 </div>
               </label>
             </div>
 
-            <!-- PayPal 支付容器 (默认展开) -->
-            <div class="paypal-form" id="paypalForm">
-              <div class="paypal-info">
-                <p style="text-align: center; color: #747878; font-size: 13.5px; margin-bottom: 20px;">
-                  Pay securely with your PayPal balance, Debit/Credit Card, or Pay Later.
-                </p>
+            <div id="customBillingFields" class="custom-billing-panel" style="display: none;">
+              <div class="billing-grid-2">
+                <div class="billing-field">
+                  <label for="billFirstName">FIRST NAME *</label>
+                  <input type="text" id="billFirstName" placeholder="First name">
+                </div>
+                <div class="billing-field">
+                  <label for="billLastName">LAST NAME *</label>
+                  <input type="text" id="billLastName" placeholder="Last name">
+                </div>
               </div>
-              <div id="paypal-button-container"></div>
+
+              <div class="billing-field" style="margin-bottom: 14px;">
+                <label for="billAddress">STREET ADDRESS *</label>
+                <input type="text" id="billAddress" placeholder="Street address, apartment, suite, etc.">
+              </div>
+
+              <div class="billing-grid-2">
+                <div class="billing-field">
+                  <label for="billCity">CITY *</label>
+                  <input type="text" id="billCity" placeholder="City">
+                </div>
+                <div class="billing-field" id="billStateWrap">
+                  <label for="billState">STATE / PROVINCE *</label>
+                  <input type="text" id="billState" placeholder="State / Province">
+                </div>
+              </div>
+
+              <div class="billing-grid-2" style="margin-bottom: 0;">
+                <div class="billing-field">
+                  <label for="billZip">ZIP / POSTAL CODE *</label>
+                  <input type="text" id="billZip" placeholder="Postal code">
+                </div>
+                <div class="billing-field">
+                  <label for="billCountry">COUNTRY / REGION *</label>
+                  <select id="billCountry"></select>
+                </div>
+              </div>
+
+              <p id="billingValidationError" class="billing-error-msg" style="display: none;"></p>
+
+              <button type="button" id="applyCustomBillingBtn" class="update-billing-btn">
+                UPDATE BILLING ADDRESS
+              </button>
             </div>
           </section>
 
-          <!-- Billing Address -->
+          <!-- 3. Payment Method（信用卡优先主推在左/上，PayPal 在右/下） -->
           <section class="form-section">
-            <h2>Billing Address</h2>
-            <div class="billing-options">
-              <label class="radio-option">
-                <input type="radio" name="billing" value="same" checked>
-                <span>Same as shipping address</span>
+            <div class="section-heading-row">
+              <h2>{t(currentLocale, 'checkout.paymentMethod')}</h2>
+              <span class="section-sub-hint"><i class="fa-solid fa-shield-halved" style="color:#8c631a;"></i> Encrypted checkout</span>
+            </div>
+
+            <div class="payment-methods" id="paymentMethodsBar">
+              <!-- 主推首选：Credit / Debit Card -->
+              <label class="payment-option recommended active" data-method="card">
+                <input type="radio" name="payment" value="card" checked>
+                <span class="recommended-badge">RECOMMENDED</span>
+                <span class="selected-check"><i class="fa-solid fa-check"></i></span>
+                <div class="payment-content">
+                  <div class="card-brands-row">
+                    <i class="fa-brands fa-cc-visa" style="color:#1a1f71;"></i>
+                    <i class="fa-brands fa-cc-mastercard" style="color:#eb001b;"></i>
+                    <i class="fa-brands fa-cc-amex" style="color:#006fcf;"></i>
+                  </div>
+                  <span class="method-title">Credit / Debit Card</span>
+                  <span class="method-subtitle">Instant checkout • No extra account needed</span>
+                </div>
               </label>
+
+              <!-- 次选：PayPal -->
+              <label class="payment-option" data-method="paypal">
+                <input type="radio" name="payment" value="paypal">
+                <span class="selected-check"><i class="fa-solid fa-check"></i></span>
+                <div class="payment-content">
+                  <div class="card-brands-row">
+                    <i class="fa-brands fa-paypal" style="color: #003087; font-size: 22px;"></i>
+                  </div>
+                  <span class="method-title">PayPal</span>
+                  <span class="method-subtitle">Express checkout or Pay Later</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- 1. Airwallex 信用卡模块嵌入 (Drop-in) 容器（默认显示） -->
+            <div class="airwallex-card-form" id="airwallexCardForm">
+              <div id="airwallex-loading" style="text-align: center; padding: 24px 16px; color: #747878; font-size: 13.5px;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 20px; color: #8c631a; margin-bottom: 8px; display: block;"></i>
+                <span>Initializing secure card checkout...</span>
+              </div>
+              <div id="airwallex-error" style="display: none; background: #fdecea; color: #c62828; border: 1px solid #ffcdd2; padding: 12px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 14px;"></div>
+              <div id="airwallex-dropin" style="min-height: 120px;"></div>
+              <!-- 点击 Pay 后的原位轻提示条（成功跳转，失败自动隐藏解锁） -->
+              <div id="airwallex-processing-hint" class="payment-processing-hint" style="display: none;">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span id="airwallex-processing-text">Processing your payment securely... Please do not refresh or close this page.</span>
+              </div>
+            </div>
+
+            <!-- 2. PayPal 支付容器（切换时显示） -->
+            <div class="paypal-form" id="paypalForm" style="display: none;">
+              <div class="paypal-info">
+                <p style="text-align: center; color: #66522e; font-size: 13.5px; margin-bottom: 18px;">
+                  Click below to complete your order securely with PayPal or Pay Later.
+                </p>
+              </div>
+              <div id="paypal-button-container"></div>
+              <div id="paypal-processing-hint" class="payment-processing-hint" style="display: none;">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span id="paypal-processing-text">Finalizing your PayPal payment... Please do not refresh or close this page.</span>
+              </div>
             </div>
           </section>
         </form>
@@ -159,11 +267,12 @@ const CURRENT_CURRENCY = 'USD';
             </div>
             <div class="trust-content">
               <h3>Shopping security</h3>
-              <p>Each payment is secured with strict SSL encryption and PCI DSS compliant checkout.</p>
+              <p>Each payment is secured with strict SSL encryption and PCI DSS Level 1 compliant checkout.</p>
               <div class="payment-badges">
-                <span class="payment-badge paypal">PayPal Verified</span>
                 <span class="payment-badge visa">VISA</span>
                 <span class="payment-badge mastercard">Mastercard</span>
+                <span class="payment-badge amex">AMEX</span>
+                <span class="payment-badge paypal">PayPal Verified</span>
               </div>
             </div>
           </div>
@@ -212,7 +321,7 @@ const CURRENT_CURRENCY = 'USD';
 <style is:global>
   * { box-sizing: border-box; }
   .checkout-header {
-    border-bottom: 1px solid #c4c7c7;
+    border-bottom: 1px solid #ddd8ce;
     background: #fcf9f3;
     position: sticky;
     top: 0;
@@ -265,7 +374,7 @@ const CURRENT_CURRENCY = 'USD';
   .checkout-left {
     display: flex;
     flex-direction: column;
-    gap: 36px;
+    gap: 32px;
   }
   .progress-nav {
     display: flex;
@@ -280,20 +389,21 @@ const CURRENT_CURRENCY = 'USD';
   }
   .progress-step.active { color: #0e0f0f; }
   .progress-step.completed { color: #16a34a; }
+
   .info-review {
     background: #f6f3ed;
     border: 1px solid #ddd8ce;
-    border-radius: 4px;
-    padding: 24px;
+    border-radius: 6px;
+    padding: 22px 24px;
   }
   .review-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   .review-header h3 {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
@@ -302,86 +412,321 @@ const CURRENT_CURRENCY = 'USD';
   .review-header a {
     font-size: 12px;
     font-weight: 600;
-    color: #725b29;
+    color: #8c631a;
     text-decoration: underline;
   }
   .review-content p {
     font-size: 13.5px;
-    color: #747878;
-    line-height: 1.5;
+    color: #6b6860;
+    line-height: 1.55;
     margin: 2px 0;
   }
   .review-content .name {
     font-weight: 600;
     color: #1c1c18;
   }
+
   .payment-form {
     display: flex;
     flex-direction: column;
     gap: 32px;
+  }
+  .section-heading-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
   }
   .form-section h2 {
     font-family: 'Bodoni Moda', serif;
     font-size: 22px;
     font-weight: 500;
     color: #0e0f0f;
-    margin-bottom: 16px;
+    margin: 0;
   }
+  .section-sub-hint {
+    font-size: 12px;
+    color: #747066;
+  }
+
+  /* ================= 账单地址卡片与表单（暖奶油奢品配色） ================= */
+  .billing-options-card {
+    border: 1px solid #ddd8ce;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(14, 15, 15, 0.03);
+  }
+  .billing-radio-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #ece7dd;
+    background: #ffffff;
+  }
+  .billing-radio-row:last-child {
+    border-bottom: none;
+  }
+  .billing-radio-row:hover {
+    background: #faf7f0;
+  }
+  .billing-radio-row.active {
+    background: #f7f3ea;
+  }
+  .billing-radio-row input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .custom-radio-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid #b5afa2;
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+  .billing-radio-row.active .custom-radio-dot {
+    border-color: #8c631a;
+    background: #8c631a;
+    box-shadow: inset 0 0 0 3.5px #fff;
+  }
+  .radio-label-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .radio-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1c1c18;
+  }
+  .radio-desc {
+    font-size: 12px;
+    color: #7c776d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .custom-billing-panel {
+    margin-top: 12px;
+    padding: 22px;
+    background: #f8f5ee;
+    border: 1px solid #d8d0c1;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(140, 99, 26, 0.06);
+  }
+  .billing-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .billing-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #5c574d;
+    margin-bottom: 6px;
+  }
+  .billing-field input,
+  .billing-field select {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid #cfc8ba;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #1c1c18;
+    background: #ffffff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .billing-field input:focus,
+  .billing-field select:focus {
+    outline: none;
+    border-color: #8c631a;
+    box-shadow: 0 0 0 3px rgba(140, 99, 26, 0.14);
+  }
+  .billing-error-msg {
+    margin: 12px 0 0;
+    padding: 9px 12px;
+    background: #fdf2f2;
+    border: 1px solid #f5c2c7;
+    border-radius: 5px;
+    color: #b42318;
+    font-size: 12.5px;
+  }
+  .update-billing-btn {
+    margin-top: 18px;
+    width: 100%;
+    padding: 13px 16px;
+    background: #1c1c18;
+    color: #fcf9f3;
+    border: 1px solid #1c1c18;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .update-billing-btn:hover:not(:disabled) {
+    background: #8c631a;
+    border-color: #8c631a;
+  }
+
+  /* ================= 支付方式切换卡片（主推信用卡 + 明显激活态） ================= */
   .payment-methods {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
+    transition: opacity 0.2s ease;
   }
   .payment-option {
+    position: relative;
     cursor: pointer;
+    display: block;
   }
   .payment-option input { display: none; }
   .payment-content {
-    border: 2px solid #c4c7c7;
-    border-radius: 4px;
-    padding: 20px;
+    height: 100%;
+    border: 1.5px solid #d5cfc3;
+    border-radius: 8px;
+    padding: 22px 18px 18px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    background: #fff;
-    transition: all 0.2s;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+    background: #ffffff;
+    color: #5c5850;
+    transition: all 0.22s ease;
+  }
+  .payment-option:hover .payment-content {
+    border-color: #b0893e;
+    background: #fcfaf5;
   }
   .payment-option.active .payment-content {
-    border-color: #0e0f0f;
-    background: #f0eee8;
+    border: 2px solid #8c631a;
+    background: linear-gradient(180deg, #faf5ea 0%, #f3ead8 100%);
+    color: #1c1c18;
+    box-shadow: 0 6px 18px rgba(140, 99, 26, 0.13);
   }
-  .disabled-option {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  .disabled-option .payment-content {
-    background: #f9f9f9;
-  }
-  .disabled-option small {
-    font-size: 11px;
-    color: #888;
-  }
-  .billing-options {
-    border: 1px solid #c4c7c7;
+  .recommended-badge {
+    position: absolute;
+    top: -10px;
+    left: 14px;
+    background: #8c631a;
+    color: #fcf9f3;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 3px 8px;
     border-radius: 4px;
-    background: #fff;
+    text-transform: uppercase;
+    box-shadow: 0 2px 6px rgba(140, 99, 26, 0.25);
+    z-index: 2;
   }
-  .radio-option {
+  .selected-check {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #8c631a;
+    color: #ffffff;
+    font-size: 10px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    font-size: 14px;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.75);
+    transition: all 0.2s ease;
+    z-index: 2;
+  }
+  .payment-option.active .selected-check {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .card-brands-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 20px;
+    min-height: 24px;
+  }
+  .method-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #1c1c18;
+  }
+  .method-subtitle {
+    font-size: 11.5px;
+    color: #7c776d;
+    line-height: 1.35;
+  }
+  .payment-option.active .method-subtitle {
+    color: #66522e;
+  }
+
+  .airwallex-card-form {
+    background: #ffffff;
+    border: 1px solid #ddd8ce;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(14, 15, 15, 0.03);
+  }
+  .paypal-form {
+    background: #ffffff;
+    border: 1px solid #ddd8ce;
+    border-radius: 8px;
+    padding: 24px 20px;
   }
   #paypal-button-container {
     width: 100%;
-    max-width: 500px;
+    max-width: 480px;
     margin: 0 auto;
   }
+
+  /* 支付处理中原位轻提示条 */
+  .payment-processing-hint {
+    margin-top: 14px;
+    padding: 11px 14px;
+    background: #faf5ea;
+    border: 1px solid #dfd2b5;
+    border-radius: 6px;
+    color: #725013;
+    font-size: 12.5px;
+    font-weight: 500;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .payment-processing-hint i {
+    color: #8c631a;
+    flex-shrink: 0;
+  }
+
   .trust-section {
-    padding: 24px 0;
+    padding: 22px 0;
     border-top: 1px solid #ddd8ce;
   }
   .trust-item {
@@ -394,8 +739,8 @@ const CURRENT_CURRENCY = 'USD';
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: #f3ead8;
+    color: #8c631a;
     border-radius: 8px;
     font-size: 18px;
     flex-shrink: 0;
@@ -414,15 +759,18 @@ const CURRENT_CURRENCY = 'USD';
   .payment-badges {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
   }
   .payment-badge {
     padding: 4px 8px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
+    border: 1px solid #ddd8ce;
+    border-radius: 4px;
     font-size: 10px;
     font-weight: 600;
     background: #fff;
+    color: #444748;
   }
+
   .checkout-right {
     position: relative;
   }
@@ -431,7 +779,7 @@ const CURRENT_CURRENCY = 'USD';
     top: 96px;
     background: #f6f3ed;
     border: 1px solid #ddd8ce;
-    border-radius: 4px;
+    border-radius: 6px;
     padding: 28px;
   }
   .order-summary h2 {
@@ -554,66 +902,47 @@ const CURRENT_CURRENCY = 'USD';
   .summary-content.active { display: block; }
 
   @media (max-width: 968px) {
+    .header-container {
+      padding: 0 16px;
+    }
+    .checkout-page {
+      padding: 28px 0 48px;
+    }
     .checkout-container {
       grid-template-columns: 1fr;
       padding: 0 16px;
-      gap: 32px;
+      gap: 24px;
       max-width: 100vw;
       overflow-x: hidden;
     }
     .checkout-left {
       max-width: 100%;
-      overflow: hidden;
+      gap: 24px;
     }
     .desktop-order-summary { display: none; }
     .mobile-order-summary {
       display: block;
       max-width: 100%;
-      overflow: hidden;
     }
     .mobile-order-summary .order-summary {
       position: static;
       padding: 0;
       background: #f6f3ed;
-      border: 1px solid #e5e7eb;
+      border: 1px solid #ddd8ce;
       border-radius: 8px;
       max-width: 100%;
-      box-sizing: border-box;
     }
     .summary-toggle {
       display: flex;
       max-width: 100%;
-      box-sizing: border-box;
-    }
-    .summary-content {
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .mobile-order-summary .summary-items {
-      padding-bottom: 16px;
-      margin-bottom: 16px;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .mobile-order-summary .summary-items .item {
-      max-width: 100%;
-      box-sizing: border-box;
     }
     .mobile-order-summary .summary-items .item img {
       width: 50px;
       height: 50px;
       flex-shrink: 0;
     }
-    .mobile-order-summary .summary-items .item-details {
-      min-width: 0;
-      overflow: hidden;
-      flex: 1;
-    }
     .mobile-order-summary .summary-items .item-details h3 {
       font-size: 13px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
     .mobile-order-summary .summary-items .item-details p {
       font-size: 11px;
@@ -622,11 +951,23 @@ const CURRENT_CURRENCY = 'USD';
       font-size: 14px;
       flex-shrink: 0;
     }
-    .payment-methods { grid-template-columns: 1fr; }
+    /* 移动端：信用卡在上方，PayPal 在下方 */
+    .payment-methods {
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 6px;
+    }
+    .billing-grid-2 {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .custom-billing-panel {
+      padding: 16px;
+    }
   }
 </style>
 
-<script define:vars={{ CURRENT_CURRENCY }}>
+<script define:vars={{ CURRENT_CURRENCY, AIRWALLEX_ENV }}>
   const CURRENCY_SYMBOLS = {
     USD: '$',
     EUR: '€',
@@ -640,6 +981,29 @@ const CURRENT_CURRENCY = 'USD';
     GBP: 0.79,
     CAD: 1.36
   };
+
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function isItemFreeGift(item) {
+    if (!item) return false;
+    const lowerName = String(item.name || '').toLowerCase();
+    return Boolean(
+      item.isXmasMysteryGift ||
+      item.isVipFreeGift ||
+      item.isFreeGift ||
+      lowerName.includes('free gift') ||
+      lowerName.includes('mystery gift') ||
+      lowerName.includes('vip gift') ||
+      (parseFloat(item.price) === 0 && !item.lineTotal)
+    );
+  }
 
   function getCurrentCurrency() {
     return localStorage.getItem('ebbelle_currency') || 'USD';
@@ -685,7 +1049,6 @@ const CURRENT_CURRENCY = 'USD';
     }
   }
 
-  // 仅在 URL 明确携带 ?order_id= 时才读取历史 Pending 订单锁定快照，彻底杜绝正常结账串单
   function getPendingOrderSnapshot() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -703,12 +1066,12 @@ const CURRENT_CURRENCY = 'USD';
   }
 
   function calculateCartTotals(cart) {
-    // 1. 若处于“继续支付已有 Pending 订单”模式，严格锁定 WooCommerce 后台订单金额
     const pendingSnap = getPendingOrderSnapshot();
     if (pendingSnap) {
       const snapItems = Array.isArray(pendingSnap.items) && pendingSnap.items.length > 0 ? pendingSnap.items : cart;
       const rawSubtotal = snapItems.reduce((sum, item) => {
         if (item.lineTotal !== undefined) return sum + (parseFloat(item.lineTotal) || 0);
+        if (isItemFreeGift(item)) return sum;
         return sum + ((parseFloat(item.price) || 0) * (item.quantity || 1));
       }, 0);
 
@@ -737,9 +1100,8 @@ const CURRENT_CURRENCY = 'USD';
       };
     }
 
-    // 2. 常规购物车结账模式
     const rawSubtotal = cart.reduce((sum, item) => {
-      if (item.isXmasMysteryGift) return sum;
+      if (isItemFreeGift(item)) return sum;
       const price = parseFloat(item.price) || 0;
       return sum + (price * item.quantity);
     }, 0);
@@ -791,17 +1153,26 @@ const CURRENT_CURRENCY = 'USD';
       }
       el.innerHTML = displayItems.map(item => {
         const isMysteryGift = Boolean(item.isXmasMysteryGift);
+        const isVipGift = !isMysteryGift && isItemFreeGift(item);
+        const isAnyGift = isMysteryGift || isVipGift;
         const itemTotal = item.lineTotal !== undefined
           ? (parseFloat(item.lineTotal) || 0)
-          : ((parseFloat(item.price) || 0) * (item.quantity || 1));
+          : (isAnyGift ? 0 : ((parseFloat(item.price) || 0) * (item.quantity || 1)));
+        const safeName = escapeHtml(item.name);
+        const safeImg = escapeHtml(item.image || '/placeholder.jpg');
+        const safeGiftCode = escapeHtml(item.xmasGiftCode || '');
+        const safeQty = parseInt(item.quantity, 10) || 1;
+        const giftLabel = isMysteryGift
+          ? `🎄 Mystery Gift ${safeGiftCode ? `(${safeGiftCode})` : ''} • Qty: ${safeQty}`
+          : (isVipGift ? `🎁 VIP Complimentary Gift • Qty: ${safeQty}` : `Qty: ${safeQty}`);
         return `
-          <div class="item" ${isMysteryGift ? 'style="background:#fff8f5; padding:8px; border-radius:6px; border:1px dashed #d6b879;"' : ''}>
-            <img src="${item.image || '/placeholder.jpg'}" alt="${item.name}" ${isMysteryGift ? 'style="object-fit:contain; padding:4px; border-color:#d6b879;"' : ''}>
+          <div class="item" ${isAnyGift ? 'style="background:#fff8f5; padding:8px; border-radius:6px; border:1px dashed #d6b879;"' : ''}>
+            <img src="${safeImg}" alt="${safeName}" ${isAnyGift ? 'style="object-fit:contain; padding:4px; border-color:#d6b879;"' : ''}>
             <div class="item-details">
-              <h3>${item.name}</h3>
-              <p ${isMysteryGift ? 'style="color:#961820; font-weight:600;"' : ''}>${isMysteryGift ? `🎄 Mystery Gift (${item.xmasGiftCode || ''}) • Qty: 1` : `Qty: ${item.quantity}`}</p>
+              <h3>${safeName}</h3>
+              <p ${isAnyGift ? 'style="color:#961820; font-weight:600;"' : ''}>${giftLabel}</p>
             </div>
-            <span class="item-price" ${isMysteryGift ? 'style="color:#961820; font-weight:700;"' : ''}>${isMysteryGift ? 'FREE' : formatPrice(itemTotal)}</span>
+            <span class="item-price" ${isAnyGift ? 'style="color:#961820; font-weight:700;"' : ''}>${itemTotal === 0 && isAnyGift ? 'FREE' : formatPrice(itemTotal)}</span>
           </div>
         `;
       }).join('');
@@ -810,14 +1181,13 @@ const CURRENT_CURRENCY = 'USD';
     renderBox('mobileCartItems');
     renderBox('desktopCartItems');
 
-    // 渲染生效特权提示横幅
     const banners = document.querySelectorAll('.applied-privileges-banner');
     if (totals.isLockedPendingOrder) {
       banners.forEach(b => {
         b.style.display = 'block';
         b.innerHTML = `
           <div style="font-weight:700; color:#8c631a; text-transform:uppercase; font-size:11px; letter-spacing:0.06em;">
-            <i class="fa-solid fa-lock"></i> Completing Payment for Order #${totals.pendingOrderNumber}
+            <i class="fa-solid fa-lock"></i> Completing Payment for Order #${escapeHtml(totals.pendingOrderNumber)}
           </div>
           <div style="font-size:11.5px; color:#66522e; margin-top:2px;">
             Final order total is locked to your confirmed invoice amount.
@@ -840,7 +1210,7 @@ const CURRENT_CURRENCY = 'USD';
                 <i class="fa-solid fa-crown"></i> Active Rewards & Discounts
               </div>
               <div style="margin-bottom: ${earnedPts > 0 ? '8px' : '0'};">
-                ${calc.applied_offers.map(o => `<div>✓ ${o}</div>`).join('')}
+                ${calc.applied_offers.map(o => `<div>✓ ${escapeHtml(o)}</div>`).join('')}
               </div>
             `;
           }
@@ -890,6 +1260,567 @@ const CURRENT_CURRENCY = 'USD';
     if (dtTitle) dtTitle.textContent = `Order summary (${totals.itemCount} items)`;
   }
 
+  // ============================================================
+  // 规范化账单地址获取（支持与收货地址一致 / 自定义账单地址 + WooCommerce 州代码校准）
+  // ============================================================
+  const PAYMENT_COUNTRY_ISO_MAP = {
+    'Albania': 'AL', 'Algeria': 'DZ', 'American Samoa': 'AS', 'Andorra': 'AD', 'Angola': 'AO',
+    'Argentina': 'AR', 'Armenia': 'AM', 'Australia': 'AU', 'Austria': 'AT', 'Bahrain': 'BH',
+    'Bangladesh': 'BD', 'Barbados': 'BB', 'Belarus': 'BY', 'Belgium': 'BE', 'Benin': 'BJ',
+    'Bolivia': 'BO', 'Brazil': 'BR', 'Brunei': 'BN', 'Bulgaria': 'BG', 'Canada': 'CA',
+    'Cape Verde': 'CV', 'Chad': 'TD', 'Chile': 'CL', 'China (Hong Kong)': 'HK', 'China (Macao)': 'MO',
+    'Collectivity of Saint Martin': 'MF', 'Colombia': 'CO', 'Costa Rica': 'CR', 'Croatia': 'HR',
+    'Cyprus': 'CY', 'Czech Republic': 'CZ', 'Côte d\'Ivoire': 'CI', 'Democratic Republic of the Congo': 'CD',
+    'Denmark': 'DK', 'Ecuador': 'EC', 'Egypt': 'EG', 'El Salvador': 'SV', 'Estonia': 'EE',
+    'Eswatini': 'SZ', 'Faroe Islands': 'FO', 'Fiji': 'FJ', 'Finland': 'FI', 'France': 'FR',
+    'French Guiana': 'GF', 'French Polynesia': 'PF', 'Gambia': 'GM', 'Georgia': 'GE', 'Germany': 'DE',
+    'Ghana': 'GH', 'Greece': 'GR', 'Grenada': 'GD', 'Guadeloupe': 'GP', 'Guatemala': 'GT',
+    'Honduras': 'HN', 'Hungary': 'HU', 'Iceland': 'IS', 'Indonesia': 'ID', 'Iraq': 'IQ',
+    'Ireland': 'IE', 'Israel': 'IL', 'Italy': 'IT', 'Japan': 'JP', 'Jordan': 'JO',
+    'Kazakhstan': 'KZ', 'Kenya': 'KE', 'Kuwait': 'KW', 'Laos': 'LA', 'Latvia': 'LV',
+    'Lebanon': 'LB', 'Lesotho': 'LS', 'Liberia': 'LR', 'Libya': 'LY', 'Liechtenstein': 'LI',
+    'Lithuania': 'LT', 'Luxembourg': 'LU', 'Madagascar': 'MG', 'Malawi': 'MW', 'Malaysia': 'MY',
+    'Maldives': 'MV', 'Mali': 'ML', 'Malta': 'MT', 'Marshall Islands': 'MH', 'Martinique': 'MQ',
+    'Mauritania': 'MR', 'Mauritius': 'MU', 'Mayotte': 'YT', 'Mexico': 'MX', 'Micronesia': 'FM',
+    'Moldova': 'MD', 'Morocco': 'MA', 'Mozambique': 'MZ', 'Namibia': 'NA', 'Nepal': 'NP',
+    'Netherlands': 'NL', 'New Caledonia': 'NC', 'New Zealand': 'NZ', 'Nicaragua': 'NI', 'Niger': 'NE',
+    'Nigeria': 'NG', 'North Macedonia': 'MK', 'Norway': 'NO', 'Oman': 'OM', 'Pakistan': 'PK',
+    'Palau': 'PW', 'Panama': 'PA', 'Papua New Guinea': 'PG', 'Paraguay': 'PY', 'Peru': 'PE',
+    'Philippines': 'PH', 'Poland': 'PL', 'Portugal': 'PT', 'Puerto Rico': 'PR', 'Qatar': 'QA',
+    'Romania': 'RO', 'Rwanda': 'RW', 'Réunion': 'RE', 'Saudi Arabia': 'SA', 'Senegal': 'SN',
+    'Serbia': 'RS', 'Seychelles': 'SC', 'Singapore': 'SG', 'Sint Maarten': 'SX', 'Slovakia': 'SK',
+    'Slovenia': 'SI', 'South Africa': 'ZA', 'South Korea': 'KR', 'Spain': 'ES', 'Sri Lanka': 'LK',
+    'Suriname': 'SR', 'Sweden': 'SE', 'Switzerland': 'CH', 'Syria': 'SY', 'Tanzania': 'TZ',
+    'Thailand': 'TH', 'Trinidad and Tobago': 'TT', 'Tunisia': 'TN', 'Turkey': 'TR', 'Uganda': 'UG',
+    'United Arab Emirates': 'AE', 'United Kingdom': 'GB', 'United States': 'US', 'Uruguay': 'UY',
+    'Venezuela': 'VE', 'Vietnam': 'VN', 'Western Samoa': 'WS', 'Zambia': 'ZM'
+  };
+
+  function resolveCountryIso(rawCountry) {
+    const trimmed = String(rawCountry || 'US').trim();
+    if (trimmed.length === 2 && /^[A-Za-z]{2}$/.test(trimmed)) return trimmed.toUpperCase();
+    return PAYMENT_COUNTRY_ISO_MAP[trimmed] || 'US';
+  }
+
+  function resolveStandardStateCode(countryIso, rawState) {
+    const val = String(rawState || '').trim();
+    if (!val) return 'N/A';
+    try {
+      const cachedRaw = localStorage.getItem('ebbelle_wc_states_v1');
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        const list = cached?.data?.[countryIso];
+        if (Array.isArray(list) && list.length > 0) {
+          const lower = val.toLowerCase();
+          const match = list.find(s => s.code.toLowerCase() === lower || s.name.toLowerCase() === lower);
+          if (match) return match.code;
+        }
+      }
+    } catch (e) {}
+    return val;
+  }
+
+  function validateCustomBillingInputs() {
+    const requiredIds = [
+      { id: 'billFirstName', label: 'First Name' },
+      { id: 'billLastName', label: 'Last Name' },
+      { id: 'billAddress', label: 'Street Address' },
+      { id: 'billCity', label: 'City' },
+      { id: 'billState', label: 'State / Province' },
+      { id: 'billZip', label: 'ZIP / Postal Code' },
+    ];
+    for (const item of requiredIds) {
+      const el = document.getElementById(item.id);
+      if (!el || !String(el.value || '').trim()) {
+        return `Please enter your billing ${item.label}.`;
+      }
+    }
+    return '';
+  }
+
+  function getEffectiveBillingData() {
+    const sInfo = JSON.parse(sessionStorage.getItem('shippingInfo') || '{}');
+    const mode = document.querySelector('input[name="billingMode"]:checked')?.value || 'same';
+
+    if (mode === 'different' && !validateCustomBillingInputs()) {
+      const bCountry = document.getElementById('billCountry')?.value || sInfo.country || 'United States';
+      const iso = resolveCountryIso(bCountry);
+      const rawState = document.getElementById('billState')?.value || '';
+      const fName = (document.getElementById('billFirstName')?.value || sInfo.firstName || 'Customer').trim();
+      const lName = (document.getElementById('billLastName')?.value || sInfo.lastName || '').trim();
+      return {
+        name: `${fName} ${lName}`.trim(),
+        first_name: fName,
+        last_name: lName,
+        email: (sInfo.email || '').trim(),
+        phone_number: (sInfo.phone || '').trim(),
+        address: {
+          country_code: iso,
+          state: resolveStandardStateCode(iso, rawState),
+          city: (document.getElementById('billCity')?.value || sInfo.city || 'N/A').trim(),
+          street: (document.getElementById('billAddress')?.value || sInfo.address || 'N/A').trim(),
+          postcode: (document.getElementById('billZip')?.value || sInfo.zip || '00000').trim(),
+        },
+      };
+    }
+
+    const iso = resolveCountryIso(sInfo.country || 'US');
+    const fName = (sInfo.firstName || 'Customer').trim();
+    const lName = (sInfo.lastName || '').trim();
+    return {
+      name: `${fName} ${lName}`.trim(),
+      first_name: fName,
+      last_name: lName,
+      email: (sInfo.email || '').trim(),
+      phone_number: (sInfo.phone || '').trim(),
+      address: {
+        country_code: iso,
+        state: resolveStandardStateCode(iso, sInfo.state),
+        city: (sInfo.city || 'N/A').trim(),
+        street: [sInfo.address, sInfo.apartment].filter(Boolean).join(', ') || 'N/A',
+        postcode: (sInfo.zip || '00000').trim(),
+      },
+    };
+  }
+
+  // 通用建单载荷：同时服务于 Airwallex 信用卡与 PayPal，确保双方账单地址 100% 同步更新
+  function buildOrderCreationPayload(totals) {
+    const existingOrderId = parseInt(sessionStorage.getItem('pendingOrderId') || '0', 10);
+    const existingOrderKey = sessionStorage.getItem('pendingOrderKey') || '';
+    const shippingInfoStr = sessionStorage.getItem('shippingInfo');
+    const latestCart = getCart();
+
+    if (!existingOrderId) {
+      if (!shippingInfoStr) {
+        alert('Please provide shipping details first.');
+        window.location.href = '/checkout/shipping';
+        throw new Error('Missing shipping info');
+      }
+      if (!latestCart || latestCart.length === 0) {
+        alert('Your cart is empty. Please add products first.');
+        window.location.href = '/shop';
+        throw new Error('Cart is empty');
+      }
+    }
+
+    const shipping = shippingInfoStr ? JSON.parse(shippingInfoStr) : {};
+    const effectiveBilling = getEffectiveBillingData();
+    const calc = getCheckoutCalculation();
+    const earnedPts = calc ? (parseFloat(calc.points_earned) || 0) : parseFloat((parseFloat(totals.subtotal) / 10).toFixed(1));
+
+    return {
+      existingOrderId: existingOrderId > 0 ? existingOrderId : undefined,
+      existingOrderKey: existingOrderKey || undefined,
+      currency: CURRENT_CURRENCY,
+      billing: {
+        first_name: effectiveBilling.first_name,
+        last_name: effectiveBilling.last_name,
+        address_1: effectiveBilling.address.street,
+        address_2: '',
+        city: effectiveBilling.address.city,
+        state: effectiveBilling.address.state,
+        postcode: effectiveBilling.address.postcode,
+        country: effectiveBilling.address.country_code,
+        email: effectiveBilling.email,
+        phone: effectiveBilling.phone_number,
+      },
+      shipping: {
+        first_name: shipping.firstName || '',
+        last_name: shipping.lastName || '',
+        address_1: shipping.address || '',
+        address_2: shipping.apartment || '',
+        city: shipping.city || '',
+        state: shipping.state || '',
+        postcode: shipping.zip || '',
+        country: shipping.country || 'US',
+      },
+      shippingMethod: shipping.shippingMethod || 'standard',
+      shippingCost: totals.shipping,
+      discountTotal: parseFloat(totals.discount) || 0,
+      pointsSpent: calc?.points_spent || 0,
+      pointsEarned: earnedPts,
+      appliedOffers: calc?.applied_offers || [],
+      coupon_lines: calc?.manual_coupon ? [{ code: calc.manual_coupon }] : [],
+      line_items: latestCart.map(item => {
+        const isGift = isItemFreeGift(item);
+        return {
+          product_id: Number(item.productId || item.product_id || item.id || 0),
+          variation_id: item.variationId || item.variation_id || undefined,
+          name: item.name || '',
+          quantity: Number(item.quantity) || 1,
+          price: isGift ? 0 : (parseFloat(item.price) || undefined),
+          isXmasMysteryGift: Boolean(item.isXmasMysteryGift),
+        };
+      })
+    };
+  }
+
+  // ============================================================
+  // 支付处理中原位锁定与轻提示控制（全渠道通用，失败自动解锁）
+  // ============================================================
+  let isFinalizingPayment = false;
+
+  function setPaymentBusyState(isBusy, channel = 'card', message = '') {
+    const paymentTabs = document.getElementById('paymentMethodsBar');
+    const billingSection = document.getElementById('billingAddressSection');
+    const updateBillingBtn = document.getElementById('applyCustomBillingBtn');
+    const dropinBox = document.getElementById('airwallex-dropin');
+
+    const cardHintEl = document.getElementById('airwallex-processing-hint');
+    const cardHintTextEl = document.getElementById('airwallex-processing-text');
+    const paypalHintEl = document.getElementById('paypal-processing-hint');
+    const paypalHintTextEl = document.getElementById('paypal-processing-text');
+
+    if (channel === 'card') {
+      if (cardHintEl) {
+        cardHintEl.style.display = isBusy ? 'flex' : 'none';
+        if (cardHintTextEl && message) cardHintTextEl.textContent = message;
+      }
+      if (paypalHintEl) paypalHintEl.style.display = 'none';
+
+      // 核心修复：处理中与核单跳转期间，物理锁定 Airwallex iframe 容器点击，杜绝连击触发 something went wrong
+      if (dropinBox) {
+        dropinBox.style.pointerEvents = isBusy ? 'none' : 'auto';
+        dropinBox.style.opacity = isBusy ? '0.78' : '1';
+        dropinBox.style.transition = 'opacity 0.2s ease';
+      }
+    } else {
+      if (paypalHintEl) {
+        paypalHintEl.style.display = isBusy ? 'flex' : 'none';
+        if (paypalHintTextEl && message) paypalHintTextEl.textContent = message;
+      }
+      if (cardHintEl) cardHintEl.style.display = 'none';
+    }
+
+    // 锁定/解锁顶部支付方式选项卡切换
+    if (paymentTabs) {
+      paymentTabs.style.pointerEvents = isBusy ? 'none' : '';
+      paymentTabs.style.opacity = isBusy ? '0.6' : '1';
+    }
+
+    // 锁定/解锁账单地址编辑区域
+    if (billingSection) {
+      billingSection.style.pointerEvents = isBusy ? 'none' : '';
+      billingSection.style.opacity = isBusy ? '0.72' : '1';
+      billingSection.style.transition = 'opacity 0.2s ease';
+    }
+    if (updateBillingBtn) {
+      updateBillingBtn.disabled = Boolean(isBusy);
+    }
+  }
+
+  function initCustomBillingControls(totals) {
+    const billCountrySelect = document.getElementById('billCountry');
+    const sInfo = JSON.parse(sessionStorage.getItem('shippingInfo') || '{}');
+
+    if (billCountrySelect && billCountrySelect.options.length === 0) {
+      Object.keys(PAYMENT_COUNTRY_ISO_MAP).forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        if (name === (sInfo.country || 'United States')) opt.selected = true;
+        billCountrySelect.appendChild(opt);
+      });
+    }
+
+    const syncBillState = () => {
+      const wrap = document.getElementById('billStateWrap');
+      const curEl = document.getElementById('billState');
+      if (!wrap || !curEl) return;
+      const iso = resolveCountryIso(billCountrySelect?.value || 'US');
+      let list = [];
+      try {
+        const cached = JSON.parse(localStorage.getItem('ebbelle_wc_states_v1') || '{}');
+        list = Array.isArray(cached?.data?.[iso]) ? cached.data[iso] : [];
+      } catch (e) {}
+
+      if (list.length > 0) {
+        const sel = document.createElement('select');
+        sel.id = 'billState';
+        sel.innerHTML = '<option value="">Select state / province</option>' +
+          list.map(s => `<option value="${escapeHtml(s.code)}">${escapeHtml(s.name)}</option>`).join('');
+        curEl.replaceWith(sel);
+      } else if (curEl.tagName !== 'INPUT') {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.id = 'billState';
+        inp.placeholder = 'State / Province';
+        curEl.replaceWith(inp);
+      }
+    };
+
+    if (billCountrySelect) {
+      billCountrySelect.addEventListener('change', syncBillState);
+      syncBillState();
+    }
+
+    const customBox = document.getElementById('customBillingFields');
+    const billingRows = document.querySelectorAll('.billing-radio-row');
+    const errBox = document.getElementById('billingValidationError');
+
+    document.querySelectorAll('input[name="billingMode"]').forEach(radio => {
+      radio.addEventListener('change', async () => {
+        billingRows.forEach(r => r.classList.remove('active'));
+        radio.closest('.billing-radio-row')?.classList.add('active');
+        if (errBox) errBox.style.display = 'none';
+
+        if (customBox) {
+          customBox.style.display = radio.value === 'different' ? 'block' : 'none';
+        }
+
+        // 切回 Same as shipping address 时，同步刷新当前激活支付方式的账单地址
+        if (radio.value === 'same') {
+          const activeMethod = document.querySelector('.payment-option.active')?.getAttribute('data-method');
+          if (activeMethod === 'card') {
+            airwallexDropinMounted = false;
+            await initAirwallexCardDropin(totals).catch(() => {});
+          }
+        }
+      });
+    });
+
+    const updateBtn = document.getElementById('applyCustomBillingBtn');
+    if (updateBtn) {
+      updateBtn.addEventListener('click', async () => {
+        if (updateBtn.disabled) return;
+
+        const validationErr = validateCustomBillingInputs();
+        if (validationErr) {
+          if (errBox) {
+            errBox.textContent = validationErr;
+            errBox.style.display = 'block';
+          }
+          return;
+        }
+        if (errBox) errBox.style.display = 'none';
+
+        const originalText = 'UPDATE BILLING ADDRESS';
+        updateBtn.disabled = true;
+        updateBtn.style.opacity = '0.88';
+        updateBtn.style.background = '#3f3c35';
+        updateBtn.style.borderColor = '#3f3c35';
+        updateBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:8px;"></i> UPDATING...`;
+
+        try {
+          const activeMethod = document.querySelector('.payment-option.active')?.getAttribute('data-method');
+
+          if (activeMethod === 'card') {
+            airwallexDropinMounted = false;
+            await initAirwallexCardDropin(totals);
+          } else {
+            const existingOrderId = parseInt(sessionStorage.getItem('pendingOrderId') || '0', 10);
+            if (existingOrderId > 0) {
+              const payload = buildOrderCreationPayload(totals);
+              await fetch('/api/airwallex/create-intent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              }).catch(() => {});
+            }
+          }
+
+          // 转圈变为绿色对勾显示已更新
+          updateBtn.style.opacity = '1';
+          updateBtn.style.background = '#16a34a';
+          updateBtn.style.borderColor = '#16a34a';
+          updateBtn.innerHTML = `<i class="fa-solid fa-circle-check" style="margin-right:8px;"></i> BILLING ADDRESS UPDATED`;
+
+          setTimeout(() => {
+            updateBtn.style.background = '#1c1c18';
+            updateBtn.style.borderColor = '#1c1c18';
+            updateBtn.textContent = originalText;
+            updateBtn.disabled = false;
+          }, 2200);
+        } catch (err) {
+          updateBtn.style.opacity = '1';
+          updateBtn.style.background = '#dc2626';
+          updateBtn.style.borderColor = '#dc2626';
+          updateBtn.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="margin-right:8px;"></i> UPDATE FAILED`;
+          setTimeout(() => {
+            updateBtn.style.background = '#1c1c18';
+            updateBtn.style.borderColor = '#1c1c18';
+            updateBtn.textContent = originalText;
+            updateBtn.disabled = false;
+          }, 2200);
+        }
+      });
+    }
+  }
+
+  // ============================================================
+  // Airwallex 模块嵌入 (Drop-in Element) 初始化与状态监听
+  // ============================================================
+  let airwallexInitialized = false;
+  let airwallexDropinMounted = false;
+  let airwallexListenersBound = false;
+  let isAwxInitializing = false;
+  let activeAwxIntentId = '';
+
+  async function initAirwallexCardDropin(totals) {
+    const loadingEl = document.getElementById('airwallex-loading');
+    const errorEl = document.getElementById('airwallex-error');
+    const dropinContainer = document.getElementById('airwallex-dropin');
+
+    if (airwallexDropinMounted && activeAwxIntentId) {
+      if (loadingEl) loadingEl.style.display = 'none';
+      return;
+    }
+    if (isAwxInitializing) return;
+    isAwxInitializing = true;
+
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (errorEl) errorEl.style.display = 'none';
+
+    try {
+      // @ts-ignore
+      if (typeof Airwallex === 'undefined') {
+        throw new Error('Airwallex payment SDK failed to load. Please refresh the page.');
+      }
+
+      const billingInfo = getEffectiveBillingData();
+      const payload = buildOrderCreationPayload(totals);
+
+      const res = await fetch('/api/airwallex/create-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.intentId || !data.clientSecret) {
+        throw new Error(data.details || data.message || data.error || 'Failed to initialize card payment');
+      }
+
+      sessionStorage.setItem('pendingOrderId', data.orderId.toString());
+      sessionStorage.setItem('pendingOrderKey', data.orderKey);
+      sessionStorage.setItem('pendingAwxIntentId', data.intentId);
+      activeAwxIntentId = data.intentId;
+
+      if (!airwallexInitialized) {
+        // @ts-ignore
+        Airwallex.init({
+          env: AIRWALLEX_ENV === 'prod' ? 'prod' : 'demo',
+          origin: window.location.origin,
+        });
+        airwallexInitialized = true;
+      }
+
+      if (dropinContainer) dropinContainer.innerHTML = '';
+
+      // @ts-ignore
+      const dropin = Airwallex.createElement('dropIn', {
+        intent_id: data.intentId,
+        client_secret: data.clientSecret,
+        currency: data.currency || CURRENT_CURRENCY,
+        methods: ['card'],
+        withBilling: false,
+        billing: billingInfo,
+        autoCapture: true,
+        appearance: {
+          mode: 'light',
+          variables: {
+            colorBrand: '#8c631a',
+            colorBrandHover: '#725013',
+            colorBrandActive: '#5e410f',
+            colorTextOnBrand: '#fcf9f3',
+            colorBackground: '#ffffff',
+            colorBorder: '#cfc8ba',
+            colorBorderFocus: '#8c631a',
+            colorDanger: '#b42318',
+            colorText: '#1c1c18',
+            colorTextSecondary: '#7c776d',
+            borderRadius: '6px',
+          },
+        },
+      });
+
+      dropin.mount('airwallex-dropin');
+      airwallexDropinMounted = true;
+      // 挂载后立刻隐藏外层提示，交由 iframe 内部渲染，减少视觉等待感
+      if (loadingEl) loadingEl.style.display = 'none';
+
+      if (!airwallexListenersBound) {
+        airwallexListenersBound = true;
+
+        window.addEventListener('onReady', () => {
+          if (loadingEl) loadingEl.style.display = 'none';
+        });
+
+        // 1. 点击 Pay 按钮发起支付瞬间：禁用顶部 Tab 切换 + 展示就近提示条（按钮本身由 Airwallex SDK 禁用转圈）
+        window.addEventListener('onProcessing', () => {
+          if (errorEl) errorEl.style.display = 'none';
+          setPaymentBusyState(
+            true,
+            'card',
+            'Processing your payment securely... Please do not refresh or close this page.'
+          );
+        });
+
+        // 2. 扣款成功：保持锁定并更新文案，通知后端确认 WooCommerce 订单后跳转
+        window.addEventListener('onSuccess', async () => {
+          if (isFinalizingPayment) return;
+          isFinalizingPayment = true;
+          setPaymentBusyState(
+            true,
+            'card',
+            'Payment approved! Finalizing your order, please wait...'
+          );
+
+          const orderId = sessionStorage.getItem('pendingOrderId') || '';
+          const orderKey = sessionStorage.getItem('pendingOrderKey') || '';
+          const intentId = sessionStorage.getItem('pendingAwxIntentId') || activeAwxIntentId;
+
+          try {
+            await fetch('/api/airwallex/confirm-order', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                intentId,
+                orderId: parseInt(orderId || '0', 10)
+              })
+            });
+          } catch (e) {}
+
+          localStorage.removeItem('ebbelle_cart');
+          sessionStorage.removeItem('ebbelle_checkout_calculation');
+          sessionStorage.removeItem('ebbelle_cart_manual_coupon');
+          sessionStorage.removeItem('pendingOrderId');
+          sessionStorage.removeItem('pendingOrderKey');
+          sessionStorage.removeItem('pendingOrderSnapshot');
+          sessionStorage.removeItem('pendingAwxIntentId');
+          sessionStorage.setItem('paymentStatus', JSON.stringify({ status: 'success' }));
+
+          window.top.location.href = `/checkout/confirmation?order_id=${encodeURIComponent(orderId)}&order_key=${encodeURIComponent(orderKey)}&payment=airwallex&status=success`;
+        });
+
+        // 3. 支付失败 / 拒付 / 3DS 验证失败：立刻解锁上方 Tab 与按钮，隐藏处理中提示，展示错误原因
+        window.addEventListener('onError', (event) => {
+          // 如果已经进入扣款成功核单跳转流程，忽略后续多余回调，防止闪现报错
+          if (isFinalizingPayment) return;
+
+          setPaymentBusyState(false, 'card');
+
+          // @ts-ignore
+          const err = event?.detail?.error;
+          if (errorEl) {
+            errorEl.style.display = 'block';
+            errorEl.textContent = err?.message || 'Card payment failed. Please check your card details and try again.';
+          }
+        });
+      }
+    } catch (err) {
+      if (loadingEl) loadingEl.style.display = 'none';
+      setPaymentBusyState(false, 'card');
+      if (errorEl) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = err.message || 'Unable to load card payment form.';
+      }
+      throw err;
+    } finally {
+      isAwxInitializing = false;
+    }
+  }
+
   async function initCheckout() {
     const urlParams = new URLSearchParams(window.location.search);
     const queryOrderId = urlParams.get('order_id');
@@ -936,6 +1867,7 @@ const CURRENT_CURRENCY = 'USD';
       sessionStorage.removeItem('pendingOrderSnapshot');
       sessionStorage.removeItem('pendingOrderId');
       sessionStorage.removeItem('pendingOrderKey');
+      sessionStorage.removeItem('pendingAwxIntentId');
     }
 
     const cart = getCart();
@@ -956,12 +1888,17 @@ const CURRENT_CURRENCY = 'USD';
     if (shippingInfoStr) {
       const s = JSON.parse(shippingInfoStr);
       const reviewBox = document.getElementById('shippingReview');
+      const fullAddressLine = `${s.address || ''} ${s.apartment || ''}, ${s.city || ''}, ${s.state || ''} ${s.zip || ''}, ${s.country || ''}`.replace(/\s+/g, ' ').trim();
       if (reviewBox) {
         reviewBox.innerHTML = `
-          <p class="name">${s.firstName || ''} ${s.lastName || ''}</p>
-          <p class="address">${s.address || ''} ${s.apartment || ''}, ${s.city || ''}, ${s.state || ''} ${s.zip || ''}, ${s.country || ''}</p>
-          <p class="contact">${s.email || ''} | ${s.phone || ''}</p>
+          <p class="name">${escapeHtml(`${s.firstName || ''} ${s.lastName || ''}`.trim())}</p>
+          <p class="address">${escapeHtml(fullAddressLine)}</p>
+          <p class="contact">${escapeHtml(`${s.email || ''} | ${s.phone || ''}`)}</p>
         `;
+      }
+      const samePreview = document.getElementById('sameAsShippingPreview');
+      if (samePreview && fullAddressLine) {
+        samePreview.textContent = fullAddressLine;
       }
     }
 
@@ -974,14 +1911,53 @@ const CURRENT_CURRENCY = 'USD';
       });
     }
 
+    // 支付方式切换（默认激活 Credit / Debit Card，可随时切向 PayPal）
+    const paymentOptions = document.querySelectorAll('.payment-option');
+    const paypalForm = document.getElementById('paypalForm');
+    const cardForm = document.getElementById('airwallexCardForm');
+
+    paymentOptions.forEach(opt => {
+      opt.addEventListener('click', () => {
+        if (isFinalizingPayment) return;
+        const method = opt.getAttribute('data-method');
+        paymentOptions.forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        const radio = opt.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+
+        if (method === 'card') {
+          if (paypalForm) paypalForm.style.display = 'none';
+          if (cardForm) cardForm.style.display = 'block';
+          initAirwallexCardDropin(totals).catch(() => {});
+        } else {
+          if (cardForm) cardForm.style.display = 'none';
+          if (paypalForm) paypalForm.style.display = 'block';
+          if (!paypalButtonsRendered) {
+            initPayPal(cart, totals);
+          }
+        }
+      });
+    });
+
+    initCustomBillingControls(totals);
     initPayPal(cart, totals);
+    // 默认首屏优先加载 Airwallex 信用卡表单
+    initAirwallexCardDropin(totals).catch(() => {});
   }
 
+  let paypalButtonsRendered = false;
+
   function initPayPal(cart, totals) {
+    if (paypalButtonsRendered) return;
     // @ts-ignore
     if (typeof paypal === 'undefined') {
       return;
     }
+
+    const container = document.getElementById('paypal-button-container');
+    if (!container) return;
+    container.innerHTML = '';
+    paypalButtonsRendered = true;
 
     // @ts-ignore
     paypal.Buttons({
@@ -993,95 +1969,50 @@ const CURRENT_CURRENCY = 'USD';
       },
 
       createOrder: async function() {
-        const existingOrderId = parseInt(sessionStorage.getItem('pendingOrderId') || '0', 10);
-        const existingOrderKey = sessionStorage.getItem('pendingOrderKey') || '';
+        setPaymentBusyState(
+          true,
+          'paypal',
+          'Connecting to PayPal securely... Please complete payment in the PayPal window.'
+        );
+        try {
+          const payload = buildOrderCreationPayload(totals);
 
-        const shippingInfoStr = sessionStorage.getItem('shippingInfo');
-        const latestCart = getCart();
+          const res = await fetch('/api/paypal/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
 
-        if (!existingOrderId) {
-          if (!shippingInfoStr) {
-            alert('Please provide shipping details first.');
-            window.location.href = '/checkout/shipping';
-            throw new Error('Missing shipping info');
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            const detailMsg = data.details || data.message || data.error || 'Failed to create PayPal order';
+            setPaymentBusyState(false, 'paypal');
+            alert('Order creation failed: ' + detailMsg);
+            throw new Error(detailMsg);
           }
-          if (!latestCart || latestCart.length === 0) {
-            alert('Your cart is empty. Please add products first.');
-            window.location.href = '/shop';
-            throw new Error('Cart is empty');
-          }
+
+          sessionStorage.setItem('pendingOrderId', data.orderId.toString());
+          sessionStorage.setItem('pendingOrderKey', data.orderKey);
+
+          return data.paypalOrderId;
+        } catch (err) {
+          setPaymentBusyState(false, 'paypal');
+          throw err;
         }
-
-        const shipping = shippingInfoStr ? JSON.parse(shippingInfoStr) : {};
-        const calc = getCheckoutCalculation();
-        const earnedPts = calc ? (parseFloat(calc.points_earned) || 0) : parseFloat((parseFloat(totals.subtotal) / 10).toFixed(1));
-
-        const payload = {
-          existingOrderId: existingOrderId > 0 ? existingOrderId : undefined,
-          existingOrderKey: existingOrderKey || undefined,
-          currency: CURRENT_CURRENCY,
-          billing: {
-            first_name: shipping.firstName || '',
-            last_name: shipping.lastName || '',
-            address_1: shipping.address || '',
-            address_2: shipping.apartment || '',
-            city: shipping.city || '',
-            state: shipping.state || '',
-            postcode: shipping.zip || '',
-            country: shipping.country || 'US',
-            email: shipping.email || '',
-            phone: shipping.phone || '',
-          },
-          shipping: {
-            first_name: shipping.firstName || '',
-            last_name: shipping.lastName || '',
-            address_1: shipping.address || '',
-            address_2: shipping.apartment || '',
-            city: shipping.city || '',
-            state: shipping.state || '',
-            postcode: shipping.zip || '',
-            country: shipping.country || 'US',
-          },
-          shippingMethod: shipping.shippingMethod || 'standard',
-          shippingCost: totals.shipping,
-          discountTotal: parseFloat(totals.discount) || 0,
-          pointsSpent: calc?.points_spent || 0,
-          pointsEarned: earnedPts,
-          appliedOffers: calc?.applied_offers || [],
-          coupon_lines: calc?.manual_coupon ? [{ code: calc.manual_coupon }] : [],
-          line_items: latestCart.map(item => ({
-            product_id: Number(item.productId || item.product_id || item.id || 0),
-            variation_id: item.variationId || item.variation_id || undefined,
-            name: item.name || '',
-            quantity: Number(item.quantity) || 1,
-            price: item.isXmasMysteryGift ? 0 : (parseFloat(item.price) || undefined),
-            isXmasMysteryGift: Boolean(item.isXmasMysteryGift)
-          }))
-        };
-
-        const res = await fetch('/api/paypal/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          const detailMsg = data.details || data.message || data.error || 'Failed to create PayPal order';
-          alert('Order creation failed: ' + detailMsg);
-          throw new Error(detailMsg);
-        }
-
-        sessionStorage.setItem('pendingOrderId', data.orderId.toString());
-        sessionStorage.setItem('pendingOrderKey', data.orderKey);
-
-        return data.paypalOrderId;
       },
 
       onApprove: async function(data, actions) {
-        const orderId = sessionStorage.getItem('pendingOrderId');
-        const orderKey = sessionStorage.getItem('pendingOrderKey');
+        if (isFinalizingPayment) return;
+        isFinalizingPayment = true;
+        setPaymentBusyState(
+          true,
+          'paypal',
+          'Payment approved! Finalizing your order, please wait...'
+        );
+
+        const orderId = sessionStorage.getItem('pendingOrderId') || '';
+        const orderKey = sessionStorage.getItem('pendingOrderKey') || '';
 
         try {
           const res = await fetch('/api/paypal/capture-order', {
@@ -1089,19 +2020,21 @@ const CURRENT_CURRENCY = 'USD';
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               paypalOrderId: data.orderID,
-              orderId: parseInt(orderId || '0')
+              orderId: parseInt(orderId || '0', 10)
             })
           });
 
           const result = await res.json();
 
           if (!res.ok) {
+            isFinalizingPayment = false;
+            setPaymentBusyState(false, 'paypal');
             sessionStorage.setItem('paymentStatus', JSON.stringify({
               status: 'failed',
               reason: result.paypalError?.name || 'unknown',
               details: result.paypalError?.details || []
             }));
-            window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=failed`;
+            window.top.location.href = `/checkout/confirmation?order_id=${encodeURIComponent(orderId)}&order_key=${encodeURIComponent(orderKey)}&payment=paypal&status=failed`;
             return;
           }
 
@@ -1115,32 +2048,36 @@ const CURRENT_CURRENCY = 'USD';
             status: 'success'
           }));
 
-          window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=success`;
+          window.top.location.href = `/checkout/confirmation?order_id=${encodeURIComponent(orderId)}&order_key=${encodeURIComponent(orderKey)}&payment=paypal&status=success`;
         } catch (error) {
+          isFinalizingPayment = false;
+          setPaymentBusyState(false, 'paypal');
           sessionStorage.setItem('paymentStatus', JSON.stringify({
             status: 'error',
             message: error.message
           }));
 
-          const orderId = sessionStorage.getItem('pendingOrderId');
-          const orderKey = sessionStorage.getItem('pendingOrderKey');
-          window.top.location.href = `/checkout/confirmation?order_id=${orderId}&order_key=${orderKey}&payment=paypal&status=error`;
+          window.top.location.href = `/checkout/confirmation?order_id=${encodeURIComponent(orderId)}&order_key=${encodeURIComponent(orderKey)}&payment=paypal&status=error`;
         }
       },
 
       onError: function(err) {
+        isFinalizingPayment = false;
+        setPaymentBusyState(false, 'paypal');
         console.error('PayPal Error:', err);
       },
 
       onCancel: function(data) {
-        const orderId = sessionStorage.getItem('pendingOrderId');
-        const orderKey = sessionStorage.getItem('pendingOrderKey');
+        isFinalizingPayment = false;
+        setPaymentBusyState(false, 'paypal');
+        const orderId = sessionStorage.getItem('pendingOrderId') || '';
+        const orderKey = sessionStorage.getItem('pendingOrderKey') || '';
 
         sessionStorage.setItem('paymentStatus', JSON.stringify({
           status: 'cancelled'
         }));
 
-        window.top.location.href = `/checkout/confirmation?order_id=${orderId || ''}&order_key=${orderKey || ''}&payment=paypal&status=cancelled`;
+        window.top.location.href = `/checkout/confirmation?order_id=${encodeURIComponent(orderId)}&order_key=${encodeURIComponent(orderKey)}&payment=paypal&status=cancelled`;
       }
     }).render('#paypal-button-container');
   }

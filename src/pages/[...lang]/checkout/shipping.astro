@@ -147,7 +147,7 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
                 <label>{t(currentLocale, 'checkout.city') !== 'checkout.city' ? t(currentLocale, 'checkout.city').toUpperCase() : 'CITY'}</label>
                 <input type="text" id="city" required>
               </div>
-              <div class="field">
+              <div class="field" id="stateFieldWrap">
                 <label>{t(currentLocale, 'checkout.state') !== 'checkout.state' ? t(currentLocale, 'checkout.state').toUpperCase() : 'STATE / PROVINCE'}</label>
                 <input type="text" id="state" required>
               </div>
@@ -1444,6 +1444,93 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
     'United Arab Emirates': 'AE', 'United Kingdom': 'GB', 'United States': 'US', 'Uruguay': 'UY',
     'Venezuela': 'VE', 'Vietnam': 'VN', 'Western Samoa': 'WS', 'Zambia': 'ZM'
   };
+  // ============================================================
+  // 动态加载 WooCommerce 全球标准州/省数据（7天本地缓存，只拉取一次）
+  // ============================================================
+  let wcStatesByCountry = {};
+  const WC_LOCATIONS_CACHE_KEY = 'ebbelle_wc_states_v1';
+  const WC_LOCATIONS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+  async function loadWcStatesData() {
+    try {
+      const cachedRaw = localStorage.getItem(WC_LOCATIONS_CACHE_KEY);
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        if (cached && cached.data && cached.expiresAt && Date.now() < cached.expiresAt) {
+          wcStatesByCountry = cached.data;
+          syncStateControlForCountry(document.getElementById('country')?.value || '');
+          return;
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const res = await fetch('/api/woocommerce/locations');
+      const json = await res.json();
+      if (json && json.success && json.statesByCountry) {
+        wcStatesByCountry = json.statesByCountry;
+        try {
+          localStorage.setItem(
+            WC_LOCATIONS_CACHE_KEY,
+            JSON.stringify({
+              data: wcStatesByCountry,
+              expiresAt: Date.now() + WC_LOCATIONS_TTL_MS,
+            })
+          );
+        } catch (e) {}
+        syncStateControlForCountry(document.getElementById('country')?.value || '');
+      }
+    } catch (e) {
+      // 接口失败时自动维持文本输入框，不影响结账
+    }
+  }
+
+  function syncStateControlForCountry(countryName, preferredValue) {
+    const wrap = document.getElementById('stateFieldWrap');
+    const currentEl = document.getElementById('state');
+    if (!wrap || !currentEl) return;
+
+    const currentVal = (preferredValue !== undefined ? preferredValue : currentEl.value || '').trim();
+    const iso = COUNTRY_ISO_MAP[countryName] || '';
+    const statesList = iso && Array.isArray(wcStatesByCountry[iso]) ? wcStatesByCountry[iso] : [];
+
+    // 若该国家有标准州/省列表，切换为标准 <select id="state">
+    if (statesList.length > 0) {
+      let selectEl = currentEl.tagName === 'SELECT' ? currentEl : null;
+      if (!selectEl) {
+        selectEl = document.createElement('select');
+        selectEl.id = 'state';
+        selectEl.required = true;
+        currentEl.replaceWith(selectEl);
+      }
+
+      let matchedCode = '';
+      if (currentVal) {
+        const lowerVal = currentVal.toLowerCase();
+        const found = statesList.find(
+          (s) => s.code.toLowerCase() === lowerVal || s.name.toLowerCase() === lowerVal
+        );
+        if (found) matchedCode = found.code;
+      }
+
+      let optionsHtml = '<option value="">Select state / province</option>';
+      statesList.forEach((s) => {
+        const selectedAttr = s.code === matchedCode ? 'selected' : '';
+        optionsHtml += `<option value="${s.code}" ${selectedAttr}>${s.name}</option>`;
+      });
+      selectEl.innerHTML = optionsHtml;
+    } else {
+      // 无二级州/省划分的国家，保持普通文本输入框
+      if (currentEl.tagName !== 'INPUT') {
+        const inputEl = document.createElement('input');
+        inputEl.type = 'text';
+        inputEl.id = 'state';
+        inputEl.required = true;
+        inputEl.value = currentVal;
+        currentEl.replaceWith(inputEl);
+      }
+    }
+  }
 
   // ============================================================
   // 原有运费与重量计算核心
@@ -2355,18 +2442,20 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
       const savedRaw = sessionStorage.getItem('shippingInfo');
       if (!savedRaw) return;
       const saved = JSON.parse(savedRaw);
-      const fieldMap = ['email', 'firstName', 'lastName', 'address', 'apartment', 'city', 'state', 'zip', 'country', 'phone'];
+      const fieldMap = ['email', 'firstName', 'lastName', 'address', 'apartment', 'city', 'zip', 'country', 'phone'];
       fieldMap.forEach(id => {
         const el = document.getElementById(id);
         if (el && saved[id]) {
           el.value = saved[id];
         }
       });
+      syncStateControlForCountry(saved.country || '', saved.state || '');
     } catch (e) {}
   }
 
   function initializeCart() {
     restoreSavedShippingForm();
+    loadWcStatesData();
     const savedCoupon = sessionStorage.getItem('ebbelle_cart_manual_coupon');
     if (savedCoupon && !manualCouponCode) {
       manualCouponCode = savedCoupon;
@@ -2417,7 +2506,10 @@ const currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang a
 
   const countrySelect = document.getElementById('country');
   if (countrySelect) {
-    countrySelect.addEventListener('change', () => scheduleCheckoutRecalculation(80));
+    countrySelect.addEventListener('change', () => {
+      syncStateControlForCountry(countrySelect.value);
+      scheduleCheckoutRecalculation(80);
+    });
   }
 
   const emailInput = document.getElementById('email');

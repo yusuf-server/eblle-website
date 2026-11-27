@@ -1481,6 +1481,15 @@ if (!userId || !userEmail) {
     GIFT777: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift888.png'
   };
 
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // 1. 初始化英文 Day 下拉框 (1 - 31)
   const daySelect = document.getElementById('bdayDaySelect');
   if (daySelect && daySelect.options.length <= 1) {
@@ -1596,7 +1605,7 @@ if (!userId || !userEmail) {
       document.getElementById('currentTierPrivilegeTitle').textContent = `${vip.tier_label} Privileges`;
       const perksContainer = document.getElementById('currentTierPerksList');
       if (vip.perks && Array.isArray(vip.perks) && vip.perks.length > 0) {
-        perksContainer.innerHTML = vip.perks.map(p => `<div>&bull; ${p}</div>`).join('');
+        perksContainer.innerHTML = vip.perks.map(p => `<div>&bull; ${escapeHtml(p)}</div>`).join('');
       }
 
       const birthdayCard = document.getElementById('birthdayCard');
@@ -1606,7 +1615,7 @@ if (!userId || !userEmail) {
         birthdayCard.style.display = 'flex';
         if (vip.birthday) {
           const formattedBday = formatBirthdayMonthDay(vip.birthday);
-          bdayDesc.innerHTML = `<span style="color:#2e7d32; font-weight:600;">✓ Birthday Registered:</span> <strong>${formattedBday}</strong>. Your annual gift arrives every year on your birthday.`;
+          bdayDesc.innerHTML = `<span style="color:#2e7d32; font-weight:600;">✓ Birthday Registered:</span> <strong>${escapeHtml(formattedBday)}</strong>. Your annual gift arrives every year on your birthday.`;
           bdayArea.innerHTML = `<span style="font-size:11px; color:#888; font-weight:700; background:#f0eee9; padding:6px 14px; border-radius:20px; letter-spacing:0.05em;">LOCKED</span>`;
         } else {
           bdayDesc.textContent = 'Silver members receive $5.00 OFF, Gold members receive $10.00 OFF automatically on birthday month.';
@@ -1679,7 +1688,7 @@ if (!userId || !userEmail) {
       grid.innerHTML = `
         <div style="grid-column: 1 / -1; text-align:center; padding:40px 20px; color:#888;">
           <i class="fa-solid fa-ticket" style="font-size:36px; opacity:0.3; margin-bottom:10px;"></i>
-          <p style="margin:0;">No ${currentCouponFilter} vouchers found.</p>
+          <p style="margin:0;">No ${escapeHtml(currentCouponFilter)} vouchers found.</p>
         </div>`;
       return;
     }
@@ -1719,7 +1728,7 @@ if (!userId || !userEmail) {
       let footerBarHtml = '';
       if (!isAvailable) {
         footerBarHtml = `
-          <span style="font-size:11px; color:#999; text-transform:uppercase; font-weight:700;">${currentCouponFilter}</span>
+          <span style="font-size:11px; color:#999; text-transform:uppercase; font-weight:700;">${escapeHtml(currentCouponFilter)}</span>
         `;
       } else if (isSystemAutoOffer) {
         footerBarHtml = `
@@ -1729,9 +1738,10 @@ if (!userId || !userEmail) {
           <span style="font-size:10.5px; color:#777; font-weight:500;">No Code Needed</span>
         `;
       } else {
+        const safeCode = escapeHtml(c.code);
         footerBarHtml = `
-          <span class="ticket-code-tag">${c.code}</span>
-          <button type="button" class="ticket-copy-btn" onclick="copyCouponCode('${c.code}', this)">
+          <span class="ticket-code-tag">${safeCode}</span>
+          <button type="button" class="ticket-copy-btn" onclick="copyCouponCode('${safeCode}', this)">
             <i class="fa-regular fa-copy"></i> Copy Code
           </button>
         `;
@@ -1747,12 +1757,12 @@ if (!userId || !userEmail) {
           <div class="ticket-body-right">
             <div>
               <div class="ticket-badge-row">
-                <span class="ticket-tag-gold">${c.tag ? c.tag.replace('_', ' ') : 'VIP Exclusive'}</span>
+                <span class="ticket-tag-gold">${escapeHtml(c.tag ? c.tag.replace('_', ' ') : 'VIP Exclusive')}</span>
                 ${isAvailable && c.countdown_seconds > 0 
                   ? `<span class="ticket-countdown" data-seconds="${c.countdown_seconds}"><i class="fa-regular fa-clock"></i> ${formatCountdown(c.countdown_seconds)}</span>`
-                  : `<span style="font-size:11px; color:#999;">${c.expires_at}</span>`}
+                  : `<span style="font-size:11px; color:#999;">${escapeHtml(c.expires_at)}</span>`}
               </div>
-              <div class="ticket-title">${c.title}</div>
+              <div class="ticket-title">${escapeHtml(c.title)}</div>
               <div class="ticket-rules">${condStr}</div>
             </div>
             <div class="ticket-footer-bar">
@@ -1786,12 +1796,12 @@ if (!userId || !userEmail) {
       const changeClass = isAdd ? 'pts-add' : 'pts-sub';
       const changePrefix = isAdd ? '+' : '';
       const dateStr = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      const orderDisplay = item.order_id && item.order_id !== '0' ? `#${item.order_id}` : '—';
+      const orderDisplay = item.order_id && item.order_id !== '0' ? `#${escapeHtml(item.order_id)}` : '—';
 
       return `
         <tr>
           <td>${dateStr}</td>
-          <td>${item.description}</td>
+          <td>${escapeHtml(item.description)}</td>
           <td><strong>${orderDisplay}</strong></td>
           <td class="${changeClass}">${changePrefix}${item.points_change} PTS</td>
         </tr>
@@ -1997,7 +2007,7 @@ if (!userId || !userEmail) {
   window.copyCouponCode = copyCouponCode;
 
   // =========================================================================
-  // 用户信息、订单（含 VIP 免费礼物 & 圣诞满赠与礼盒码标识）与地址逻辑
+  // 用户信息、订单（含 VIP 免费礼物 & 圣诞满赠与礼盒码双重元数据识别）与地址逻辑
   // =========================================================================
   let currentUserId = null;
 
@@ -2081,6 +2091,7 @@ if (!userId || !userEmail) {
       if (recentLoading) recentLoading.style.display = 'none';
 
       if (data.success && data.orders && data.orders.length > 0) {
+        if (cachedOrdersData.length === 0) cachedOrdersData = data.orders;
         if (recentList) {
           recentList.style.display = 'flex';
           recentList.innerHTML = data.orders.slice(0, 3).map(order => buildOrderCardHtml(order)).join('');
@@ -2104,11 +2115,21 @@ if (!userId || !userEmail) {
       'failed': { text: 'Failed', class: 'cancelled' }
     };
     const s = statusMap[statusKey] || { text: statusKey || 'Processing', class: 'processing' };
-    return `<span class="acc-pill-status ${s.class}">${s.text}</span>`;
+    return `<span class="acc-pill-status ${s.class}">${escapeHtml(s.text)}</span>`;
   }
 
   function resolveOrderItemVisual(item) {
     const name = String(item.name || '');
+    const lowerName = name.toLowerCase();
+    const itemMetas = Array.isArray(item.meta_data) ? item.meta_data : [];
+    const isXmasGiftMeta = itemMetas.some(
+      (m) => m.key === '_eb_xmas_mystery_gift' && String(m.value) === 'yes'
+    );
+    const isVipGiftMeta = itemMetas.some(
+      (m) => m.key === '_eb_vip_free_gift' && String(m.value) === 'yes'
+    );
+    const isZeroPriceItem = parseFloat(item.total || '0') === 0 && parseFloat(item.price || '0') === 0;
+
     if (name.includes('Crimson Surprise')) {
       return {
         src: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift666.png',
@@ -2130,9 +2151,26 @@ if (!userId || !userEmail) {
         isGift: true
       };
     }
-    if (name.includes('Free Gift')) {
+    if (
+      isXmasGiftMeta ||
+      lowerName.includes('mystery gift') ||
+      lowerName.includes('christmas gift')
+    ) {
       return {
-        src: 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/Gemini_Generated_Image_sesx5gsesx5gsesx.jpeg',
+        src: item.image?.src || 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/gift666.png',
+        badge: '🎄 Holiday Gift',
+        isGift: true
+      };
+    }
+    if (
+      isVipGiftMeta ||
+      lowerName.includes('free gift') ||
+      lowerName.includes('vip gift') ||
+      lowerName.includes('complimentary') ||
+      isZeroPriceItem
+    ) {
+      return {
+        src: item.image?.src || 'https://api.ebbellejewelry.com/wp-content/uploads/2026/11/Gemini_Generated_Image_sesx5gsesx5gsesx.jpeg',
         badge: '🎁 VIP Gift',
         isGift: true
       };
@@ -2152,9 +2190,22 @@ if (!userId || !userEmail) {
 
     const isXmasOrder = promoModeMeta === 'xmas_bogo' ||
       appliedOffersMeta.includes('Christmas Event') ||
-      (Array.isArray(order.fee_lines) && order.fee_lines.some(f => String(f.name || '').includes('Christmas Event')));
+      appliedOffersMeta.includes('Mystery Gift') ||
+      (Array.isArray(order.fee_lines) && order.fee_lines.some(f => String(f.name || '').includes('Christmas'))) ||
+      items.some(item => {
+        const metas = Array.isArray(item.meta_data) ? item.meta_data : [];
+        return metas.some(m => m.key === '_eb_xmas_mystery_gift' && String(m.value) === 'yes') ||
+          String(item.name || '').toLowerCase().includes('mystery gift');
+      });
 
-    const hasVipFreeGift = items.some(item => (item.name || '').includes('Free Gift'));
+    const hasVipFreeGift = appliedOffersMeta.includes('VIP') ||
+      items.some(item => {
+        const lower = String(item.name || '').toLowerCase();
+        const metas = Array.isArray(item.meta_data) ? item.meta_data : [];
+        const hasGiftMeta = metas.some(m => m.key === '_eb_vip_free_gift' && String(m.value) === 'yes');
+        const isZeroGift = parseFloat(item.total || '0') === 0 && !metas.some(m => m.key === '_eb_xmas_mystery_gift');
+        return hasGiftMeta || lower.includes('free gift') || lower.includes('vip gift') || isZeroGift;
+      });
 
     let badges = '';
     if (isXmasOrder) {
@@ -2174,22 +2225,22 @@ if (!userId || !userEmail) {
 
     const thumbsHtml = items.slice(0, 3).map(item => {
       const visual = resolveOrderItemVisual(item);
-      return `<img src="${visual.src}" alt="${item.name || 'item'}" class="acc-thumb-img" ${visual.isGift ? 'style="object-fit:contain; padding:3px; background:#fff8f0;"' : ''} />`;
+      return `<img src="${escapeHtml(visual.src)}" alt="${escapeHtml(item.name || 'item')}" class="acc-thumb-img" ${visual.isGift ? 'style="object-fit:contain; padding:3px; background:#fff8f0;"' : ''} />`;
     }).join('');
 
     const canPay = ['pending', 'failed', 'on-hold'].includes(order.status);
     let actionButtonHtml = canPay
       ? `<div style="display: flex; gap: 8px;">
-          <button type="button" class="acc-btn-pay" onclick="retryPayment('${order.id}')">Complete Payment &rarr;</button>
-          <button type="button" class="acc-btn-detail-secondary" onclick="viewSingleOrder('${order.id}')">View Details</button>
+          <button type="button" class="acc-btn-pay" onclick="retryPayment('${escapeHtml(order.id)}')">Complete Payment &rarr;</button>
+          <button type="button" class="acc-btn-detail-secondary" onclick="viewSingleOrder('${escapeHtml(order.id)}')">View Details</button>
         </div>`
-      : `<button type="button" class="acc-btn-detail" onclick="viewSingleOrder('${order.id}')">View Details &rarr;</button>`;
+      : `<button type="button" class="acc-btn-detail" onclick="viewSingleOrder('${escapeHtml(order.id)}')">View Details &rarr;</button>`;
 
     return `
       <div class="acc-order-card">
         <div class="acc-card-top">
           <div style="display:flex; align-items:center; gap:8px; font-size:13px; flex-wrap:wrap;">
-            <span class="acc-card-order-id">#${order.number || order.id}</span>
+            <span class="acc-card-order-id">#${escapeHtml(order.number || order.id)}</span>
             <span style="color:#ccc;">&bull;</span>
             <span style="color:#777;">${orderDate}</span>
             ${formatOrderStatus(order.status)}
@@ -2294,7 +2345,7 @@ if (!userId || !userEmail) {
         const isXmasFee = feeName.includes('Christmas');
         discountsBreakdownHtml += `
           <div style="display:flex; justify-content:space-between; align-items:center; color:${isXmasFee ? '#961820' : '#2e7d32'}; font-weight:600; font-size:13px;">
-            <span>${isXmasFee ? '🎄 ' : ''}${feeName}</span>
+            <span>${isXmasFee ? '🎄 ' : ''}${escapeHtml(feeName)}</span>
             <span>-$${Math.abs(feeAmt).toFixed(2)}</span>
           </div>
         `;
@@ -2307,8 +2358,8 @@ if (!userId || !userEmail) {
       const codeUpper = String(cp.code || '').toUpperCase().trim();
       const isGiftCode = Boolean(XMAS_GIFT_ICONS[codeUpper]);
       const labelHtml = isGiftCode
-        ? `<span style="display:inline-flex; align-items:center; gap:6px;"><img src="${XMAS_GIFT_ICONS[codeUpper]}" alt="${codeUpper}" style="width:18px; height:18px; object-fit:contain; border-radius:3px;" /><span>Holiday Code (${codeUpper})</span></span>`
-        : `<span>🎟️ Coupon (${codeUpper})</span>`;
+        ? `<span style="display:inline-flex; align-items:center; gap:6px;"><img src="${XMAS_GIFT_ICONS[codeUpper]}" alt="${escapeHtml(codeUpper)}" style="width:18px; height:18px; object-fit:contain; border-radius:3px;" /><span>Holiday Code (${escapeHtml(codeUpper)})</span></span>`
+        : `<span>🎟️ Coupon (${escapeHtml(codeUpper)})</span>`;
 
       discountsBreakdownHtml += `
         <div style="display:flex; justify-content:space-between; align-items:center; color:${isGiftCode ? '#961820' : '#2e7d32'}; font-weight:600; font-size:13px;">
@@ -2322,7 +2373,7 @@ if (!userId || !userEmail) {
     if (!discountsBreakdownHtml && appliedOffersStr) {
       discountsBreakdownHtml = `
         <div style="background:#fff8f0; border:1px dashed #d6b879; padding:8px 10px; border-radius:4px; color:#961820; font-size:12px; font-weight:600;">
-          🎄 ${appliedOffersStr}
+          🎄 ${escapeHtml(appliedOffersStr)}
         </div>
       `;
     }
@@ -2331,7 +2382,7 @@ if (!userId || !userEmail) {
       <div class="acc-view-detail-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
           <div>
-            <h2 style="font-size: 20px; margin: 0 0 4px; font-weight: 700;">Order #${order.number || order.id}</h2>
+            <h2 style="font-size: 20px; margin: 0 0 4px; font-weight: 700;">Order #${escapeHtml(order.number || order.id)}</h2>
             <p style="margin: 0; font-size: 12.5px; color: #888;">Placed on ${orderDate}</p>
           </div>
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -2346,13 +2397,13 @@ if (!userId || !userEmail) {
             const isZeroGift = visual.isGift && parseFloat(item.total || 0) === 0;
             return `
             <div class="acc-detail-item-row">
-              <img src="${visual.src}" class="acc-detail-thumb" alt="${item.name}" ${visual.isGift ? 'style="object-fit:contain; padding:4px; background:#fff8f0;"' : ''} />
+              <img src="${escapeHtml(visual.src)}" class="acc-detail-thumb" alt="${escapeHtml(item.name)}" ${visual.isGift ? 'style="object-fit:contain; padding:4px; background:#fff8f0;"' : ''} />
               <div class="acc-detail-name-box">
                 <h4>
-                  ${item.name}
-                  ${visual.badge ? `<span style="margin-left:6px; background:#fff8f0; color:#961820; border:1px solid #d6b879; padding:1px 7px; border-radius:999px; font-size:10px; font-weight:700;">${visual.badge}</span>` : ''}
+                  ${escapeHtml(item.name)}
+                  ${visual.badge ? `<span style="margin-left:6px; background:#fff8f0; color:#961820; border:1px solid #d6b879; padding:1px 7px; border-radius:999px; font-size:10px; font-weight:700;">${escapeHtml(visual.badge)}</span>` : ''}
                 </h4>
-                <p style="margin:0; font-size:12px; color:#777;">Qty: ${item.quantity} &times; $${parseFloat(item.price || 0).toFixed(2)}</p>
+                <p style="margin:0; font-size:12px; color:#777;">Qty: ${parseInt(item.quantity, 10) || 1} &times; $${parseFloat(item.price || 0).toFixed(2)}</p>
               </div>
               <div class="acc-detail-price-box">${isZeroGift ? '<span style="color:#961820;">FREE</span>' : `$${parseFloat(item.total || 0).toFixed(2)}`}</div>
             </div>
@@ -2368,18 +2419,18 @@ if (!userId || !userEmail) {
             ${discountsBreakdownHtml}
             <div style="display: flex; justify-content: space-between;"><span>Shipping:</span><span>${parseFloat(order.shipping_total || 0) === 0 ? 'FREE' : `$${parseFloat(order.shipping_total).toFixed(2)}`}</span></div>
             <div style="display: flex; justify-content: space-between; font-weight: 700; color: #111; border-top: 1px solid #eee; padding-top: 8px;">
-              <span>Total Paid:</span><span>$${parseFloat(order.total).toFixed(2)} ${order.currency || 'USD'}</span>
+              <span>Total Paid:</span><span>$${parseFloat(order.total).toFixed(2)} ${escapeHtml(order.currency || 'USD')}</span>
             </div>
           </div>
         </div>
         <div class="acc-view-detail-card" style="margin-bottom: 0;">
           <h3>Shipping Address</h3>
           <div style="font-size: 13px; color: #555; line-height: 1.5;">
-            <p style="margin: 0 0 4px; font-weight: 700; color: #111;">${shipping.first_name || billing.first_name || ''} ${shipping.last_name || billing.last_name || ''}</p>
-            <p style="margin: 0;">${shipping.address_1 || billing.address_1 || 'No address provided'}</p>
-            ${shipping.address_2 || billing.address_2 ? `<p style="margin: 0;">${shipping.address_2 || billing.address_2}</p>` : ''}
-            <p style="margin: 0;">${shipping.city || billing.city || ''}, ${shipping.state || billing.state || ''} ${shipping.postcode || billing.postcode || ''}</p>
-            <p style="margin: 0;">${shipping.country || billing.country || ''}</p>
+            <p style="margin: 0 0 4px; font-weight: 700; color: #111;">${escapeHtml(`${shipping.first_name || billing.first_name || ''} ${shipping.last_name || billing.last_name || ''}`.trim())}</p>
+            <p style="margin: 0;">${escapeHtml(shipping.address_1 || billing.address_1 || 'No address provided')}</p>
+            ${shipping.address_2 || billing.address_2 ? `<p style="margin: 0;">${escapeHtml(shipping.address_2 || billing.address_2)}</p>` : ''}
+            <p style="margin: 0;">${escapeHtml(`${shipping.city || billing.city || ''}, ${shipping.state || billing.state || ''} ${shipping.postcode || billing.postcode || ''}`)}</p>
+            <p style="margin: 0;">${escapeHtml(shipping.country || billing.country || '')}</p>
           </div>
         </div>
       </div>
@@ -2401,10 +2452,10 @@ if (!userId || !userEmail) {
     }
     const fullName = `${address.first_name || ''} ${address.last_name || ''}`.trim();
     let html = '';
-    if (fullName) html += `<p><strong>${fullName}</strong></p>`;
-    if (address.address_1) html += `<p>${address.address_1}${address.address_2 ? `, ${address.address_2}` : ''}</p>`;
-    html += `<p>${address.city || ''}, ${address.state || ''} ${address.postcode || ''}, ${address.country || ''}</p>`;
-    if (address.phone) html += `<p>${address.phone}</p>`;
+    if (fullName) html += `<p><strong>${escapeHtml(fullName)}</strong></p>`;
+    if (address.address_1) html += `<p>${escapeHtml(address.address_1)}${address.address_2 ? `, ${escapeHtml(address.address_2)}` : ''}</p>`;
+    html += `<p>${escapeHtml(address.city || '')}, ${escapeHtml(address.state || '')} ${escapeHtml(address.postcode || '')}, ${escapeHtml(address.country || '')}</p>`;
+    if (address.phone) html += `<p>${escapeHtml(address.phone)}</p>`;
     displayEl.innerHTML = html;
   }
 

@@ -603,7 +603,29 @@ const status = orderData ? orderData.status : (urlStatus || 'pending');
     const orderId = urlParams.get('order_id') || urlParams.get('orderId');
     const orderKey = urlParams.get('order_key') || urlParams.get('orderKey');
     const urlStatus = urlParams.get('status');
-
+    // 如果是 Airwallex 3DS 回跳且本地还留有 pendingAwxIntentId，先主动向后端确认一次 PaymentIntent 状态
+    const paymentType = urlParams.get('payment');
+    const savedAwxIntentId = sessionStorage.getItem('pendingAwxIntentId');
+    if (paymentType === 'airwallex' && savedAwxIntentId && orderId && initialStatus === 'pending') {
+      fetch('/api/airwallex/confirm-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intentId: savedAwxIntentId,
+          orderId: parseInt(orderId, 10)
+        })
+      }).then(r => r.json()).then(resData => {
+        if (resData && resData.success) {
+          localStorage.removeItem('ebbelle_cart');
+          sessionStorage.removeItem('ebbelle_checkout_calculation');
+          sessionStorage.removeItem('ebbelle_cart_manual_coupon');
+          sessionStorage.removeItem('pendingOrderId');
+          sessionStorage.removeItem('pendingOrderKey');
+          sessionStorage.removeItem('pendingOrderSnapshot');
+          sessionStorage.removeItem('pendingAwxIntentId');
+        }
+      }).catch(() => {});
+    }
     // 如果用户明确取消或出错，或者订单已经处理完成，不进行轮询
     if (urlStatus === 'cancelled' || urlStatus === 'error' || initialStatus === 'processing' || initialStatus === 'completed') {
       if (initialStatus === 'processing' || initialStatus === 'completed') {

@@ -109,6 +109,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       body: JSON.stringify({
         status: 'processing',
         set_paid: true,
+        payment_method: 'paypal',
+        payment_method_title: 'PayPal',
         transaction_id: captureId,
         meta_data: [
           { key: '_paypal_capture_id', value: captureId },
