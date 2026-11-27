@@ -213,10 +213,7 @@ const _recentSixMonths = Array.from({ length: 6 }, (_, i) => {
 });
 const newArrivalSubcategories = [
   { name: "All New Arrivals", slug: "new-arrivals" },
-  { name: "2026.10.NEW", slug: "2026-10-new" },
-  { name: "2026.9.NEW", slug: "2026-9-new" },
-  { name: "2026.8.NEW", slug: "2026-8-new" },
-  { name: "2026.7.NEW", slug: "2026-7-new" },
+  ..._recentSixMonths,
   { name: "Latest Waterproof Series", slug: "latest-waterproof" }
 ];
 ---

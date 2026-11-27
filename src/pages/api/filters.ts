@@ -3,17 +3,37 @@ import { wcRequest } from '../../lib/woocommerce';
 
 export const prerender = false;
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ request }) => {
+  const url = new URL(request.url);
+  const forceRefresh = url.searchParams.get('refresh') === '1';
+
+  // 使用 Cloudflare Cache API 作为边缘缓存（不占用 WordPress 服务器任何 CPU/带宽）
+  const cache = (caches as any)?.default;
+  const cacheKey = new Request(`${url.origin}/api/filters`, { method: 'GET' });
+
+  if (cache && !forceRefresh) {
+    const cachedResponse = await cache.match(cacheKey);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+  }
+
   try {
-    console.log('正在获取筛选数据...');
+    // 1. 分页拉取全量 WooCommerce 商品分类（避免超过 100 个分类时被截断）
+    let allCategories: any[] = [];
+    let page = 1;
+    while (page <= 5) {
+      const { data: batch } = await wcRequest('products/categories', {
+        per_page: 100,
+        page,
+        hide_empty: false
+      });
+      if (!Array.isArray(batch) || batch.length === 0) break;
+      allCategories.push(...batch);
+      if (batch.length < 100) break;
+      page++;
+    }
 
-    // 直接复用统一的 wcRequest，自动处理 Cloudflare Workers 环境变量
-    const { data: allCategories } = await wcRequest('products/categories', {
-      per_page: 100,
-      hide_empty: true
-    });
-
-    // 根据要求组织分类数据
     const allJewelrySlugs = [
       'chain-type', 'key-chain', 'body-chains', 'jewelry-set', 'necklace',
       'two-tones-jewelry', 'diy-jewelry-accessories', 'hair-clip',
@@ -22,29 +42,26 @@ export const GET: APIRoute = async () => {
 
     const newArrivalsSlugs = ['new-arrivals'];
 
-    // 筛选"ALL JEWELRY"分类
-    const allJewelryCategories = allCategories.filter((cat: any) =>
-      allJewelrySlugs.includes(cat.slug)
-    ).map((cat: any) => ({
-      id: cat.id,
-      name: cat.name.toUpperCase(),
-      slug: cat.slug,
-      parent: cat.parent,
-      count: cat.count
-    }));
+    const allJewelryCategories = allCategories
+      .filter((cat: any) => allJewelrySlugs.includes(cat.slug))
+      .map((cat: any) => ({
+        id: cat.id,
+        name: cat.name.toUpperCase(),
+        slug: cat.slug,
+        parent: cat.parent,
+        count: cat.count
+      }));
 
-    // 筛选"NEW ARRIVALS"分类
-    const newArrivalsCategories = allCategories.filter((cat: any) =>
-      newArrivalsSlugs.includes(cat.slug)
-    ).map((cat: any) => ({
-      id: cat.id,
-      name: cat.name.toUpperCase(),
-      slug: cat.slug,
-      parent: cat.parent,
-      count: cat.count
-    }));
+    const newArrivalsCategories = allCategories
+      .filter((cat: any) => newArrivalsSlugs.includes(cat.slug))
+      .map((cat: any) => ({
+        id: cat.id,
+        name: cat.name.toUpperCase(),
+        slug: cat.slug,
+        parent: cat.parent,
+        count: cat.count
+      }));
 
-    // 获取子分类
     const getAllChildCategories = (parentId: number) => {
       return allCategories
         .filter((cat: any) => cat.parent === parentId)
@@ -57,7 +74,6 @@ export const GET: APIRoute = async () => {
         }));
     };
 
-    // 为每个分类添加子分类
     const allJewelryWithChildren = allJewelryCategories.map((cat: any) => ({
       ...cat,
       children: getAllChildCategories(cat.id)
@@ -75,7 +91,6 @@ export const GET: APIRoute = async () => {
     try {
       const { data: attributes } = await wcRequest('products/attributes');
 
-      // 查找颜色属性
       const colorAttr = attributes.find((attr: any) =>
         attr.slug?.toLowerCase().includes('color') ||
         attr.slug?.toLowerCase().includes('colour') ||
@@ -83,7 +98,6 @@ export const GET: APIRoute = async () => {
         attr.name?.toLowerCase().includes('colour')
       );
 
-      // 查找材质属性
       const materialAttr = attributes.find((attr: any) =>
         attr.slug?.toLowerCase().includes('material') ||
         attr.name?.toLowerCase().includes('material')
@@ -110,25 +124,11 @@ export const GET: APIRoute = async () => {
       console.error('获取产品属性失败:', attrError);
     }
 
-    // 固定的颜色列表
     const colors = [
-      {
-        id: 474,
-        slug: 'gold',
-        name: 'Gold',
-        hex: '#FFD700',
-        attributeSlug: colorAttributeInfo?.slug
-      },
-      {
-        id: 23,
-        slug: 'silver',
-        name: 'Silver',
-        hex: '#C0C0C0',
-        attributeSlug: colorAttributeInfo?.slug
-      }
+      { id: 474, slug: 'gold', name: 'Gold', hex: '#FFD700', attributeSlug: colorAttributeInfo?.slug },
+      { id: 23, slug: 'silver', name: 'Silver', hex: '#C0C0C0', attributeSlug: colorAttributeInfo?.slug }
     ];
 
-    // 固定的材质列表
     const materials = [
       { id: 97, slug: '316l-stainless-steel', name: '316L STAINLESS STEEL', attributeSlug: materialAttributeInfo?.slug },
       { id: 866, slug: 'stainless-steel', name: 'STAINLESS STEEL', attributeSlug: materialAttributeInfo?.slug },
@@ -150,15 +150,21 @@ export const GET: APIRoute = async () => {
       materials
     };
 
-    console.log('筛选数据获取成功');
-
-    return new Response(JSON.stringify(result), {
+    const response = new Response(JSON.stringify(result), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=1800'
+        // 浏览器缓存 5 分钟，Cloudflare 边缘缓存 30 分钟
+        'Cache-Control': 'public, max-age=300, s-maxage=1800'
       }
     });
+
+    // 写入/覆盖 Cloudflare 边缘缓存
+    if (cache) {
+      await cache.put(cacheKey, response.clone());
+    }
+
+    return response;
   } catch (error: any) {
     console.error('获取筛选数据失败:', error);
     return new Response(JSON.stringify({
