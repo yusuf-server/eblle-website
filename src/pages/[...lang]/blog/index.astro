@@ -1,0 +1,867 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import CartDrawer from '../../../components/CartDrawer.astro';
+import AuthModal from '../../../components/AuthModal.astro';
+import { SUPPORTED_LOCALES, type SupportedLocale, addLocalePrefix } from '../../../lib/i18n/utils';
+// [slug].astro 里还有这一行也要改：
+import { wcRequest } from '../../../lib/woocommerce';
+
+export const prerender = false;
+
+// 兼容多语言路由（若放在 src/pages/[...lang]/blog/index.astro 可自动识别语言前缀）
+const lang = Astro.params.lang as SupportedLocale | undefined;
+const currentPath = Astro.url.pathname;
+let currentLocale: SupportedLocale = lang && SUPPORTED_LOCALES.includes(lang) ? lang : 'en';
+if (currentLocale === 'en') {
+  for (const loc of SUPPORTED_LOCALES) {
+    if (currentPath.startsWith(`/${loc}/`) || currentPath === `/${loc}`) {
+      currentLocale = loc as SupportedLocale;
+      break;
+    }
+  }
+}
+
+const WP_BASE = (import.meta.env.PUBLIC_WC_STORE_URL || import.meta.env.WC_STORE_URL || 'https://api.ebbellejewelry.com').replace(/\/$/, '');
+
+const pageParam = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10) || 1);
+const categorySlugParam = (Astro.url.searchParams.get('category') || '').trim();
+const perPage = 9;
+
+interface WpCategory {
+  id: number;
+  name: string;
+  slug: string;
+  count: number;
+}
+
+interface BlogPostItem {
+  id: number;
+  slug: string;
+  title: string;
+  author: string;
+  dateFormatted: string;
+  image: string;
+  categorySlugs: string[];
+  categoryNames: string[];
+}
+
+let activeCategories: WpCategory[] = [];
+let posts: BlogPostItem[] = [];
+let totalPages = 1;
+let totalPosts = 0;
+
+function decodeHtmlEntities(str: string): string {
+  return String(str || '')
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8216;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8212;/g, '—')
+    .replace(/&#038;/g, '&')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/<[^>]+>/g, '')
+    .trim();
+}
+
+function formatEnglishDate(isoDate: string): string {
+  try {
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).toUpperCase();
+  } catch {
+    return '';
+  }
+}
+
+try {
+  // 1. 拉取有文章的 WordPress 博客分类（hide_empty=true + count > 0 双重过滤）
+  const catRes = await fetch(`${WP_BASE}/wp-json/wp/v2/categories?per_page=50&hide_empty=true&orderby=count&order=desc`);
+  if (catRes.ok) {
+    const rawCats = await catRes.json();
+    if (Array.isArray(rawCats)) {
+      activeCategories = rawCats
+        .filter((c: any) => Number(c.count) > 0 && c.slug !== 'uncategorized')
+        .map((c: any) => ({
+          id: Number(c.id),
+          name: decodeHtmlEntities(c.name),
+          slug: String(c.slug),
+          count: Number(c.count),
+        }));
+    }
+  }
+
+  // 2. 构建文章查询参数
+  const postUrl = new URL(`${WP_BASE}/wp-json/wp/v2/posts`);
+  postUrl.searchParams.set('per_page', String(perPage));
+  postUrl.searchParams.set('page', String(pageParam));
+  postUrl.searchParams.set('_embed', '1');
+  postUrl.searchParams.set('status', 'publish');
+
+  if (categorySlugParam) {
+    const matchedCat = activeCategories.find((c) => c.slug === categorySlugParam);
+    if (matchedCat) {
+      postUrl.searchParams.set('categories', String(matchedCat.id));
+    }
+  }
+
+  const postsRes = await fetch(postUrl.toString());
+  if (postsRes.ok) {
+    totalPages = Math.max(1, parseInt(postsRes.headers.get('X-WP-TotalPages') || '1', 10) || 1);
+    totalPosts = parseInt(postsRes.headers.get('X-WP-Total') || '0', 10) || 0;
+    const rawPosts = await postsRes.json();
+
+    if (Array.isArray(rawPosts)) {
+      posts = rawPosts.map((p: any) => {
+        const embeddedMedia = p._embedded?.['wp:featuredmedia']?.[0];
+        const featuredImg =
+          embeddedMedia?.media_details?.sizes?.large?.source_url ||
+          embeddedMedia?.media_details?.sizes?.medium_large?.source_url ||
+          embeddedMedia?.source_url ||
+          'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80';
+
+        const embeddedAuthor = p._embedded?.author?.[0]?.name || 'E.B.BELLE';
+        const embeddedTerms = p._embedded?.['wp:term']?.[0] || [];
+
+        return {
+          id: Number(p.id),
+          slug: String(p.slug),
+          title: decodeHtmlEntities(p.title?.rendered || 'Untitled Story'),
+          author: String(embeddedAuthor).toUpperCase(),
+          dateFormatted: formatEnglishDate(p.date),
+          image: featuredImg,
+          categorySlugs: embeddedTerms.map((t: any) => String(t.slug)),
+          categoryNames: embeddedTerms.map((t: any) => decodeHtmlEntities(t.name)),
+        };
+      });
+    }
+  }
+} catch (err) {
+  console.error('[Blog Index] 拉取 WordPress 博客数据异常:', err);
+}
+
+// 分页页码生成器
+function buildPagination(current: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | '...')[] = [1];
+  if (current > 3) pages.push('...');
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 2) pages.push('...');
+  pages.push(total);
+  return pages;
+}
+
+const paginationItems = buildPagination(pageParam, totalPages);
+
+function buildBlogPageUrl(targetPage: number, targetCategory: string): string {
+  const base = addLocalePrefix('/blog', currentLocale);
+  const params = new URLSearchParams();
+  if (targetCategory) params.set('category', targetCategory);
+  if (targetPage > 1) params.set('page', String(targetPage));
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
+// 边缘短时缓存（5分钟），降低 WordPress 压力
+if (Astro.response) {
+  Astro.response.headers.set('Cache-Control', 'public, max-age=120, s-maxage=300');
+}
+---
+
+<Layout title="The Journal & Style Guide - E.B.Belle">
+  <Header />
+
+  <!-- 1. 全宽 Hero 横幅背景 -->
+  <section class="blog-hero-banner">
+    <img
+      src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?w=1800&q=85"
+      alt="E.B.Belle Journal"
+      class="blog-hero-bg"
+      loading="eager"
+    />
+    <div class="blog-hero-overlay">
+      <div class="blog-hero-inner">
+        <span class="blog-hero-eyebrow">E.B.BELLE EDITORIAL JOURNAL</span>
+        <h1 class="blog-hero-title">Stories, Styling &amp; Waterproof Craft</h1>
+        <p class="blog-hero-desc">
+          From 316L stainless steel care guides to material deep-dives — explore everything that makes E.B.belle your trusted companion for tarnish-free, hypoallergenic jewelry.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 动态分类 Tab（移动端可左右拖拽 + 两侧淡入淡出提示） -->
+  <section class="blog-tabs-section">
+    <div class="blog-container">
+      <div class="blog-tabs-wrapper" id="blogTabsWrapper">
+        <div class="tabs-fade-left" id="tabsFadeLeft" aria-hidden="true"></div>
+        <div class="blog-tabs-scroller" id="blogTabsScroller" role="tablist">
+          <a
+            href={buildBlogPageUrl(1, '')}
+            class={`blog-tab-item ${categorySlugParam === '' ? 'is-active' : ''}`}
+          >
+            All Stories
+          </a>
+          {activeCategories.map((cat) => (
+            <a
+              href={buildBlogPageUrl(1, cat.slug)}
+              class={`blog-tab-item ${categorySlugParam === cat.slug ? 'is-active' : ''}`}
+            >
+              {cat.name}
+            </a>
+          ))}
+        </div>
+        <div class="tabs-fade-right" id="tabsFadeRight" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 杂志留白风 3 列文章网格（由下往上阶梯渐入） -->
+  <main class="blog-main-section">
+    <div class="blog-container">
+      {posts.length > 0 ? (
+        <div class="editorial-posts-grid" id="editorialPostsGrid">
+          {posts.map((post, idx) => (
+            <article
+              class="editorial-post-card reveal-up"
+              style={`--stagger-delay: ${(idx % 3) * 90}ms;`}
+            >
+              <a href={addLocalePrefix(`/blog/${post.slug}`, currentLocale)} class="editorial-card-link">
+                <div class="editorial-thumb-wrap">
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    loading={idx < 3 ? 'eager' : 'lazy'}
+                    class="editorial-thumb-img"
+                  />
+                </div>
+                <div class="editorial-meta">
+                  <span class="meta-author">{post.author}</span>
+                  {post.dateFormatted && (
+                    <>
+                      <span class="meta-sep">/</span>
+                      <time class="meta-date">{post.dateFormatted}</time>
+                    </>
+                  )}
+                </div>
+                <h2 class="editorial-post-title">{post.title}</h2>
+              </a>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div class="blog-empty-state">
+          <i class="fa-regular fa-newspaper"></i>
+          <h3>No articles published in this category yet</h3>
+          <p>Explore our other stories or browse our waterproof jewelry collections.</p>
+          <a href={buildBlogPageUrl(1, '')} class="btn-back-all">View All Stories</a>
+        </div>
+      )}
+
+      <!-- 4. 底部分页器 -->
+      {totalPages > 1 && (
+        <nav class="blog-pagination" aria-label="Blog pagination">
+          {pageParam > 1 ? (
+            <a href={buildBlogPageUrl(pageParam - 1, categorySlugParam)} class="page-nav-btn">
+              &lt; PREV
+            </a>
+          ) : (
+            <span class="page-nav-btn is-disabled">&lt; PREV</span>
+          )}
+
+          <div class="page-numbers">
+            {paginationItems.map((item) =>
+              item === '...' ? (
+                <span class="page-dots">...</span>
+              ) : (
+                <a
+                  href={buildBlogPageUrl(item, categorySlugParam)}
+                  class={`page-num-btn ${item === pageParam ? 'is-current' : ''}`}
+                >
+                  {item}
+                </a>
+              )
+            )}
+          </div>
+
+          {pageParam < totalPages ? (
+            <a href={buildBlogPageUrl(pageParam + 1, categorySlugParam)} class="page-nav-btn">
+              NEXT &gt;
+            </a>
+          ) : (
+            <span class="page-nav-btn is-disabled">NEXT &gt;</span>
+          )}
+        </nav>
+      )}
+    </div>
+  </main>
+
+  <Footer />
+  <CartDrawer />
+  <AuthModal />
+</Layout>
+
+<style>
+  .blog-container {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* 1. 全宽 Hero 横幅 */
+  .blog-hero-banner {
+    position: relative;
+    width: 100%;
+    height: 340px;
+    overflow: hidden;
+    background: #1a1816;
+  }
+
+  .blog-hero-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    filter: brightness(0.68);
+    transform: scale(1.01);
+  }
+
+  .blog-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(18, 16, 14, 0.35) 0%,
+      rgba(18, 16, 14, 0.55) 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+  }
+
+  .blog-hero-inner {
+    max-width: 720px;
+    color: #ffffff;
+  }
+
+  .blog-hero-eyebrow {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #f3d59b;
+    margin-bottom: 12px;
+  }
+
+  .blog-hero-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    color: #ffffff;
+    margin: 0 0 14px 0;
+  }
+
+  .blog-hero-desc {
+    font-size: 14.5px;
+    font-weight: 400;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0 auto;
+    max-width: 620px;
+  }
+
+  /* 2. 分类 Tab（支持桌面居中 + 移动端可拖拽横向滚动 + 两侧淡入淡出提示） */
+  .blog-tabs-section {
+    background: #ffffff;
+    border-bottom: 1px solid #f0ece3;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+
+  .blog-tabs-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 0;
+  }
+
+  .blog-tabs-scroller {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px 8px;
+    cursor: grab;
+    user-select: none;
+  }
+
+  .blog-tabs-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  .blog-tabs-scroller.is-dragging {
+    cursor: grabbing;
+    scroll-behavior: auto;
+  }
+
+  .blog-tab-item {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: #555555;
+    background: #faf8f5;
+    border: 1px solid #ebe5da;
+    text-decoration: none;
+    transition: all 0.22s ease;
+    white-space: nowrap;
+  }
+
+  .blog-tab-item:hover {
+    border-color: #c9933f;
+    color: #1a1a1a;
+    background: #ffffff;
+  }
+
+  .blog-tab-item.is-active {
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+    color: #ffffff;
+    font-weight: 800;
+  }
+
+  /* 左右边缘淡入淡出渐变提示（仅当对应侧还有可滚动内容时显示） */
+  .tabs-fade-left,
+  .tabs-fade-right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 44px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    z-index: 2;
+  }
+
+  .tabs-fade-left {
+    left: 0;
+    background: linear-gradient(to right, #ffffff 22%, rgba(255, 255, 255, 0) 100%);
+  }
+
+  .tabs-fade-right {
+    right: 0;
+    background: linear-gradient(to left, #ffffff 22%, rgba(255, 255, 255, 0) 100%);
+  }
+
+  .tabs-fade-left.is-visible,
+  .tabs-fade-right.is-visible {
+    opacity: 1;
+  }
+
+  /* 3. 杂志留白风 3 列文章网格 */
+  .blog-main-section {
+    padding: 48px 0 80px;
+    background: #ffffff;
+  }
+
+  .editorial-posts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 32px;
+    row-gap: 48px;
+  }
+
+  .editorial-post-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 从下往上渐入动画 */
+  .reveal-up {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1) var(--stagger-delay, 0ms),
+      transform 0.65s cubic-bezier(0.16, 1, 0.3, 1) var(--stagger-delay, 0ms);
+    will-change: opacity, transform;
+  }
+
+  .reveal-up.is-revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .editorial-card-link {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    text-align: center;
+  }
+
+  .editorial-thumb-wrap {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f6f4f0;
+    margin-bottom: 16px;
+  }
+
+  .editorial-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .editorial-card-link:hover .editorial-thumb-img {
+    transform: scale(1.045);
+  }
+
+  .editorial-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    color: #8c857b;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .meta-sep {
+    color: #c7bfb2;
+  }
+
+  .editorial-post-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 16.5px;
+    font-weight: 600;
+    line-height: 1.45;
+    color: #1a1a1a;
+    margin: 0 auto;
+    max-width: 94%;
+    transition: color 0.2s ease;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .editorial-card-link:hover .editorial-post-title {
+    color: #9e6b24;
+  }
+
+  /* 空状态 */
+  .blog-empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: #666;
+  }
+
+  .blog-empty-state i {
+    font-size: 42px;
+    color: #d4c8b4;
+    margin-bottom: 16px;
+  }
+
+  .blog-empty-state h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+  }
+
+  .blog-empty-state p {
+    font-size: 14px;
+    font-weight: 400;
+    margin-bottom: 24px;
+  }
+
+  .btn-back-all {
+    display: inline-block;
+    padding: 10px 26px;
+    background: #1a1a1a;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 4px;
+  }
+
+  /* 4. 底部分页器（严格匹配截图风格） */
+  .blog-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 64px;
+    padding-top: 28px;
+    border-top: 1px solid #f2eee6;
+  }
+
+  .page-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border: 1px solid #e2ddd3;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: #333333;
+    background: #ffffff;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .page-nav-btn:hover:not(.is-disabled) {
+    border-color: #1a1a1a;
+    color: #1a1a1a;
+  }
+
+  .page-nav-btn.is-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .page-numbers {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .page-num-btn {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #444444;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .page-num-btn:hover:not(.is-current) {
+    background: #f7f4ee;
+    color: #1a1a1a;
+  }
+
+  .page-num-btn.is-current {
+    background: #9e6325;
+    color: #ffffff;
+  }
+
+  .page-dots {
+    padding: 0 6px;
+    font-size: 13px;
+    color: #999999;
+  }
+
+  /* 响应式适配 */
+  @media (max-width: 992px) {
+    .editorial-posts-grid {
+      grid-template-columns: repeat(2, 1fr);
+      column-gap: 24px;
+      row-gap: 36px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .blog-container {
+      padding: 0 16px;
+    }
+
+    .blog-hero-banner {
+      height: 240px;
+    }
+
+    .blog-hero-title {
+      font-size: 26px;
+    }
+
+    .blog-hero-desc {
+      font-size: 12.5px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .blog-tabs-wrapper {
+      justify-content: flex-start;
+      padding: 12px 0;
+    }
+
+    .blog-tabs-scroller {
+      padding: 2px 16px;
+      gap: 8px;
+    }
+
+    .blog-tab-item {
+      padding: 7px 15px;
+      font-size: 12px;
+    }
+
+    .blog-main-section {
+      padding: 28px 0 56px;
+    }
+
+    .editorial-posts-grid {
+      grid-template-columns: 1fr;
+      row-gap: 32px;
+    }
+
+    .editorial-post-title {
+      font-size: 16px;
+    }
+
+    .blog-pagination {
+      margin-top: 44px;
+      gap: 8px;
+    }
+
+    .page-nav-btn {
+      padding: 7px 10px;
+      font-size: 10px;
+    }
+
+    .page-num-btn {
+      min-width: 30px;
+      height: 30px;
+      font-size: 12px;
+    }
+  }
+</style>
+
+<script>
+  function initBlogCollectionPage() {
+    // 1. 分类 Tab 左右边缘淡入淡出提示 + 鼠标/触控拖拽滑动 + 自动居中当前激活 Tab
+    const scroller = document.getElementById('blogTabsScroller');
+    const fadeLeft = document.getElementById('tabsFadeLeft');
+    const fadeRight = document.getElementById('tabsFadeRight');
+
+    if (scroller && fadeLeft && fadeRight) {
+      function updateTabFades() {
+        const scrollLeft = scroller!.scrollLeft;
+        const maxScroll = scroller!.scrollWidth - scroller!.clientWidth;
+        if (maxScroll <= 4) {
+          fadeLeft!.classList.remove('is-visible');
+          fadeRight!.classList.remove('is-visible');
+          return;
+        }
+        fadeLeft!.classList.toggle('is-visible', scrollLeft > 8);
+        fadeRight!.classList.toggle('is-visible', scrollLeft < maxScroll - 8);
+      }
+
+      // 首次打开时把当前激活的 Tab 平滑滚动到可视区域内
+      const activeTab = scroller.querySelector('.blog-tab-item.is-active') as HTMLElement | null;
+      if (activeTab) {
+        const offsetLeft = activeTab.offsetLeft - scroller.clientWidth / 2 + activeTab.offsetWidth / 2;
+        scroller.scrollLeft = Math.max(0, offsetLeft);
+      }
+
+      updateTabFades();
+      scroller.addEventListener('scroll', updateTabFades, { passive: true });
+      window.addEventListener('resize', updateTabFades);
+
+      // 桌面端鼠标按住左右拖拽支持
+      let isDown = false;
+      let hasMoved = false;
+      let startX = 0;
+      let startScrollLeft = 0;
+
+      scroller.addEventListener('mousedown', (e) => {
+        isDown = true;
+        hasMoved = false;
+        scroller.classList.add('is-dragging');
+        startX = e.pageX - scroller.offsetLeft;
+        startScrollLeft = scroller.scrollLeft;
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (!isDown) return;
+        isDown = false;
+        scroller.classList.remove('is-dragging');
+      });
+
+      scroller.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - scroller.offsetLeft;
+        const walk = (x - startX) * 1.4;
+        if (Math.abs(walk) > 5) hasMoved = true;
+        scroller.scrollLeft = startScrollLeft - walk;
+      });
+
+      scroller.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', (e) => {
+          if (hasMoved) {
+            e.preventDefault();
+            hasMoved = false;
+          }
+        });
+      });
+    }
+
+    // 2. 文章卡片由下往上渐入动画（IntersectionObserver 滚动可见即触发）
+    const cards = document.querySelectorAll('.reveal-up');
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-revealed');
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.08, rootMargin: '0px 0px -20px 0px' }
+      );
+      cards.forEach((card) => observer.observe(card));
+    } else {
+      cards.forEach((card) => card.classList.add('is-revealed'));
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBlogCollectionPage);
+  } else {
+    initBlogCollectionPage();
+  }
+</script>

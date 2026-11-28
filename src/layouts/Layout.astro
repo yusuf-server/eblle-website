@@ -21,10 +21,8 @@ const WP_API_BASE = import.meta.env.PUBLIC_WC_STORE_URL || import.meta.env.WC_ST
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Bodoni+Moda:opsz,wght@6..96,400;500;600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 本地 Playfair Display 可变字体预加载 -->
+    <link rel="preload" href="/fonts/PlayfairDisplay-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin />
 
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -73,6 +71,14 @@ const WP_API_BASE = import.meta.env.PUBLIC_WC_STORE_URL || import.meta.env.WC_ST
 </html>
 
 <style is:global>
+  @font-face {
+    font-family: 'Playfair Display';
+    src: url('/fonts/PlayfairDisplay-VariableFont_wght.ttf') format('truetype');
+    font-weight: 400 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
   :root {
     --primary: #c9933f;
     --primary-dark: #b07e2e;
@@ -94,12 +100,17 @@ const WP_API_BASE = import.meta.env.PUBLIC_WC_STORE_URL || import.meta.env.WC_ST
     font-size: 1rem;
   }
 
-  body {
-    font-family: 'Montserrat', sans-serif;
+  body, button, input, select, textarea {
+    font-family: 'Playfair Display', Georgia, serif;
     color: var(--dark-text);
     background-color: #ffffff;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* 保护 Font Awesome 图标不被全局字体覆盖 */
+  .fa, .fas, .far, .fal, .fab, .fa-solid, .fa-regular, .fa-brands {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
   }
 
   a {
@@ -124,7 +135,7 @@ const WP_API_BASE = import.meta.env.PUBLIC_WC_STORE_URL || import.meta.env.WC_ST
   }
 
   .serif-title {
-    font-family: 'Cinzel', serif;
+    font-family: 'Playfair Display', Georgia, serif;
     letter-spacing: 0.5px;
   }
 
@@ -947,7 +958,6 @@ const WP_API_BASE = import.meta.env.PUBLIC_WC_STORE_URL || import.meta.env.WC_ST
       </svg>
     `;
 
-    // 自动为全站商品卡片左上角挂载圣诞帽（排除结账页与抽屉内的缩略图）
     // 自动为全站商品卡片左上角挂载圣诞帽（兼容任意类名 + 动态异步渲染）
     function decorateProductCards() {
       if (!document.body.classList.contains('eb-xmas-atmosphere')) return;

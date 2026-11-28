@@ -669,7 +669,7 @@ const categories = await getCategories({ per_page: 10 });
   <section class="social-feed-section">
     <div class="container">
       <div style="text-align: center; margin-bottom: 20px;">
-        <span style="font-size: 11px; letter-spacing: 1px; color: #999; text-transform: uppercase;">EVERYTHING YOU NEED & MORE</span>
+        <span class="social-top-title">EVERYTHING YOU NEED & MORE</span>
         <div class="stars" style="margin-top: 4px; color: #f5a623; font-size: 10px;">★★★★☆</div>
       </div>
       <div class="feed-grid">
@@ -1330,10 +1330,11 @@ const categories = await getCategories({ per_page: 10 });
   .hero-overlay h2 {
     font-size: 48px;
     margin-bottom: 16px;
-    font-weight: 500;
+    font-weight: 800;
   }
   .hero-overlay p {
     font-size: 18px;
+    font-weight: 400;
     margin-bottom: 32px;
     opacity: 0.9;
     max-width: 500px;
@@ -1343,7 +1344,7 @@ const categories = await getCategories({ per_page: 10 });
     background: #fff;
     color: #111;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 2px;
     text-transform: uppercase;
     padding: 12px 40px;
@@ -1415,7 +1416,7 @@ const categories = await getCategories({ per_page: 10 });
   }
   .mid-card-overlay span {
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 2px;
     display: block;
@@ -1425,8 +1426,8 @@ const categories = await getCategories({ per_page: 10 });
   }
   .mid-card-overlay h3 {
     font-size: 20px;
-    font-family: 'Cinzel', serif;
-    font-weight: 500;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
     color: #fff;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
@@ -1461,6 +1462,7 @@ const categories = await getCategories({ per_page: 10 });
   }
   .user-auth-box p {
     font-size: 14px;
+    font-weight: 400;
     color: var(--gray-text, #666);
     margin-bottom: 16px;
   }
@@ -1475,7 +1477,7 @@ const categories = await getCategories({ per_page: 10 });
     font-size: 12px;
     border-radius: 4px;
     text-align: center;
-    font-weight: 700;
+    font-weight: 800;
     transition: all 0.2s;
     border: none;
     cursor: pointer;
@@ -1491,12 +1493,13 @@ const categories = await getCategories({ per_page: 10 });
   }
   .user-auth-logged-in .welcome-text {
     font-size: 13px;
+    font-weight: 400;
     color: #333;
     line-height: 1.5;
   }
   .user-auth-logged-in .welcome-text strong {
     color: #c9933f;
-    font-weight: 700;
+    font-weight: 800;
   }
   .auth-btns-logged {
     display: flex;
@@ -1509,7 +1512,7 @@ const categories = await getCategories({ per_page: 10 });
     font-size: 11px;
     border-radius: 4px;
     text-align: center;
-    font-weight: 600;
+    font-weight: 800;
     transition: all 0.2s;
     border: none;
     cursor: pointer;
@@ -1550,13 +1553,13 @@ const categories = await getCategories({ per_page: 10 });
     align-items: center;
     justify-content: center;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 800;
   }
   .coupon-box .badge {
     background: transparent;
     color: var(--primary, #c9933f);
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 400;
     padding: 0;
     border-radius: 0;
     margin-bottom: 8px;
@@ -1565,12 +1568,13 @@ const categories = await getCategories({ per_page: 10 });
   .coupon-box h3 {
     font-size: 36px;
     color: #1a1a1a;
-    font-family: 'Cinzel', serif;
+    font-family: 'Playfair Display', Georgia, serif;
     margin-bottom: 4px;
-    font-weight: 700;
+    font-weight: 800;
   }
   .coupon-subtitle {
     font-size: 10px;
+    font-weight: 400;
     color: #999;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -1581,7 +1585,7 @@ const categories = await getCategories({ per_page: 10 });
     background: var(--primary, #c9933f);
     color: #fff;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
     padding: 8px 0;
     border-radius: 4px;
     width: 100%;
@@ -1612,10 +1616,11 @@ const categories = await getCategories({ per_page: 10 });
   }
   .section-title {
     font-size: 24px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 2px;
     text-transform: uppercase;
-    font-family: 'Cinzel', serif;
+    font-family: 'Playfair Display', Georgia, serif;
+    line-height: 1.3;
   }
   .countdown-timer {
     display: flex;
@@ -1648,7 +1653,7 @@ const categories = await getCategories({ per_page: 10 });
   }
   .view-more {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--primary, #c9933f);
     display: flex;
     align-items: center;
@@ -1735,7 +1740,7 @@ const categories = await getCategories({ per_page: 10 });
   }
   :global(#flashSaleProductGrid .product-name) {
     font-size: 12px !important;
-    font-weight: 500 !important;
+    font-weight: 400 !important;
     color: #222222 !important;
     margin: 0 0 6px 0 !important;
     line-height: 1.4 !important;
@@ -1753,11 +1758,12 @@ const categories = await getCategories({ per_page: 10 });
   }
   :global(#flashSaleProductGrid .current-price) {
     font-size: 14px !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
     color: #111111 !important;
   }
   :global(#flashSaleProductGrid .old-price) {
     font-size: 11px !important;
+    font-weight: 400 !important;
     color: #a0a0a0 !important;
     text-decoration: line-through !important;
   }
@@ -1782,12 +1788,13 @@ const categories = await getCategories({ per_page: 10 });
   }
   .trust-item h5 {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.5px;
     margin-bottom: 2px;
   }
   .trust-item p {
     font-size: 10px;
+    font-weight: 400;
     color: #666;
   }
 
@@ -1797,8 +1804,11 @@ const categories = await getCategories({ per_page: 10 });
   }
   .arrivals-title {
     font-size: 24px;
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: 2px;
     text-transform: uppercase;
+    font-family: 'Playfair Display', Georgia, serif;
+    line-height: 1.3;
     margin-bottom: 24px;
     padding-bottom: 8px;
     border-bottom: 1px solid #e5e5e5;
@@ -1819,7 +1829,7 @@ const categories = await getCategories({ per_page: 10 });
   }
   .column-title {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 600;
     color: #333;
     margin-bottom: 0;
   }
@@ -1857,12 +1867,13 @@ const categories = await getCategories({ per_page: 10 });
   }
   .group-name {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
     color: #333;
     margin-bottom: 4px;
   }
   .group-count {
     font-size: 12px;
+    font-weight: 400;
     color: #999;
     margin-bottom: 16px;
   }
@@ -1878,6 +1889,7 @@ const categories = await getCategories({ per_page: 10 });
     padding: 8px;
     text-align: center;
     border-radius: 4px;
+    font-weight: 400;
     color: #666;
     text-decoration: none;
     white-space: nowrap;
@@ -1886,7 +1898,7 @@ const categories = await getCategories({ per_page: 10 });
   }
   .view-more-link {
     grid-column: span 2;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--primary, #c9933f) !important;
     text-decoration: none;
     margin-top: 8px;
@@ -1898,7 +1910,11 @@ const categories = await getCategories({ per_page: 10 });
   }
   .shop-by-cat-section h3 {
     font-size: 24px;
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Playfair Display', Georgia, serif;
+    line-height: 1.3;
     margin-bottom: 32px;
     text-align: center;
   }
@@ -1941,7 +1957,7 @@ const categories = await getCategories({ per_page: 10 });
   }
   .cat-icon-item span {
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     color: #444;
   }
 
@@ -1992,8 +2008,8 @@ const categories = await getCategories({ per_page: 10 });
     text-align: center;
     padding: 10px;
   }
-  .poster-text span { font-size: 9px; letter-spacing: 1.5px; }
-  .poster-text h4 { font-size: 15px; font-weight: 700; font-family: 'Cinzel', serif; }
+  .poster-text span { font-size: 9px; font-weight: 400; letter-spacing: 1.5px; }
+  .poster-text h4 { font-size: 15px; font-weight: 600; font-family: 'Playfair Display', Georgia, serif; }
   .campaign-right-items {
     width: 56%;
     display: flex;
@@ -2020,13 +2036,13 @@ const categories = await getCategories({ per_page: 10 });
   .camp-mini-info h6 {
     font-size: 11px;
     color: #333;
-    font-weight: 500;
+    font-weight: 400;
     margin-bottom: 4px;
     line-height: 1.35;
   }
   .camp-mini-info span {
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
     color: #111;
   }
 
@@ -2038,8 +2054,12 @@ const categories = await getCategories({ per_page: 10 });
   }
   .center-title {
     text-align: center;
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Playfair Display', Georgia, serif;
+    line-height: 1.3;
     margin-bottom: 20px;
   }
   .reviews-slider {
@@ -2063,6 +2083,16 @@ const categories = await getCategories({ per_page: 10 });
     height: 400px;
     object-fit: cover;
   }
+  .review-quote {
+    font-weight: 600;
+  }
+  .review-body,
+  .verified-tag {
+    font-weight: 400;
+  }
+  .reviewer-name {
+    font-weight: 600;
+  }
   .slider-btn {
     position: absolute;
     top: 50%;
@@ -2084,6 +2114,13 @@ const categories = await getCategories({ per_page: 10 });
   /* SOCIAL FEED */
   .social-feed-section {
     padding-bottom: 35px;
+  }
+  .social-top-title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #999;
+    text-transform: uppercase;
   }
   .feed-grid {
     display: grid;
@@ -2141,6 +2178,7 @@ const categories = await getCategories({ per_page: 10 });
   .feed-caption {
     padding: 12px 14px;
     font-size: 11px;
+    font-weight: 400;
     color: #666;
     line-height: 1.5;
   }
@@ -2188,11 +2226,13 @@ const categories = await getCategories({ per_page: 10 });
     justify-content: flex-start;
   }
   .faq-col h3 {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
     margin-bottom: 20px;
-    font-family: 'Cinzel', serif;
-    line-height: 1.4;
+    font-family: 'Playfair Display', Georgia, serif;
+    line-height: 1.3;
     color: #111;
   }
   .accordion-list {
@@ -2209,7 +2249,7 @@ const categories = await getCategories({ per_page: 10 });
     justify-content: space-between;
     align-items: center;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: #333;
     cursor: pointer;
     padding: 10px 0;
@@ -2219,6 +2259,7 @@ const categories = await getCategories({ per_page: 10 });
     overflow: hidden;
     transition: max-height 0.25s ease;
     font-size: 11px;
+    font-weight: 400;
     color: #666;
     line-height: 1.6;
   }
@@ -2271,22 +2312,23 @@ const categories = await getCategories({ per_page: 10 });
     .mobile-hero-subtitle {
       display: block;
       font-size: 8px;
-      font-weight: 700;
+      font-weight: 400;
       color: #fbbf24;
       text-transform: uppercase;
       letter-spacing: 0.2em;
       margin-bottom: 4px;
     }
     .mobile-hero-title {
-      font-family: 'Bodoni Moda', serif;
+      font-family: 'Playfair Display', Georgia, serif;
       font-size: 18px;
-      font-weight: 400;
+      font-weight: 800;
       color: #fff;
       line-height: 1.2;
       margin-bottom: 4px;
     }
     .mobile-hero-desc {
       font-size: 10px;
+      font-weight: 400;
       color: rgba(255,255,255,0.8);
       white-space: nowrap;
       overflow: hidden;
@@ -2296,7 +2338,7 @@ const categories = await getCategories({ per_page: 10 });
       background: #fff;
       color: #000;
       font-size: 9px;
-      font-weight: 700;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.15em;
       padding: 8px 14px;
@@ -2333,13 +2375,14 @@ const categories = await getCategories({ per_page: 10 });
     }
     .mobile-subcard-tag {
       font-size: 10px;
+      font-weight: 400;
       text-transform: uppercase;
       color: rgba(255,255,255,0.8);
       letter-spacing: 1px;
       margin-bottom: 2px;
     }
     .mobile-subcard-title {
-      font-family: 'Cinzel', serif;
+      font-family: 'Playfair Display', Georgia, serif;
       font-size: 14px;
       font-weight: 600;
       color: white;
@@ -2367,25 +2410,26 @@ const categories = await getCategories({ per_page: 10 });
       background: #1A1A1A;
       color: white;
       font-size: 9px;
-      font-weight: 700;
+      font-weight: 800;
       padding: 4px 8px;
       text-transform: uppercase;
       border-radius: 3px;
     }
     .benefits-title {
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
       color: #333;
     }
     .benefits-desc {
       font-size: 9px;
+      font-weight: 400;
       color: #666;
     }
     .claim-btn {
       background: #B8860B;
       color: white;
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 800;
       padding: 6px 12px;
       border-radius: 4px;
       text-decoration: none;
@@ -2404,17 +2448,19 @@ const categories = await getCategories({ per_page: 10 });
       margin-bottom: 12px;
     }
     .mobile-flash-header h2 {
-      font-family: 'Bodoni Moda', serif;
+      font-family: 'Playfair Display', Georgia, serif;
       font-size: 16px;
-      font-weight: 500;
+      font-weight: 800;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
+      line-height: 1.3;
     }
     .mobile-countdown {
       display: flex;
       align-items: center;
       gap: 4px;
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 400;
       background: #fff5f5;
       padding: 4px 8px;
       border-radius: 16px;
@@ -2469,15 +2515,17 @@ const categories = await getCategories({ per_page: 10 });
       border-top: 1px solid rgba(229, 231, 235, 0.6);
     }
     .mobile-trust-item i { font-size: 14px; color: #ca8a04; margin-bottom: 4px; }
-    .mobile-trust-item h5 { font-size: 9.5px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
-    .mobile-trust-item p { font-size: 8.5px; color: #6b7280; }
+    .mobile-trust-item h5 { font-size: 9.5px; font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
+    .mobile-trust-item p { font-size: 8.5px; font-weight: 400; color: #6b7280; }
 
     .mobile-arrivals { padding: 24px 0; }
     .mobile-arrivals h2 {
-      font-family: 'Bodoni Moda', serif;
+      font-family: 'Playfair Display', Georgia, serif;
       font-size: 16px;
-      font-weight: 500;
+      font-weight: 800;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
+      line-height: 1.3;
       margin-bottom: 16px;
       padding: 0 16px 8px;
       border-bottom: 1px solid #e5e7eb;
@@ -2503,8 +2551,8 @@ const categories = await getCategories({ per_page: 10 });
       justify-content: space-between;
       margin-bottom: 8px;
     }
-    .mobile-arrival-header h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; }
-    .mobile-arrival-header span { font-size: 10px; font-weight: 600; color: #ca8a04; }
+    .mobile-arrival-header h3 { font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .mobile-arrival-header span { font-size: 10px; font-weight: 400; color: #ca8a04; }
     .mobile-arrival-images {
       display: grid;
       grid-template-columns: 150px auto;
@@ -2524,9 +2572,11 @@ const categories = await getCategories({ per_page: 10 });
     .mobile-categories-new { padding: 24px 0 20px; background: white; }
     .category-title {
       text-align: center;
-      font-family: 'Bodoni Moda', serif;
-      font-size: 15px;
-      letter-spacing: 3px;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      line-height: 1.3;
       margin-bottom: 18px;
       text-transform: uppercase;
     }
@@ -2549,7 +2599,7 @@ const categories = await getCategories({ per_page: 10 });
       justify-content: center;
     }
     .category-circle i { font-size: 28px; color: #424242; }
-    .category-label { font-size: 11px; color: #333; }
+    .category-label { font-size: 11px; font-weight: 400; color: #333; }
 
     .mobile-divider {
       height: 1px;
@@ -2561,10 +2611,12 @@ const categories = await getCategories({ per_page: 10 });
 
     .mobile-campaign-zone { padding: 20px 16px 24px; background: white; }
     .campaign-zone-title {
-      font-family: 'Bodoni Moda', serif;
+      font-family: 'Playfair Display', Georgia, serif;
       text-align: center;
-      font-size: 15px;
-      letter-spacing: 3px;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      line-height: 1.3;
       text-transform: uppercase;
       margin-bottom: 18px;
     }
@@ -2590,8 +2642,8 @@ const categories = await getCategories({ per_page: 10 });
       color: white;
       text-align: center;
     }
-    .campaign-tag { font-size: 8px; letter-spacing: 2px; color: #D4AF37; }
-    .campaign-title { font-family: 'Bodoni Moda', serif; font-size: 16px; margin: 0; }
+    .campaign-tag { font-size: 8px; font-weight: 400; letter-spacing: 2px; color: #D4AF37; }
+    .campaign-title { font-family: 'Playfair Display', Georgia, serif; font-size: 16px; font-weight: 600; margin: 0; }
     .campaign-right { width: 58.4%; display: flex; flex-direction: column; padding: 4px 0; }
     .campaign-product {
       flex: 1;
@@ -2613,6 +2665,7 @@ const categories = await getCategories({ per_page: 10 });
     }
     .campaign-product-info h6 {
       font-size: 10.5px;
+      font-weight: 400;
       color: #1a1a1a;
       margin: 0 0 2px 0;
       overflow: hidden;
@@ -2622,14 +2675,16 @@ const categories = await getCategories({ per_page: 10 });
       -webkit-box-orient: vertical;
       line-height: 1.3;
     }
-    .campaign-price { font-size: 12px; font-weight: 700; color: #1a1a1a; }
+    .campaign-price { font-size: 12px; font-weight: 600; color: #1a1a1a; }
 
     .mobile-reviews { padding: 20px 0 24px; }
     .reviews-header { text-align: center; margin-bottom: 16px; }
     .reviews-title {
-      font-family: 'Bodoni Moda', serif;
-      font-size: 15px;
-      letter-spacing: 3px;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      line-height: 1.3;
       text-transform: uppercase;
       margin: 0;
     }
@@ -2684,8 +2739,8 @@ const categories = await getCategories({ per_page: 10 });
 
     .mobile-instagram { padding: 20px 0 24px; }
     .instagram-header { text-align: center; margin-bottom: 12px; }
-    .instagram-subtitle { font-size: 9px; letter-spacing: 2px; color: #999; }
-    .instagram-title { font-family: 'Bodoni Moda', serif; font-size: 14px; margin: 0; }
+    .instagram-subtitle { font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #999; text-transform: uppercase; }
+    .instagram-title { font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-weight: 600; margin: 0; }
     .instagram-grid { display: flex; gap: 12px; overflow-x: auto; padding: 0 16px; }
     .instagram-grid::-webkit-scrollbar { display: none; }
     .instagram-post {
@@ -2718,6 +2773,7 @@ const categories = await getCategories({ per_page: 10 });
     .instagram-caption {
       padding: 10px 12px;
       font-size: 11px;
+      font-weight: 400;
       color: #444;
       margin: 0;
       line-height: 1.45;
@@ -2732,11 +2788,13 @@ const categories = await getCategories({ per_page: 10 });
       background: white;
     }
     .faq-main-title {
-      font-family: 'Bodoni Moda', serif;
-      font-size: 15px;
-      font-weight: 600;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
       margin: 0 0 16px 0;
-      line-height: 1.4;
+      line-height: 1.3;
       color: #1a1a1a;
     }
     .mobile-faq-gallery-grid {
@@ -2780,6 +2838,7 @@ const categories = await getCategories({ per_page: 10 });
     }
     .faq-answer {
       font-size: 11.5px;
+      font-weight: 400;
       color: #666;
       line-height: 1.6;
       margin-top: 8px;
@@ -2851,7 +2910,7 @@ const categories = await getCategories({ per_page: 10 });
   }
   :global(#mobileFlashSaleGrid .mobile-product-info h3) {
     font-size: 11px !important;
-    font-weight: 500 !important;
+    font-weight: 400 !important;
     color: #222222 !important;
     margin: 0 0 4px 0 !important;
     line-height: 1.35 !important;
@@ -2869,11 +2928,12 @@ const categories = await getCategories({ per_page: 10 });
   }
   :global(#mobileFlashSaleGrid .mobile-price) {
     font-size: 13px !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
     color: #111111 !important;
   }
   :global(#mobileFlashSaleGrid .mobile-old-price) {
     font-size: 10px !important;
+    font-weight: 400 !important;
     color: #a0a0a0 !important;
     text-decoration: line-through !important;
   }
@@ -3408,5 +3468,4 @@ function handleLogout() {
   // 可选：刷新页面
   // window.location.reload();
 }
-
 </script>
